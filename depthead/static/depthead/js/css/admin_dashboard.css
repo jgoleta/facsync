@@ -1,0 +1,70 @@
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.card h3 {
+    margin: 0 0 8px;
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+.card .stat {
+    margin: 0 0 8px;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.card .trend {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #16a34a; /* Green */
+}
+
+.card .trend-bad {
+    color: #dc2626; /* Red */
+}
+
+.ai-insights-panel {
+    background-color: var(--primary-light);
+    border: 1px solid #93c5fd;
+    border-radius: 16px;
+    padding: 24px;
+    position: relative;
+}
+
+.ai-insights-panel::before {
+    content: '✨';
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    font-size: 1.5rem;
+}
+
+.ai-insights-panel h2 {
+    margin: 0 0 12px;
+    padding-left: 36px;
+}
+
+.ai-insights-panel p {
+    margin: 0 0 12px;
+    line-height: 1.6;
+    padding-left: 36px;
+}

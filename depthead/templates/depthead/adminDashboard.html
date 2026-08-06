@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Admin Dashboard</title>
+    <link rel="stylesheet" href="/../css/depthead_css/admin_main.css">
+    <link rel="stylesheet" href="../../css/depthead_css/admin_dashboard.css">
+</head>
+
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="adminDashboard.html" class="brand">
+                    <span class="brand-mark">F</span>
+                    <span>FacSync</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="adminDashboard.html" class="nav-item active">
+                    <span class="nav-icon">📊</span>
+                    <span>Overview</span>
+                </a>
+                <a href="peakAnalytics.html" class="nav-item">
+                    <span class="nav-icon">📈</span>
+                    <span>Peak Analytics</span>
+                </a>
+                <a href="facultyTrends.html" class="nav-item">
+                    <span class="nav-icon">📉</span>
+                    <span>Faculty Trends</span>
+                </a>
+                <a href="studentBehavior.html" class="nav-item">
+                    <span class="nav-icon">🧑‍🎓</span>
+                    <span>Student Behavior</span>
+                </a>
+            </nav>
+            <div class="sidebar-divider"></div>
+            <nav class="sidebar-nav">
+                 <a href="facultyMonitoring.html" class="nav-item">
+                    <span class="nav-icon">👀</span>
+                    <span>Faculty Monitoring</span>
+                </a>
+                <a href="adminFaculty.html" class="nav-item">
+                    <span class="nav-icon">👨‍🏫</span>
+                    <span>Manage Faculty</span>
+                </a>
+                 <a href="departmentSettings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="../loginPage.html" class="nav-item">
+                    <span class="nav-icon">↩️</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Department Overview</h1>
+                <p>College of Computer Studies</p>
+            </header>
+
+            <div class="content-grid">
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Total Consultations</h3>
+                        <p class="stat">1,284</p>
+                        <span class="trend">+12% this month</span>
+                    </div>
+                    <div class="card">
+                        <h3>Active Faculty</h3>
+                        <p class="stat">24</p>
+                        <span class="trend">85% available now</span>
+                    </div>
+                    <div class="card">
+                        <h3>Avg. Wait Time</h3>
+                        <p class="stat">12m 30s</p>
+                        <span class="trend-bad">-5% from yesterday</span>
+                    </div>
+                    <div class="card">
+                        <h3>Availability Rate</h3>
+                        <p class="stat">92%</p>
+                        <span class="trend">+3% this week</span>
+                    </div>
+                </div>
+
+                <div class="ai-insights-panel">
+                    <h2>AI-Generated Insights</h2>
+                    <p><strong>Observation:</strong> Consultation requests peak on Tuesdays and Thursdays between 1 PM and 3 PM, likely due to project submission deadlines.</p>
+                    <p><strong>Suggestion:</strong> Recommend that more faculty set their status to 'Available' during these peak hours to reduce student wait times.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

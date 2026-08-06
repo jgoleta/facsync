@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Super Admin Dashboard</title>
+    <link rel="stylesheet" href="../../css/superadmin_css/superadmin_main.css">
+    <link rel="stylesheet" href="../../css/superadmin_css/superadmin_dashboard.css">
+</head>
+
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="superadminDashboard.html" class="brand">
+                    <span class="brand-mark">F</span>
+                    <span>FacSync Super Admin</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="superadminDashboard.html" class="nav-item active">
+                    <span class="nav-icon">👑</span>
+                    <span>System Overview</span>
+                </a>
+                <a href="manageDepartments.html" class="nav-item">
+                    <span class="nav-icon">🏢</span>
+                    <span>Manage Departments</span>
+                </a>
+                <a href="manageAdmins.html" class="nav-item">
+                    <span class="nav-icon">👤</span>
+                    <span>Manage Admins</span>
+                </a>
+                <a href="manageFaculty.html" class="nav-item">
+                    <span class="nav-icon">👩‍🏫</span>
+                    <span>Manage Faculty</span>
+                </a>
+                <a href="manageStudents.html" class="nav-item">
+                    <span class="nav-icon">🎓</span>
+                    <span>Manage Students</span>
+                </a>
+            </nav>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-footer">
+                <a href="../loginPage.html" class="nav-item">
+                    <span class="nav-icon">↩️</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1>System-Wide Overview</h1>
+                <p>Top-level view of the entire FacSync system.</p>
+            </header>
+
+            <div class="content-grid">
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Total Departments</h3>
+                        <p class="stat">5</p>
+                        <span class="trend">1 new this year</span>
+                    </div>
+                    <div class="card">
+                        <h3>Total Faculty</h3>
+                        <p class="stat">142</p>
+                        <span class="trend">+8 since last month</span>
+                    </div>
+                    <div class="card">
+                        <h3>Total Consultations</h3>
+                        <p class="stat">8,921</p>
+                        <span class="trend">+15% this month</span>
+                    </div>
+                </div>
+
+
+                <div class="drill-down-panel">
+                    <h2>Drill-Down View</h2>
+                    <p>Select a department to view its reports and analytics.</p>
+                    <div class="form-group">
+                        <label for="dept-selector">Select Department</label>
+                        <select id="dept-selector">
+                            <option value="">-- Select a Department --</option>
+                            <option value="ccs">College of Computer Studies</option>
+                            <option value="coe">College of Engineering</option>
+                            <option value="cob">College of Business</option>
+                            <option value="cos">College of Science</option>
+                            <option value="coa">College of Arts</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Sample Department View -->
+                <div id="department-view-container">
+                    <header class="main-header">
+                        <h1 id="dept-view-header">College of Computer Studies Overview</h1>
+                    </header>
+                    <div class="summary-cards" id="dept-summary-cards">
+                        <div class="card">
+                            <h3>Total Consultations</h3>
+                            <p class="stat">1,284</p>
+                            <span class="trend">+12% this month</span>
+                        </div>
+                        <div class="card">
+                            <h3>Active Faculty</h3>
+                            <p class="stat">24</p>
+                            <span class="trend">85% available now</span>
+                        </div>
+                        <div class="card">
+                            <h3>Avg. Wait Time</h3>
+                            <p class="stat">12m 30s</p>
+                            <span class="trend trend-bad">-5% from yesterday</span>
+                        </div>
+                        <div class="card">
+                            <h3>Availability Rate</h3>
+                            <p class="stat">92%</p>
+                            <span class="trend">+3% this week</span>
+                        </div>
+                    </div>
+                    <div class="ai-insights-panel" id="dept-insights-panel">
+                        <h2>AI-Generated Insights</h2>
+                        <p><strong>Observation:</strong> Consultation requests peak on Tuesdays and Thursdays between 1 PM and 3 PM, likely due to project submission deadlines.</p>
+                        <p><strong>Suggestion:</strong> Recommend that more faculty set their status to 'Available' during these peak hours to reduce student wait times.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="../../js/superadmin_js/superadminDashboard.js"></script>
+</body>
+</html>

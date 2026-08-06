@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | View Faculty Schedule</title>
+    <link rel="stylesheet" href="../../css/shared_schedule.css">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="../landingPage.html" class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">
+                <a href="#" class="nav-btn">Profile</a>
+                <a href="../loginPage.html" class="nav-btn">Logout</a>
+            </nav>
+        </header>
+
+        <main class="schedule-shell">
+            <section class="schedule-card">
+                <div class="schedule-header">
+                    <div>
+                        <p class="eyebrow">View Schedule</p>
+                        <h1>Faculty Monthly Schedule</h1>
+                    </div>
+                    <div class="header-meta">
+                        <div class="faculty-display">
+                            <span id="selectedFacultyName">Arthur Morgan</span>
+                            <svg class="faculty-photo-small" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="#cdd9ee">
+                                <circle cx="12" cy="8" r="3.2" />
+                                <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="view-controls">
+                    <button class="view-btn active" data-view="monthly">Monthly</button>
+                    <button class="view-btn" data-view="weekly">Weekly</button>
+                    <button class="view-btn" data-view="daily">Daily</button>
+                </div>
+
+                <div class="calendar-wrapper">
+                    <div id="calendarGrid" class="calendar-grid"></div>
+                </div>
+            </section>
+
+            <aside class="legend-card">
+                <h2>List of Activities</h2>
+                <ul id="legendList" class="legend-list"></ul>
+                <div class="card-section">
+                    <h2>Walk-in Queue</h2>
+                    <div id="queue-initial-state">
+                        <div class="faculty-status">
+                            <span id="queue-faculty-name"></span> is currently <span id="queue-faculty-status"></span>.
+                        </div>
+                        <p id="walk-in-note" class="walk-in-note hidden"></p>
+                        <button id="join-queue-btn" class="primary-button">Join Walk-in Queue</button>
+                    </div>
+                    <div id="queue-active-state" class="hidden">
+                        <div class="queue-position-display">
+                            <span>Your Position</span>
+                            <span id="queue-position">3rd</span>
+                        </div>
+                        <p class="queue-wait-time">Estimated wait time: <span id="wait-time">15 minutes</span></p>
+                        <button id="cancel-queue-btn" class="danger-button">Cancel Queue</button>
+                    </div>
+                </div>
+                <div class="actions">
+                    <button id="my-consultations-btn" class="secondary-button">My Consultations</button>
+                    <button id="book-consultation-btn" class="secondary-button">Book Consultation</button>
+                    <a href="dashboardStudent.html" class="secondary-link">Back to dashboard</a>
+                </div>
+            </aside>
+        </main>
+    </div>
+
+    <div id="eventDetailModal" class="modal-overlay hidden">
+        <div class="modal-content event-detail-modal">
+            <button class="modal-close-btn" data-close-modal="eventDetailModal">&times;</button>
+            <div class="consultation-card">
+                <div class="consultation-header">
+                    <p class="eyebrow">Schedule details</p>
+                    <h1 id="eventDetailTitle">Event Title</h1>
+                    <p id="eventDetailType" class="event-detail-type">Busy</p>
+                </div>
+
+                <div class="event-detail-body">
+                    <div class="detail-row">
+                        <span>Time</span>
+                        <strong id="eventDetailTime">09:00 - 10:30</strong>
+                    </div>
+                    <div class="detail-row">
+                        <span>Short Description</span>
+                        <p id="eventDetailDescription">No description provided.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="dayScheduleModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close-btn" data-close-modal="dayScheduleModal">&times;</button>
+            <div class="consultation-card">
+                <div class="consultation-header">
+                    <p class="eyebrow">Day schedule</p>
+                    <h1 id="dayScheduleTitle">More schedules</h1>
+                </div>
+                <ul id="dayScheduleList" class="details-list"></ul>
+            </div>
+        </div>
+    </div>
+
+    <div id="consultationModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <button class="modal-close-btn">&times;</button>
+            <div class="consultation-card">
+                <div class="consultation-header">
+                    <p class="eyebrow">Student request</p>
+                    <h1>Book a consultation</h1>
+                    <p>Select an available slot to request a meeting.</p>
+                </div>
+
+                <form id="consultationForm" class="consultation-form">
+                    <div class="form-group">
+                        <label for="dateSelect">Date</label>
+                        <input type="date" id="dateSelect" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="timeSelect">Time slot</label>
+                        <input type="time" id="timeSelect" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Optional message</label>
+                        <textarea id="message" rows="4" placeholder="Add a short note for the faculty"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="primary-button">Submit request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/student_js/viewSchedule.js"></script>
+</body>
+
+</html>

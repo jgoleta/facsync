@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Manage Faculty</title>
+    <link rel="stylesheet" href="../../css/depthead_css/admin_main.css">
+    <link rel="stylesheet" href="../../css/depthead_css/admin_management.css">
+</head>
+
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="adminDashboard.html" class="brand">
+                    <span class="brand-mark">F</span>
+                    <span>FacSync</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="adminDashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span>Overview</span>
+                </a>
+                <a href="peakAnalytics.html" class="nav-item">
+                    <span class="nav-icon">📈</span>
+                    <span>Peak Analytics</span>
+                </a>
+                <a href="facultyTrends.html" class="nav-item">
+                    <span class="nav-icon">📉</span>
+                    <span>Faculty Trends</span>
+                </a>
+                <a href="studentBehavior.html" class="nav-item">
+                    <span class="nav-icon">🧑‍🎓</span>
+                    <span>Student Behavior</span>
+                </a>
+            </nav>
+            <div class="sidebar-divider"></div>
+            <nav class="sidebar-nav">
+                <a href="facultyMonitoring.html" class="nav-item">
+                    <span class="nav-icon">👀</span>
+                    <span>Faculty Monitoring</span>
+                </a>
+                <a href="adminFaculty.html" class="nav-item active">
+                    <span class="nav-icon">👨‍🏫</span>
+                    <span>Manage Faculty</span>
+                </a>
+                <a href="departmentSettings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="../loginPage.html" class="nav-item">
+                    <span class="nav-icon">↩️</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header with-action">
+                <div>
+                    <h1>Manage Faculty Accounts</h1>
+                    <p>Add, edit, or deactivate faculty accounts.</p>
+                </div>
+                <button id="addFacultyBtn" class="btn-primary">Add New Faculty</button>
+            </header>
+
+            <div class="management-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Dr. Arthur Morgan</td>
+                            <td>arthur.morgan@university.edu</td>
+                            <td><span class="status-tag active">Active</span></td>
+                            <td class="actions"><button>Upload Schedule</button><button class="danger">Remove</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Dr. Sarah Johnson</td>
+                            <td>sarah.j@university.edu</td>
+                            <td><span class="status-tag active">Active</span></td>
+                            <td class="actions"><button>Upload Schedule</button><button class="danger">Remove</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-overlay hidden" id="facultyModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
+            <div class="modal-header">
+                <div>
+                    <h2 id="facultyModalTitle">Add New Faculty</h2>
+                    <p>Enter faculty details to create a new account.</p>
+                </div>
+                <button type="button" class="modal-close" id="closeFacultyModal">×</button>
+            </div>
+            <form id="facultyForm" class="modal-form">
+                <div class="modal-form-group">
+                    <label for="facultyName">Name</label>
+                    <input id="facultyName" type="text" placeholder="Dr. Maria Santos" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="facultyEmail">Email</label>
+                    <input id="facultyEmail" type="email" placeholder="maria.santos@university.edu" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="facultyDepartment">Department</label>
+                    <input id="facultyDepartment" type="text" placeholder="College of Computer Studies" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="facultyStatus">Status</label>
+                    <select id="facultyStatus">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelFacultyModal">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Faculty</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../../js/depthead_js/adminFaculty.js"></script>
+</body>
+
+</html>

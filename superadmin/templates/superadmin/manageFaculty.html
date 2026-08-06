@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Manage Faculty</title>
+    <link rel="stylesheet" href="../../css/superadmin_css/superadmin_main.css">
+    <link rel="stylesheet" href="../../css/superadmin_css/superadmin_management.css">
+</head>
+
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="superadminDashboard.html" class="brand">
+                    <span class="brand-mark">S</span>
+                    <span>FacSync Super Admin</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="superadminDashboard.html" class="nav-item">
+                    <span class="nav-icon">👑</span>
+                    <span>System Overview</span>
+                </a>
+                <a href="manageDepartments.html" class="nav-item">
+                    <span class="nav-icon">🏢</span>
+                    <span>Manage Departments</span>
+                </a>
+                <a href="manageAdmins.html" class="nav-item">
+                    <span class="nav-icon">👤</span>
+                    <span>Manage Admins</span>
+                </a>
+                <a href="manageFaculty.html" class="nav-item active">
+                    <span class="nav-icon">👩‍🏫</span>
+                    <span>Manage Faculty</span>
+                </a>
+                <a href="manageStudents.html" class="nav-item">
+                    <span class="nav-icon">🎓</span>
+                    <span>Manage Students</span>
+                </a>
+            </nav>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-footer">
+                <a href="../loginPage.html" class="nav-item">
+                    <span class="nav-icon">↩️</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header with-action">
+                <div>
+                    <h1>Manage Faculty Accounts</h1>
+                    <p>View, add, or manage faculty accounts across the system.</p>
+                </div>
+                <button class="btn-primary">Add New Faculty</button>
+            </header>
+
+            <div class="management-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Prof. Maria Santos</td>
+                            <td>maria.santos@university.edu</td>
+                            <td>College of Computer Studies</td>
+                            <td><span class="status-tag active">Active</span></td>
+                            <td class="actions"><button>View Verification</button><button class="danger">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td>Dr. Aaron Cruz</td>
+                            <td>aaron.cruz@university.edu</td>
+                            <td>College of Engineering</td>
+                            <td><span class="status-tag active">Active</span></td>
+                            <td class="actions"><button>View Verification</button><button class="danger">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td>Ms. Lina Rivera</td>
+                            <td>lina.rivera@university.edu</td>
+                            <td>College of Business</td>
+                            <td><span class="status-tag inactive">Inactive</span></td>
+                            <td class="actions"><button>View Verification</button><button class="danger">Remove</button><button>Activate</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

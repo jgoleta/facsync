@@ -1,0 +1,18 @@
+students/
+  migrations/
+  static/
+    students/          ← namespaced folder, see below
+      css/
+      js/
+  templates/
+    students/           ← same namespacing
+      dashboardStudent.html
+      bookConsultation.html
+      viewSchedule.html
+      consultationRequests.html
+  admin.py
+  apps.py
+  models.py
+  tests.py
+  urls.py
+  views.py

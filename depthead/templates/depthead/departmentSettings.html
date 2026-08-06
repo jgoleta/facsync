@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Department Settings</title>
+    <link rel="stylesheet" href="../../css/depthead_css/admin_main.css">
+    <link rel="stylesheet" href="../../css/depthead_css/admin_settings.css">
+    <style>
+        .settings-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+            gap: 24px;
+            align-items: start;
+        }
+        .settings-card h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .announcements-card .card-header {
+            padding-bottom: 0;
+        }
+        @media (max-width: 1024px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="adminDashboard.html" class="brand">
+                    <span class="brand-mark">F</span>
+                    <span>FacSync</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="adminDashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span>Overview</span>
+                </a>
+                <a href="peakAnalytics.html" class="nav-item">
+                    <span class="nav-icon">📈</span>
+                    <span>Peak Analytics</span>
+                </a>
+                <a href="facultyTrends.html" class="nav-item">
+                    <span class="nav-icon">📉</span>
+                    <span>Faculty Trends</span>
+                </a>
+                <a href="studentBehavior.html" class="nav-item">
+                    <span class="nav-icon">🧑‍🎓</span>
+                    <span>Student Behavior</span>
+                </a>
+            </nav>
+            <div class="sidebar-divider"></div>
+            <nav class="sidebar-nav">
+                 <a href="facultyMonitoring.html" class="nav-item">
+                    <span class="nav-icon">👀</span>
+                    <span>Faculty Monitoring</span>
+                </a>
+                <a href="adminFaculty.html" class="nav-item">
+                    <span class="nav-icon">👨‍🏫</span>
+                    <span>Manage Faculty</span>
+                </a>
+                 <a href="departmentSettings.html" class="nav-item active">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="../loginPage.html" class="nav-item">
+                    <span class="nav-icon">↩️</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Department Settings</h1>
+                <p>Manage general settings and announcements for your department.</p>
+            </header>
+
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h2>General Settings</h2>
+                    <form class="settings-form">
+                        <div class="form-group">
+                            <label for="dept-name">Department Name</label>
+                            <input type="text" id="dept-name" value="College of Computer Studies">
+                        </div>
+                        <div class="form-group">
+                            <label for="dept-desc">Description</label>
+                            <textarea id="dept-desc">The forefront of innovation and technology education.</textarea>
+                        </div>
+                        <div class="form-group form-group-toggle">
+                            <label for="closure-toggle">Office Closure</label>
+                            <p>Activate to prevent new bookings and notify users of office closure.</p>
+                            <input type="checkbox" id="closure-toggle" class="toggle-switch">
+                        </div>
+                        <div class="form-group">
+                            <label for="closure-dates">Closure Date Range</label>
+                            <input type="text" id="closure-dates" placeholder="e.g., 2026-12-20 to 2027-01-05">
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="primary-button">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="settings-card announcements-card">
+                    <header class="card-header">
+                        <h2>Announcements</h2>
+                        <p>Create and manage department announcements.</p>
+                    </header>
+                    <form id="announcement-form" class="settings-form">
+                        <div class="form-group">
+                            <label for="ann-title">Title</label>
+                            <input type="text" id="ann-title" placeholder="Announcement title">
+                        </div>
+                        <div class="form-group">
+                            <label for="ann-message">Message</label>
+                            <textarea id="ann-message" placeholder="Write your announcement here..."></textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="primary-button">Post Announcement</button>
+                        </div>
+                    </form>
+
+                    <div id="announcements-list" class="announcements-list">
+                        <!-- Announcements will be rendered here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="../../js/depthead_js/departmentSettings.js"></script>
+</body>
+</html>

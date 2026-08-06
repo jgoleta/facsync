@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Booking Management</title>
+    <link rel="stylesheet" href="../../css/faculty_css/bookingManagement.css">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="../landingPage.html" class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">  
+                <a href="../loginPage.html" class="nav-btn">Logout</a>
+            </nav>
+        </header>
+
+        <main class="booking-container">
+            <section class="queue-card">
+                <div class="card-header">
+                    <div>
+                        <p class="eyebrow">Booking Management</p>
+                        <h1>Faculty Queue</h1>
+                        <p class="page-copy">View and manage the student queue for walk-in consultations.</p>
+                    </div>
+                    <div>
+                        <button id="refreshQueueBtn" class="btn-secondary">Refresh</button>
+                        <a href="scheduleFaculty.html" class="btn-secondary">View Schedule</a>
+                    </div>
+                </div>
+                <div class="filter-row">
+                    <div class="queue-count">Queue: <span id="queueCount">0</span></div>
+                </div>
+                <ul id="queueList" class="queue-list"></ul>
+            </section>
+        </main>
+    </div>
+
+    <script src="../../js/faculty_js/bookingManagement.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Book Consultation</title>
+    <link rel="stylesheet" href="../../css/student_css/dashboardStudent.css">
+    <link rel="stylesheet" href="../../css/student_css/bookConsultation.css">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="../landingPage.html" class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">
+                <a href="consultationRequests.html" class="nav-btn">My Consultations</a>
+                <a href="#" class="nav-btn">Profile</a>
+                <a href="../loginPage.html" class="nav-btn">Logout</a>
+            </nav>
+        </header>
+
+        <main class="consultation-shell">
+            <section class="consultation-card">
+                <div class="consultation-header">
+                    <p class="eyebrow">Student request</p>
+                    <h1>Book a consultation</h1>
+                    <p>Select a faculty member and an available slot to request a meeting.</p>
+                </div>
+
+                <form id="consultationForm" class="consultation-form">
+                    <div class="form-group">
+                        <label for="facultySelect">Faculty</label>
+                        <select id="facultySelect" required>
+                            <option value="">Choose a faculty member</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dateSelect">Date</label>
+                        <select id="dateSelect" required>
+                            <option value="">Select a date</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="timeSelect">Time slot</label>
+                        <select id="timeSelect" required>
+                            <option value="">Select a time slot</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="message">Optional message</label>
+                        <textarea id="message" rows="4" placeholder="Add a short note for the faculty"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn submit-btn">Submit request</button>
+                        <a href="viewSchedule.html" class="secondary-link">Return to Schedule</a>
+                    </div>
+                </form>
+
+                <div id="confirmationPanel" class="confirmation-card hidden" aria-live="polite">
+                    <p class="eyebrow">Confirmed</p>
+                    <h2>Your consultation request has been sent.</h2>
+                    <div id="confirmationDetails" class="confirmation-details"></div>
+                    <div class="form-actions">
+                        <button type="button" id="bookAnother" class="btn submit-btn">Book another</button>
+                        <a href="dashboardStudent.html" class="secondary-link">Back to dashboard</a>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="info-card">
+                <h2>How it works</h2>
+                <ul>
+                    <li>Choose a faculty member from the dashboard.</li>
+                    <li>Pick one of the dates and slots that are still open.</li>
+                    <li>Add a short note if you want to share your concern.</li>
+                </ul>
+            </aside>
+        </main>
+    </div>
+
+    <script src="../../js/student_js/bookConsultation.js"></script>
+</body>
+
+</html>

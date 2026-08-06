@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Student Behavior</title>
+    <link rel="stylesheet" href="../../css/depthead_css/admin_main.css">
+    <link rel="stylesheet" href="../../css/depthead_css/admin_analytics.css">
+</head>
+
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="adminDashboard.html" class="brand">
+                    <span class="brand-mark">F</span>
+                    <span>FacSync</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="adminDashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span>Overview</span>
+                </a>
+                <a href="peakAnalytics.html" class="nav-item">
+                    <span class="nav-icon">📈</span>
+                    <span>Peak Analytics</span>
+                </a>
+                <a href="facultyTrends.html" class="nav-item">
+                    <span class="nav-icon">📉</span>
+                    <span>Faculty Trends</span>
+                </a>
+                <a href="studentBehavior.html" class="nav-item active">
+                    <span class="nav-icon">🧑‍🎓</span>
+                    <span>Student Behavior</span>
+                </a>
+            </nav>
+            <div class="sidebar-divider"></div>
+            <nav class="sidebar-nav">
+                 <a href="facultyMonitoring.html" class="nav-item">
+                    <span class="nav-icon">👀</span>
+                    <span>Faculty Monitoring</span>
+                </a>
+                <a href="adminFaculty.html" class="nav-item">
+                    <span class="nav-icon">👨‍🏫</span>
+                    <span>Manage Faculty</span>
+                </a>
+                 <a href="departmentSettings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="../loginPage.html" class="nav-item">
+                    <span class="nav-icon">↩️</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Student Consultation Behavior</h1>
+                <p>Understand how and when students seek consultations.</p>
+            </header>
+
+            <div class="analytics-grid">
+                <div class="chart-card">
+                    <h3>Consultation Frequency Over Time</h3>
+                    <div class="chart-graphic" role="img" aria-label="Consultation frequency over time chart">
+                        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="40" y="30" width="520" height="240" rx="16" fill="#ffffff" />
+                            <path d="M80 220 C120 205, 150 185, 200 180 S270 160, 320 145 S410 115, 500 80" stroke="#2563eb" stroke-width="4" fill="none" stroke-linecap="round" />
+                            <g stroke="#cbd5e1" stroke-width="1">
+                                <line x1="80" y1="250" x2="500" y2="250" />
+                                <line x1="80" y1="210" x2="500" y2="210" />
+                                <line x1="80" y1="170" x2="500" y2="170" />
+                                <line x1="80" y1="130" x2="500" y2="130" />
+                            </g>
+                            <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
+                                <text x="80" y="270">Jan</text>
+                                <text x="180" y="270">Feb</text>
+                                <text x="280" y="270">Mar</text>
+                                <text x="380" y="270">Apr</text>
+                                <text x="480" y="270">May</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Walk-in vs. Scheduled Appointments</h3>
+                    <div class="chart-graphic" role="img" aria-label="Walk-in vs scheduled appointments chart">
+                        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="40" y="30" width="520" height="240" rx="16" fill="#ffffff" />
+                            <rect x="140" y="115" width="80" height="135" rx="8" fill="#2563eb" />
+                            <rect x="260" y="90" width="80" height="160" rx="8" fill="#3b82f6" />
+                            <rect x="380" y="150" width="80" height="100" rx="8" fill="#93c5fd" />
+                            <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
+                                <text x="150" y="270">Walk-in</text>
+                                <text x="270" y="270">Scheduled</text>
+                                <text x="390" y="270">Hybrid</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <h3>Common Request Periods</h3>
+                    <p>Requests spike during mid-term and final exam weeks. A smaller peak is observed after the release of major project guidelines.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

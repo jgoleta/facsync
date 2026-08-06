@@ -1,0 +1,373 @@
+:root {
+  --accent: #0b74de;
+  --accent-soft: #eaf4ff;
+  --accent-gradient: linear-gradient(45deg, var(--primary), var(--accent));
+  --muted: #5f6b7a;
+  --border: #dfe7f2;
+  --primary: #3b82f6;
+  --primary-dark: #001e40;
+  --text: #16213e;
+  --text-light: #ffffff;
+  --bg-main: #f7faff;
+  --card-bg: #ffffff;
+  --danger: #dc3545;
+  --success: #28a745;
+}
+
+body {
+  margin: 0;
+  font-family:
+    Segoe UI,
+    Arial,
+    sans-serif;
+  background: linear-gradient(180deg, #f7faff 0%, #f2f6fb 100%);
+  color: var(--text);
+}
+
+.page-shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--primary-dark);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-light);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+}
+
+.nav-btn {
+  text-decoration: none;
+  color: var(--text-light);
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 999px;
+  transition: background 0.2s ease;
+  background: var(--primary);
+}
+
+.nav-btn:hover {
+  background: var(--text-light);
+  color: var(--text);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 24px auto;
+  padding: 0 20px 32px;
+}
+
+.profile-header {
+  margin-bottom: 24px;
+}
+
+.profile-header h1 {
+  margin: 0 0 8px;
+  font-size: 2.25rem;
+}
+
+.profile-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.1rem;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 992px) {
+  .profile-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.side-column {
+  display: grid;
+  gap: 24px;
+  align-content: start;
+}
+
+.profile-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(20, 33, 61, 0.06);
+  padding: 24px;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.profile-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 35px rgba(20, 33, 61, 0.08);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-card h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  font-size: 1.5rem;
+}
+
+.personal-info-card h2 {
+  margin-bottom: 0;
+}
+
+.info-group {
+  margin-bottom: 16px;
+}
+
+.info-group label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.info-group p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.editable-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.editable-field p,
+.editable-field-bio p {
+  flex-grow: 1;
+  margin: 0;
+  color: var(--text);
+}
+
+.editable-field input {
+  flex-grow: 1;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--text);
+  background: #fbfdff;
+}
+
+.edit-btn,
+.save-btn,
+.btn-primary,
+.btn-danger,
+.btn-secondary,
+.btn-danger-outline {
+  border: 1px solid var(--border);
+  background: #f4f7fb;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.edit-btn:hover {
+  background-color: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent-soft);
+}
+
+.save-btn {
+  background: var(--accent-gradient);
+  color: white;
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.save-btn:hover {
+  background-color: #0759a6;
+  color: white;
+  border-color: #0759a6;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+}
+
+.integration-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.integration-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+.integration-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.integration-details strong {
+  font-weight: 600;
+}
+
+.integration-details span {
+  font-size: 0.9rem;
+}
+
+.status-connected {
+  color: var(--success);
+}
+
+.status-disconnected {
+  color: var(--muted);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  border: none;
+}
+
+.btn-danger:hover {
+  background-color: #b22222;
+}
+
+.btn-danger-outline {
+  background: transparent;
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-danger-outline:hover {
+  background: #f8d7da;
+}
+
+.btn-secondary {
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--accent);
+}
+.btn-secondary.full-width {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: var(--accent-gradient);
+  color: white;
+  border: none;
+}
+
+.hidden {
+  display: none;
+}
+
+.google-calendar-icon {
+  width: 40px;
+  height: 40px;
+  background-image: url("https://ssl.gstatic.com/calendar/images/dynamiclogo_2020q4/calendar_3_2x.png");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.profile-picture-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 24px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid white;
+  box-shadow: 0 4px 15px rgba(20, 33, 61, 0.1);
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 24px;
+  margin-bottom: 20px;
+}
+
+.editable-field-bio {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.editable-field-bio textarea {
+  width: 100%;
+  min-height: 100px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font: inherit;
+  color: var(--text);
+  background: #fbfdff;
+  resize: vertical;
+}
+
+.card-actions-vertical {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

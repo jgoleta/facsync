@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | My Consultations</title>
+    <link rel="stylesheet" href="../../css/student_css/consultationRequests.css">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="../landingPage.html" class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">
+                <a href="#" class="nav-btn">Profile</a>
+                <a href="../loginPage.html" class="nav-btn">Logout</a>
+            </nav>
+        </header>
+
+        <main class="container">
+            <div class="consultation-card">
+                <div class="consultation-header">
+                    <h2>My Consultation Requests</h2>   
+                    <div class="filter-control">
+                        <select id="statusFilter" class="filter-dropdown">
+                            <option value="all">All</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="declined">Declined</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                    <a href="viewSchedule.html" class="btn return-btn">View Schedule</a>
+                </div>
+                <ul class="consultation-request-list">
+                    <li class="request-item" data-status="pending">
+                        <div class="request-info">
+                            <p class="faculty-name">Grace Kim</p>
+                            <p class="request-time">Date: July 10, 2026 at 10:00 AM</p>
+                            <p class="request-message"><strong>Your Message:</strong> "Grade Consultation."</p>
+                        </div>
+                        <div class="request-status">
+                            <span class="status-badge status-pending">pending</span>
+                        </div>
+                    </li>
+                    <li class="request-item" data-status="completed">
+                        <div class="request-info">
+                            <p class="faculty-name">Henry Alvarez</p>
+                            <p class="request-time">Date: July 1, 2026 at 4:00 PM</p>
+                            <p class="request-message"><strong>Your Message:</strong> "Grade Consultation."</p>
+                        </div>
+                        <div class="request-status">
+                            <span class="status-badge status-completed">Completed</span>
+                        </div>
+                    </li>
+                    <li class="request-item" data-status="pending">
+                        <div class="request-info">
+                            <p class="faculty-name">Frank Ortiz</p>
+                            <p class="request-time">Date: July 5, 2026 at 2:00 PM</p>
+                            <p class="request-message"><strong>Your Message:</strong> "I'd like to discuss my project proposal."</p>
+                        </div>
+                        <div class="request-status">
+                            <span class="status-badge status-pending">Pending</span>
+                        </div>
+                    </li>
+                    <li class="request-item" data-status="approved">
+                        <div class="request-info">
+                            <p class="faculty-name">Geralt of Rivia</p>
+                            <p class="request-time">Date: July 5, 2026 at 2:00 PM</p>
+                            <p class="request-message"><strong>Your Message:</strong> "Hi Sir Geralt, I'd like to discuss my project proposal."</p>
+                            <p class="faculty-note"><strong>Faculty Note:</strong> "Approved. Please come to my office."</p>
+                        </div>
+                        <div class="request-status">
+                            <span class="status-badge status-approved">Approved</span>
+                        </div>
+                    </li>
+                    <li class="request-item" data-status="approved">
+                        <div class="request-info">
+                            <p class="faculty-name">Arthur Morgan</p>
+                            <p class="request-time">Date: July 5, 2026 at 2:00 PM</p>
+                            <p class="request-message"><strong>Your Message:</strong> "Hi Sir Morgan, I'd like to discuss my project proposal."</p>
+                            <p class="faculty-note"><strong>Faculty Note:</strong> "Approved. Please come to my office."</p>
+                        </div>
+                        <div class="request-status">
+                            <span class="status-badge status-approved">Approved</span>
+                        </div>
+                    </li>
+                    <li class="request-item" data-status="pending">
+                        <div class="request-info">
+                            <p class="faculty-name">Leon Kennedy</p>
+                            <p class="request-time">Date: July 6, 2026 at 10:00 AM</p>
+                            <p class="request-message"><strong>Your Message:</strong> "Follow-up on our last discussion."</p>
+                        </div>
+                        <div class="request-status">
+                            <span class="status-badge status-pending">Pending</span>
+                        </div>
+                    </li>
+                    <li class="request-item" data-status="declined">
+                        <div class="request-info">
+                            <p class="faculty-name">Joel Miller</p>
+                            <p class="request-time">Date: July 7, 2026 at 3:30 PM</p>
+                             <p class="request-message"><strong>Your Message:</strong> "Can we go over my thesis Chapter 1 draft?"</p>
+                            <p class="faculty-note"><strong>Faculty Note:</strong> "I am not available at this time. Please book another slot."</p>
+                        </div>
+                        <div class="request-status">
+                            <span class="status-badge status-declined">Declined</span>
+                        </div>
+                    </li>
+                     <li class="request-item" data-status="completed">
+                        <div class="request-info">
+                            <p class="faculty-name">Max Payne</p>
+                            <p class="request-time">Date: June 28, 2026 at 11:00 AM</p>
+                            <p class="request-message"><strong>Your Message:</strong> "Quick question about the last lecture."</p>
+                        </div>
+                        <div class="request-status">
+                            <span class="status-badge status-completed">Completed</span>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </main>
+    </div>
+    <script src="../../js/student_js/consultationRequests.js"></script>
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Public Dashboard</title>
+    <link rel="stylesheet" href="../../css/student_css/dashboardStudent.css">
+    <link rel="stylesheet" href="../css/landingPage.css">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="landingPage.html" class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">
+                <a href="landingPage.html" class="nav-btn">Home</a>
+                <a href="loginPage.html" class="nav-btn">Login</a>
+            </nav>
+        </header>
+
+        <main class="container">
+            <header class="toolbar">
+                <h1>Faculty Availability</h1>
+
+                <div class="controls">
+                    <label class="control">
+                        College:
+                        <select id="deptFilter">
+                            <option value="all">All Colleges</option>
+                        </select>
+                    </label>
+
+                    <label class="control toggle">
+                        <input type="checkbox" id="availableToggle" />
+                        Available Now
+                    </label>
+
+                    <label class="control search">
+                        <input id="searchInput" type="search" placeholder="Search faculty by name" />
+                    </label>
+                </div>
+            </header>
+
+            <div id="closureBanner" class="closure-banner hidden"></div>
+
+            <section id="facultyGrid" class="grid" aria-live="polite">
+                <article class="card" data-id="1" data-dept="College of Computer Studies" data-status="available"
+                    data-lastupdated="2026-06-30T09:25:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#e6eefc" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#e6eefc" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">Arthur Morgan</div>
+                        <div class="card-sub">College of Computer Studies</div>
+                        <div class="status-row"><span class="status-badge status-available"></span>
+                            <div class="status-note">In office — drop by</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-30 09:25</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="2" data-dept="College of Business and Accountancy" data-status="busy"
+                    data-lastupdated="2026-06-30T08:50:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#fff0e6" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#fff0e6" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">Leon Kennedy</div>
+                        <div class="card-sub">College of Business and Accountancy</div>
+                        <div class="status-row"><span class="status-badge status-busy"></span>
+                            <div class="status-note">In meeting</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-30 08:50</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="3" data-dept="College of Humanities and Social Sciences"
+                    data-status="on-leave" data-lastupdated="2026-06-29T10:00:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#eef6e9" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#eef6e9" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">Joel Miller</div>
+                        <div class="card-sub">College of Humanities and Social Sciences</div>
+                        <div class="status-row"><span class="status-badge status-on-leave"></span>
+                            <div class="status-note">Out today</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-29 10:00</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="4" data-dept="College of Computer Studies" data-status="available"
+                    data-lastupdated="2026-06-30T09:43:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#e8f0ff" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#e8f0ff" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">Max Payne</div>
+                        <div class="card-sub">College of Computer Studies</div>
+                        <div class="status-row"><span class="status-badge status-available"></span>
+                            <div class="status-note">Available for quick questions</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-30 09:43</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="5" data-dept="College of Nursing" data-status="virtual"
+                    data-lastupdated="2026-06-30T08:15:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#fff4f0" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#fff4f0" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">Geralt of Rivia</div>
+                        <div class="card-sub">College of Nursing</div>
+                        <div class="status-row"><span class="status-badge status-virtual"></span>
+                            <div class="status-note">Virtual consultation available</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-30 08:15</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="6" data-dept="College of Nursing" data-status="available"
+                    data-lastupdated="2026-06-30T09:02:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#eef2ff" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#eef2ff" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title"> Frank Ortiz</div>
+                        <div class="card-sub">College of Nursing</div>
+                        <div class="status-row"><span class="status-badge status-available"></span>
+                            <div class="status-note">Office hours ending soon</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-30 09:02</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="7" data-dept="College of Engineering" data-status="unavailable"
+                    data-lastupdated="2026-06-30T09:10:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#f0f7ff" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#f0f7ff" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">Grace Kim</div>
+                        <div class="card-sub">College of Engineering</div>
+                        <div class="status-row"><span class="status-badge status-unavailable"></span>
+                            <div class="status-note">Emergency</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-30 09:10</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="8" data-dept="College of Humanities and Social Sciences"
+                    data-status="busy" data-lastupdated="2026-06-30T08:05:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#fff7e6" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#fff7e6" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">Henry Alvarez</div>
+                        <div class="card-sub">College of Humanities and Social Sciences</div>
+                        <div class="status-row"><span class="status-badge status-busy"></span>
+                            <div class="status-note">Grading — unavailable</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-30 08:05</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="9" data-dept="College of Humanities and Social Sciences"
+                    data-status="on-leave" data-lastupdated="2026-06-29T14:20:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#f6fff0" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#f6fff0" />
+                        </svg>
+                    </div>
+                    <div class="card-.body">
+                        <div class="card-title">Irene Patel</div>
+                        <div class="card-sub">College of Humanities and Social Sciences</div>
+                        <div class="status-row"><span class="status-badge status-on-leave"></span>
+                            <div class="status-note">On leave</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-29 14:20</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="10" data-dept="College of Education" data-status="available"
+                    data-lastupdated="2026-06-30T09:00:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#f0f3ff" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#f0f3ff" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">Julia Rivers</div>
+                        <div class="card-sub">College of Education</div>
+                        <div class="status-row"><span class="status-badge status-available"></span>
+                            <div class="status-note">Available for studio visits</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-30 09:00</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="11" data-dept="College of Computer Studies" data-status="busy"
+                    data-lastupdated="2026-06-30T09:20:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#eef6ff" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#eef6ff" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">Kevin Zhou</div>
+                        <div class="card-sub">College of Computer Studies</div>
+                        <div class="status-row"><span class="status-badge status-busy"></span>
+                            <div class="status-note">Leading lab session</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-30 09:20</div>
+                    </div>
+                </article>
+
+                <article class="card" data-id="12" data-dept="College of Business and Accountancy"
+                    data-status="available" data-lastupdated="2026-06-30T08:58:00Z">
+                    <div class="card-left">
+                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <circle cx="12" cy="8" r="3.2" fill="#f2fbf8" />
+                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#f2fbf8" />
+                        </svg>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">Laura Chen</div>
+                        <div class="card-sub">College of Business and Accountancy</div>
+                        <div class="status-row"><span class="status-badge status-available"></span>
+                            <div class="status-note">Holding office hours</div>
+                        </div>
+                        <div class="meta">Last updated: 2026-06-30 08:58</div>
+                    </div>
+                </article>
+            </section>
+        </main>
+    </div>
+
+    <script src="../js/student_js/dashboardStudent.js"></script>
+</body>
+
+</html>

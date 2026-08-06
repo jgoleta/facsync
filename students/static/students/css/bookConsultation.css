@@ -1,0 +1,155 @@
+:root {
+  --accent: #0b74de;
+  --accent-soft: #eaf4ff;
+  --text: #14213d;
+  --muted: #5f6b7a;
+  --border: #dfe7f2;
+}
+
+.page-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f7faff 0%, #f2f6fb 100%);
+}
+
+.consultation-shell {
+  max-width: 1100px;
+  margin: 28px auto;
+  padding: 0 20px 32px;
+  display: grid;
+  grid-template-columns: 1.6fr 0.9fr;
+  gap: 20px;
+}
+
+.consultation-card,
+.info-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(20, 33, 61, 0.06);
+}
+
+.consultation-card {
+  padding: 28px;
+}
+
+.info-card {
+  padding: 24px;
+  align-self: start;
+}
+
+.consultation-header h1,
+.info-card h2 {
+  margin: 0 0 8px;
+  color: var(--text);
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.consultation-header p,
+.info-card li {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.consultation-form,
+.confirmation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.form-group select,
+.form-group textarea {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--text);
+  background: #fbfdff;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, var(--accent), #0759a6);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+}
+
+.secondary-link {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.secondary-link:hover {
+  text-decoration: underline;
+}
+
+.confirmation-card {
+  background: var(--accent-soft);
+  border: 1px solid #cfe4ff;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.confirmation-details {
+  display: grid;
+  gap: 8px;
+  color: var(--text);
+}
+
+.hidden {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .consultation-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .consultation-card {
+    padding: 20px;
+  }
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .submit-btn,
+  .secondary-link {
+    text-align: center;
+  }
+}

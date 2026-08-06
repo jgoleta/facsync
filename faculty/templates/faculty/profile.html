@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | My Profile</title>
+    <link rel="stylesheet" href="../../css/faculty_css/profile.css">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="dashboardFaculty.html" class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">
+                <a href="../loginPage.html" class="nav-btn">Logout</a>
+            </nav>
+        </header>
+
+        <main class="container">
+            <div class="profile-header">
+                <h1>My Profile</h1>
+                <p>Manage your personal information and application settings.</p>
+            </div>
+
+            <div class="profile-grid">
+                <!-- Personal Information Card -->
+                <div class="profile-card personal-info-card">
+                    <div class="card-header">
+                        <h2>Personal Information</h2>
+                    </div>
+                    <div class="profile-picture-section">
+                        <img src="https://i.pravatar.cc/150?u=arthurmorgan" alt="Profile Picture" class="profile-avatar">
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-group">
+                            <label>Name</label>
+                            <p>Arthur Morgan</p>
+                        </div>
+                        <div class="info-group">
+                            <label>Email</label>
+                            <p>arthur.morgan@example.com</p>
+                        </div>
+                        <div class="info-group">
+                            <label>Department</label>
+                            <p>College of Computer Studies</p>
+                        </div>
+                        <div class="info-group" id="office-location-group">
+                            <label>Office Location</label>
+                            <div class="editable-field">
+                                <p id="office-location-text">Faculty Room, 5th Floor</p>
+                                <input type="text" id="office-location-input" class="hidden" value="Faculty Room, 5th Floor">
+                                <button id="edit-office-btn" class="edit-btn">Edit</button>
+                                <button id="save-office-btn" class="save-btn hidden">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-group" id="biography-group">
+                        <label>Biography</label>
+                        <div class="editable-field-bio">
+                            <p id="biography-text">A seasoned professor in the College of Computer Studies with a focus on AI and data structures.</p>
+                            <textarea id="biography-input" class="hidden">A seasoned professor in the College of Computer Studies with a focus on AI and data structures.</textarea>
+                            <button id="edit-bio-btn" class="edit-btn">Edit</button>
+                            <button id="save-bio-btn" class="save-btn hidden">Save</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Side Column Cards -->
+                <div class="side-column">
+                    <div class="profile-card">
+                        <h2>Integrations</h2>
+                        <div class="integration-group">
+                            <div class="integration-info">
+                                <span class="integration-icon google-calendar-icon"></span>
+                                <div class="integration-details">
+                                    <strong>Google Calendar</strong>
+                                    <span id="calendar-status" class="status-connected">Connected</span>
+                                </div>
+                            </div>
+                            <button id="calendar-connect-btn" class="btn-secondary hidden">Connect</button>
+                            <button id="calendar-disconnect-btn" class="btn-danger">Disconnect</button>
+                        </div>
+                        <div class="card-actions-vertical">
+                            <a href="dashboardFaculty.html" class="btn-secondary full-width">Dashboard</a>
+                            <a href="scheduleFaculty.html" class="btn-secondary full-width">Schedule</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="../../js/faculty_js/profile.js"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Faculty Monitoring</title>
+    <link rel="stylesheet" href="../../css/depthead_css/admin_main.css">
+    <link rel="stylesheet" href="../../css/depthead_css/admin_monitoring.css">
+</head>
+
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="adminDashboard.html" class="brand">
+                    <span class="brand-mark">F</span>
+                    <span>FacSync</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="adminDashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span>Overview</span>
+                </a>
+                <a href="peakAnalytics.html" class="nav-item">
+                    <span class="nav-icon">📈</span>
+                    <span>Peak Analytics</span>
+                </a>
+                <a href="facultyTrends.html" class="nav-item">
+                    <span class="nav-icon">📉</span>
+                    <span>Faculty Trends</span>
+                </a>
+                <a href="studentBehavior.html" class="nav-item">
+                    <span class="nav-icon">🧑‍🎓</span>
+                    <span>Student Behavior</span>
+                </a>
+            </nav>
+            <div class="sidebar-divider"></div>
+            <nav class="sidebar-nav">
+                 <a href="facultyMonitoring.html" class="nav-item active">
+                    <span class="nav-icon">👀</span>
+                    <span>Faculty Monitoring</span>
+                </a>
+                <a href="adminFaculty.html" class="nav-item">
+                    <span class="nav-icon">👨‍🏫</span>
+                    <span>Manage Faculty</span>
+                </a>
+                 <a href="departmentSettings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="../loginPage.html" class="nav-item">
+                    <span class="nav-icon">↩️</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Faculty Monitoring</h1>
+                <p>Real-time status of all faculty in your department.</p>
+            </header>
+
+            <div class="monitoring-grid">
+                <div class="faculty-card status-available">
+                    <div class="card-header">
+                        <h4>Dr. Arthur Morgan</h4>
+                        <span class="status-badge">Available</span>
+                    </div>
+                    <p>Last updated: 5 minutes ago</p>
+                </div>
+                <div class="faculty-card status-busy">
+                    <div class="card-header">
+                        <h4>Dr. Sarah Johnson</h4>
+                        <span class="status-badge">Busy</span>
+                    </div>
+                    <p>Last updated: 1 hour ago</p>
+                </div>
+                <div class="faculty-card status-unavailable">
+                    <div class="card-header">
+                        <h4>Prof. Leon Kennedy</h4>
+                        <span class="status-badge">Unavailable</span>
+                    </div>
+                    <p>Last updated: 3 days ago</p>
+                </div>
+                 <div class="faculty-card status-available">
+                    <div class="card-header">
+                        <h4>Prof. Ada Wong</h4>
+                        <span class="status-badge">Available</span>
+                    </div>
+                    <p>Last updated: 15 minutes ago</p>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

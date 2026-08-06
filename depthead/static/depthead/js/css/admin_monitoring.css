@@ -1,0 +1,62 @@
+.monitoring-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.faculty-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 5px solid; /* Status color will be applied here */
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.faculty-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.faculty-card h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.faculty-card p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Status Colors */
+.faculty-card.status-available {
+  border-left-color: #22c55e;
+}
+.status-available .status-badge {
+  background-color: #22c55e;
+}
+
+.faculty-card.status-busy {
+  border-left-color: #f97316;
+}
+.status-busy .status-badge {
+  background-color: #f97316;
+}
+
+.faculty-card.status-unavailable {
+  border-left-color: #ef4444;
+}
+.status-unavailable .status-badge {
+  background-color: #ef4444;
+}

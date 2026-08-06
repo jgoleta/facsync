@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Peak Analytics</title>
+    <link rel="stylesheet" href="../../css/depthead_css/admin_main.css">
+    <link rel="stylesheet" href="../../css/depthead_css/admin_analytics.css">
+</head>
+
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="adminDashboard.html" class="brand">
+                    <span class="brand-mark">F</span>
+                    <span>FacSync</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="adminDashboard.html" class="nav-item">
+                    <span class="nav-icon">📊</span>
+                    <span>Overview</span>
+                </a>
+                <a href="peakAnalytics.html" class="nav-item active">
+                    <span class="nav-icon">📈</span>
+                    <span>Peak Analytics</span>
+                </a>
+                <a href="facultyTrends.html" class="nav-item">
+                    <span class="nav-icon">📉</span>
+                    <span>Faculty Trends</span>
+                </a>
+                <a href="studentBehavior.html" class="nav-item">
+                    <span class="nav-icon">🧑‍🎓</span>
+                    <span>Student Behavior</span>
+                </a>
+            </nav>
+            <div class="sidebar-divider"></div>
+            <nav class="sidebar-nav">
+                 <a href="facultyMonitoring.html" class="nav-item">
+                    <span class="nav-icon">👀</span>
+                    <span>Faculty Monitoring</span>
+                </a>
+                <a href="adminFaculty.html" class="nav-item">
+                    <span class="nav-icon">👨‍🏫</span>
+                    <span>Manage Faculty</span>
+                </a>
+                 <a href="departmentSettings.html" class="nav-item">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="../loginPage.html" class="nav-item">
+                    <span class="nav-icon">↩️</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Peak Consultation Analytics</h1>
+                <p>Analyze consultation volume and demand.</p>
+            </header>
+
+            <div class="analytics-grid">
+                <div class="chart-card">
+                    <h3>Consultation Volume by Hour</h3>
+                    <div class="chart-graphic" role="img" aria-label="Consultation volume by hour chart">
+                        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="40" y="30" width="520" height="240" rx="16" fill="#ffffff" />
+                            <g stroke="#cbd5e1" stroke-width="1">
+                                <line x1="80" y1="250" x2="500" y2="250" />
+                                <line x1="80" y1="210" x2="500" y2="210" />
+                                <line x1="80" y1="170" x2="500" y2="170" />
+                                <line x1="80" y1="130" x2="500" y2="130" />
+                            </g>
+                            <rect x="95" y="180" width="32" height="70" rx="6" fill="#2563eb" />
+                            <rect x="165" y="150" width="32" height="100" rx="6" fill="#3b82f6" />
+                            <rect x="235" y="120" width="32" height="130" rx="6" fill="#60a5fa" />
+                            <rect x="305" y="90" width="32" height="160" rx="6" fill="#93c5fd" />
+                            <rect x="375" y="140" width="32" height="110" rx="6" fill="#2563eb" />
+                            <rect x="445" y="165" width="32" height="85" rx="6" fill="#3b82f6" />
+                            <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
+                                <text x="95" y="270">8AM</text>
+                                <text x="165" y="270">10AM</text>
+                                <text x="235" y="270">12PM</text>
+                                <text x="305" y="270">2PM</text>
+                                <text x="375" y="270">4PM</text>
+                                <text x="445" y="270">6PM</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <h3>Supply-Demand Gap</h3>
+                    <div class="chart-graphic" role="img" aria-label="Supply demand gap chart">
+                        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="40" y="30" width="520" height="240" rx="16" fill="#ffffff" />
+                            <line x1="80" y1="250" x2="500" y2="250" stroke="#cbd5e1" />
+                            <path d="M80 220 C140 205, 170 175, 220 165 S330 145, 380 130 S470 110, 500 90" stroke="#ef4444" stroke-width="4" fill="none" stroke-linecap="round" />
+                            <path d="M80 200 C140 190, 170 170, 220 160 S330 140, 380 120 S470 95, 500 70" stroke="#2563eb" stroke-width="4" fill="none" stroke-linecap="round" />
+                            <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
+                                <text x="80" y="270">Mon</text>
+                                <text x="200" y="270">Wed</text>
+                                <text x="320" y="270">Fri</text>
+                                <text x="440" y="270">Sun</text>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <h3>Most Requested Faculty</h3>
+                    <table>
+                        <thead><tr><th>Rank</th><th>Faculty Name</th><th>Requests</th></tr></thead>
+                        <tbody>
+                            <tr><td>1</td><td>Dr. Arthur Morgan</td><td>152</td></tr>
+                            <tr><td>2</td><td>Dr. Sarah Johnson</td><td>141</td></tr>
+                            <tr><td>3</td><td>Prof. Leon Kennedy</td><td>110</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

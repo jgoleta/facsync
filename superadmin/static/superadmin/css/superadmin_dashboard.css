@@ -1,0 +1,124 @@
+.content-grid {
+    display: grid;
+    gap: 24px;
+}
+
+.summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 25px rgba(20, 33, 61, 0.05);
+}
+
+.card h3 {
+    margin: 0 0 8px;
+    font-size: 1.1rem;
+    color: var(--muted);
+}
+
+.card .stat {
+    margin: 0 0 12px;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.card .trend {
+    font-weight: 600;
+    color: #28a745;
+}
+
+.action-panel, .drill-down-panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 25px rgba(20, 33, 61, 0.05);
+}
+
+.action-panel h2, .drill-down-panel h2 {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+.action-links {
+    display: flex;
+    gap: 16px;
+}
+
+.action-link {
+    display: block;
+    padding: 12px 20px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 600;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.2s ease;
+}
+
+.action-link:hover {
+    background: var(--accent);
+    color: #fff;
+}
+
+.drill-down-panel p {
+    margin-top: 0;
+    margin-bottom: 16px;
+    color: var(--muted);
+}
+
+.drill-down-panel .form-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.drill-down-panel label {
+    font-weight: 600;
+}
+
+.drill-down-panel select {
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-size: 1rem;
+    flex-grow: 1;
+    max-width: 400px;
+}
+
+.ai-insights-panel {
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 8px 25px rgba(20, 33, 61, 0.05);
+    margin-top: 24px;
+}
+
+.ai-insights-panel h2 {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+.ai-insights-panel p {
+    margin-top: 0;
+    margin-bottom: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.ai-insights-panel p strong {
+    color: var(--text);
+}
+
+.card .trend-bad {
+    color: var(--danger);
+}

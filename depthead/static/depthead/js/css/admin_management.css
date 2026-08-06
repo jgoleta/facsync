@@ -1,0 +1,233 @@
+.main-header.with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+}
+
+.btn-secondary {
+  background-color: #f8fafc;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background-color: var(--bg-main);
+  border-color: #d1d5db;
+}
+
+.management-table-wrapper {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+table thead {
+  text-align: left;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+table th,
+table td {
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.status-tag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.status-tag.active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions button {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  background-color: #f8f9fa;
+  transition: background-color 0.2s ease;
+}
+
+.actions button:hover {
+  background-color: #e9ecef;
+}
+
+.actions button.danger {
+  background-color: #f8d7da;
+  color: #721c24;
+  border-color: #f5c6cb;
+}
+
+.actions button.danger:hover {
+  background-color: #f1b0b7;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 50;
+  padding: 24px;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 0.2s ease,
+    visibility 0.2s ease;
+}
+
+.modal-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.modal {
+  background: #fff;
+  padding: 30px;
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(20, 33, 61, 0.1);
+  position: relative;
+  width: min(90vw, 500px);
+  max-width: 500px;
+  max-height: calc(100vh - 32px);
+}
+
+.modal-overlay.hidden .modal {
+  transform: scale(0.95);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+}
+
+.modal-header p {
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.modal-close {
+  border: none;
+  background: transparent;
+  font-size: 1.75rem;
+  line-height: 1;
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+
+.modal-form {
+  display: grid;
+  gap: 18px;
+}
+
+.modal-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-form-group label {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.modal-form-group input,
+.modal-form-group select {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--text);
+  background: #fbfdff;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+@media (max-width: 520px) {
+  .modal {
+    padding: 20px;
+  }
+
+  .modal-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-actions {
+    justify-content: stretch;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+}

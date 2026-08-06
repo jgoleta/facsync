@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Manage Admins</title>
+    <link rel="stylesheet" href="../../css/superadmin_css/superadmin_main.css">
+    <link rel="stylesheet" href="../../css/superadmin_css/superadmin_management.css">
+</head>
+
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="superadminDashboard.html" class="brand">
+                    <span class="brand-mark">S</span>
+                    <span>FacSync Super Admin</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="superadminDashboard.html" class="nav-item">
+                    <span class="nav-icon">👑</span>
+                    <span>System Overview</span>
+                </a>
+                <a href="manageDepartments.html" class="nav-item">
+                    <span class="nav-icon">🏢</span>
+                    <span>Manage Departments</span>
+                </a>
+                <a href="manageAdmins.html" class="nav-item active">
+                    <span class="nav-icon">👤</span>
+                    <span>Manage Admins</span>
+                </a>
+                <a href="manageFaculty.html" class="nav-item">
+                    <span class="nav-icon">👩‍🏫</span>
+                    <span>Manage Faculty</span>
+                </a>
+                <a href="manageStudents.html" class="nav-item">
+                    <span class="nav-icon">🎓</span>
+                    <span>Manage Students</span>
+                </a>
+            </nav>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-footer">
+                <a href="../loginPage.html" class="nav-item">
+                    <span class="nav-icon">↩️</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header with-action">
+                <div>
+                    <h1>Manage Admin Accounts</h1>
+                    <p>Manage accounts for Department Heads and Support Office staff.</p>
+                </div>
+                <button class="btn-primary">Add New Admin</button>
+            </header>
+
+            <div class="management-table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Department</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Dr. John Doe</td>
+                            <td>john.doe@university.edu</td>
+                            <td>Dept. Head</td>
+                            <td>College of Computer Studies</td>
+                            <td class="actions"><button>Edit</button><button class="danger">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td>Dr. Jane Smith</td>
+                            <td>jane.smith@university.edu</td>
+                            <td>Dept. Head</td>
+                            <td>College of Engineering</td>
+                            <td class="actions"><button>Edit</button><button class="danger">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td>Ada Wong</td>
+                            <td>ada.wong@university.edu</td>
+                            <td>Dept. Head</td>
+                            <td>College of Nursing</td>
+                            <td class="actions"><button>Edit</button><button class="danger">Remove</button></td>
+                        </tr>
+                        <tr>
+                            <td>Emily White</td>
+                            <td>emily.white@university.edu</td>
+                            <td>Dept. Head</td>
+                            <td>College of Education</td>
+                            <td class="actions"><button>Edit</button><button class="danger">Remove</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
