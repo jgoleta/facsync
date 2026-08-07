@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 
@@ -5,20 +6,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Student Dashboard - Faculty</title>
-    <link rel="stylesheet" href="../../css/student_css/dashboardStudent.css">
-    <link rel="stylesheet" href="../../css/landingPage.css">
+    <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/landingPage.css' %}">
 </head>
 
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="../landingPage.html" class="brand">
+            <a href="{% url 'core:landing' %}" class="brand">
                 <span class="brand-mark">F</span>
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
                 <a href="#" class="nav-btn">Profile</a>
-                <a href="../loginPage.html" class="nav-btn">Logout</a>
+                <a href="{% url 'core:login' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
 
@@ -304,7 +305,7 @@
         </main>
     </div>
 
-    <script src="../../js/student_js/dashboardStudent.js"></script>
+    <script src="{% static 'students/js/dashboardStudent.js' %}"></script>
 </body>
 
 </html>

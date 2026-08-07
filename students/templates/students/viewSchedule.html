@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 
@@ -5,19 +6,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | View Faculty Schedule</title>
-    <link rel="stylesheet" href="../../css/shared_schedule.css">
+    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}">
 </head>
 
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="../landingPage.html" class="brand">
+            <a href="{% url 'core:landing' %}" class="brand">
                 <span class="brand-mark">F</span>
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
                 <a href="#" class="nav-btn">Profile</a>
-                <a href="../loginPage.html" class="nav-btn">Logout</a>
+                <a href="{% url 'core:login' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
 
@@ -74,7 +75,7 @@
                 <div class="actions">
                     <button id="my-consultations-btn" class="secondary-button">My Consultations</button>
                     <button id="book-consultation-btn" class="secondary-button">Book Consultation</button>
-                    <a href="dashboardStudent.html" class="secondary-link">Back to dashboard</a>
+                    <a href="{% url 'students:dashboard' %}" class="secondary-link">Back to dashboard</a>
                 </div>
             </aside>
         </main>
@@ -151,7 +152,7 @@
         </div>
     </div>
 
-    <script src="../../js/student_js/viewSchedule.js"></script>
+    <script src="{% static 'students/js/viewSchedule.js' %}"></script>
 </body>
 
 </html>
