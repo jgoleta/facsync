@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 
@@ -5,19 +6,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Consultations</title>
-    <link rel="stylesheet" href="../../css/student_css/consultationRequests.css">
+    <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}">
 </head>
 
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="../landingPage.html" class="brand">
+            <a href="{% url 'core:landing' %}" class="brand">
                 <span class="brand-mark">F</span>
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
                 <a href="#" class="nav-btn">Profile</a>
-                <a href="../loginPage.html" class="nav-btn">Logout</a>
+                <a href="{% url 'core:login' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
 
@@ -34,7 +35,7 @@
                             <option value="completed">Completed</option>
                         </select>
                     </div>
-                    <a href="viewSchedule.html" class="btn return-btn">View Schedule</a>
+                    <a href="{% url 'students:view_schedule' %}" class="btn return-btn">View Schedule</a>
                 </div>
                 <ul class="consultation-request-list">
                     <li class="request-item" data-status="pending">
@@ -124,6 +125,6 @@
             </div>
         </main>
     </div>
-    <script src="../../js/student_js/consultationRequests.js"></script>
+    <script src="{% static 'students/js/consultationRequests.js' %}"></script>
 </body>
 </html>
