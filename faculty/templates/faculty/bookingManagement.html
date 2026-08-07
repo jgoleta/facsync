@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 
@@ -5,18 +6,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Booking Management</title>
-    <link rel="stylesheet" href="../../css/faculty_css/bookingManagement.css">
+    <link rel="stylesheet" href="{% static 'faculty/css/bookingManagement.css' %}">
 </head>
 
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="../landingPage.html" class="brand">
+            <a class="brand">
                 <span class="brand-mark">F</span>
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">  
-                <a href="../loginPage.html" class="nav-btn">Logout</a>
+                <a href="{% url 'core:landing' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
 
@@ -30,7 +31,7 @@
                     </div>
                     <div>
                         <button id="refreshQueueBtn" class="btn-secondary">Refresh</button>
-                        <a href="scheduleFaculty.html" class="btn-secondary">View Schedule</a>
+                        <a href="{% url 'faculty:schedule' %}" class="btn-secondary">View Schedule</a>
                     </div>
                 </div>
                 <div class="filter-row">
@@ -41,7 +42,7 @@
         </main>
     </div>
 
-    <script src="../../js/faculty_js/bookingManagement.js"></script>
+    <script src="{% static 'faculty/js/bookingManagement.js' %}"></script>
 </body>
 
 </html>

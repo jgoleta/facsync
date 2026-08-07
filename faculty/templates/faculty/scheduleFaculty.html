@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 
@@ -5,19 +6,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Schedule</title>
-    <link rel="stylesheet" href="../../css/shared_schedule.css">
+    <link rel="stylesheet" href="{% static 'faculty/css/scheduleFaculty.css' %}">
 </head>
 
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="dashboardFaculty.html" class="brand">
+            <a href="{% url 'faculty:dashboard' %}" class="brand">
                 <span class="brand-mark">F</span>
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
-                <a href="profile.html" class="nav-btn">Profile</a>
-                <a href="../loginPage.html" class="nav-btn">Logout</a>
+                <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
+                <a href="{% url 'core:login' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
 
@@ -62,10 +63,10 @@
                     
                 </div>
                 <div class="actions">
-                    <button id="view-walkins-btn" class="primary-button">View Walk-ins</button>
+                    <a id="view-walkins-btn" class="primary-button" href="{% url 'faculty:booking_management' %}">View Walk-ins</a>
                     <button id="add-event-btn" class="secondary-button">Add Event</button>
                     <button id="upload-schedule-btn" class="secondary-button">Upload Schedule</button>
-                    <a href="dashboardFaculty.html" class="secondary-link">Back to dashboard</a>
+                    <a href="{% url 'faculty:dashboard' %}" class="secondary-link">Back to dashboard</a>
                 </div>
             </aside>
         </main>
@@ -157,7 +158,7 @@
         </div>
     </div>
 
-    <script src="../../js/faculty_js/scheduleFaculty.js"></script>
+    <script src="{% static 'faculty/js/scheduleFaculty.js' %}"></script>
 </body>
 
 </html>

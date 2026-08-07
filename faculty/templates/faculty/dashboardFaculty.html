@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 
@@ -5,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
-    <link rel="stylesheet" href="../../css/faculty_css/dashboardFaculty.css">
+    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}">
     <style>
         .status-update-action {
             margin-top: 12px;
@@ -27,13 +28,13 @@
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="../landingPage.html" class="brand">
+            <a class="brand">
                 <span class="brand-mark">F</span>
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
-                <a href="../faculty/profile.html" class="nav-btn">Profile</a>
-                <a href="../loginPage.html" class="nav-btn">Logout</a>
+                <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
+                <a href="{% url 'core:landing' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
 
@@ -136,13 +137,13 @@
                 </div>
                 <div class="card-section">
                     <div class="card-header">
-                        <a href="scheduleFaculty.html" class="primary-button">View Schedule</a>
+                        <a href="{% url 'faculty:schedule' %}" class="primary-button">View Schedule</a>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-    <script src="../../js/faculty_js/dashboardFaculty.js"></script>
+    <script src="{% static 'faculty/js/dashboardFaculty.js' %}"></script>
 </body>
 
 </html>

@@ -1,41 +1,42 @@
 <!doctype html>
+{% load static %}
 <html lang="en">
 
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Manage Students</title>
-    <link rel="stylesheet" href="../../css/superadmin_css/superadmin_main.css">
-    <link rel="stylesheet" href="../../css/superadmin_css/superadmin_management.css">
+    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}" />
+    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_management.css' %}" />
 </head>
 
 <body>
     <div class="admin-shell">
         <aside class="sidebar">
             <div class="sidebar-header">
-                <a href="superadminDashboard.html" class="brand">
+                <a href="{% url 'superadmin:superadmin_dashboard' %}" class="brand">
                     <span class="brand-mark">S</span>
                     <span>FacSync Super Admin</span>
                 </a>
             </div>
             <nav class="sidebar-nav">
-                <a href="superadminDashboard.html" class="nav-item">
+                <a href="{% url 'superadmin:superadmin_dashboard' %}" class="nav-item">
                     <span class="nav-icon">👑</span>
                     <span>System Overview</span>
                 </a>
-                <a href="manageDepartments.html" class="nav-item">
+                <a href="{% url 'superadmin:manage_departments' %}" class="nav-item">
                     <span class="nav-icon">🏢</span>
                     <span>Manage Departments</span>
                 </a>
-                <a href="manageAdmins.html" class="nav-item">
+                <a href="{% url 'superadmin:manage_admins' %}" class="nav-item">
                     <span class="nav-icon">👤</span>
                     <span>Manage Admins</span>
                 </a>
-                <a href="manageFaculty.html" class="nav-item">
+                <a href="{% url 'superadmin:manage_faculty' %}" class="nav-item">
                     <span class="nav-icon">👩‍🏫</span>
                     <span>Manage Faculty</span>
                 </a>
-                <a href="manageStudents.html" class="nav-item active">
+                <a href="{% url 'superadmin:manage_students' %}" class="nav-item active">
                     <span class="nav-icon">🎓</span>
                     <span>Manage Students</span>
                 </a>
