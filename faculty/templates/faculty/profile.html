@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 
@@ -5,18 +6,18 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Profile</title>
-    <link rel="stylesheet" href="../../css/faculty_css/profile.css">
+    <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}">
 </head>
 
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="dashboardFaculty.html" class="brand">
+            <a href="{% url 'faculty:dashboard' %}" class="brand">
                 <span class="brand-mark">F</span>
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
-                <a href="../loginPage.html" class="nav-btn">Logout</a>
+                <a href="{% url 'core:login' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
 
@@ -85,14 +86,14 @@
                             <button id="calendar-disconnect-btn" class="btn-danger">Disconnect</button>
                         </div>
                         <div class="card-actions-vertical">
-                            <a href="dashboardFaculty.html" class="btn-secondary full-width">Dashboard</a>
-                            <a href="scheduleFaculty.html" class="btn-secondary full-width">Schedule</a>
+                            <a href="{% url 'faculty:dashboard' %}" class="btn-secondary full-width">Dashboard</a>
+                            <a href="{% url 'faculty:schedule' %}" class="btn-secondary full-width">Schedule</a>
                         </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
-    <script src="../../js/faculty_js/profile.js"></script>
+    <script src="{% static 'faculty/js/profile.js' %}"></script>
 </body>
 </html>

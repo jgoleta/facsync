@@ -21,4 +21,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),   #landing page is deafault "/"
     path('student/', include('students.urls')),
+    path('faculty/', include('faculty.urls')),
+    path('depthead/', include('depthead.urls')),
+    path('superadmin/', include('superadmin.urls')),
 ]

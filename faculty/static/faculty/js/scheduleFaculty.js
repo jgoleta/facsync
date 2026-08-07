@@ -511,9 +511,13 @@ dayScheduleCloseBtns.forEach((btn) => {
 
   const viewWalkinsBtn = document.getElementById('view-walkins-btn');
   if (viewWalkinsBtn) {
-      viewWalkinsBtn.addEventListener('click', () => {
-          window.location.href = 'bookingManagement.html';
-      });
+      const bookingUrl = viewWalkinsBtn.dataset.url || viewWalkinsBtn.getAttribute('href');
+      if (bookingUrl) {
+          viewWalkinsBtn.addEventListener('click', (event) => {
+              event.preventDefault();
+              window.location.href = bookingUrl;
+          });
+      }
   }
 
   function openAddEventModalForEdit() {
