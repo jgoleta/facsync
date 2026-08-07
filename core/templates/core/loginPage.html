@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FacSync | Login</title>
-    <link rel="stylesheet" href="../css/loginPage.css" />
+    <link rel="stylesheet" href="{% static 'core/css/loginPage.css' %}" />
 </head>
 
 <body>
@@ -48,7 +49,7 @@
             </button>
 
             <div class="login-footer">
-                <p>Don't have an account? <a href="registerPage.html">Register</a></p>
+                <p>Don't have an account? <a href="{% url 'core:register' %}">Register</a></p>
             </div>
         </div>
     </div>

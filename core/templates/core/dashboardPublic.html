@@ -1,3 +1,4 @@
+{% load static %}
 <!doctype html>
 <html lang="en">
 
@@ -5,14 +6,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Public Dashboard</title>
-    <link rel="stylesheet" href="../../css/student_css/dashboardStudent.css">
-    <link rel="stylesheet" href="../css/landingPage.css">
+    <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/landingPage.css' %}">
 </head>
 
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="landingPage.html" class="brand">
+            <a href="{% url 'core:landing' %}" class="brand">
                 <span class="brand-mark">F</span>
                 <span>FacSync</span>
             </a>

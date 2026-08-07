@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,7 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FacSync | Landing Page</title>
-    <link rel="stylesheet" href="../css/landingPage.css">
+    <link rel="stylesheet" href="{% static 'core/css/landingPage.css' %}">
 </head>
 
 <body>
@@ -16,7 +17,7 @@
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
-                <a href="loginPage.html" class="nav-btn">Get Started</a>
+                <a href="{% url 'core:login' %}" class="nav-btn">Get Started</a>
             </nav>
         </header>
 
@@ -27,7 +28,7 @@
                     <p>FacSync brings your department into one polished workspace with clear schedules, shared
                         communication, and quick access to insights.</p>
                     <div class="hero-actions">
-                        <a href="dashboardPublic.html" class="btn btn-primary">View Dashboard</a>
+                        <a href="{% url 'core:dashboard_public' %}" class="btn btn-primary">View Dashboard</a>
                         <a href="#features" class="btn btn-secondary">Explore Features</a>
                     </div>
                 </div>
@@ -129,7 +130,7 @@
             <section class="cta">
                 <h2>Ready to simplify your faculty management?</h2>
                 <p>Launch your workspace in minutes and keep your team aligned.</p>
-                <a href="loginPage.html" class="btn btn-primary btn-large">Sign Up Now</a>
+                <a href="{% url 'core:register' %}" class="btn btn-primary btn-large">Sign Up Now</a>
             </section>
         </main>
 
