@@ -55,17 +55,18 @@ body {
 
 .brand-mark {
   display: grid;
-    place-items: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-    color: white;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
 }
 
 .nav-links {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .nav-btn {
@@ -75,6 +76,9 @@ body {
   padding: 10px 16px;
   border-radius: 999px;
   transition: background 0.2s ease;
+}
+
+.nav-btn:hover {
   background: var(--primary);
 }
 
