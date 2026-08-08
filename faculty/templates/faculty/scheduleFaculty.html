@@ -129,7 +129,8 @@
                         <label for="eventDescription">Short Description</label>
                         <textarea id="eventDescription" rows="3" placeholder="e.g. Team sync"></textarea>
                     </div>
-                    <div class="form-group">
+                    <div id="time-inputs-wrapper">
+                        <div class="form-group">
                             <label for="eventStartTime">Start</label>
                             <input type="datetime-local" id="eventStartTime" required>
                         </div>
@@ -137,6 +138,8 @@
                             <label for="eventEndTime">End</label>
                             <input type="datetime-local" id="eventEndTime" required>
                         </div>
+                    </div>
+                    <!-- dates removed: using datetime-local inputs only -->
                     <div class="form-actions">
                         <button type="submit" class="primary-button">Add Event</button>
                     </div>

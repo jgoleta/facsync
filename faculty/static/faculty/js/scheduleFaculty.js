@@ -7,104 +7,65 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentView = "monthly"; // Default view
   let isEditing = false; // To track if the modal is for editing
 
-  // Dummy data for the faculty's schedule
   let activeEventContext = null;
 
-  const facultySchedule = {
-    name: "Dr. Morgan",
-    schedule: [
-      {
-        date: "2026-06-02",
-        events: [
-          {
-            title: "Class",
-            startTime: "09:00",
-            endTime: "10:30",
-            type: "busy",
-          },
-        ],
-      },
-      {
-        date: "2026-06-05",
-        events: [
-          {
-            title: "Meeting",
-            startTime: "08:30",
-            endTime: "11:00",
-            type: "busy",
-          },
-        ],
-      },
-      {
-        date: "2026-06-09",
-        events: [
-          {
-            title: "Class",
-            startTime: "09:30",
-            endTime: "12:30",
-            type: "busy",
-          },
-        ],
-      },
-      {
-        date: "2026-06-12",
-        events: [
-          {
-            title: "Meeting",
-            startTime: "10:00",
-            endTime: "11:00",
-            type: "busy",
-          },
-          {
-            title: "Class",
-            startTime: "13:00",
-            endTime: "14:30",
-            type: "busy",
-          },
-          {
-            title: "Office Hours",
-            startTime: "15:00",
-            endTime: "16:00",
-            type: "busy",
-          },
-        ],
-      },
-    ],
-  };
+  // Schedule object will be populated from the server API
+  const facultySchedule = { name: null, schedule: [] };
 
-  function addEvent(eventData) {
-    const { title, type, startDate, endDate, startTime, endTime, description } = eventData;
+  async function fetchEventsFromApi() {
+    try {
+      const res = await fetch('/faculty/api/events/');
+      if (!res.ok) return;
+      const data = await res.json();
+      const events = data.events || [];
 
-    const loopDate = new Date(startDate);
-    loopDate.setMinutes(loopDate.getMinutes() + loopDate.getTimezoneOffset());
-    const lastDate = new Date(endDate || startDate);
-    lastDate.setMinutes(lastDate.getMinutes() + lastDate.getTimezoneOffset());
+      // Group events by date into facultySchedule.schedule
+      const map = {};
+      events.forEach((ev) => {
+        const dateKey = ev.date.split('T')[0];
+        if (!map[dateKey]) map[dateKey] = { date: dateKey, events: [] };
+        map[dateKey].events.push({
+          id: ev.id,
+          title: ev.title,
+          description: ev.description,
+          type: ev.event_type,
+          startTime: ev.start_time ? ev.start_time.split('T').pop().slice(0,5) : ev.start_time,
+          endTime: ev.end_time ? ev.end_time.split('T').pop().slice(0,5) : ev.end_time,
+        });
+      });
 
-    while (loopDate <= lastDate) {
-      const dateKey = loopDate.toISOString().split("T")[0];
-
-      let dayEntry = facultySchedule.schedule.find(
-        (entry) => entry.date === dateKey,
-      );
-      if (!dayEntry) {
-        dayEntry = { date: dateKey, events: [] };
-        facultySchedule.schedule.push(dayEntry);
-      }
-
-      const newEvent = {
-        title,
-        type,
-        description,
-        startTime: type === "on-leave" ? "All Day" : startTime,
-        endTime: type === "on-leave" ? "" : endTime,
-      };
-
-      dayEntry.events.push(newEvent);
-
-      loopDate.setDate(loopDate.getDate() + 1);
+      facultySchedule.schedule = Object.values(map).sort((a,b) => new Date(a.date) - new Date(b.date));
+      renderCalendar();
+    } catch (err) {
+      console.error('Failed to fetch events', err);
     }
+  }
 
-    facultySchedule.schedule.sort((a, b) => new Date(a.date) - new Date(b.date));
+  async function addEvent(eventData) {
+    // Send create request to API
+    try {
+      const payload = {
+        title: eventData.title,
+        description: eventData.description,
+        event_type: eventData.type,
+        date: eventData.startTime ? eventData.startTime.split('T')[0] : null,
+        start_time: eventData.startTime ? eventData.startTime.split('T')[1] : null,
+        end_time: eventData.endTime ? eventData.endTime.split('T')[1] : null,
+      };
+      const res = await fetch('/faculty/api/events/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        console.error('Failed to create event');
+        return;
+      }
+      // Refresh events from server
+      await fetchEventsFromApi();
+    } catch (err) {
+      console.error('Error creating event', err);
+    }
   }
 
   function formatEventTime(eventData) {
@@ -175,26 +136,32 @@ document.addEventListener("DOMContentLoaded", () => {
     };
   }
 
-  function deleteEvent(dateKey, eventToDelete) {
-    const dayEntry = facultySchedule.schedule.find(
-      (entry) => entry.date === dateKey,
-    );
-    if (dayEntry) {
-      dayEntry.events = dayEntry.events.filter(
-        (event) =>
-          !(
-            event.title === eventToDelete.title &&
-            event.startTime === eventToDelete.startTime &&
-            event.endTime === eventToDelete.endTime
-          ),
-      );
-      // If no events left for that day, remove the day entry
-      if (dayEntry.events.length === 0) {
-        facultySchedule.schedule = facultySchedule.schedule.filter(
-          (entry) => entry.date !== dateKey,
-        );
+  async function deleteEvent(dateKey, eventToDelete) {
+    // If event has an id, call DELETE on API
+    if (eventToDelete.id) {
+      try {
+        const res = await fetch(`/faculty/api/events/${eventToDelete.id}/`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) {
+          console.error('Failed to delete event');
+          return;
+        }
+        await fetchEventsFromApi();
+        return;
+      } catch (err) {
+        console.error('Error deleting event', err);
       }
-      renderCalendar(); // Re-render to show the change
+    }
+
+    // Fallback to client-side removal for events without id
+    const dayEntry = facultySchedule.schedule.find((entry) => entry.date === dateKey);
+    if (dayEntry) {
+      dayEntry.events = dayEntry.events.filter((event) => event !== eventToDelete);
+      if (dayEntry.events.length === 0) {
+        facultySchedule.schedule = facultySchedule.schedule.filter((entry) => entry.date !== dateKey);
+      }
+      renderCalendar();
     }
   }
 
@@ -476,25 +443,40 @@ dayScheduleCloseBtns.forEach((btn) => {
   });
 });
   if (addEventForm) {
-    addEventForm.addEventListener("submit", (e) => {
+    addEventForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const eventDetails = {
         title: document.getElementById("eventTitle").value,
         type: document.getElementById("eventType").value,
         description: document.getElementById("eventDescription").value,
-        startDate: document.getElementById("eventStartDate").value,
-        endDate: document.getElementById("eventEndDate").value,
         startTime: document.getElementById("eventStartTime").value,
         endTime: document.getElementById("eventEndTime").value,
       };
 
-      eventDetails.endDate = eventDetails.endDate || eventDetails.startDate;
-
-      if (isEditing && activeEventContext) {
-        deleteEvent(activeEventContext.dateKey, activeEventContext.eventData);
+      if (isEditing && activeEventContext && activeEventContext.eventData && activeEventContext.eventData.id) {
+        // update via API
+        try {
+          const payload = {
+            title: eventDetails.title,
+            description: eventDetails.description,
+            event_type: eventDetails.type,
+            date: eventDetails.startTime ? eventDetails.startTime.split('T')[0] : null,
+            start_time: eventDetails.startTime ? eventDetails.startTime.split('T')[1] : null,
+            end_time: eventDetails.endTime ? eventDetails.endTime.split('T')[1] : null,
+          };
+          const res = await fetch(`/faculty/api/events/${activeEventContext.eventData.id}/`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) console.error('Failed to update event');
+        } catch (err) {
+          console.error('Error updating event', err);
+        }
+      } else {
+        // create new event
+        await addEvent(eventDetails);
       }
-
-      addEvent(eventDetails);
 
       addEventModal.classList.add("hidden");
       addEventForm.reset();
@@ -503,11 +485,12 @@ dayScheduleCloseBtns.forEach((btn) => {
       }
       isEditing = false;
       activeEventContext = null;
-      renderCalendar();
+      await fetchEventsFromApi();
     });
   }
 
-  renderCalendar();
+  // Load events from server and render
+  fetchEventsFromApi();
 
   const viewWalkinsBtn = document.getElementById('view-walkins-btn');
   if (viewWalkinsBtn) {
@@ -538,19 +521,18 @@ dayScheduleCloseBtns.forEach((btn) => {
     document.getElementById('eventTitle').value = eventData.title;
     document.getElementById('eventType').value = eventData.type;
     document.getElementById('eventDescription').value = eventData.description || '';
-    document.getElementById('eventStartDate').value = dateKey;
-    document.getElementById('eventEndDate').value = dateKey; // Default to single day
 
     if (eventData.type !== 'on-leave') {
-        timeInputsWrapper.style.display = "block";
-        startTimeInput.required = true;
-        endTimeInput.required = true;
-        document.getElementById('eventStartTime').value = eventData.startTime;
-        document.getElementById('eventEndTime').value = eventData.endTime;
+      timeInputsWrapper.style.display = "block";
+      startTimeInput.required = true;
+      endTimeInput.required = true;
+      // eventData may have dateKey and startTime like '09:00'
+      document.getElementById('eventStartTime').value = `${dateKey}T${eventData.startTime}`;
+      document.getElementById('eventEndTime').value = `${dateKey}T${eventData.endTime}`;
     } else {
-        timeInputsWrapper.style.display = "none";
-        startTimeInput.required = false;
-        endTimeInput.required = false;
+      timeInputsWrapper.style.display = "none";
+      startTimeInput.required = false;
+      endTimeInput.required = false;
     }
   }
 });

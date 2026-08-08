@@ -49,6 +49,41 @@
 
             <div id="departmentStatusBanner" class="hidden"></div>
 
+            <section class="status-history-section">
+                <div class="section-header">
+                    <h2>Latest Faculty Status</h2>
+                </div>
+                <ul class="faculty-status-list">
+                    {% for faculty in faculty_statuses %}
+                        <li class="faculty-status-item">
+                            <span class="faculty-name">{{ faculty.user.get_full_name|default:faculty.user.username }}</span>
+                            <span class="faculty-status">{{ faculty.get_current_status_display }}</span>
+                            <span class="faculty-note">{{ faculty.status_note|default:'No note provided' }}</span>
+                            <span class="faculty-updated">Last updated: {{ faculty.status_updated_at|date:'Y-m-d H:i' }}</span>
+                        </li>
+                    {% empty %}
+                        <li class="faculty-status-item">No faculty status available yet.</li>
+                    {% endfor %}
+                </ul>
+            </section>
+
+            <section class="status-history-section">
+                <div class="section-header">
+                    <h2>Recent Status Changes</h2>
+                </div>
+                <ul class="status-history-list">
+                    {% for entry in status_history %}
+                        <li class="status-history-item">
+                            <span class="faculty-name">{{ entry.faculty.user.get_full_name|default:entry.faculty.user.username }}</span>
+                            <span class="status-history-status">{{ entry.get_status_display }}</span>
+                            <span class="status-history-time">{{ entry.changed_at|date:'Y-m-d H:i' }}</span>
+                        </li>
+                    {% empty %}
+                        <li class="status-history-item">No recent status changes available.</li>
+                    {% endfor %}
+                </ul>
+            </section>
+
             <section id="facultyGrid" class="grid" aria-live="polite">
                 <article class="card" data-id="1" data-dept="College of Computer Studies" data-status="available"
                     data-lastupdated="2026-06-30T09:25:00Z">
