@@ -3,7 +3,7 @@ An automated real-time faculty availability and consultation scheduling system w
 
 FacSync replaces fragmented, informal communication (Messenger, Google Chat, email) with a centralized platform where students can check faculty availability, book consultations, join a digital walk-in queue, and receive real-time notifications — all without needing to log in just to view faculty status.
 
-Features
+# Features
 Real-time availability status — 5 categories (Available, Busy, Virtual Only, On Leave, Unavailable), color-coded on a public, login-free dashboard
 Automatic status updates — via Google Calendar sync and/or an uploaded weekly class schedule
 Manual status updates — two-click toggle for faculty who don't use Google Calendar
