@@ -55,26 +55,6 @@ body {
   border-radius: 50%;
   background: linear-gradient(135deg, var(--primary), var(--primary-dark));
   color: white;
-}
-
-.nav-btn {
-  text-decoration: none;
-  color: var(--text-light);
-  font-weight: 600;
-  padding: 10px 16px;
-  border-radius: 999px;
-  transition: background 0.2s ease;
-  background: var(--primary);
-}
-
-.nav-btn:hover {
-  background: var(--text-light);
-  color: var(--text);
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
-}
-
 .container {
   max-width: 1000px;
   margin: 24px auto;

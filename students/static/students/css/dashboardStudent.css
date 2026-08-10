@@ -1,8 +1,13 @@
 /* Student dashboard styles */
 :root {
-  --card-bg: #fff;
-  --muted: #666;
   --accent: #0b74de;
+  --accent-soft: #eaf4ff;
+  --muted: #5f6b7a;
+  --border: #dfe7f2;
+  --primary: #3b82f6;
+  --primary-dark: #001e40;
+  --text: #16213e;
+  --text-light: #ffffff;
 }
 * {
   box-sizing: border-box;
