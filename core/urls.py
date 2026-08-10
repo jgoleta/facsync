@@ -11,5 +11,7 @@ urlpatterns = [
     path('register/student/', views.register_student, name='register_student'),
     path('register/faculty/', views.register_faculty, name='register_faculty'),
     path('register/faculty/pending/', views.faculty_pending_registration, name='faculty_pending_registration'),
+    path('post-login/', views.post_login_redirect, name='post_login_redirect'),
+    path('setup/student-profile/', views.student_profile_setup, name='student_profile_setup'),
     
 ]
