@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.conf import settings
 from django.db import models
 
 
@@ -12,7 +12,7 @@ class FacultyProfile(models.Model):
     ]
 
     faculty_id = models.CharField(max_length=64, primary_key=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='faculty_profile', db_column='user_id')
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='faculty_profile', db_column='user_id')
     department_id = models.CharField(max_length=64, db_column='department_id')
     office_location = models.CharField(max_length=128, blank=True)
     current_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='available')
@@ -94,7 +94,7 @@ class ConsultationRequest(models.Model):
 
     request_id = models.CharField(max_length=64, primary_key=True, unique=True)
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='student_consultation_requests',
         db_column='user_id',
@@ -133,7 +133,7 @@ class WalkInQueue(models.Model):
         db_column='faculty_id',
     )
     user = models.ForeignKey(
-        User,
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='walk_in_queues',
         db_column='user_id',

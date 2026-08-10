@@ -1,3 +1,11 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin
+from .models import User
 
-# Register your models here.
+class CustomUserAdmin(UserAdmin):
+    fieldsets = UserAdmin.fieldsets + (
+        ('FacSync Info', {'fields': ('role', 'account_status', 'department')}),
+    )
+    list_display = ('username', 'email', 'role', 'account_status', 'is_staff')
+
+admin.site.register(User, CustomUserAdmin)

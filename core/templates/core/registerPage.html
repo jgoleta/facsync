@@ -19,61 +19,28 @@
                 </div>
             </div>
 
-            <form class="register-form">
-                <div class="form-header">
-                    <h1>Create your account</h1>
-                    <p>Join FacSync to access your dashboard</p>
-                </div>
+            {% if messages %}
+            {% for message in messages %}
+            <p style="color: red;">{{ message }}</p>
+            {% endfor %}
+            {% endif %}
+            
+            <div class="form-header">
+                <h1>Create your account</h1>
+                <p>Choose your role to get started</p>
+            </div>
 
-                <div class="form-group">
-                    <label for="fullName">Full Name</label>
-                    <input id="fullName" type="text" placeholder="Leon Scott Kennedy" required />
-                </div>
+            <div class="role-selection">
+                <a href="{% url 'core:register_student' %}" class="role-card">
+                    <h3>Student</h3>
+                    <p>Book consultations, check faculty availability, and join walk-in queues.</p>
+                </a>
 
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input id="email" type="email" placeholder="lkennedy@gbox.adnu.edu.ph" required />
-                </div>
-
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input id="password" type="password" placeholder="Create a password" required />
-                </div>
-
-                <div class="form-group">
-                    <label for="department">College</label>
-                    <select id="department" name="department" required>
-                        <option value="" disabled selected>Select your College</option>
-                        <option value="ccs">College of Computer Studies</option>
-                        <option value="csea">College of Science, Engineering, and Architecture</option>
-                        <option value="cba">College of Business and Accountancy</option>
-                        <option value="con">College of Nursing</option>
-                        <option value="ced">College of Education</option>
-                        <option value="chss">College of Humanities and Social Sciences</option>
-                        <option value="col">College of Law</option>
-                        <option value="gs">Graduate School</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="role">Role</label>
-                    <select id="role" required>
-                        <option value="" disabled selected>Select your role</option>
-                        <option value="student">Student</option>
-                        <option value="faculty">Faculty Member</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="verification">ID Verification</label>
-                    <label class="custom-file-input">
-                        <span class="btn-secondary" style="cursor: pointer;">Choose File</span>
-                        <input id="verification" style="display: none;" type="file" accept="image/*" required />
-                    </label>
-                </div>
-
-                <button type="submit" class="btn-primary">Create Account</button>
-            </form>
+                <a href="{% url 'core:register_faculty' %}" class="role-card">
+                    <h3>Faculty</h3>
+                    <p>Manage your availability, schedule, and student consultations.</p>
+                </a>
+            </div>
 
             <div class="login-footer">
                 <p>Already have an account? <a href="{% url 'core:login' %}">Sign in</a></p>

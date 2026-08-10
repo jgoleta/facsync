@@ -152,6 +152,8 @@ USE_TZ = True
 STATIC_URL = 'static/'
 LOGIN_REDIRECT_URL = '/'
 SOCIALACCOUNT_LOGIN_ON_GET = True
+AUTH_USER_MODEL = 'core.User'
+SOCIALACCOUNT_ADAPTER = 'core.adapters.FacSyncSocialAdapter'
 
 
 # Email

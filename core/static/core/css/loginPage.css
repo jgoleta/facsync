@@ -164,6 +164,68 @@ body {
   font-size: 1rem;
 }
 
+.role-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+  animation: float-in 0.6s ease-out 0.2s backwards;
+}
+
+.role-card {
+  display: block;
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: white;
+  text-decoration: none;
+  color: var(--text);
+  transition:
+    border-color 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.2s ease,
+    background-color 0.3s ease;
+}
+
+.role-card h3 {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.role-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.role-card:hover {
+  border-color: var(--accent);
+  background-color: #f0f7ff;
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.15);
+  transform: translateY(-2px);
+}
+
+.role-card:active {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 420px) {
+  .role-card {
+    padding: 16px 18px;
+    border-radius: 12px;
+  }
+
+  .role-card h3 {
+    font-size: 1rem;
+  }
+
+  .role-card p {
+    font-size: 0.85rem;
+  }
+}
+
 .login-form,
 .register-form {
   display: flex;
