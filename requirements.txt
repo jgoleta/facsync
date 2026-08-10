@@ -1,2 +1,6 @@
 django
 psycopg2-binary
+python-decouple
+django-allauth
+requests
+PyJWT
