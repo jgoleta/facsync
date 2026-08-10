@@ -18,7 +18,11 @@
                     <p class="brand-label">FacSync</p>
                 </div>
             </div>
-
+            {% if messages %}
+            {% for message in messages %}
+            <p style="color: red;">{{ message }}</p>
+            {% endfor %}
+            {% endif %}
             <form class="login-form">
                 <div class="form-header">
                     <h1>Welcome back!</h1>
