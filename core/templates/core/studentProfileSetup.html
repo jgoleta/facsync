@@ -1,0 +1,39 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>FacSync | Complete Your Profile</title>
+    <link rel="stylesheet" href="{% static 'core/css/loginPage.css' %}" />
+</head>
+
+<body>
+    <div class="register-container">
+        <div class="register-panel">
+            <div class="form-header">
+                <h1>Complete your profile</h1>
+                <p>Just a few more details before you get started</p>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="{{ form.student_id.id_for_label }}">Student ID</label>
+                    {{ form.student_id }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.department.id_for_label }}">College</label>
+                    {{ form.department }}
+                </div>
+                <div class="form-group">
+                    <label for="{{ form.year_level.id_for_label }}">Year Level</label>
+                    {{ form.year_level }}
+                </div>
+                <button type="submit" class="btn-primary">Continue to Dashboard</button>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>
