@@ -62,6 +62,7 @@ body {
 .nav-links {
   display: flex;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .nav-btn {
@@ -71,12 +72,10 @@ body {
   padding: 10px 16px;
   border-radius: 999px;
   transition: background 0.2s ease;
-  background: var(--primary);
 }
 
 .nav-btn:hover {
-  background: var(--accent);
-  color: var(--text-light);
+  background: var(--primary);
 }
 
 .primary-button {

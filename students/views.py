@@ -9,11 +9,11 @@ def dashboard(request):
         'status_history': status_history,
     })
 
-def book_consultation(request):
-    return render(request, 'students/bookConsultation.html')
-
 def view_schedule(request):
     return render(request, 'students/viewSchedule.html')
 
 def consultation_requests(request):
     return render(request, 'students/consultationRequests.html')
+
+def home(request):
+    return render(request, 'students/homeStudent.html')

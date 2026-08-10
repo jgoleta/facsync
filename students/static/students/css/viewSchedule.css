@@ -29,7 +29,6 @@ body {
   justify-content: space-between;
   padding: 16px 24px;
   background: var(--primary-dark);
-  backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
 }
 
@@ -53,6 +52,12 @@ body {
   color: white;
 }
 
+.nav-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .nav-btn {
   text-decoration: none;
   color: var(--text-light);
@@ -60,15 +65,10 @@ body {
   padding: 10px 16px;
   border-radius: 999px;
   transition: background 0.2s ease;
-  background: var(--primary);
 }
 
 .nav-btn:hover {
-  background: var(--text-light);
-  color: var(--text);
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
+  background: var(--primary);
 }
 
 
