@@ -19,7 +19,7 @@
             </a>
             <nav class="nav-links">
                 <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
-                <a href="{% url 'core:login' %}" class="nav-btn">Logout</a>
+                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
 
@@ -29,8 +29,10 @@
                     <div>
                         <p class="eyebrow">My Schedule</p>
                         <h1>Monthly Schedule</h1>
+                        <p id="calendar-sync-status" class="calendar-sync-status" role="status" aria-live="polite">Syncing Google Calendar...</p>
                     </div>
                     <div class="header-meta">
+                        <button id="syncCalendarBtn" class="sync-button" type="button">↻ Sync</button>
                         <span class="date-pill">June 2026</span>
                     </div>
                 </div>
@@ -131,7 +133,7 @@
                         <label for="eventDescription">Short Description</label>
                         <textarea id="eventDescription" rows="3" placeholder="e.g. Team sync"></textarea>
                     </div>
-                    <div class="form-group">
+                    <div id="event-date-group" class="form-group">
                         <label for="eventDate">Date</label>
                         <input type="date" id="eventDate" required>
                     </div>

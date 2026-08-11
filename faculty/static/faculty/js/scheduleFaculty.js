@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const dayLabels = document.querySelector(".day-labels");
   const viewControls = document.querySelector(".view-controls");
   const datePill = document.querySelector(".date-pill");
+  const calendarSyncStatus = document.getElementById("calendar-sync-status");
+  const syncCalendarBtn = document.getElementById("syncCalendarBtn");
 
   let currentView = "monthly"; // Default view
   let isEditing = false; // To track if the modal is for editing
@@ -24,10 +26,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // Schedule object will be populated from the server API
   const facultySchedule = { name: null, schedule: [] };
 
-  async function fetchEventsFromApi() {
+  async function fetchEventsFromApi(sync = false) {
     try {
-      const res = await fetch('/faculty/api/events/');
-      if (!res.ok) return;
+      const res = await fetch(`/faculty/api/events/${sync ? '?sync=1' : ''}`);
+      if (!res.ok) {
+        if (calendarSyncStatus) {
+          calendarSyncStatus.textContent = 'Unable to load schedule.';
+          calendarSyncStatus.className = 'calendar-sync-status error';
+        }
+        return;
+      }
       const data = await res.json();
       const events = data.events || [];
 
@@ -47,9 +55,17 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       facultySchedule.schedule = Object.values(map).sort((a,b) => new Date(a.date) - new Date(b.date));
+      if (calendarSyncStatus) {
+        calendarSyncStatus.textContent = data.sync_error
+          ? `Google sync failed: ${data.sync_error}`
+          : `Google Calendar synced · ${events.length} event${events.length === 1 ? '' : 's'}`;
+        calendarSyncStatus.className = `calendar-sync-status${data.sync_error ? ' error' : ''}`;
+      }
       renderCalendar();
+      return data;
     } catch (err) {
       console.error('Failed to fetch events', err);
+      return null;
     }
   }
 
@@ -70,19 +86,36 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
-        console.error('Failed to create event');
-        return;
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to create event.');
       }
+      const data = await res.json();
       // Refresh events from server
       await fetchEventsFromApi();
+      return data;
     } catch (err) {
       console.error('Error creating event', err);
+      throw err;
     }
   }
 
   function formatEventTime(eventData) {
     if (eventData.type === "on-leave") return "All Day";
-    return `${eventData.startTime}${eventData.endTime ? ` - ${eventData.endTime}` : ""}`;
+    return `${formatTime12(eventData.startTime)}${eventData.endTime ? ` - ${formatTime12(eventData.endTime)}` : ""}`;
+  }
+
+  function formatTime12(timeValue) {
+    if (!timeValue) return "";
+
+    const timePart = String(timeValue).split("T").pop().split(" ").pop();
+    const match = timePart.match(/^(\d{1,2}):(\d{2})/);
+    if (!match) return timeValue;
+
+    const hour24 = Number(match[1]);
+    const minutes = match[2];
+    const period = hour24 >= 12 ? "PM" : "AM";
+    const hour12 = hour24 % 12 || 12;
+    return `${hour12}:${minutes} ${period}`;
   }
 
   function openDayScheduleModal(dateKey, dayLabel, events) {
@@ -129,10 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
     titleEl.textContent = eventData.title;
     typeEl.textContent = eventData.type || "busy";
     typeEl.className = `event-detail-type type-${eventData.type || "busy"}`;
-    const timeText = eventData.type === "on-leave"
-      ? "All Day"
-      : `${eventData.startTime}${eventData.endTime ? ` - ${eventData.endTime}` : ""}`;
-    timeEl.textContent = timeText;
+    timeEl.textContent = formatEventTime(eventData);
     descriptionEl.textContent = eventData.description || "No description provided.";
     modal.classList.remove("hidden");
 
@@ -220,12 +250,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const hourHeight = 60; // 60px per hour.
 
-      for (let i = 8; i <= 17; i++) {
-        // 8 AM to 5 PM
+      for (let i = 6; i <= 21; i++) {
+        // 6 AM to 9 PM
         const timeLabel = document.createElement("div");
         timeLabel.className = "time-label";
-        timeLabel.textContent =
-          i > 12 ? `${i - 12}:00 PM` : i === 12 ? "12:00 PM" : `${i}:00 AM`;
+        timeLabel.textContent = formatTime12(`${i}:00`);
         timeLabel.style.height = `${hourHeight}px`;
         timeScale.appendChild(timeLabel);
 
@@ -245,8 +274,7 @@ document.addEventListener("DOMContentLoaded", () => {
       );
 
       if (dayEntry) {
-        const visibleEvents = dayEntry.events.slice(0, 2);
-        const overflowEvents = dayEntry.events.slice(2);
+        const visibleEvents = dayEntry.events;
 
         visibleEvents.forEach((event) => {
           const item = document.createElement("div");
@@ -255,7 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
           item.innerHTML = `
             <div>
                 <strong>${event.title}</strong>
-                ${event.startTime}${event.endTime ? ` - ${event.endTime}` : ""}
+                ${formatEventTime(event)}
             </div>
           `;
           item.addEventListener("click", () => openEventModal(event, dateKey));
@@ -275,7 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const [endHour, endMinute] = event.endTime.split(":").map(Number);
 
           const top =
-            (startHour - 8) * hourHeight + (startMinute / 60) * hourHeight;
+            (startHour - 6) * hourHeight + (startMinute / 60) * hourHeight;
           const durationMinutes =
             endHour * 60 + endMinute - (startHour * 60 + startMinute);
           const height = (durationMinutes / 60) * hourHeight;
@@ -291,22 +319,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
           const legendItem = document.createElement("li");
           legendItem.textContent = `${event.title} • ${monthName} ${day} • ${
-            event.startTime
-          }${event.endTime ? ` - ${event.endTime}` : ""}`;
+            formatTime12(event.startTime)
+          }${event.endTime ? ` - ${formatTime12(event.endTime)}` : ""}`;
           legendList.appendChild(legendItem);
         });
 
-        if (overflowEvents.length > 0) {
-          const overflowBtn = document.createElement("button");
-          overflowBtn.className = "overflow-pill";
-          overflowBtn.type = "button";
-          overflowBtn.textContent = `+${overflowEvents.length} more`;
-          overflowBtn.addEventListener("click", (event) => {
-            event.stopPropagation();
-            openDayScheduleModal(dateKey, `${monthName} ${day}`, dayEntry.events);
-          });
-          dayContent.appendChild(overflowBtn);
-        }
       }
       return; // Exit before the generic loop for monthly/weekly views
     }
@@ -345,7 +362,7 @@ document.addEventListener("DOMContentLoaded", () => {
             item.innerHTML = `
                 <div>
                     <strong>${event.title}</strong>
-                    ${event.startTime}${event.endTime ? ` - ${event.endTime}` : ""}
+                    ${formatEventTime(event)}
                 </div>
             `;
             item.addEventListener("click", () => openEventModal(event, dateKey));
@@ -353,8 +370,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const legendItem = document.createElement("li");
             legendItem.textContent = `${event.title} • ${monthName} ${day} • ${
-              event.startTime
-            }${event.endTime ? ` - ${event.endTime}` : ""}`;
+              formatTime12(event.startTime)
+              }${event.endTime ? ` - ${formatTime12(event.endTime)}` : ""}`;
             legendList.appendChild(legendItem);
           });
 
@@ -401,6 +418,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailCloseBtns = document.querySelectorAll("[data-close-modal='eventDetailModal']");
   const addEventForm = document.getElementById("addEventForm");
   const eventTypeSelect = document.getElementById("eventType");
+  const eventDateGroup = document.getElementById("event-date-group");
   const eventDateInput = document.getElementById("eventDate");
   const timeInputsWrapper = document.getElementById("time-inputs-wrapper");
   const startTimeInput = document.getElementById("eventStartTime");
@@ -409,10 +427,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (eventTypeSelect && timeInputsWrapper) {
     eventTypeSelect.addEventListener("change", (e) => {
       if (e.target.value === "on-leave") {
+        if (eventDateGroup) eventDateGroup.style.display = "block";
+        if (eventDateInput) eventDateInput.required = true;
         timeInputsWrapper.style.display = "none";
         startTimeInput.required = false;
         endTimeInput.required = false;
       } else {
+        if (eventDateGroup) eventDateGroup.style.display = "none";
+        if (eventDateInput) eventDateInput.required = false;
         timeInputsWrapper.style.display = "block";
         startTimeInput.required = true;
         endTimeInput.required = true;
@@ -481,7 +503,9 @@ dayScheduleCloseBtns.forEach((btn) => {
         title: document.getElementById("eventTitle").value,
         type: document.getElementById("eventType").value,
         description: document.getElementById("eventDescription").value,
-        date: eventDateInput ? eventDateInput.value : '',
+        date: eventTypeSelect?.value === "on-leave"
+          ? (eventDateInput ? eventDateInput.value : '')
+          : (document.getElementById("eventStartTime").value || '').split('T')[0],
         startTime: document.getElementById("eventStartTime").value,
         endTime: document.getElementById("eventEndTime").value,
       };
@@ -502,13 +526,29 @@ dayScheduleCloseBtns.forEach((btn) => {
             headers: requestHeaders(true),
             body: JSON.stringify(payload),
           });
-          if (!res.ok) console.error('Failed to update event');
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'Failed to update event.');
+          }
         } catch (err) {
           console.error('Error updating event', err);
+          if (calendarSyncStatus) {
+            calendarSyncStatus.textContent = err.message;
+            calendarSyncStatus.className = 'calendar-sync-status error';
+          }
+          return;
         }
       } else {
         // create new event
-        await addEvent(eventDetails);
+        try {
+          await addEvent(eventDetails);
+        } catch (err) {
+          if (calendarSyncStatus) {
+            calendarSyncStatus.textContent = err.message;
+            calendarSyncStatus.className = 'calendar-sync-status error';
+          }
+          return;
+        }
       }
 
       addEventModal.classList.add("hidden");
@@ -522,19 +562,20 @@ dayScheduleCloseBtns.forEach((btn) => {
     });
   }
 
-  // Load events from server and render
-  fetchEventsFromApi();
-
-  const viewWalkinsBtn = document.getElementById('view-walkins-btn');
-  if (viewWalkinsBtn) {
-      const bookingUrl = viewWalkinsBtn.dataset.url || viewWalkinsBtn.getAttribute('href');
-      if (bookingUrl) {
-          viewWalkinsBtn.addEventListener('click', (event) => {
-              event.preventDefault();
-              window.location.href = bookingUrl;
-          });
-      }
+  if (syncCalendarBtn) {
+    syncCalendarBtn.addEventListener('click', async () => {
+      syncCalendarBtn.disabled = true;
+      syncCalendarBtn.textContent = 'Syncing...';
+      await fetchEventsFromApi(true);
+      syncCalendarBtn.disabled = false;
+      syncCalendarBtn.textContent = '↻ Sync';
+    });
   }
+
+  // Render cached events immediately, then refresh them from Google in the background.
+  fetchEventsFromApi().then((data) => {
+    if (data?.calendar_connected) fetchEventsFromApi(true);
+  });
 
   function openAddEventModalForEdit() {
     if (!activeEventContext) return;
@@ -557,6 +598,8 @@ dayScheduleCloseBtns.forEach((btn) => {
     if (eventDateInput) eventDateInput.value = dateKey;
 
     if (eventData.type !== 'on-leave') {
+      if (eventDateGroup) eventDateGroup.style.display = "none";
+      if (eventDateInput) eventDateInput.required = false;
       timeInputsWrapper.style.display = "block";
       startTimeInput.required = true;
       endTimeInput.required = true;
@@ -564,6 +607,8 @@ dayScheduleCloseBtns.forEach((btn) => {
       document.getElementById('eventStartTime').value = `${dateKey}T${eventData.startTime}`;
       document.getElementById('eventEndTime').value = `${dateKey}T${eventData.endTime}`;
     } else {
+      if (eventDateGroup) eventDateGroup.style.display = "block";
+      if (eventDateInput) eventDateInput.required = true;
       timeInputsWrapper.style.display = "none";
       startTimeInput.required = false;
       endTimeInput.required = false;
