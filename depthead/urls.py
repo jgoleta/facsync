@@ -19,4 +19,7 @@ urlpatterns = [
     path('peakAnalytics', views.peak_analytics, name='peak_analytics_legacy'),
     path('faculty-trends/', views.faculty_trends, name='faculty_trends'),
     path('facultyTrends', views.faculty_trends, name='faculty_trends_legacy'),
+    path('pending-faculty/', views.pending_faculty_requests, name='pending_faculty_requests'),
+    path('pending-faculty/<int:user_id>/approve/', views.approve_faculty, name='approve_faculty'),
+    path('pending-faculty/<int:user_id>/decline/', views.decline_faculty, name='decline_faculty'),
 ]
