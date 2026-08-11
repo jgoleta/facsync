@@ -13,5 +13,6 @@ urlpatterns = [
     path('register/faculty/pending/', views.faculty_pending_registration, name='faculty_pending_registration'),
     path('post-login/', views.post_login_redirect, name='post_login_redirect'),
     path('setup/student-profile/', views.student_profile_setup, name='student_profile_setup'),
-    
+    path('register/faculty/pending-approval/', views.pending_approval_notice, name='pending_approval_notice'),
+    path('dev-login/<int:user_id>/', views.dev_login_as, name='dev_login_as'),
 ]
