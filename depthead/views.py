@@ -16,7 +16,7 @@ def approve_faculty(request, user_id):
     if request.method == 'POST':
         faculty_user.account_status = 'active'
         faculty_user.save()
-    return redirect('depthead:pending_faculty_requests')
+    return redirect('depthead:admin_faculty')
 
 
 @login_required
@@ -25,7 +25,7 @@ def decline_faculty(request, user_id):
     if request.method == 'POST':
         faculty_user.account_status = 'declined'
         faculty_user.save()
-    return redirect('depthead:pending_faculty_requests')
+    return redirect('depthead:admin_faculty')
 
 
 def admin_dashboard(request):
