@@ -9,6 +9,10 @@ urlpatterns = [
     path('schedule/bookingManagement.html', views.booking_management_legacy, name='booking_management_legacy'),
     path('profile/', views.profile, name='profile'),
     path('schedule/', views.schedule, name='schedule'),
+    path('calendar/connect/', views.calendar_connect, name='calendar_connect'),
+    path('calendar/callback/', views.calendar_callback, name='calendar_callback'),
+    path('calendar/disconnect/', views.calendar_disconnect, name='calendar_disconnect'),
+    path('api/calendar/status/', views.calendar_status, name='calendar_status'),
     # API for schedule events
     path('api/events/', views.api_schedule_events, name='api_schedule_events'),
     path('api/events/<int:pk>/', views.api_schedule_event_detail, name='api_schedule_event_detail'),

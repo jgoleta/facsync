@@ -29,6 +29,27 @@ class FacultyProfile(models.Model):
         return f"{self.user.get_full_name() or self.user.username} ({self.faculty_id})"
 
 
+class GoogleCalendarConnection(models.Model):
+    """OAuth credentials used to synchronize one faculty member's calendar."""
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='google_calendar_connection',
+    )
+    google_user_id = models.CharField(max_length=255)
+    calendar_id = models.CharField(max_length=1024, default='primary')
+    access_token = models.TextField()
+    refresh_token = models.TextField(blank=True)
+    token_expires_at = models.DateTimeField(null=True, blank=True)
+    connected_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    last_synced_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Google Calendar for {self.user}"
+
+
 class StatusHistory(models.Model):
     STATUS_CHOICES = [
         ('available', 'Available'),
@@ -72,6 +93,8 @@ class ScheduleEvent(models.Model):
     date = models.DateField()
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
+    google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)
+    google_calendar_id = models.CharField(max_length=1024, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

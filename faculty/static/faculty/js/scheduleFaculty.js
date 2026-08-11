@@ -3,11 +3,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const legendList = document.getElementById("legendList");
   const dayLabels = document.querySelector(".day-labels");
   const viewControls = document.querySelector(".view-controls");
+  const datePill = document.querySelector(".date-pill");
 
   let currentView = "monthly"; // Default view
   let isEditing = false; // To track if the modal is for editing
 
   let activeEventContext = null;
+
+  function getCsrfToken() {
+    const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
+    return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+  }
+
+  function requestHeaders(includeJson = false) {
+    const headers = { 'X-CSRFToken': getCsrfToken() };
+    if (includeJson) headers['Content-Type'] = 'application/json';
+    return headers;
+  }
 
   // Schedule object will be populated from the server API
   const facultySchedule = { name: null, schedule: [] };
@@ -48,13 +60,13 @@ document.addEventListener("DOMContentLoaded", () => {
         title: eventData.title,
         description: eventData.description,
         event_type: eventData.type,
-        date: eventData.startTime ? eventData.startTime.split('T')[0] : null,
-        start_time: eventData.startTime ? eventData.startTime.split('T')[1] : null,
-        end_time: eventData.endTime ? eventData.endTime.split('T')[1] : null,
+        date: eventData.date || (eventData.startTime ? eventData.startTime.split('T')[0] : null),
+        start_time: eventData.startTime && eventData.startTime.includes('T') ? eventData.startTime.split('T')[1] : null,
+        end_time: eventData.endTime && eventData.endTime.includes('T') ? eventData.endTime.split('T')[1] : null,
       };
       const res = await fetch('/faculty/api/events/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: requestHeaders(true),
         body: JSON.stringify(payload),
       });
       if (!res.ok) {
@@ -142,6 +154,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const res = await fetch(`/faculty/api/events/${eventToDelete.id}/`, {
           method: 'DELETE',
+          headers: requestHeaders(),
         });
         if (!res.ok) {
           console.error('Failed to delete event');
@@ -172,8 +185,13 @@ document.addEventListener("DOMContentLoaded", () => {
     legendList.innerHTML = "";
 
     let daysToRender;
-    const today = new Date("2026-06-09"); // Fixed date for demo purposes
-    const daysInMonth = 30; // Hardcoded for June
+    const today = new Date();
+    const year = today.getFullYear();
+    const monthIndex = today.getMonth();
+    const monthNumber = String(monthIndex + 1).padStart(2, "0");
+    const monthName = today.toLocaleDateString("en-US", { month: "short" });
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    if (datePill) datePill.textContent = today.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 
     if (currentView === "monthly") {
       daysToRender = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -221,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
       calendarGrid.appendChild(dayContent);
 
       const day = today.getDate();
-      const dateKey = `2026-06-${String(day).padStart(2, "0")}`;
+      const dateKey = `${year}-${monthNumber}-${String(day).padStart(2, "0")}`;
       const dayEntry = facultySchedule.schedule.find(
         (entry) => entry.date === dateKey,
       );
@@ -241,6 +259,15 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           `;
           item.addEventListener("click", () => openEventModal(event, dateKey));
+
+          if (!event.startTime || !event.endTime) {
+            item.classList.add("all-day-item");
+            dayContent.appendChild(item);
+            const legendItem = document.createElement("li");
+            legendItem.textContent = `${event.title} • All day`;
+            legendList.appendChild(legendItem);
+            return;
+          }
 
           const [startHour, startMinute] = event.startTime
             .split(":")
@@ -263,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
           dayContent.appendChild(item);
 
           const legendItem = document.createElement("li");
-          legendItem.textContent = `${event.title} • Jun ${day} • ${
+          legendItem.textContent = `${event.title} • ${monthName} ${day} • ${
             event.startTime
           }${event.endTime ? ` - ${event.endTime}` : ""}`;
           legendList.appendChild(legendItem);
@@ -276,7 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
           overflowBtn.textContent = `+${overflowEvents.length} more`;
           overflowBtn.addEventListener("click", (event) => {
             event.stopPropagation();
-            openDayScheduleModal(dateKey, `Jun ${day}`, dayEntry.events);
+            openDayScheduleModal(dateKey, `${monthName} ${day}`, dayEntry.events);
           });
           dayContent.appendChild(overflowBtn);
         }
@@ -292,7 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
       header.className = "day-header";
 
       if (day > 0 && day <= daysInMonth) {
-        const date = new Date(2026, 5, day); // 5 is June
+        const date = new Date(year, monthIndex, day);
         const dayOfWeek = date.toLocaleDateString("en-US", {
           weekday: "short",
         });
@@ -302,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const body = document.createElement("div");
         body.className = "day-body";
 
-        const dateKey = `2026-06-${String(day).padStart(2, "0")}`;
+        const dateKey = `${year}-${monthNumber}-${String(day).padStart(2, "0")}`;
         const dayEntry = facultySchedule.schedule.find(
           (entry) => entry.date === dateKey,
         );
@@ -325,7 +352,7 @@ document.addEventListener("DOMContentLoaded", () => {
             body.appendChild(item);
 
             const legendItem = document.createElement("li");
-            legendItem.textContent = `${event.title} • Jun ${day} • ${
+            legendItem.textContent = `${event.title} • ${monthName} ${day} • ${
               event.startTime
             }${event.endTime ? ` - ${event.endTime}` : ""}`;
             legendList.appendChild(legendItem);
@@ -338,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
             overflowBtn.textContent = `+${overflowEvents.length} more`;
             overflowBtn.addEventListener("click", (event) => {
               event.stopPropagation();
-              openDayScheduleModal(dateKey, `Jun ${day}`, dayEntry.events);
+              openDayScheduleModal(dateKey, `${monthName} ${day}`, dayEntry.events);
             });
             body.appendChild(overflowBtn);
           }
@@ -374,6 +401,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const detailCloseBtns = document.querySelectorAll("[data-close-modal='eventDetailModal']");
   const addEventForm = document.getElementById("addEventForm");
   const eventTypeSelect = document.getElementById("eventType");
+  const eventDateInput = document.getElementById("eventDate");
   const timeInputsWrapper = document.getElementById("time-inputs-wrapper");
   const startTimeInput = document.getElementById("eventStartTime");
   const endTimeInput = document.getElementById("eventEndTime");
@@ -403,6 +431,10 @@ document.addEventListener("DOMContentLoaded", () => {
       addEventModal.querySelector('button[type="submit"]').textContent = 'Add Event';
 
       addEventForm.reset();
+      if (eventDateInput) {
+        const now = new Date();
+        eventDateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      }
       if (eventTypeSelect) eventTypeSelect.dispatchEvent(new Event("change"));
     });
   }
@@ -449,6 +481,7 @@ dayScheduleCloseBtns.forEach((btn) => {
         title: document.getElementById("eventTitle").value,
         type: document.getElementById("eventType").value,
         description: document.getElementById("eventDescription").value,
+        date: eventDateInput ? eventDateInput.value : '',
         startTime: document.getElementById("eventStartTime").value,
         endTime: document.getElementById("eventEndTime").value,
       };
@@ -460,13 +493,13 @@ dayScheduleCloseBtns.forEach((btn) => {
             title: eventDetails.title,
             description: eventDetails.description,
             event_type: eventDetails.type,
-            date: eventDetails.startTime ? eventDetails.startTime.split('T')[0] : null,
-            start_time: eventDetails.startTime ? eventDetails.startTime.split('T')[1] : null,
-            end_time: eventDetails.endTime ? eventDetails.endTime.split('T')[1] : null,
+            date: eventDetails.date || (eventDetails.startTime ? eventDetails.startTime.split('T')[0] : null),
+            start_time: eventDetails.startTime && eventDetails.startTime.includes('T') ? eventDetails.startTime.split('T')[1] : null,
+            end_time: eventDetails.endTime && eventDetails.endTime.includes('T') ? eventDetails.endTime.split('T')[1] : null,
           };
           const res = await fetch(`/faculty/api/events/${activeEventContext.eventData.id}/`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: requestHeaders(true),
             body: JSON.stringify(payload),
           });
           if (!res.ok) console.error('Failed to update event');
@@ -521,6 +554,7 @@ dayScheduleCloseBtns.forEach((btn) => {
     document.getElementById('eventTitle').value = eventData.title;
     document.getElementById('eventType').value = eventData.type;
     document.getElementById('eventDescription').value = eventData.description || '';
+    if (eventDateInput) eventDateInput.value = dateKey;
 
     if (eventData.type !== 'on-leave') {
       timeInputsWrapper.style.display = "block";

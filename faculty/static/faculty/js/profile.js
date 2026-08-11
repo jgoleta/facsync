@@ -64,6 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const connectBtn = document.getElementById('calendar-connect-btn');
     const disconnectBtn = document.getElementById('calendar-disconnect-btn');
 
+    function getCsrfToken() {
+        const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
+        return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+    }
+
     function setCalendarConnected(isConnected) {
         if (isConnected) {
             calendarStatus.textContent = 'Connected';
@@ -80,17 +85,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (connectBtn && disconnectBtn && calendarStatus) {
         connectBtn.addEventListener('click', () => {
-            // In a real app, this would trigger the OAuth flow
-            console.log('Connecting to Google Calendar...');
-            setCalendarConnected(true);
+            window.location.href = '/faculty/calendar/connect/';
         });
 
-        disconnectBtn.addEventListener('click', () => {
-            console.log('Disconnecting from Google Calendar...');
-            setCalendarConnected(false);
+        disconnectBtn.addEventListener('click', async () => {
+            if (!confirm('Disconnect Google Calendar? FacSync copies will be removed, but your Google events will remain in Google Calendar.')) {
+                return;
+            }
+            const response = await fetch('/faculty/calendar/disconnect/', {
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCsrfToken() },
+            });
+            if (response.ok) {
+                setCalendarConnected(false);
+            }
         });
 
-        // Initial state check
         const isConnected = !disconnectBtn.classList.contains('hidden');
         setCalendarConnected(isConnected);
     }
