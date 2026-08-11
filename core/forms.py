@@ -17,3 +17,12 @@ class StudentProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['student_id', 'department', 'year_level']
+
+class FacultyRegistrationForm(forms.ModelForm):
+    department = forms.ChoiceField(choices=DEPARTMENT_CHOICES)
+    office_location = forms.CharField(max_length=128, label="Office / Room")
+    faculty_id = forms.CharField(max_length=64, label="Faculty ID")
+
+    class Meta:
+        model = User
+        fields = ['department']  #office_location, faculty_id go to FacultyProfile

@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>FacSync | Pending Faculty Requests</title>
+    <link rel="stylesheet" href="{% static 'depthead/css/pendingFacultyRequests.css' %}" />
+</head>
+
+<body>
+    <h1>Pending Faculty Requests</h1>
+
+    {% if pending_faculty %}
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th>Faculty ID</th>
+                <th>Office/Room</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in pending_faculty %}
+            <tr>
+                <td>{{ user.get_full_name|default:user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.department }}</td>
+                <td>{{ user.faculty_profile.faculty_id }}</td>
+                <td>{{ user.faculty_profile.office_location }}</td>
+                <td>
+                    <form method="post" action="{% url 'depthead:approve_faculty' user.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-primary">Approve</button>
+                    </form>
+                    <form method="post" action="{% url 'depthead:decline_faculty' user.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn-secondary">Decline</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p>No pending faculty requests.</p>
+    {% endif %}
+</body>
+
+</html>

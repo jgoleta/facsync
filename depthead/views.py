@@ -1,4 +1,31 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from core.models import User
+
+@login_required
+def pending_faculty_requests(request):
+    pending_faculty = User.objects.filter(role='faculty', account_status='pending')
+    return render(request, 'depthead/pendingFacultyRequests.html', {
+        'pending_faculty': pending_faculty
+    })
+
+
+@login_required
+def approve_faculty(request, user_id):
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending')
+    if request.method == 'POST':
+        faculty_user.account_status = 'active'
+        faculty_user.save()
+    return redirect('depthead:pending_faculty_requests')
+
+
+@login_required
+def decline_faculty(request, user_id):
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending')
+    if request.method == 'POST':
+        faculty_user.account_status = 'declined'
+        faculty_user.save()
+    return redirect('depthead:pending_faculty_requests')
 
 
 def admin_dashboard(request):
