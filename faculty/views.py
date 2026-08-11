@@ -1,9 +1,12 @@
 import json
+import uuid
 from datetime import date, time
 
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.csrf import csrf_protect
 
 from .facultyServices.googleCalendarService import (
@@ -16,7 +19,7 @@ from .facultyServices.googleCalendarService import (
     sync_google_calendar,
     update_google_event,
 )
-from .models import FacultyProfile, GoogleCalendarConnection, ScheduleEvent
+from .models import FacultyProfile, GoogleCalendarConnection, ScheduleEvent, StatusHistory
 
 
 def _faculty_for_request(request):
@@ -93,10 +96,79 @@ def _event_json(event):
     }
 
 
+@login_required
 def dashboard(request):
-    return render(request, 'faculty/dashboardFaculty.html')
+    faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
+    current_status = faculty_profile.current_status if faculty_profile else 'available'
+    status_css_class = {
+        'available': 'available',
+        'busy': 'busy',
+        'virtual_only': 'virtual',
+        'on_leave': 'on-leave',
+        'unavailable': 'unavailable',
+    }.get(current_status, 'available')
+    status_label = dict(FacultyProfile.STATUS_CHOICES).get(current_status, 'Available')
+    return render(request, 'faculty/dashboardFaculty.html', {
+        'faculty_profile': faculty_profile,
+        'current_status': current_status,
+        'status_css_class': status_css_class,
+        'status_label': status_label,
+    })
 
 
+@login_required
+@csrf_protect
+def update_status(request):
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
+    if faculty_profile is None:
+        return JsonResponse({'error': 'Faculty profile not found.'}, status=404)
+
+    try:
+        payload = _json_body(request)
+    except ValueError as exc:
+        return HttpResponseBadRequest(str(exc))
+
+    submitted_status = payload.get('status')
+    status_aliases = {'virtual': 'virtual_only', 'on-leave': 'on_leave'}
+    status_css_classes = {
+        'available': 'available',
+        'busy': 'busy',
+        'virtual_only': 'virtual',
+        'on_leave': 'on-leave',
+        'unavailable': 'unavailable',
+    }
+    status = status_aliases.get(submitted_status, submitted_status)
+    valid_statuses = {choice[0] for choice in FacultyProfile.STATUS_CHOICES}
+    if status not in valid_statuses:
+        return JsonResponse({'error': 'Invalid faculty status.'}, status=400)
+
+    previous_status = faculty_profile.current_status
+    faculty_profile.current_status = status
+    faculty_profile.status_note = str(payload.get('note') or '').strip()
+    faculty_profile.status_updated_at = timezone.now()
+    faculty_profile.save(update_fields=['current_status', 'status_note', 'status_updated_at'])
+
+    if previous_status != status:
+        StatusHistory.objects.create(
+            history_id=uuid.uuid4().hex,
+            faculty=faculty_profile,
+            status=status,
+            changed_at=faculty_profile.status_updated_at,
+        )
+
+    return JsonResponse({
+        'status': status,
+        'status_css_class': status_css_classes[status],
+        'label': dict(FacultyProfile.STATUS_CHOICES)[status],
+        'note': faculty_profile.status_note,
+        'updated_at': faculty_profile.status_updated_at.isoformat(),
+    })
+
+
+@login_required
 def booking_management(request):
     return render(request, 'faculty/bookingManagement.html')
 
@@ -105,13 +177,34 @@ def booking_management_legacy(request):
     return redirect('faculty:booking_management')
 
 
+@login_required
+@csrf_protect
 def profile(request):
-    connection = None
-    if request.user.is_authenticated:
-        connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
-    return render(request, 'faculty/profile.html', {'calendar_connected': connection is not None})
+    connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+    faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
+
+    if request.method == 'POST':
+        if faculty_profile is None:
+            return JsonResponse({'error': 'Faculty profile not found.'}, status=404)
+
+        field = request.POST.get('field')
+        if field == 'office_location':
+            faculty_profile.office_location = request.POST.get('value', '').strip()[:128]
+        elif field == 'biography':
+            faculty_profile.biography = request.POST.get('value', '').strip()
+        else:
+            return JsonResponse({'error': 'Invalid profile field.'}, status=400)
+
+        faculty_profile.save(update_fields=[field])
+        return JsonResponse({'value': getattr(faculty_profile, field)})
+
+    return render(request, 'faculty/profile.html', {
+        'calendar_connected': connection is not None,
+        'faculty_profile': faculty_profile,
+    })
 
 
+@login_required
 def schedule(request):
     return render(request, 'faculty/scheduleFaculty.html')
 
@@ -120,6 +213,26 @@ def schedule(request):
 def calendar_connect(request):
     if request.method != 'GET':
         return HttpResponse(status=405)
+
+    if request.GET.get('error'):
+        messages.error(request, 'Google Calendar connection was cancelled or denied.')
+        return redirect('faculty:profile')
+
+    if request.GET.get('code'):
+        code = request.GET.get('code')
+        state = request.GET.get('state')
+        if not state:
+            messages.error(request, 'Google Calendar connection failed: missing OAuth state.')
+            return redirect('faculty:profile')
+        try:
+            finish_oauth(request, code, state)
+            sync_google_calendar(request.user)
+        except (GoogleCalendarError, FacultyProfile.DoesNotExist) as exc:
+            messages.error(request, f'Google Calendar connection failed: {exc}')
+        else:
+            messages.success(request, 'Google Calendar connected and synchronized successfully.')
+        return redirect('faculty:profile')
+
     if _faculty_for_request(request) is None:
         return JsonResponse({'error': 'No faculty profile'}, status=400)
     try:
@@ -131,16 +244,17 @@ def calendar_connect(request):
 @login_required
 def calendar_callback(request):
     if request.GET.get('error'):
+        messages.error(request, 'Google Calendar connection was cancelled or denied.')
         return redirect('faculty:profile')
     code = request.GET.get('code')
     state = request.GET.get('state')
     if not code or not state:
-        return HttpResponseBadRequest('Missing Google OAuth response')
+        return redirect('faculty:calendar_connect')
     try:
         finish_oauth(request, code, state)
         sync_google_calendar(request.user)
-    except (GoogleCalendarError, FacultyProfile.DoesNotExist):
-        # Keep the connection so the user can retry sync later or reconnect.
+    except (GoogleCalendarError, FacultyProfile.DoesNotExist) as exc:
+        messages.error(request, f'Google Calendar connection failed: {exc}')
         return redirect('faculty:profile')
     return redirect('faculty:profile')
 
@@ -172,7 +286,9 @@ def api_schedule_events(request):
 
     if request.method == 'GET':
         sync_error = None
-        if GoogleCalendarConnection.objects.filter(user=request.user).exists():
+        sync_requested = request.GET.get('sync') == '1'
+        calendar_connected = GoogleCalendarConnection.objects.filter(user=request.user).exists()
+        if sync_requested and calendar_connected:
             try:
                 sync_google_calendar(request.user)
             except GoogleCalendarError as exc:
@@ -181,7 +297,8 @@ def api_schedule_events(request):
         events = ScheduleEvent.objects.filter(faculty=faculty).order_by('date', 'start_time')
         return JsonResponse({
             'events': [_event_json(event) for event in events],
-            'calendar_connected': GoogleCalendarConnection.objects.filter(user=request.user).exists(),
+            'calendar_connected': calendar_connected,
+            'sync_performed': sync_requested and calendar_connected,
             'sync_error': sync_error,
         })
 
@@ -198,6 +315,8 @@ def api_schedule_events(request):
                 google_event = create_google_event(connection, event)
                 event.google_event_id = google_event.get('id')
                 event.google_calendar_id = connection.calendar_id
+                if not event.google_event_id:
+                    raise GoogleCalendarError('Google Calendar did not return an event ID.')
             event.save()
         except GoogleCalendarError as exc:
             return JsonResponse({'error': str(exc)}, status=502)
@@ -242,6 +361,8 @@ def api_schedule_event_detail(request, pk):
                     google_event = create_google_event(connection, event)
                     event.google_event_id = google_event.get('id')
                     event.google_calendar_id = connection.calendar_id
+                if not event.google_event_id:
+                    raise GoogleCalendarError('Google Calendar did not return an event ID.')
             event.save()
         except GoogleCalendarError as exc:
             return JsonResponse({'error': str(exc)}, status=502)

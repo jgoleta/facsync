@@ -104,12 +104,14 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {
             'access_type': 'online',
             'hd': 'gbox.adnu.edu.ph',
+            'prompt': 'select_account',
         },
     }
 }
 
 GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
+GOOGLE_CALENDAR_REDIRECT_URI = config('GOOGLE_CALENDAR_REDIRECT_URI', default='')
 GOOGLE_CALENDAR_TIME_ZONE = config('GOOGLE_CALENDAR_TIME_ZONE', default='Asia/Manila')
 
 SITE_ID = 1

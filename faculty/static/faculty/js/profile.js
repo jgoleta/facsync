@@ -1,4 +1,25 @@
 document.addEventListener('DOMContentLoaded', () => {
+    function getCsrfToken() {
+        const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
+        return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+    }
+
+    async function saveProfileField(field, value) {
+        const body = new URLSearchParams({ field, value });
+        const response = await fetch(window.location.pathname, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCsrfToken(),
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body,
+        });
+        if (!response.ok) {
+            throw new Error('Unable to save profile changes.');
+        }
+        return response.json();
+    }
+
     // --- Office Location Editing ---
     const officeLocationGroup = document.getElementById('office-location-group');
     if (officeLocationGroup) {
@@ -16,18 +37,18 @@ document.addEventListener('DOMContentLoaded', () => {
             locationInput.focus();
         });
 
-        saveBtn.addEventListener('click', () => {
-            const newLocation = locationInput.value;
-            locationText.textContent = newLocation;
-
-            locationText.classList.remove('hidden');
-            editBtn.classList.remove('hidden');
-
-            locationInput.classList.add('hidden');
-            saveBtn.classList.add('hidden');
-
-            // Here you would typically send the newLocation to a server
-            console.log('New office location saved:', newLocation);
+        saveBtn.addEventListener('click', async () => {
+            try {
+                const newLocation = locationInput.value.trim();
+                await saveProfileField('office_location', newLocation);
+                locationText.textContent = newLocation || 'Not assigned';
+                locationText.classList.remove('hidden');
+                editBtn.classList.remove('hidden');
+                locationInput.classList.add('hidden');
+                saveBtn.classList.add('hidden');
+            } catch (error) {
+                window.alert(error.message);
+            }
         });
     }
 
@@ -48,14 +69,18 @@ document.addEventListener('DOMContentLoaded', () => {
             bioInput.focus();
         });
 
-        saveBtn.addEventListener('click', () => {
-            bioText.textContent = bioInput.value;
-
-            bioText.classList.remove('hidden');
-            editBtn.classList.remove('hidden');
-
-            bioInput.classList.add('hidden');
-            saveBtn.classList.add('hidden');
+        saveBtn.addEventListener('click', async () => {
+            try {
+                const biography = bioInput.value.trim();
+                await saveProfileField('biography', biography);
+                bioText.textContent = biography || 'No biography added yet.';
+                bioText.classList.remove('hidden');
+                editBtn.classList.remove('hidden');
+                bioInput.classList.add('hidden');
+                saveBtn.classList.add('hidden');
+            } catch (error) {
+                window.alert(error.message);
+            }
         });
     }
 
@@ -63,11 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const calendarStatus = document.getElementById('calendar-status');
     const connectBtn = document.getElementById('calendar-connect-btn');
     const disconnectBtn = document.getElementById('calendar-disconnect-btn');
-
-    function getCsrfToken() {
-        const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
-        return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
-    }
 
     function setCalendarConnected(isConnected) {
         if (isConnected) {
@@ -85,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (connectBtn && disconnectBtn && calendarStatus) {
         connectBtn.addEventListener('click', () => {
-            window.location.href = '/faculty/calendar/connect/';
+            window.location.href = '/faculty/calendar/connect';
         });
 
         disconnectBtn.addEventListener('click', async () => {

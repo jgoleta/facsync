@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}">
+    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260811-status">
     <style>
         .status-update-action {
             margin-top: 12px;
@@ -41,25 +41,26 @@
         <main class="dashboard-grid">
             <div class="dashboard-card">
                 <div class="welcome-header">
-                    <h1>Welcome, Dr. Morgan!</h1>
+                    <h1>Welcome, {{ request.user.get_full_name|default:request.user.username }}!</h1>
                     <p>Manage your availability and student consultations.</p>
                 </div>
 
                 <div class="card-section">
                     <h2>Update Your Status</h2>
                     <div class="status-buttons">
-                        <button class="status-btn available active" data-status="available">Available</button>
-                        <button class="status-btn busy" data-status="busy">Busy</button>
-                        <button class="status-btn virtual" data-status="virtual">Virtual Only</button>
-                        <button class="status-btn on-leave" data-status="on-leave">On Leave</button>
-                        <button class="status-btn unavailable" data-status="unavailable">Unavailable</button>
+                        <button class="status-btn available {% if current_status == 'available' %}active{% endif %}" data-status="available" aria-pressed="{% if current_status == 'available' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">✓</span><span>Available</span></button>
+                        <button class="status-btn busy {% if current_status == 'busy' %}active{% endif %}" data-status="busy" aria-pressed="{% if current_status == 'busy' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">◷</span><span>Busy</span></button>
+                        <button class="status-btn virtual {% if current_status == 'virtual_only' %}active{% endif %}" data-status="virtual" aria-pressed="{% if current_status == 'virtual_only' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">⌁</span><span>Virtual Only</span></button>
+                        <button class="status-btn on-leave {% if current_status == 'on_leave' %}active{% endif %}" data-status="on-leave" aria-pressed="{% if current_status == 'on_leave' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">☕</span><span>On Leave</span></button>
+                        <button class="status-btn unavailable {% if current_status == 'unavailable' %}active{% endif %}" data-status="unavailable" aria-pressed="{% if current_status == 'unavailable' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">×</span><span>Unavailable</span></button>
                     </div>
                     <div class="status-note">
                         <label for="statusMessage">Set a status note</label>
-                        <input type="text" id="statusMessage" placeholder="e.g., In a meeting until 3 PM">
+                        <input type="text" id="statusMessage" value="{{ faculty_profile.status_note|default:'' }}" placeholder="e.g., In a meeting until 3 PM">
                     </div>
                     <div class="status-update-action">
-                        <button id="updateStatusBtn" class="btn-primary">Update</button>
+                        <button id="updateStatusBtn" class="btn-primary"><span aria-hidden="true">↻</span><span id="updateStatusLabel">Update</span></button>
+                        <p id="statusFeedback" class="status-feedback" role="status" aria-live="polite"></p>
                     </div>
                 </div>
 
@@ -121,10 +122,11 @@
             <div class="legend-card">
                 <div class="card-section">
                     <h2>Your Live Status</h2>
-                    <div class="status-indicator available">
-                        <span>Available</span>
+                    <div id="liveStatusIndicator" class="status-indicator {{ status_css_class }}">
+                        <span id="liveStatusIcon" class="status-icon" aria-hidden="true"></span>
+                        <span id="liveStatusLabel">{{ status_label }}</span>
                     </div>
-                    <p class="status-note-display">In office — drop by</p>
+                    <p id="liveStatusNote" class="status-note-display">{{ faculty_profile.status_note|default:'No status note set.' }}</p>
                 </div>
                 <div class="card-section">
                     <h2>Today's Activity</h2>

@@ -9,18 +9,24 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
     def pre_social_login(self, request, sociallogin):
         email = sociallogin.account.extra_data.get('email', '')
         user_exists = sociallogin.is_existing
+        requested_role = request.session.get('registration_role')
 
         if user_exists:
             existing_user = sociallogin.user
+            if requested_role and existing_user.role != requested_role:
+                request.session.pop('registration_role', None)
+                messages.error(
+                    request,
+                    f"This Google account is already registered as a {existing_user.get_role_display().lower()}. "
+                    "Please use the Google account registered for your selected role.",
+                )
+                raise ImmediateHttpResponse(redirect('core:login'))
             if existing_user.account_status == 'pending':
                 raise ImmediateHttpResponse(redirect('core:pending_approval_notice'))
             elif existing_user.account_status == 'declined':
                 messages.error(request, "Your registration was declined. Please contact your Department Head.")
                 raise ImmediateHttpResponse(redirect('core:login'))
-            return
-
-        #If the account already exists,proceed normal login
-        if user_exists:
+            request.session.pop('registration_role', None)
             return
 
         #New account 

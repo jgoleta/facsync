@@ -18,7 +18,7 @@
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
-                <a href="{% url 'core:login' %}" class="nav-btn">Logout</a>
+                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
 
@@ -28,6 +28,14 @@
                 <p>Manage your personal information and application settings.</p>
             </div>
 
+            {% if messages %}
+            <div class="page-alerts" aria-live="polite">
+                {% for message in messages %}
+                <div class="page-alert page-alert-{{ message.tags|default:'error' }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             <div class="profile-grid">
                 <!-- Personal Information Card -->
                 <div class="profile-card personal-info-card">
@@ -35,26 +43,34 @@
                         <h2>Personal Information</h2>
                     </div>
                     <div class="profile-picture-section">
-                        <img src="https://i.pravatar.cc/150?u=arthurmorgan" alt="Profile Picture" class="profile-avatar">
+                        {% if faculty_profile and faculty_profile.photo_url %}
+                        <img src="{{ faculty_profile.photo_url }}" alt="Profile picture for {{ request.user.get_full_name|default:request.user.username }}" class="profile-avatar">
+                        {% else %}
+                        <div class="profile-avatar profile-avatar-placeholder" aria-hidden="true">{{ request.user.first_name|first }}{{ request.user.last_name|first }}</div>
+                        {% endif %}
+                        <div class="profile-identity">
+                            <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                            <span>Faculty account</span>
+                        </div>
                     </div>
                     <div class="info-grid">
                         <div class="info-group">
                             <label>Name</label>
-                            <p>Arthur Morgan</p>
+                            <p>{{ request.user.get_full_name|default:request.user.username }}</p>
                         </div>
                         <div class="info-group">
                             <label>Email</label>
-                            <p>arthur.morgan@example.com</p>
+                            <p>{{ request.user.email|default:"No email provided" }}</p>
                         </div>
                         <div class="info-group">
                             <label>Department</label>
-                            <p>College of Computer Studies</p>
+                            <p>{{ faculty_profile.department_id|default:"Not assigned" }}</p>
                         </div>
                         <div class="info-group" id="office-location-group">
                             <label>Office Location</label>
                             <div class="editable-field">
-                                <p id="office-location-text">Faculty Room, 5th Floor</p>
-                                <input type="text" id="office-location-input" class="hidden" value="Faculty Room, 5th Floor">
+                                <p id="office-location-text">{{ faculty_profile.office_location|default:"Not assigned" }}</p>
+                                <input type="text" id="office-location-input" class="hidden" value="{{ faculty_profile.office_location|default:'' }}">
                                 <button id="edit-office-btn" class="edit-btn">Edit</button>
                                 <button id="save-office-btn" class="save-btn hidden">Save</button>
                             </div>
@@ -63,15 +79,15 @@
                     <div class="info-group" id="biography-group">
                         <label>Biography</label>
                         <div class="editable-field-bio">
-                            <p id="biography-text">A seasoned professor in the College of Computer Studies with a focus on AI and data structures.</p>
-                            <textarea id="biography-input" class="hidden">A seasoned professor in the College of Computer Studies with a focus on AI and data structures.</textarea>
+                            <p id="biography-text">{{ faculty_profile.biography|default:"No biography added yet." }}</p>
+                            <textarea id="biography-input" class="hidden">{{ faculty_profile.biography|default:'' }}</textarea>
                             <button id="edit-bio-btn" class="edit-btn">Edit</button>
                             <button id="save-bio-btn" class="save-btn hidden">Save</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Side Column Cardss -->
+                <!-- Side column -->
                 <div class="side-column">
                     <div class="profile-card">
                         <h2>Integrations</h2>

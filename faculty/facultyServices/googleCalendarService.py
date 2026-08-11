@@ -32,7 +32,10 @@ def _client_credentials():
 
 
 def callback_url(request):
-    return request.build_absolute_uri(reverse('faculty:calendar_callback'))
+    configured_url = getattr(settings, 'GOOGLE_CALENDAR_REDIRECT_URI', '')
+    if configured_url:
+        return configured_url
+    return request.build_absolute_uri(reverse('faculty:calendar_connect'))
 
 
 def start_oauth(request):
@@ -45,7 +48,8 @@ def start_oauth(request):
         'response_type': 'code',
         'scope': GOOGLE_CALENDAR_SCOPE,
         'access_type': 'offline',
-        'prompt': 'consent',
+        'prompt': 'select_account consent',
+        'login_hint': request.user.email,
         'include_granted_scopes': 'true',
         'state': state,
     }
@@ -58,7 +62,13 @@ def _token_request(data):
     except requests.RequestException as exc:
         raise GoogleCalendarError('Unable to contact Google OAuth.') from exc
     if not response.ok:
-        raise GoogleCalendarError('Google OAuth token exchange failed.')
+        try:
+            details = response.json()
+        except ValueError:
+            details = {}
+        reason = details.get('error_description') or details.get('error')
+        suffix = f': {reason}' if reason else ''
+        raise GoogleCalendarError(f'Google OAuth token exchange failed{suffix}.')
     return response.json()
 
 
@@ -152,8 +162,14 @@ def google_request(connection, method, path, **kwargs):
             raise GoogleCalendarError('Unable to contact Google Calendar.') from exc
         if response.status_code != 401 or attempt == 1:
             if not response.ok:
+                try:
+                    details = response.json()
+                except ValueError:
+                    details = {}
+                reason = (details.get('error') or {}).get('message') if isinstance(details.get('error'), dict) else details.get('error_description')
+                suffix = f': {reason}' if reason else ''
                 raise GoogleCalendarError(
-                    f'Google Calendar request failed ({response.status_code}).'
+                    f'Google Calendar request failed ({response.status_code}){suffix}.'
                 )
             return response
     raise GoogleCalendarError('Google Calendar authorization failed.')
@@ -296,16 +312,16 @@ def sync_google_calendar(user):
     for item in google_events:
         if item.get('status') == 'cancelled' or not item.get('id'):
             continue
-        values = _google_event_values(item)
-        if values is None:
-            continue
         event_id = item['id']
-        seen_ids.add(event_id)
         event = ScheduleEvent.objects.filter(
             faculty=faculty,
             google_calendar_id=connection.calendar_id,
             google_event_id=event_id,
         ).first()
+        values = _google_event_values(item, existing=event)
+        if values is None:
+            continue
+        seen_ids.add(event_id)
         if event:
             values['google_event_id'] = event_id
             values['google_calendar_id'] = connection.calendar_id
@@ -329,17 +345,6 @@ def sync_google_calendar(user):
         stale_events.exclude(google_event_id__in=seen_ids).delete()
     else:
         stale_events.delete()
-
-    # Local records created before Google Calendar was connected are linked now.
-    local_only_events = ScheduleEvent.objects.filter(
-        faculty=faculty,
-        google_event_id__isnull=True,
-    )
-    for event in local_only_events:
-        google_event = create_google_event(connection, event)
-        event.google_event_id = google_event.get('id')
-        event.google_calendar_id = connection.calendar_id
-        event.save(update_fields=['google_event_id', 'google_calendar_id', 'updated_at'])
 
     now = timezone.now()
     connection.last_synced_at = now

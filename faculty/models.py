@@ -15,6 +15,7 @@ class FacultyProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='faculty_profile', db_column='user_id')
     department_id = models.CharField(max_length=64, db_column='department_id')
     office_location = models.CharField(max_length=128, blank=True)
+    biography = models.TextField(blank=True)
     current_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='available')
     status_note = models.TextField(blank=True)
     status_updated_at = models.DateTimeField(null=True, blank=True)

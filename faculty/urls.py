@@ -5,6 +5,7 @@ app_name = 'faculty'
 
 urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('api/status/', views.update_status, name='update_status'),
     path('booking-management/', views.booking_management, name='booking_management'),
     path('schedule/bookingManagement.html', views.booking_management_legacy, name='booking_management_legacy'),
     path('profile/', views.profile, name='profile'),
