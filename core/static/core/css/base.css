@@ -1,0 +1,192 @@
+/* Canonical FacSync theme, layout, navigation, and button primitives. */
+
+:root {
+  --accent: #0b74de;
+  --accent-soft: #eaf4ff;
+  --muted: #5f6b7a;
+  --border: #dfe7f2;
+  --primary: #3b82f6;
+  --primary-dark: #001e40;
+  --text: #16213e;
+  --text-light: #ffffff;
+  --bg-main: #f7faff;
+  --card-bg: #ffffff;
+  --danger: #dc3545;
+  --danger-soft: #f8d7da;
+  --warning: #ffc107;
+  --success: #28a745;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Segoe UI, Arial, sans-serif;
+  background: linear-gradient(180deg, #f7faff 0%, #f2f6fb 100%);
+  color: var(--text);
+}
+
+.page-shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--primary-dark);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-light);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+}
+
+.nav-links {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  color: var(--text-light);
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 999px;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.nav-btn:hover {
+  background: var(--primary);
+  transform: translateY(-1px);
+}
+
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.primary-button,
+.secondary-button {
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 10px 16px;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.btn-primary,
+.primary-button {
+  background: linear-gradient(45deg, var(--primary), var(--accent));
+  color: var(--text-light);
+}
+
+.btn-secondary,
+.secondary-button {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--border);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: var(--text-light);
+}
+
+.btn:hover,
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-danger:hover,
+.primary-button:hover,
+.secondary-button:hover {
+  transform: translateY(-1px);
+}
+
+.btn-secondary:hover,
+.secondary-button:hover {
+  background: #d8ebff;
+}
+
+.hidden {
+  display: none;
+}
+
+.setting-item span {
+  font-weight: 600;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 28px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+}
+
+input:checked + .slider {
+  background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(22px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}

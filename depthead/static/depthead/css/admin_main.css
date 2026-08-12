@@ -18,11 +18,6 @@ body {
     color: var(--text-primary);
 }
 
-.admin-shell {
-    display: flex;
-    min-height: 100vh;
-}
-
 /* --- Sidebar --- */
 .sidebar {
     width: 260px;
@@ -84,10 +79,6 @@ body {
 .nav-item.active {
     background-color: var(--primary);
     color: #fff;
-}
-
-.nav-icon {
-    font-size: 1.2rem;
 }
 
 .sidebar-divider {

@@ -113,6 +113,12 @@ GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID', default='')
 GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET', default='')
 GOOGLE_CALENDAR_REDIRECT_URI = config('GOOGLE_CALENDAR_REDIRECT_URI', default='')
 GOOGLE_CALENDAR_TIME_ZONE = config('GOOGLE_CALENDAR_TIME_ZONE', default='Asia/Manila')
+GOOGLE_CALENDAR_SCOPE = config(
+    'GOOGLE_CALENDAR_SCOPE',
+    default='https://www.googleapis.com/auth/calendar.events',
+)
+GOOGLE_CALENDAR_SYNC_PAST_DAYS = config('GOOGLE_CALENDAR_SYNC_PAST_DAYS', cast=int, default=1)
+GOOGLE_CALENDAR_SYNC_FUTURE_DAYS = config('GOOGLE_CALENDAR_SYNC_FUTURE_DAYS', cast=int, default=60)
 
 SITE_ID = 1
 
@@ -164,11 +170,10 @@ AUTH_USER_MODEL = 'core.User'
 SOCIALACCOUNT_ADAPTER = 'core.adapters.FacSyncSocialAdapter'
 
 
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
-
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+# Email. Production deployments can replace this with SMTP or a transactional
+# provider through environment variables.
+EMAIL_BACKEND = config(
+    'EMAIL_BACKEND',
+    default='django.core.mail.backends.console.EmailBackend',
+)
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@facsync.local')

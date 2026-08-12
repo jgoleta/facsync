@@ -1,21 +1,4 @@
 /* Student dashboard styles */
-:root {
-  --card-bg: #fff;
-  --muted: #666;
-  --accent: #0b74de;
-}
-* {
-  box-sizing: border-box;
-}
-body {
-  font-family:
-    Segoe UI,
-    Arial,
-    sans-serif;
-  margin: 0;
-  background: #f5f7fa;
-  color: #111;
-}
 .container {
   max-width: 80%;
   margin: 24px auto;
@@ -66,9 +49,6 @@ body {
   background: #d4edda;
   border-color: #c3e6cb;
   color: #155724;
-}
-.hidden {
-  display: none;
 }
 .grid {
   display: grid;

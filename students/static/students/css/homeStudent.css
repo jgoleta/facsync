@@ -2,14 +2,6 @@
   --page-bg: #f5f7fa;
   --surface: #ffffff;
   --surface-strong: #f8fbff;
-  --accent: #0b74de;
-  --accent-soft: #eaf4ff;
-  --muted: #5f6b7a;
-  --border: #dfe7f2;
-  --primary: #3b82f6;
-  --primary-dark: #001e40;
-  --text: #16213e;
-  --text-light: #ffffff;
   --status-approved: #28a745;
   --status-pending: #ffc107;
   --status-declined: #dc3545;
@@ -32,55 +24,6 @@ body {
   min-height: 100vh;
   background: var(--page-bg);
 }
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: var(--primary-dark);
-  border-bottom: 1px solid var(--border);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--text-light);
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: white;
-}
-
-.nav-links {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.nav-btn {
-  text-decoration: none;
-  color: var(--text-light);
-  font-weight: 600;
-  padding: 10px 16px;
-  border-radius: 999px;
-  transition: background 0.2s ease;
-}
-
-.nav-btn:hover {
-  background: var(--primary);
-}
-
 
 .page-intro,
 .announcement-banner,

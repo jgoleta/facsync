@@ -1,9 +1,3 @@
-.main-header.with-action {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 .btn-primary {
   background-color: var(--primary);
   color: #fff;
@@ -82,11 +76,6 @@ table tbody tr:last-child td {
   color: #166534;
 }
 
-.actions {
-  display: flex;
-  gap: 8px;
-}
-
 .actions button {
   padding: 6px 12px;
   font-size: 0.9rem;
@@ -96,20 +85,6 @@ table tbody tr:last-child td {
   cursor: pointer;
   background-color: #f8f9fa;
   transition: background-color 0.2s ease;
-}
-
-.actions button:hover {
-  background-color: #e9ecef;
-}
-
-.actions button.danger {
-  background-color: #f8d7da;
-  color: #721c24;
-  border-color: #f5c6cb;
-}
-
-.actions button.danger:hover {
-  background-color: #f1b0b7;
 }
 
 .modal-overlay {

@@ -19,6 +19,12 @@ class FacultyProfile(models.Model):
     current_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='available')
     status_note = models.TextField(blank=True)
     status_updated_at = models.DateTimeField(null=True, blank=True)
+    # Manual status is retained so a failed/revoked calendar sync can safely
+    # fall back to the faculty member's last explicit status.
+    manual_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='available')
+    # Preserve the previous connected-calendar behavior for existing users;
+    # disconnecting explicitly turns this off.
+    sync_enabled = models.BooleanField(default=True)
     last_calendar_sync_at = models.DateTimeField(null=True, blank=True)
     photo_url = models.URLField(blank=True)
     biography = models.TextField(blank=True, default='')
@@ -28,6 +34,7 @@ class FacultyProfile(models.Model):
         verbose_name_plural = 'Faculty Profiles'
 
     def __str__(self):
+        """Display the faculty member's name and stable profile identifier."""
         return f"{self.user.get_full_name() or self.user.username} ({self.faculty_id})"
 
 
@@ -47,8 +54,10 @@ class GoogleCalendarConnection(models.Model):
     connected_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     last_synced_at = models.DateTimeField(null=True, blank=True)
+    last_sync_error = models.TextField(blank=True)
 
     def __str__(self):
+        """Display which user owns this Google Calendar connection."""
         return f"Google Calendar for {self.user}"
 
 
@@ -77,6 +86,7 @@ class StatusHistory(models.Model):
         verbose_name_plural = 'Status Histories'
 
     def __str__(self):
+        """Describe the faculty status-history entry."""
         return f"{self.faculty} status changed from {self.status} at {self.changed_at}"
 
 
@@ -97,6 +107,9 @@ class ScheduleEvent(models.Model):
     end_time = models.TimeField(null=True, blank=True)
     google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)
     google_calendar_id = models.CharField(max_length=1024, null=True, blank=True)
+    managed_by_facsync = models.BooleanField(default=False)
+    sync_state = models.CharField(max_length=16, default='local')
+    sync_error = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -106,6 +119,7 @@ class ScheduleEvent(models.Model):
         verbose_name_plural = 'Schedule Events'
 
     def __str__(self):
+        """Display the schedule event title, faculty, and date."""
         return f"{self.title} — {self.faculty} on {self.date}"
 
 
@@ -114,6 +128,7 @@ class ConsultationRequest(models.Model):
         ('pending', 'Pending'),
         ('approved', 'Approved'),
         ('declined', 'Declined'),
+        ('cancelled', 'Cancelled'),
         ('completed', 'Completed'),
     ]
 
@@ -131,8 +146,15 @@ class ConsultationRequest(models.Model):
         db_column='faculty_id',
     )
     date = models.DateField()
+    start_time = models.TimeField(null=True, blank=True)
+    end_time = models.TimeField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='pending')
     faculty_note = models.TextField(blank=True)
+    google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)
+    google_calendar_id = models.CharField(max_length=1024, null=True, blank=True)
+    calendar_sync_status = models.CharField(max_length=16, default='not_configured')
+    calendar_sync_error = models.TextField(blank=True)
+    last_calendar_sync_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-date']
@@ -140,6 +162,7 @@ class ConsultationRequest(models.Model):
         verbose_name_plural = 'Consultation Requests'
 
     def __str__(self):
+        """Display the consultation identifier and faculty member."""
         return f"Consultation request {self.request_id} for {self.faculty} on {self.date}"
 
 
@@ -176,4 +199,5 @@ class WalkInQueue(models.Model):
         verbose_name_plural = 'Walk-In Queues'
 
     def __str__(self):
+        """Display the walk-in queue identifier and participants."""
         return f"Walk-in queue {self.queue_id} for {self.user} with {self.faculty}"

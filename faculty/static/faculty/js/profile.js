@@ -88,6 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const calendarStatus = document.getElementById('calendar-status');
     const connectBtn = document.getElementById('calendar-connect-btn');
     const disconnectBtn = document.getElementById('calendar-disconnect-btn');
+    const syncToggle = document.getElementById('calendar-sync-toggle');
+    const lastSync = document.getElementById('calendar-last-sync');
+    const syncError = document.getElementById('calendar-sync-error');
 
     function setCalendarConnected(isConnected) {
         if (isConnected) {
@@ -100,6 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
             calendarStatus.className = 'status-disconnected';
             connectBtn.classList.remove('hidden');
             disconnectBtn.classList.add('hidden');
+            if (syncToggle) {
+                syncToggle.checked = false;
+                syncToggle.disabled = true;
+            }
         }
     }
 
@@ -118,10 +125,50 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 setCalendarConnected(false);
+                if (lastSync) lastSync.textContent = 'Not synced yet';
             }
         });
 
+        if (syncToggle) {
+            syncToggle.addEventListener('change', async () => {
+                const enabled = syncToggle.checked;
+                syncToggle.disabled = true;
+                if (syncError) {
+                    syncError.textContent = '';
+                    syncError.classList.add('hidden');
+                }
+                try {
+                    const response = await fetch('/faculty/api/calendar/preference/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCsrfToken(),
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ sync_enabled: enabled }),
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(data.error || 'Unable to update sync preference.');
+                    if (data.last_synced_at && lastSync) {
+                        lastSync.textContent = `Last synced ${new Date(data.last_synced_at).toLocaleString()}`;
+                    }
+                    if (data.error && syncError) {
+                        syncError.textContent = data.error;
+                        syncError.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    syncToggle.checked = !enabled;
+                    if (syncError) {
+                        syncError.textContent = error.message;
+                        syncError.classList.remove('hidden');
+                    }
+                } finally {
+                    syncToggle.disabled = false;
+                }
+            });
+        }
+
         const isConnected = !disconnectBtn.classList.contains('hidden');
         setCalendarConnected(isConnected);
+        if (syncToggle) syncToggle.disabled = !isConnected;
     }
 });

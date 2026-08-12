@@ -3,7 +3,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from unittest.mock import patch
 
-from .models import FacultyProfile, GoogleCalendarConnection
+from .models import ConsultationRequest, FacultyProfile, GoogleCalendarConnection
 from .models import ScheduleEvent
 from .facultyServices.googleCalendarService import sync_google_calendar
 
@@ -164,3 +164,141 @@ class FacultyViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'faculty/scheduleFaculty.html')
         self.assertContains(response, f'href="{reverse("faculty:booking_management")}"')
+
+    def test_calendar_sync_preference_requires_connection_and_can_be_disabled(self):
+        user = get_user_model().objects.create_user(
+            username='faculty-calendar-toggle-test',
+            password='test-password',
+        )
+        FacultyProfile.objects.create(
+            faculty_id='faculty-calendar-toggle-test',
+            user=user,
+            department_id='CCS',
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse('faculty:calendar_preference'),
+            data='{"sync_enabled":true}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 409)
+
+        GoogleCalendarConnection.objects.create(
+            user=user,
+            google_user_id='google-toggle-user',
+            access_token='access-token',
+            refresh_token='refresh-token',
+        )
+        response = self.client.post(
+            reverse('faculty:calendar_preference'),
+            data='{"sync_enabled":false}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(FacultyProfile.objects.get(pk='faculty-calendar-toggle-test').sync_enabled)
+
+    @patch('faculty.views.consultation_has_calendar_conflict', return_value=False)
+    @patch('faculty.views.create_consultation_event')
+    def test_approving_consultation_creates_google_event(self, create_event, conflict):
+        faculty_user = get_user_model().objects.create_user(
+            username='faculty-consultation-approval-test',
+            email='faculty@example.com',
+            password='test-password',
+        )
+        student = get_user_model().objects.create_user(
+            username='student-consultation-approval-test',
+            email='student@example.com',
+            password='test-password',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-consultation-approval-test',
+            user=faculty_user,
+            department_id='CCS',
+            sync_enabled=True,
+        )
+        GoogleCalendarConnection.objects.create(
+            user=faculty_user,
+            google_user_id='google-consultation-user',
+            access_token='access-token',
+            refresh_token='refresh-token',
+        )
+        consultation = ConsultationRequest.objects.create(
+            request_id='consultation-approval-test',
+            user=student,
+            faculty=faculty,
+            date='2026-08-20',
+            start_time='09:00',
+            end_time='10:00',
+        )
+        create_event.return_value = {'id': 'consultation-google-event'}
+        self.client.force_login(faculty_user)
+
+        response = self.client.post(
+            reverse('faculty:api_consultation', args=[consultation.request_id]),
+            data='{"status":"approved"}',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        consultation.refresh_from_db()
+        self.assertEqual(consultation.google_event_id, 'consultation-google-event')
+        self.assertEqual(consultation.calendar_sync_status, 'synced')
+        create_event.assert_called_once()
+
+    @patch('faculty.views.delete_consultation_event')
+    @patch('faculty.views.update_consultation_event')
+    def test_reschedule_and_cancel_update_and_delete_google_event(self, update_event, delete_event):
+        faculty_user = get_user_model().objects.create_user(
+            username='faculty-consultation-edit-test',
+            email='faculty-edit@example.com',
+            password='test-password',
+        )
+        student = get_user_model().objects.create_user(
+            username='student-consultation-edit-test',
+            email='student-edit@example.com',
+            password='test-password',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-consultation-edit-test',
+            user=faculty_user,
+            department_id='CCS',
+            sync_enabled=True,
+        )
+        GoogleCalendarConnection.objects.create(
+            user=faculty_user,
+            google_user_id='google-edit-user',
+            access_token='access-token',
+            refresh_token='refresh-token',
+        )
+        consultation = ConsultationRequest.objects.create(
+            request_id='consultation-edit-test',
+            user=student,
+            faculty=faculty,
+            date='2026-08-20',
+            start_time='09:00',
+            end_time='10:00',
+            status='approved',
+            google_event_id='consultation-edit-event',
+            google_calendar_id='primary',
+        )
+        self.client.force_login(faculty_user)
+
+        response = self.client.patch(
+            reverse('faculty:api_consultation', args=[consultation.request_id]),
+            data='{"date":"2026-08-21","start_time":"11:00","end_time":"12:00"}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        consultation.refresh_from_db()
+        self.assertEqual(consultation.date.isoformat(), '2026-08-21')
+        update_event.assert_called_once()
+
+        response = self.client.delete(
+            reverse('faculty:api_consultation', args=[consultation.request_id]),
+        )
+        self.assertEqual(response.status_code, 200)
+        consultation.refresh_from_db()
+        self.assertEqual(consultation.status, 'cancelled')
+        self.assertIsNone(consultation.google_event_id)
+        delete_event.assert_called_once()
