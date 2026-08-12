@@ -5,8 +5,10 @@ from core.models import User
 @login_required
 def pending_faculty_requests(request):
     pending_faculty = User.objects.filter(role='faculty', account_status='pending')
+    active_faculty = User.objects.filter(role='faculty', account_status='active')
     return render(request, 'depthead/pendingFacultyRequests.html', {
-        'pending_faculty': pending_faculty
+        'pending_faculty': pending_faculty,
+        'active_faculty': active_faculty,
     })
 
 

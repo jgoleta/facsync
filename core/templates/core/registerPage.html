@@ -20,9 +20,11 @@
             </div>
 
             {% if messages %}
-            {% with messages|last as message %}
+            {% for message in messages %}
+            {% if forloop.last %}
             <p style="color: red;">{{ message }}</p>
-            {% endwith %}
+            {% endif %}
+            {% endfor %}
             {% endif %}
             
             <div class="form-header">

@@ -20,6 +20,7 @@ class FacultyProfile(models.Model):
     status_updated_at = models.DateTimeField(null=True, blank=True)
     last_calendar_sync_at = models.DateTimeField(null=True, blank=True)
     photo_url = models.URLField(blank=True)
+    biography = models.TextField(blank=True, default='')
 
     class Meta:
         verbose_name = 'Faculty Profile'

@@ -8,6 +8,7 @@
     <title>FacSync | Pending Faculty Requests</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}">
     <link rel="stylesheet" href="{% static 'depthead/css/pendingFacultyRequests.css' %}">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_management.css' %}">
 </head>
 
 <body>
@@ -43,7 +44,7 @@
                     <span class="nav-icon">👀</span>
                     <span>Faculty Monitoring</span>
                 </a>
-                <a href="{% url 'depthead:admin_faculty' %}" class="nav-item active">
+                <a href="{% url 'depthead:pending_faculty_requests' %}" class="nav-item active">
                     <span class="nav-icon">👨‍🏫</span>
                     <span>Manage Faculty</span>
                 </a>
@@ -105,8 +106,39 @@
                 <p class="empty-state">No pending faculty requests.</p>
                 {% endif %}
             </div>
+            <section class="management-table-wrapper">
+                <h2>Active Faculty</h2>
+                {% if active_faculty %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in active_faculty %}
+                        <tr>
+                            <td>{{ user.get_full_name|default:user.username }}</td>
+                            <td>{{ user.email }}</td>
+                            <td><span class="status-tag active">Active</span></td>
+                            <td class="actions">
+                                <button>Upload Schedule</button>
+                                <button class="danger">Remove</button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-state">No active faculty yet.</p>
+                {% endif %}
+            </section>
         </main>
     </div>
+    <script src="{% static 'depthead/js/adminFaculty.js' %}"></script>
 </body>
 
 </html>
