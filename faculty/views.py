@@ -4,6 +4,8 @@ from datetime import date, time
 
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.mail import send_mail
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -11,18 +13,29 @@ from django.views.decorators.csrf import csrf_protect
 
 from .facultyServices.googleCalendarService import (
     GoogleCalendarError,
+    consultation_has_calendar_conflict,
+    create_consultation_event,
     create_google_event,
+    delete_consultation_event,
     delete_google_event,
     disconnect_google_calendar,
     finish_oauth,
+    update_consultation_event,
     start_oauth,
     sync_google_calendar,
     update_google_event,
 )
-from .models import FacultyProfile, GoogleCalendarConnection, ScheduleEvent, StatusHistory
+from .models import (
+    ConsultationRequest,
+    FacultyProfile,
+    GoogleCalendarConnection,
+    ScheduleEvent,
+    StatusHistory,
+)
 
 
 def _faculty_for_request(request):
+    """Return the signed-in user's faculty profile, if one exists."""
     if not request.user.is_authenticated:
         return None
     try:
@@ -32,6 +45,7 @@ def _faculty_for_request(request):
 
 
 def _json_body(request):
+    """Decode a JSON request body and reject malformed or non-object payloads."""
     try:
         payload = json.loads(request.body.decode('utf-8'))
     except (TypeError, ValueError, UnicodeDecodeError):
@@ -42,6 +56,7 @@ def _json_body(request):
 
 
 def _event_values(payload, existing=None):
+    """Validate and normalize schedule-event fields from an API payload."""
     title = payload.get('title', existing.title if existing else '')
     if not title:
         raise ValueError('Missing title')
@@ -84,6 +99,7 @@ def _event_values(payload, existing=None):
 
 
 def _event_json(event):
+    """Serialize a schedule event for the faculty calendar API."""
     return {
         'id': event.pk,
         'title': event.title,
@@ -93,11 +109,14 @@ def _event_json(event):
         'start_time': event.start_time.isoformat() if event.start_time else None,
         'end_time': event.end_time.isoformat() if event.end_time else None,
         'google_event_id': event.google_event_id,
+        'sync_state': event.sync_state,
+        'sync_error': event.sync_error,
     }
 
 
 @login_required
 def dashboard(request):
+    """Render the faculty dashboard with the current status presentation."""
     faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
     current_status = faculty_profile.current_status if faculty_profile else 'available'
     status_css_class = {
@@ -119,6 +138,7 @@ def dashboard(request):
 @login_required
 @csrf_protect
 def update_status(request):
+    """Save a faculty member's manual status and append a status-history record."""
     if request.method != 'POST':
         return HttpResponse(status=405)
 
@@ -147,9 +167,10 @@ def update_status(request):
 
     previous_status = faculty_profile.current_status
     faculty_profile.current_status = status
+    faculty_profile.manual_status = status
     faculty_profile.status_note = str(payload.get('note') or '').strip()
     faculty_profile.status_updated_at = timezone.now()
-    faculty_profile.save(update_fields=['current_status', 'status_note', 'status_updated_at'])
+    faculty_profile.save(update_fields=['current_status', 'manual_status', 'status_note', 'status_updated_at'])
 
     if previous_status != status:
         StatusHistory.objects.create(
@@ -170,16 +191,19 @@ def update_status(request):
 
 @login_required
 def booking_management(request):
+    """Render the faculty booking-management page."""
     return render(request, 'faculty/bookingManagement.html')
 
 
 def booking_management_legacy(request):
+    """Redirect the legacy booking URL to the current booking page."""
     return redirect('faculty:booking_management')
 
 
 @login_required
 @csrf_protect
 def profile(request):
+    """Render or update the faculty profile and Google Calendar integration settings."""
     connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
     faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
 
@@ -200,17 +224,22 @@ def profile(request):
 
     return render(request, 'faculty/profile.html', {
         'calendar_connected': connection is not None,
+        'calendar_sync_enabled': bool(faculty_profile and faculty_profile.sync_enabled),
+        'calendar_last_synced_at': connection.last_synced_at if connection else None,
+        'calendar_sync_error': connection.last_sync_error if connection else '',
         'faculty_profile': faculty_profile,
     })
 
 
 @login_required
 def schedule(request):
+    """Render the faculty schedule page."""
     return render(request, 'faculty/scheduleFaculty.html')
 
 
 @login_required
 def calendar_connect(request):
+    """Start OAuth or finish the legacy Google Calendar OAuth callback."""
     if request.method != 'GET':
         return HttpResponse(status=405)
 
@@ -226,6 +255,10 @@ def calendar_connect(request):
             return redirect('faculty:profile')
         try:
             finish_oauth(request, code, state)
+            faculty = _faculty_for_request(request)
+            if faculty:
+                faculty.sync_enabled = True
+                faculty.save(update_fields=['sync_enabled'])
             sync_google_calendar(request.user)
         except (GoogleCalendarError, FacultyProfile.DoesNotExist) as exc:
             messages.error(request, f'Google Calendar connection failed: {exc}')
@@ -243,6 +276,7 @@ def calendar_connect(request):
 
 @login_required
 def calendar_callback(request):
+    """Finish the dedicated Google Calendar OAuth callback flow."""
     if request.GET.get('error'):
         messages.error(request, 'Google Calendar connection was cancelled or denied.')
         return redirect('faculty:profile')
@@ -252,6 +286,10 @@ def calendar_callback(request):
         return redirect('faculty:calendar_connect')
     try:
         finish_oauth(request, code, state)
+        faculty = _faculty_for_request(request)
+        if faculty:
+            faculty.sync_enabled = True
+            faculty.save(update_fields=['sync_enabled'])
         sync_google_calendar(request.user)
     except (GoogleCalendarError, FacultyProfile.DoesNotExist) as exc:
         messages.error(request, f'Google Calendar connection failed: {exc}')
@@ -262,6 +300,7 @@ def calendar_callback(request):
 @login_required
 @csrf_protect
 def calendar_disconnect(request):
+    """Revoke the faculty member's Google Calendar access and clear local links."""
     if request.method != 'POST':
         return HttpResponse(status=405)
     disconnect_google_calendar(request.user)
@@ -270,8 +309,48 @@ def calendar_disconnect(request):
 
 @login_required
 def calendar_status(request):
+    """Return connection, preference, last-sync, and error information as JSON."""
     connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+    faculty = _faculty_for_request(request)
     return JsonResponse({
+        'connected': connection is not None,
+        'sync_enabled': bool(faculty and faculty.sync_enabled),
+        'last_synced_at': connection.last_synced_at.isoformat() if connection and connection.last_synced_at else None,
+        'sync_error': connection.last_sync_error if connection else None,
+    })
+
+
+@login_required
+@csrf_protect
+def calendar_preference(request):
+    """Enable or disable calendar synchronization for the current faculty member."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    faculty = _faculty_for_request(request)
+    if faculty is None:
+        return JsonResponse({'error': 'No faculty profile'}, status=400)
+    try:
+        payload = _json_body(request)
+    except ValueError as exc:
+        return HttpResponseBadRequest(str(exc))
+    enabled = payload.get('sync_enabled')
+    if not isinstance(enabled, bool):
+        return JsonResponse({'error': 'sync_enabled must be true or false.'}, status=400)
+    connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+    if enabled and connection is None:
+        return JsonResponse({'error': 'Connect Google Calendar before enabling sync.'}, status=409)
+    faculty.sync_enabled = enabled
+    faculty.save(update_fields=['sync_enabled'])
+    if enabled:
+        try:
+            sync_google_calendar(request.user)
+        except GoogleCalendarError as exc:
+            return JsonResponse({
+                'sync_enabled': True,
+                'error': str(exc),
+            }, status=502)
+    return JsonResponse({
+        'sync_enabled': faculty.sync_enabled,
         'connected': connection is not None,
         'last_synced_at': connection.last_synced_at.isoformat() if connection and connection.last_synced_at else None,
     })
@@ -280,6 +359,7 @@ def calendar_status(request):
 @login_required
 @csrf_protect
 def api_schedule_events(request):
+    """List, create, and optionally pull-sync the faculty member's schedule events."""
     faculty = _faculty_for_request(request)
     if faculty is None:
         return JsonResponse({'error': 'No faculty profile'}, status=400)
@@ -287,18 +367,23 @@ def api_schedule_events(request):
     if request.method == 'GET':
         sync_error = None
         sync_requested = request.GET.get('sync') == '1'
-        calendar_connected = GoogleCalendarConnection.objects.filter(user=request.user).exists()
-        if sync_requested and calendar_connected:
+        connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+        calendar_connected = connection is not None
+        sync_enabled = bool(faculty.sync_enabled and connection)
+        if sync_requested and sync_enabled:
             try:
                 sync_google_calendar(request.user)
             except GoogleCalendarError as exc:
                 sync_error = str(exc)
+        elif sync_requested and calendar_connected and not faculty.sync_enabled:
+            sync_error = 'Two-way sync is disabled in your profile.'
 
         events = ScheduleEvent.objects.filter(faculty=faculty).order_by('date', 'start_time')
         return JsonResponse({
             'events': [_event_json(event) for event in events],
             'calendar_connected': calendar_connected,
-            'sync_performed': sync_requested and calendar_connected,
+            'sync_enabled': sync_enabled,
+            'sync_performed': sync_requested and sync_enabled,
             'sync_error': sync_error,
         })
 
@@ -310,11 +395,14 @@ def api_schedule_events(request):
 
         event = ScheduleEvent(faculty=faculty, **values)
         connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+        sync_enabled = bool(connection and faculty.sync_enabled)
         try:
-            if connection:
+            if sync_enabled:
                 google_event = create_google_event(connection, event)
                 event.google_event_id = google_event.get('id')
                 event.google_calendar_id = connection.calendar_id
+                event.managed_by_facsync = True
+                event.sync_state = 'synced'
                 if not event.google_event_id:
                     raise GoogleCalendarError('Google Calendar did not return an event ID.')
             event.save()
@@ -328,6 +416,7 @@ def api_schedule_events(request):
 @login_required
 @csrf_protect
 def api_schedule_event_detail(request, pk):
+    """Read, update, or delete one faculty schedule event and its Google counterpart."""
     faculty = _faculty_for_request(request)
     if faculty is None:
         return JsonResponse({'error': 'No faculty profile'}, status=400)
@@ -337,6 +426,7 @@ def api_schedule_event_detail(request, pk):
         return JsonResponse(_event_json(event))
 
     connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+    sync_enabled = bool(connection and faculty.sync_enabled)
 
     if request.method in ('PUT', 'PATCH'):
         try:
@@ -347,7 +437,7 @@ def api_schedule_event_detail(request, pk):
             setattr(event, field, value)
 
         try:
-            if connection:
+            if sync_enabled:
                 if event.google_event_id:
                     try:
                         update_google_event(connection, event)
@@ -357,10 +447,14 @@ def api_schedule_event_detail(request, pk):
                         google_event = create_google_event(connection, event)
                         event.google_event_id = google_event.get('id')
                         event.google_calendar_id = connection.calendar_id
+                        event.managed_by_facsync = True
                 else:
                     google_event = create_google_event(connection, event)
                     event.google_event_id = google_event.get('id')
                     event.google_calendar_id = connection.calendar_id
+                    event.managed_by_facsync = True
+                event.sync_state = 'synced'
+                event.sync_error = ''
                 if not event.google_event_id:
                     raise GoogleCalendarError('Google Calendar did not return an event ID.')
             event.save()
@@ -370,11 +464,207 @@ def api_schedule_event_detail(request, pk):
 
     if request.method == 'DELETE':
         try:
-            if connection and event.google_event_id:
+            if sync_enabled and event.google_event_id:
                 delete_google_event(connection, event)
             event.delete()
         except GoogleCalendarError as exc:
             return JsonResponse({'error': str(exc)}, status=502)
         return JsonResponse({'status': 'deleted'})
 
+    return HttpResponse(status=405)
+
+
+def _consultation_json(consultation):
+    """Serialize consultation timing and calendar synchronization metadata."""
+    return {
+        'request_id': consultation.request_id,
+        'status': consultation.status,
+        'date': consultation.date.isoformat(),
+        'start_time': consultation.start_time.isoformat() if consultation.start_time else None,
+        'end_time': consultation.end_time.isoformat() if consultation.end_time else None,
+        'google_event_id': consultation.google_event_id,
+        'calendar_sync_status': consultation.calendar_sync_status,
+        'calendar_sync_error': consultation.calendar_sync_error,
+        'last_calendar_sync_at': (
+            consultation.last_calendar_sync_at.isoformat()
+            if consultation.last_calendar_sync_at else None
+        ),
+    }
+
+
+def _consultation_values(payload, existing):
+    """Validate and normalize consultation date and time changes."""
+    values = {}
+    if 'date' in payload:
+        try:
+            values['date'] = date.fromisoformat(str(payload['date']))
+        except (TypeError, ValueError) as exc:
+            raise ValueError('Invalid consultation date.') from exc
+    if 'start_time' in payload:
+        try:
+            values['start_time'] = time.fromisoformat(str(payload['start_time'])) if payload['start_time'] else None
+        except (TypeError, ValueError) as exc:
+            raise ValueError('Invalid consultation start time.') from exc
+    if 'end_time' in payload:
+        try:
+            values['end_time'] = time.fromisoformat(str(payload['end_time'])) if payload['end_time'] else None
+        except (TypeError, ValueError) as exc:
+            raise ValueError('Invalid consultation end time.') from exc
+    if 'date' not in values:
+        values['date'] = existing.date
+    if 'start_time' not in values:
+        values['start_time'] = existing.start_time
+    if 'end_time' not in values:
+        values['end_time'] = existing.end_time
+    if values['start_time'] and values['end_time'] and values['end_time'] <= values['start_time']:
+        raise ValueError('Consultation must end after it starts.')
+    return values
+
+
+def _notify_consultation_student(consultation, subject, body):
+    """Email a consultation status change to the student when an address exists."""
+    if not consultation.user.email:
+        return
+    send_mail(
+        subject,
+        body,
+        getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@facsync.local'),
+        [consultation.user.email],
+        fail_silently=True,
+    )
+
+
+@login_required
+@csrf_protect
+def api_consultation(request, request_id):
+    """Approve, decline, reschedule, cancel, or inspect a consultation request."""
+    consultation = get_object_or_404(
+        ConsultationRequest.objects.select_related('faculty', 'faculty__user', 'user'),
+        request_id=request_id,
+    )
+    is_faculty = request.user == consultation.faculty.user
+    is_student = request.user == consultation.user
+    if not is_faculty and not is_student:
+        return JsonResponse({'error': 'You cannot modify this consultation.'}, status=403)
+
+    connection = GoogleCalendarConnection.objects.filter(
+        user=consultation.faculty.user,
+    ).first()
+    sync_enabled = bool(connection and consultation.faculty.sync_enabled)
+
+    if request.method == 'POST':
+        if not is_faculty:
+            return JsonResponse({'error': 'Only faculty can approve or decline requests.'}, status=403)
+        try:
+            payload = _json_body(request)
+        except ValueError as exc:
+            return HttpResponseBadRequest(str(exc))
+        new_status = payload.get('status')
+        allowed_statuses = {'approved', 'declined', 'cancelled', 'completed'}
+        if new_status not in allowed_statuses:
+            return JsonResponse({'error': 'Invalid consultation status.'}, status=400)
+        if new_status == 'approved' and sync_enabled and consultation_has_calendar_conflict(connection, consultation):
+            return JsonResponse({
+                'error': 'The faculty calendar has an overlapping event.',
+                'calendar_conflict': True,
+            }, status=409)
+
+        old_status = consultation.status
+        consultation.status = new_status
+        if 'faculty_note' in payload:
+            consultation.faculty_note = str(payload.get('faculty_note') or '').strip()
+
+        if new_status == 'approved':
+            consultation.calendar_sync_status = 'not_configured'
+            consultation.calendar_sync_error = ''
+            if sync_enabled:
+                try:
+                    google_event = create_consultation_event(connection, consultation)
+                    consultation.google_event_id = google_event.get('id')
+                    consultation.google_calendar_id = connection.calendar_id
+                    consultation.calendar_sync_status = 'synced'
+                    consultation.last_calendar_sync_at = timezone.now()
+                    if not consultation.google_event_id:
+                        raise GoogleCalendarError('Google Calendar did not return an event ID.')
+                except GoogleCalendarError as exc:
+                    consultation.calendar_sync_status = 'failed'
+                    consultation.calendar_sync_error = str(exc)
+        elif new_status in {'declined', 'cancelled'} and old_status == 'approved':
+            if sync_enabled and consultation.google_event_id:
+                try:
+                    delete_consultation_event(connection, consultation)
+                except GoogleCalendarError as exc:
+                    consultation.calendar_sync_error = str(exc)
+                    consultation.calendar_sync_status = 'failed'
+            consultation.google_event_id = None
+            consultation.google_calendar_id = None
+            if consultation.calendar_sync_status != 'failed':
+                consultation.calendar_sync_status = 'not_configured'
+        consultation.save()
+        if new_status in {'declined', 'cancelled'}:
+            _notify_consultation_student(
+                consultation,
+                f'FacSync consultation {new_status}',
+                f'Your consultation request {consultation.request_id} with '
+                f'{consultation.faculty} was {new_status}.',
+            )
+        return JsonResponse(_consultation_json(consultation))
+
+    if request.method == 'PATCH':
+        if consultation.status != 'approved':
+            return JsonResponse({'error': 'Only approved consultations can be rescheduled.'}, status=409)
+        try:
+            values = _consultation_values(_json_body(request), consultation)
+        except ValueError as exc:
+            return HttpResponseBadRequest(str(exc))
+        for field, value in values.items():
+            setattr(consultation, field, value)
+        consultation.calendar_sync_status = 'not_configured'
+        consultation.calendar_sync_error = ''
+        if sync_enabled:
+            try:
+                if consultation.google_event_id:
+                    try:
+                        update_consultation_event(connection, consultation)
+                    except GoogleCalendarError as exc:
+                        if '(404)' not in str(exc):
+                            raise
+                        google_event = create_consultation_event(connection, consultation)
+                        consultation.google_event_id = google_event.get('id')
+                else:
+                    google_event = create_consultation_event(connection, consultation)
+                    consultation.google_event_id = google_event.get('id')
+                consultation.google_calendar_id = connection.calendar_id
+                consultation.calendar_sync_status = 'synced'
+                consultation.last_calendar_sync_at = timezone.now()
+            except GoogleCalendarError as exc:
+                consultation.calendar_sync_status = 'failed'
+                consultation.calendar_sync_error = str(exc)
+        consultation.save()
+        return JsonResponse(_consultation_json(consultation))
+
+    if request.method == 'DELETE':
+        if consultation.status == 'approved' and sync_enabled and consultation.google_event_id:
+            try:
+                delete_consultation_event(connection, consultation)
+            except GoogleCalendarError as exc:
+                consultation.calendar_sync_status = 'failed'
+                consultation.calendar_sync_error = str(exc)
+        consultation.status = 'cancelled'
+        consultation.google_event_id = None
+        consultation.google_calendar_id = None
+        consultation.save(update_fields=[
+            'status', 'google_event_id', 'google_calendar_id',
+            'calendar_sync_status', 'calendar_sync_error',
+        ])
+        _notify_consultation_student(
+            consultation,
+            'FacSync consultation cancelled',
+            f'Your consultation request {consultation.request_id} with '
+            f'{consultation.faculty} was cancelled.',
+        )
+        return JsonResponse(_consultation_json(consultation))
+
+    if request.method == 'GET':
+        return JsonResponse(_consultation_json(consultation))
     return HttpResponse(status=405)

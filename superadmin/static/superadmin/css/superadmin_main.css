@@ -19,11 +19,6 @@ body {
   color: var(--text);
 }
 
-.admin-shell {
-  display: flex;
-  min-height: 100vh;
-}
-
 .sidebar {
   width: 260px;
   background: var(--primary-dark);
@@ -88,10 +83,6 @@ body {
   border-left-color: var(--accent);
 }
 
-.nav-icon {
-  font-size: 1.2rem;
-}
-
 .sidebar-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.1);
@@ -111,12 +102,6 @@ body {
 
 .main-header {
   margin-bottom: 24px;
-}
-
-.main-header.with-action {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .main-header h1 {

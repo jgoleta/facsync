@@ -3,6 +3,7 @@
 <html lang="en">
 
 <head>
+    <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Profile</title>
@@ -101,6 +102,16 @@
                             </div>
                             <button id="calendar-connect-btn" class="btn-secondary {% if calendar_connected %}hidden{% endif %}">Connect</button>
                             <button id="calendar-disconnect-btn" class="btn-danger {% if not calendar_connected %}hidden{% endif %}">Disconnect</button>
+                        </div>
+                        <div class="calendar-sync-preference">
+                            <label class="toggle-row" for="calendar-sync-toggle">
+                                <input id="calendar-sync-toggle" type="checkbox" {% if calendar_sync_enabled %}checked{% endif %} {% if not calendar_connected %}disabled{% endif %}>
+                                <span>Enable two-way sync</span>
+                            </label>
+                            <p id="calendar-last-sync" class="integration-meta">
+                                {% if calendar_last_synced_at %}Last synced {{ calendar_last_synced_at|date:'M j, Y g:i A' }}{% else %}Not synced yet{% endif %}
+                            </p>
+                            {% if calendar_sync_error %}<p id="calendar-sync-error" class="integration-error">{{ calendar_sync_error }}</p>{% else %}<p id="calendar-sync-error" class="integration-error hidden"></p>{% endif %}
                         </div>
                         <div class="card-actions-vertical">
                             <a href="{% url 'faculty:dashboard' %}" class="btn-secondary full-width">Dashboard</a>

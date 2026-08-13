@@ -2,20 +2,12 @@
   --bg: #f4f7ff;
   --surface: #ffffff;
   --surface-alt: #eef3ff;
-  --primary: #3b82f6;
-  --primary-dark: #001e40;
-  --text: #16213e;
-  --text-light: #ffffff;
   --muted: #5f6f93;
   --border: rgba(59, 130, 246, 0.16);
 }
 
 html {
   scroll-behavior: smooth;
-}
-
-* {
-  box-sizing: border-box;
 }
 
 body {
@@ -46,26 +38,6 @@ body {
   left: 0;
   right: 0;
   z-index: 100;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--text-light);
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.brand-mark {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: white;
 }
 
 .nav-btn {

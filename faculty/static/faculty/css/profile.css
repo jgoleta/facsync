@@ -1,50 +1,5 @@
 :root {
-  --accent: #0b74de;
-  --accent-soft: #eaf4ff;
   --accent-gradient: linear-gradient(45deg, var(--primary), var(--accent));
-  --muted: #5f6b7a;
-  --border: #dfe7f2;
-  --primary: #3b82f6;
-  --primary-dark: #001e40;
-  --text: #16213e;
-  --text-light: #ffffff;
-  --bg-main: #f7faff;
-  --card-bg: #ffffff;
-  --danger: #dc3545;
-  --success: #28a745;
-}
-
-body {
-  margin: 0;
-  font-family:
-    Segoe UI,
-    Arial,
-    sans-serif;
-  background: linear-gradient(180deg, #f7faff 0%, #f2f6fb 100%);
-  color: var(--text);
-}
-
-.page-shell {
-  min-height: 100vh;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 24px;
-  background: var(--primary-dark);
-  border-bottom: 1px solid var(--border);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: var(--text-light);
-  font-size: 1.1rem;
-  font-weight: 700;
 }
 
 .brand-mark {
@@ -343,10 +298,6 @@ body {
   border: none;
 }
 
-.hidden {
-  display: none;
-}
-
 .google-calendar-icon {
   width: 40px;
   height: 40px;
@@ -355,6 +306,28 @@ body {
   background-repeat: no-repeat;
   background-position: center;
 }
+
+.calendar-sync-preference {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.integration-meta,
+.integration-error {
+  margin: 8px 0 0 48px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.integration-error { color: var(--danger); }
 
 .profile-picture-section {
   display: flex;
