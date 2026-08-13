@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from core.models import User
+from core.models import User, FacultyInvite
+from django.contrib import messages
+from .forms import FacultyInviteForm
 
 @login_required
 def pending_faculty_requests(request):
@@ -18,7 +20,7 @@ def approve_faculty(request, user_id):
     if request.method == 'POST':
         faculty_user.account_status = 'active'
         faculty_user.save()
-    return redirect('depthead:admin_faculty')
+    return redirect('depthead:pending_faculty_requests')
 
 
 @login_required
@@ -27,8 +29,26 @@ def decline_faculty(request, user_id):
     if request.method == 'POST':
         faculty_user.account_status = 'declined'
         faculty_user.save()
-    return redirect('depthead:admin_faculty')
+    return redirect('depthead:pending_faculty_requests')
 
+@login_required
+def invite_faculty(request):
+    if request.method == 'POST':
+        if not request.user.department:
+            messages.error(request, "Your account has no department set. Contact a Super Admin.")
+            return redirect('depthead:pending_faculty_requests')
+        form = FacultyInviteForm(request.POST)
+        if form.is_valid():
+            invite = form.save(commit=False)
+            invite.department = request.user.department
+            invite.invited_by = request.user
+            invite.save()
+            messages.success(request, f"Invitation created for {invite.email}.")
+        else:
+            for error_list in form.errors.values():
+                for error in error_list:
+                    messages.error(request, error)
+    return redirect('depthead:pending_faculty_requests')
 
 def admin_dashboard(request):
     return render(request, 'depthead/adminDashboard.html')

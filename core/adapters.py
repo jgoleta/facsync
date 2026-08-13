@@ -9,54 +9,46 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
     def pre_social_login(self, request, sociallogin):
         email = sociallogin.account.extra_data.get('email', '')
         user_exists = sociallogin.is_existing
-        requested_role = request.session.get('registration_role')
 
         if user_exists:
             existing_user = sociallogin.user
-            if requested_role and existing_user.role != requested_role:
-                request.session.pop('registration_role', None)
-                messages.error(
-                    request,
-                    f"This Google account is already registered as a {existing_user.get_role_display().lower()}. "
-                    "Please use the Google account registered for your selected role.",
-                )
-                raise ImmediateHttpResponse(redirect('core:login'))
             if existing_user.account_status == 'pending':
                 raise ImmediateHttpResponse(redirect('core:pending_approval_notice'))
             elif existing_user.account_status == 'declined':
                 messages.error(request, "Your registration was declined. Please contact your Department Head.")
                 raise ImmediateHttpResponse(redirect('core:login'))
-            request.session.pop('registration_role', None)
             return
 
-        #New account 
+        # New account — check for a pre-added faculty invite FIRST, regardless of session role
+        try:
+            invite = FacultyInvite.objects.get(email__iexact=email, used=False)
+            sociallogin.user.role = 'faculty'
+            sociallogin.user.account_status = 'active'
+            sociallogin.user.department = invite.department
+            invite.used = True
+            invite.save()
+            if 'registration_role' in request.session:
+                del request.session['registration_role']
+            return
+        except FacultyInvite.DoesNotExist:
+            pass
+
+        # No invite matched — fall back to session-role-based registration flow
         role = request.session.get('registration_role')
 
         if not role:
-            #No role in session, they login without registering 
             messages.error(request, "No account found. Please register first.")
             raise ImmediateHttpResponse(redirect('core:register'))
 
         if role == 'student':
             sociallogin.user.role = 'student'
             sociallogin.user.account_status = 'active'
-            #sociallogin.user gets saved automatically by allauth 
 
         elif role == 'faculty':
-            try:
-                invite = FacultyInvite.objects.get(email__iexact=email, used=False)
-                sociallogin.user.role = 'faculty'
-                sociallogin.user.account_status = 'active'
-                sociallogin.user.department = invite.department
-                invite.used = True
-                invite.save()
-            except FacultyInvite.DoesNotExist:
-                #Not pre-added: redirect to the self-registration
-                request.session['pending_faculty_email'] = email
-                request.session['pending_faculty_name'] = sociallogin.account.extra_data.get('name', '')
-                request.session['pending_faculty_uid'] = sociallogin.account.uid
-                raise ImmediateHttpResponse(redirect('core:faculty_pending_registration'))
+            request.session['pending_faculty_email'] = email
+            request.session['pending_faculty_name'] = sociallogin.account.extra_data.get('name', '')
+            request.session['pending_faculty_uid'] = sociallogin.account.uid
+            raise ImmediateHttpResponse(redirect('core:faculty_pending_registration'))
 
-        #clear session flag after used
         if 'registration_role' in request.session:
             del request.session['registration_role']
