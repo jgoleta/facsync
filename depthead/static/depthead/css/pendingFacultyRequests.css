@@ -183,3 +183,11 @@ h1 {
     color: var(--text-primary);
     margin-bottom: 24px;
 }
+
+.message-success {
+    color: green;
+}
+
+.message-error {
+    color: red;
+}

@@ -3,7 +3,7 @@ from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from faculty.models import FacultyProfile
-from .forms import StudentProfileForm, FacultyRegistrationForm
+from .forms import StudentProfileForm, FacultyRegistrationForm, FacultyProfileSetupForm
 from django.contrib.auth import login as auth_login
 from django.http import Http404
 from allauth.socialaccount.models import SocialAccount
@@ -67,6 +67,24 @@ def student_profile_setup(request):
 
     return render(request, 'core/studentProfileSetup.html', {'form': form})
 
+@login_required
+def faculty_profile_setup(request):
+    if request.method == 'POST':
+        form = FacultyProfileSetupForm(request.POST)
+        if form.is_valid():
+            FacultyProfile.objects.create(
+                faculty_id=form.cleaned_data['faculty_id'],
+                user=request.user,
+                department_id=request.user.department,
+                office_location=form.cleaned_data['office_location'],
+            )
+            request.user.profile_completed = True
+            request.user.save()
+            return redirect('faculty:dashboard')
+    else:
+        form = FacultyProfileSetupForm()
+
+    return render(request, 'core/facultyProfileSetup.html', {'form': form})
 
 def faculty_pending_registration(request):
     email = request.session.get('pending_faculty_email', '')

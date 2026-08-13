@@ -64,6 +64,14 @@
         <main class="main-content">
             <header class="main-header">
                 <h1>Pending Faculty Requests</h1>
+                <button id="openInviteModalBtn" class="btn-primary">Invite Faculty</button>
+                {% if messages %}
+                {% for message in messages %}
+                {% if forloop.last %}
+                <p class="message-{{ message.tags }}">{{ message }}</p>
+                {% endif %}
+                {% endfor %}
+                {% endif %}
                 <p>Review and approve faculty self-registrations</p>
             </header>
 
@@ -139,6 +147,30 @@
         </main>
     </div>
     <script src="{% static 'depthead/js/adminFaculty.js' %}"></script>
+    <div class="modal-overlay hidden" id="inviteFacultyModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inviteFacultyModalTitle">
+            <div class="modal-header">
+                <div>
+                    <h2 id="inviteFacultyModalTitle">Invite Faculty</h2>
+                    <p>Pre-register a faculty email for instant activation on first login.</p>
+                </div>
+                <button type="button" class="modal-close" id="closeInviteModal">×</button>
+            </div>
+            <form method="post" action="{% url 'depthead:invite_faculty' %}" class="modal-form">
+                {% csrf_token %}
+                <div class="modal-form-group">
+                    <label for="inviteEmail">Faculty Email</label>
+                    <input id="inviteEmail" name="email" type="email" placeholder="faculty@gbox.adnu.edu.ph" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelInviteModal">Cancel</button>
+                    <button type="submit" class="btn-primary">Send Invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="{% static 'depthead/js/pendingFacultyRequests.js' %}"></script>
 </body>
 
 </html>

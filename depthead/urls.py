@@ -22,4 +22,5 @@ urlpatterns = [
     path('pending-faculty/', views.pending_faculty_requests, name='pending_faculty_requests'),
     path('pending-faculty/<int:user_id>/approve/', views.approve_faculty, name='approve_faculty'),
     path('pending-faculty/<int:user_id>/decline/', views.decline_faculty, name='decline_faculty'),
+    path('invite-faculty/', views.invite_faculty, name='invite_faculty'),
 ]
