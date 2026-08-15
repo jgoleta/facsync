@@ -40,9 +40,9 @@
                 </div>
 
                 <div class="view-controls">
-                    <button class="view-btn active" data-view="monthly">Monthly</button>
-                    <button class="view-btn" data-view="weekly">Weekly</button>
-                    <button class="view-btn" data-view="daily">Daily</button>
+                    <button type="button" class="view-btn active" data-view="monthly">Monthly</button>
+                    <button type="button" class="view-btn" data-view="weekly">Weekly</button>
+                    <button type="button" class="view-btn" data-view="daily">Daily</button>
                 </div>
 
                 <div class="calendar-wrapper">
@@ -69,8 +69,8 @@
                 </div>
                 <div class="actions">
                     <a id="view-walkins-btn" class="primary-button" href="{% url 'faculty:booking_management' %}">View Walk-ins</a>
-                    <button id="add-event-btn" class="secondary-button">Add Event</button>
-                    <button id="upload-schedule-btn" class="secondary-button">Upload Schedule</button>
+                    <button type="button" id="add-event-btn" class="secondary-button">Add Event</button>
+                    <button type="button" id="upload-schedule-btn" class="secondary-button">Upload Schedule</button>
                     <a href="{% url 'faculty:dashboard' %}" class="secondary-link">Back to dashboard</a>
                 </div>
             </aside>
@@ -79,7 +79,7 @@
 
     <div id="eventDetailModal" class="modal-overlay hidden">
         <div class="modal-content event-detail-modal">
-            <button class="modal-close-btn" data-close-modal="eventDetailModal">&times;</button>
+            <button type="button" class="modal-close-btn" data-close-modal="eventDetailModal">&times;</button>
             <div class="consultation-card">
                 <div class="consultation-header">
                     <p class="eyebrow">Schedule details</p>
@@ -109,7 +109,7 @@
     <!-- Add Event Modal -->
     <div id="addEventModal" class="modal-overlay hidden">
         <div class="modal-content">
-            <button class="modal-close-btn">&times;</button>
+            <button type="button" class="modal-close-btn">&times;</button>
             <div class="consultation-card">
                 <div class="consultation-header">
                     <p class="eyebrow">Schedule Management</p>
@@ -160,7 +160,7 @@
 
     <div id="dayScheduleModal" class="modal-overlay hidden">
         <div class="modal-content">
-            <button class="modal-close-btn" data-close-modal="dayScheduleModal">&times;</button>
+            <button type="button" class="modal-close-btn" data-close-modal="dayScheduleModal">&times;</button>
             <div class="consultation-card">
                 <div class="consultation-header">
                     <p class="eyebrow">Day schedule</p>

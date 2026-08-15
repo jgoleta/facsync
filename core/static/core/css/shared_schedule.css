@@ -520,6 +520,11 @@ a.btn-danger {
   overflow-y: auto;
 }
 
+/* Keep the shared .hidden utility effective for schedule modals. */
+.modal-overlay.hidden {
+  display: none;
+}
+
 .modal-content {
   background: #fff;
   padding: 30px;
