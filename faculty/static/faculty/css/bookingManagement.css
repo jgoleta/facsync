@@ -75,6 +75,26 @@ body {
   box-sizing: border-box;
 }
 
+.walk-in-control {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 8px 12px;
+  border: 1px solid var(--queue-border);
+  border-radius: 12px;
+  background: white;
+  color: var(--queue-navy);
+  font-size: 0.9rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.walk-in-control .switch {
+  flex: 0 0 50px;
+}
+
 #refreshQueueBtn {
   min-width: 160px;
 }

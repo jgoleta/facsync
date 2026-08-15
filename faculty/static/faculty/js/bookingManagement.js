@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueList = document.getElementById('queueList');
     const queueCount = document.getElementById('queueCount');
     const refreshQueueBtn = document.getElementById('refreshQueueBtn');
+    const walkInToggle = document.getElementById('walkInToggle');
     const walkInStatus = document.getElementById('walkInStatus');
     const availabilityLabel = document.getElementById('availabilityLabel');
     const availabilityDot = document.getElementById('availabilityDot');
@@ -70,6 +71,32 @@ document.addEventListener('DOMContentLoaded', () => {
             lastUpdated.textContent = 'Unable to refresh';
             queueList.innerHTML = '<li class="queue-item empty-state"><p>Unable to load the queue.</p></li>';
         }
+    }
+
+    if (walkInToggle) {
+        walkInToggle.addEventListener('change', async () => {
+            const enabled = walkInToggle.checked;
+            walkInToggle.disabled = true;
+            try {
+                const response = await fetch('/faculty/api/walk-ins/preference/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken(),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ enabled }),
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Unable to update walk-in availability.');
+                walkInToggle.checked = data.walk_ins_enabled;
+                await loadQueue();
+            } catch (error) {
+                walkInToggle.checked = !enabled;
+                walkInStatus.textContent = error.message;
+            } finally {
+                walkInToggle.disabled = false;
+            }
+        });
     }
 
     async function updateQueue(queueId, action) {

@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Booking Management</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/bookingManagement.css' %}?v=20260815-action-height">
+    <link rel="stylesheet" href="{% static 'faculty/css/bookingManagement.css' %}?v=20260815-walkin-toggle">
 </head>
 
 <body>
@@ -19,7 +19,7 @@
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
-                <a href="{% url 'faculty:schedule' %}" class="nav-btn">Schedule</a>
+                <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
                 <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
@@ -32,6 +32,13 @@
                     <p class="page-copy">Keep your office queue moving with timely student notifications.</p>
                 </div>
                 <div class="page-actions">
+                    <div class="walk-in-control">
+                        <span>Accepting walk-ins</span>
+                        <label class="switch" title="Toggle walk-in queue availability">
+                            <input id="walkInToggle" type="checkbox" {% if faculty_profile.walk_ins_enabled %}checked{% endif %}>
+                            <span class="slider round"></span>
+                        </label>
+                    </div>
                     <a href="{% url 'faculty:schedule' %}" class="btn-secondary">View Schedule</a>
                     <button type="button" id="refreshQueueBtn" class="btn-primary">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-14.9-3.8L3 10m0 0V5m0 5h5M4 13a8.1 8.1 0 0 0 14.9 3.8L21 14m0 0v5m0-5h-5" /></svg>
@@ -82,7 +89,7 @@
         </main>
     </div>
 
-    <script src="{% static 'faculty/js/bookingManagement.js' %}"></script>
+    <script src="{% static 'faculty/js/bookingManagement.js' %}?v=20260815-walkin-toggle"></script>
 </body>
 
 </html>

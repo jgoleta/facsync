@@ -191,7 +191,10 @@ def update_status(request):
 @login_required
 def booking_management(request):
     """Render the faculty booking-management page."""
-    return render(request, 'faculty/bookingManagement.html')
+    faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
+    return render(request, 'faculty/bookingManagement.html', {
+        'faculty_profile': faculty_profile,
+    })
 
 
 def booking_management_legacy(request):
