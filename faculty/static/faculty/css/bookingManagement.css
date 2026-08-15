@@ -66,6 +66,17 @@ body {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  width: fit-content;
+}
+
+.page-actions > .btn-primary,
+.page-actions > .btn-secondary {
+  min-height: 46px;
+  box-sizing: border-box;
+}
+
+#refreshQueueBtn {
+  min-width: 160px;
 }
 
 .btn-primary,

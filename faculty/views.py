@@ -132,6 +132,7 @@ def dashboard(request):
     return render(request, 'faculty/dashboardFaculty.html', {
         'faculty_profile': faculty_profile,
         'current_status': current_status,
+        'manual_status_override': faculty_profile.manual_status_override if faculty_profile else False,
         'status_css_class': status_css_class,
         'status_label': status_label,
     })
@@ -153,7 +154,7 @@ def update_status(request):
     except ValueError as exc:
         return HttpResponseBadRequest(str(exc))
 
-    submitted_status = payload.get('status')
+    submitted_status = payload.get('status', faculty_profile.manual_status)
     status_aliases = {'virtual': 'virtual_only', 'on-leave': 'on_leave'}
     status_css_classes = {
         'available': 'available',
@@ -168,8 +169,12 @@ def update_status(request):
         return JsonResponse({'error': 'Invalid faculty status.'}, status=400)
 
     faculty_profile.manual_status = status
+    manual_override = payload.get('manual_override', True)
+    if not isinstance(manual_override, bool):
+        return JsonResponse({'error': 'manual_override must be true or false.'}, status=400)
+    faculty_profile.manual_status_override = manual_override
     faculty_profile.status_note = str(payload.get('note') or '').strip()
-    faculty_profile.save(update_fields=['manual_status', 'status_note'])
+    faculty_profile.save(update_fields=['manual_status', 'manual_status_override', 'status_note'])
     effective_status = refresh_faculty_status(faculty_profile)
     faculty_profile.refresh_from_db()
 
@@ -178,6 +183,7 @@ def update_status(request):
         'status_css_class': status_css_classes[effective_status],
         'label': dict(FacultyProfile.STATUS_CHOICES)[effective_status],
         'note': faculty_profile.status_note,
+        'manual_override': faculty_profile.manual_status_override,
         'updated_at': faculty_profile.status_updated_at.isoformat(),
     })
 

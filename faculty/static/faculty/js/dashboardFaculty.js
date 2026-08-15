@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const liveStatusNote = document.getElementById('liveStatusNote');
     const statusFeedback = document.getElementById('statusFeedback');
     const updateStatusLabel = document.getElementById('updateStatusLabel');
+    const statusModeLabel = document.getElementById('statusModeLabel');
+    const useCalendarStatusBtn = document.getElementById('useCalendarStatusBtn');
     const statusIcons = {
         available: '✓',
         busy: '◷',
@@ -16,6 +18,30 @@ document.addEventListener('DOMContentLoaded', () => {
         unavailable: '×',
     };
     let selectedStatus = document.querySelector('.status-btn.active')?.dataset.status || 'available';
+
+    function statusButtonValue(status) {
+        return status === 'virtual_only' ? 'virtual' : status === 'on_leave' ? 'on-leave' : status;
+    }
+
+    function updateStatusPresentation(data) {
+        const buttonStatus = statusButtonValue(data.status);
+        statusButtons.forEach((button) => {
+            const active = button.dataset.status === buttonStatus;
+            button.classList.toggle('active', active);
+            button.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+        selectedStatus = buttonStatus;
+        liveStatusIndicator.className = `status-indicator ${data.status_css_class}`;
+        if (liveStatusIcon) liveStatusIcon.textContent = statusIcons[buttonStatus];
+        liveStatusLabel.textContent = data.label;
+        liveStatusNote.textContent = data.note || 'No status note set.';
+        if (statusModeLabel) {
+            statusModeLabel.textContent = data.manual_override
+                ? 'Manual override is active'
+                : 'Status follows your calendar';
+        }
+        if (useCalendarStatusBtn) useCalendarStatusBtn.classList.toggle('hidden', !data.manual_override);
+    }
 
     statusButtons.forEach((button) => {
         button.addEventListener('click', () => {
@@ -47,15 +73,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         status: selectedStatus,
                         note: statusMessage?.value || '',
+                        manual_override: true,
                     }),
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Unable to update status.');
 
-                liveStatusIndicator.className = `status-indicator ${data.status_css_class}`;
-                if (liveStatusIcon) liveStatusIcon.textContent = statusIcons[selectedStatus];
-                liveStatusLabel.textContent = data.label;
-                liveStatusNote.textContent = data.note || 'No status note set.';
+                updateStatusPresentation(data);
                 statusFeedback.className = 'status-feedback success';
                 statusFeedback.textContent = 'Status updated successfully.';
                 if (updateStatusLabel) updateStatusLabel.textContent = 'Updated';
@@ -66,6 +90,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (updateStatusLabel) updateStatusLabel.textContent = 'Update';
             } finally {
                 updateStatusButton.disabled = false;
+            }
+        });
+    }
+
+    if (useCalendarStatusBtn) {
+        useCalendarStatusBtn.addEventListener('click', async () => {
+            useCalendarStatusBtn.disabled = true;
+            try {
+                const response = await fetch('/faculty/api/status/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken(),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        note: statusMessage?.value || '',
+                        manual_override: false,
+                    }),
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Unable to restore calendar status.');
+                updateStatusPresentation(data);
+                statusFeedback.className = 'status-feedback success';
+                statusFeedback.textContent = 'Calendar-driven status restored.';
+            } catch (error) {
+                statusFeedback.className = 'status-feedback error';
+                statusFeedback.textContent = error.message;
+            } finally {
+                useCalendarStatusBtn.disabled = false;
             }
         });
     }

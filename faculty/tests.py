@@ -165,8 +165,58 @@ class FacultyViewTests(TestCase):
         faculty.refresh_from_db()
         self.assertEqual(faculty.current_status, 'busy')
 
+        faculty.manual_status = 'on_leave'
+        faculty.manual_status_override = True
+        faculty.save(update_fields=['manual_status', 'manual_status_override'])
+        self.assertEqual(refresh_faculty_status(faculty), 'on_leave')
+
+        faculty.manual_status = 'available'
+        faculty.manual_status_override = False
+        faculty.save(update_fields=['manual_status', 'manual_status_override'])
         ScheduleEvent.objects.filter(faculty=faculty).delete()
         self.assertEqual(refresh_faculty_status(faculty), 'available')
+
+    def test_manual_status_can_be_cleared_back_to_calendar_status(self):
+        user = get_user_model().objects.create_user(
+            username='faculty-status-mode-test',
+            password='test-password',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-status-mode-test',
+            user=user,
+            department_id='CCS',
+        )
+        local_now = timezone.localtime(
+            timezone.now(),
+            ZoneInfo(getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)),
+        )
+        ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Current class',
+            event_type='busy',
+            date=local_now.date(),
+            start_time=(local_now - timedelta(minutes=10)).time(),
+            end_time=(local_now + timedelta(minutes=10)).time(),
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse('faculty:update_status'),
+            data='{"status":"on-leave","manual_override":true}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'on_leave')
+
+        response = self.client.post(
+            reverse('faculty:update_status'),
+            data='{"manual_override":false}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'busy')
+        faculty.refresh_from_db()
+        self.assertFalse(faculty.manual_status_override)
 
     @patch('faculty.views.create_google_event')
     def test_schedule_event_is_created_in_google_and_locally(self, create_google_event):

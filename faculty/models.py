@@ -22,6 +22,7 @@ class FacultyProfile(models.Model):
     # Manual status is retained so a failed/revoked calendar sync can safely
     # fall back to the faculty member's last explicit status.
     manual_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='available')
+    manual_status_override = models.BooleanField(default=False)
     # Preserve the previous connected-calendar behavior for existing users;
     # disconnecting explicitly turns this off.
     sync_enabled = models.BooleanField(default=True)

@@ -707,7 +707,7 @@ def refresh_faculty_status(faculty, google_events=None):
             )
             consider_event(values['date'], values['start_time'], values['end_time'], candidate)
 
-    next_status = active_status or faculty.manual_status
+    next_status = faculty.manual_status if faculty.manual_status_override else (active_status or faculty.manual_status)
     if faculty.current_status != next_status:
         changed_at = timezone.now()
         faculty.current_status = next_status

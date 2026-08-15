@@ -15,7 +15,6 @@
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
-  width: 100%;
   background: linear-gradient(45deg, var(--primary), var(--accent));
   color: var(--text-light);
   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.2);
@@ -201,6 +200,30 @@ h2 {
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.status-mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-main);
+}
+
+.status-mode-label {
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.status-mode-row .btn-secondary {
+  padding: 7px 11px;
+  font-size: 0.82rem;
+  white-space: nowrap;
 }
 
 .status-update-action {
@@ -423,10 +446,24 @@ h2 {
   }
 }
 
-@media (max-width: 576px) {
+/* Match the schedule layout on smaller screens so both cards use the full
+   available width with the same outer spacing. */
+@media (max-width: 900px) {
   .dashboard-grid {
-    padding: 0 16px;
+    max-width: 100%;
+    padding: 0 16px 24px;
   }
+}
+
+@media (max-width: 576px) {
+  .dashboard-card {
+    padding: 24px;
+  }
+
+  .legend-card {
+    padding: 20px;
+  }
+
   .status-buttons {
     flex-direction: column;
   }
