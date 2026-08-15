@@ -6,6 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const datePill = document.querySelector(".date-pill");
   const calendarSyncStatus = document.getElementById("calendar-sync-status");
   const syncCalendarBtn = document.getElementById("syncCalendarBtn");
+  const walkInToggle = document.getElementById("walkInToggle");
+  const walkInFeedback = document.getElementById("walkInFeedback");
 
   let currentView = "monthly"; // Default view
   let isEditing = false; // To track if the modal is for editing
@@ -21,6 +23,37 @@ document.addEventListener("DOMContentLoaded", () => {
     const headers = { 'X-CSRFToken': getCsrfToken() };
     if (includeJson) headers['Content-Type'] = 'application/json';
     return headers;
+  }
+
+  function showWalkInFeedback(message, isError = false) {
+    if (!walkInFeedback) return;
+    walkInFeedback.textContent = message;
+    walkInFeedback.className = `calendar-sync-status${isError ? ' error' : ''}`;
+  }
+
+  if (walkInToggle) {
+    walkInToggle.addEventListener('change', async () => {
+      const enabled = walkInToggle.checked;
+      walkInToggle.disabled = true;
+      try {
+        const response = await fetch('/faculty/api/walk-ins/preference/', {
+          method: 'POST',
+          headers: requestHeaders(true),
+          body: JSON.stringify({ enabled }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || 'Unable to update walk-in availability.');
+        walkInToggle.checked = data.walk_ins_enabled;
+        showWalkInFeedback(data.walk_ins_enabled
+          ? 'Students can now join your walk-in queue.'
+          : 'Walk-in queue is closed to new students.');
+      } catch (error) {
+        walkInToggle.checked = !enabled;
+        showWalkInFeedback(error.message, true);
+      } finally {
+        walkInToggle.disabled = false;
+      }
+    });
   }
 
   // Schedule object will be populated from the server API

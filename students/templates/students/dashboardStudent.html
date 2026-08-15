@@ -341,6 +341,7 @@
         </main>
     </div>
 
+    {{ faculty_directory|json_script:"faculty-directory" }}
     <script src="{% static 'students/js/dashboardStudent.js' %}"></script>
 </body>
 

@@ -1,5 +1,4 @@
 import json
-import uuid
 from datetime import date, time
 
 from django.contrib.auth.decorators import login_required
@@ -23,6 +22,7 @@ from .facultyServices.googleCalendarService import (
     update_consultation_event,
     start_oauth,
     sync_google_calendar,
+    refresh_faculty_status,
     update_google_event,
 )
 from .models import (
@@ -30,7 +30,7 @@ from .models import (
     FacultyProfile,
     GoogleCalendarConnection,
     ScheduleEvent,
-    StatusHistory,
+    WalkInQueue,
 )
 
 
@@ -118,6 +118,8 @@ def _event_json(event):
 def dashboard(request):
     """Render the faculty dashboard with the current status presentation."""
     faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
+    if faculty_profile:
+        refresh_faculty_status(faculty_profile)
     current_status = faculty_profile.current_status if faculty_profile else 'available'
     status_css_class = {
         'available': 'available',
@@ -165,25 +167,16 @@ def update_status(request):
     if status not in valid_statuses:
         return JsonResponse({'error': 'Invalid faculty status.'}, status=400)
 
-    previous_status = faculty_profile.current_status
-    faculty_profile.current_status = status
     faculty_profile.manual_status = status
     faculty_profile.status_note = str(payload.get('note') or '').strip()
-    faculty_profile.status_updated_at = timezone.now()
-    faculty_profile.save(update_fields=['current_status', 'manual_status', 'status_note', 'status_updated_at'])
-
-    if previous_status != status:
-        StatusHistory.objects.create(
-            history_id=uuid.uuid4().hex,
-            faculty=faculty_profile,
-            status=status,
-            changed_at=faculty_profile.status_updated_at,
-        )
+    faculty_profile.save(update_fields=['manual_status', 'status_note'])
+    effective_status = refresh_faculty_status(faculty_profile)
+    faculty_profile.refresh_from_db()
 
     return JsonResponse({
-        'status': status,
-        'status_css_class': status_css_classes[status],
-        'label': dict(FacultyProfile.STATUS_CHOICES)[status],
+        'status': effective_status,
+        'status_css_class': status_css_classes[effective_status],
+        'label': dict(FacultyProfile.STATUS_CHOICES)[effective_status],
         'note': faculty_profile.status_note,
         'updated_at': faculty_profile.status_updated_at.isoformat(),
     })
@@ -234,7 +227,140 @@ def profile(request):
 @login_required
 def schedule(request):
     """Render the faculty schedule page."""
-    return render(request, 'faculty/scheduleFaculty.html')
+    faculty_profile = _faculty_for_request(request)
+    if faculty_profile:
+        refresh_faculty_status(faculty_profile)
+    return render(request, 'faculty/scheduleFaculty.html', {
+        'faculty_profile': faculty_profile,
+    })
+
+
+def _walk_in_json(queue):
+    """Serialize a walk-in queue entry for faculty and student clients."""
+    return {
+        'queue_id': queue.queue_id,
+        'faculty_id': queue.faculty.faculty_id,
+        'student_name': queue.user.get_full_name() or queue.user.username,
+        'student_email': queue.user.email,
+        'status': queue.status,
+        'position': queue.position,
+        'student_message': queue.student_message,
+        'faculty_note': queue.faculty_note,
+        'joined_at': queue.joined_at.isoformat(),
+        'notified_at': queue.notified_at.isoformat() if queue.notified_at else None,
+        'served_at': queue.served_at.isoformat() if queue.served_at else None,
+    }
+
+
+@login_required
+@csrf_protect
+def api_walk_in_preference(request):
+    """Read or update the signed-in faculty member's walk-in availability."""
+    faculty = _faculty_for_request(request)
+    if faculty is None:
+        return JsonResponse({'error': 'Faculty profile not found.'}, status=404)
+
+    if request.method == 'GET':
+        return JsonResponse({'walk_ins_enabled': faculty.walk_ins_enabled})
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        payload = _json_body(request)
+    except ValueError as exc:
+        return HttpResponseBadRequest(str(exc))
+
+    enabled = payload.get('enabled')
+    if not isinstance(enabled, bool):
+        return JsonResponse({'error': 'enabled must be true or false.'}, status=400)
+
+    faculty.walk_ins_enabled = enabled
+    faculty.save(update_fields=['walk_ins_enabled'])
+    return JsonResponse({'walk_ins_enabled': faculty.walk_ins_enabled})
+
+
+@login_required
+def api_faculty_walk_ins(request):
+    """List the signed-in faculty member's active walk-in queue."""
+    if request.method != 'GET':
+        return HttpResponse(status=405)
+
+    faculty = _faculty_for_request(request)
+    if faculty is None:
+        return JsonResponse({'error': 'Faculty profile not found.'}, status=404)
+
+    queues = WalkInQueue.objects.filter(
+        faculty=faculty,
+        status__in=['waiting', 'called'],
+    ).select_related('user', 'faculty')
+    return JsonResponse({
+        'walk_ins_enabled': faculty.walk_ins_enabled,
+        'queue': [_walk_in_json(queue) for queue in queues],
+    })
+
+
+@login_required
+@csrf_protect
+def api_walk_in_detail(request, queue_id):
+    """Allow a faculty member to notify/complete a queue entry or a student to cancel it."""
+    queue = get_object_or_404(
+        WalkInQueue.objects.select_related('faculty', 'faculty__user', 'user'),
+        queue_id=queue_id,
+    )
+    faculty = _faculty_for_request(request)
+    is_faculty = faculty is not None and queue.faculty_id == faculty.faculty_id
+    is_student = queue.user_id == request.user.id
+    if not is_faculty and not is_student:
+        return JsonResponse({'error': 'You cannot modify this queue entry.'}, status=403)
+
+    if request.method == 'GET':
+        return JsonResponse(_walk_in_json(queue))
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        payload = _json_body(request)
+    except ValueError as exc:
+        return HttpResponseBadRequest(str(exc))
+    action = payload.get('action')
+
+    if action == 'cancel' and is_student:
+        if queue.status not in ['waiting', 'called']:
+            return JsonResponse({'error': 'This queue entry is no longer active.'}, status=409)
+        queue.status = 'cancelled'
+        queue.save(update_fields=['status'])
+        return JsonResponse(_walk_in_json(queue))
+
+    if not is_faculty:
+        return JsonResponse({'error': 'Only the faculty member can manage this queue entry.'}, status=403)
+
+    if action == 'notify':
+        if queue.status not in ['waiting', 'called']:
+            return JsonResponse({'error': 'This queue entry is no longer active.'}, status=409)
+        queue.status = 'called'
+        queue.notified_at = queue.notified_at or timezone.now()
+        queue.faculty_note = str(payload.get('faculty_note') or queue.faculty_note or '').strip()
+        queue.save(update_fields=['status', 'notified_at', 'faculty_note'])
+        if queue.user.email:
+            send_mail(
+                'Please enter the faculty office',
+                f'{queue.faculty} is ready to see you. Please enter the office now.',
+                settings.DEFAULT_FROM_EMAIL,
+                [queue.user.email],
+                fail_silently=True,
+            )
+        return JsonResponse(_walk_in_json(queue))
+
+    if action == 'complete':
+        if queue.status not in ['waiting', 'called']:
+            return JsonResponse({'error': 'This queue entry is no longer active.'}, status=409)
+        queue.status = 'completed'
+        queue.served_at = timezone.now()
+        queue.faculty_note = str(payload.get('faculty_note') or queue.faculty_note or '').strip()
+        queue.save(update_fields=['status', 'served_at', 'faculty_note'])
+        return JsonResponse(_walk_in_json(queue))
+
+    return JsonResponse({'error': 'Invalid queue action.'}, status=400)
 
 
 @login_required
@@ -363,6 +489,7 @@ def api_schedule_events(request):
     faculty = _faculty_for_request(request)
     if faculty is None:
         return JsonResponse({'error': 'No faculty profile'}, status=400)
+    refresh_faculty_status(faculty)
 
     if request.method == 'GET':
         sync_error = None
@@ -381,6 +508,7 @@ def api_schedule_events(request):
         events = ScheduleEvent.objects.filter(faculty=faculty).order_by('date', 'start_time')
         return JsonResponse({
             'events': [_event_json(event) for event in events],
+            'faculty_status': faculty.current_status,
             'calendar_connected': calendar_connected,
             'sync_enabled': sync_enabled,
             'sync_performed': sync_requested and sync_enabled,
@@ -408,6 +536,7 @@ def api_schedule_events(request):
             event.save()
         except GoogleCalendarError as exc:
             return JsonResponse({'error': str(exc)}, status=502)
+        refresh_faculty_status(faculty)
         return JsonResponse(_event_json(event), status=201)
 
     return HttpResponse(status=405)
@@ -460,6 +589,7 @@ def api_schedule_event_detail(request, pk):
             event.save()
         except GoogleCalendarError as exc:
             return JsonResponse({'error': str(exc)}, status=502)
+        refresh_faculty_status(faculty)
         return JsonResponse(_event_json(event))
 
     if request.method == 'DELETE':
@@ -469,6 +599,7 @@ def api_schedule_event_detail(request, pk):
             event.delete()
         except GoogleCalendarError as exc:
             return JsonResponse({'error': str(exc)}, status=502)
+        refresh_faculty_status(faculty)
         return JsonResponse({'status': 'deleted'})
 
     return HttpResponse(status=405)

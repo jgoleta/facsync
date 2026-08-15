@@ -61,10 +61,11 @@
                     <div class="setting-item">
                         <span>Accepting Walk-ins</span>
                         <label class="switch">
-                            <input type="checkbox" checked>
+                            <input id="walkInToggle" type="checkbox" {% if faculty_profile.walk_ins_enabled %}checked{% endif %}>
                             <span class="slider round"></span>
                         </label>
                     </div>
+                    <p id="walkInFeedback" class="calendar-sync-status" role="status" aria-live="polite"></p>
                     
                 </div>
                 <div class="actions">

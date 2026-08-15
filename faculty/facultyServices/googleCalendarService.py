@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 from django.conf import settings
+from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
@@ -644,30 +645,67 @@ def sync_google_calendar(user):
         raise
 
 
-def _update_status_from_calendar(faculty, google_events):
-    """Use the current calendar occupancy while retaining manual fallback."""
+def refresh_faculty_status(faculty, google_events=None):
+    """Derive status from local, synced, and approved consultation records."""
     now = timezone.localtime(
         timezone.now(),
         ZoneInfo(getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)),
     )
     active_status = None
-    for item in google_events:
+    calendar_events = ScheduleEvent.objects.filter(
+        faculty=faculty,
+        date=now.date(),
+    ).filter(
+        # Local events are always part of the system calendar. Synced Google
+        # events count while their latest local copy is still in sync.
+        models.Q(google_event_id__isnull=True)
+        | models.Q(managed_by_facsync=True)
+        | models.Q(sync_state='synced')
+    )
+
+    status_priority = {'busy': 1, 'virtual_only': 2, 'on_leave': 3}
+
+    def consider_event(event_date, start_time, end_time, candidate):
+        nonlocal active_status
+        if event_date != now.date():
+            return
+        if start_time is None:
+            is_active = True
+        else:
+            start = datetime.combine(event_date, start_time)
+            end = datetime.combine(event_date, end_time or start_time)
+            if end <= start:
+                end += timedelta(days=1)
+            is_active = start <= now.replace(tzinfo=None) < end
+        if is_active and (active_status is None or status_priority[candidate] > status_priority[active_status]):
+            active_status = candidate
+
+    for event in calendar_events:
+        candidate = 'on_leave' if event.event_type == 'on-leave' else (
+            'virtual_only' if event.event_type == 'virtual' else 'busy'
+        )
+        consider_event(event.date, event.start_time, event.end_time, candidate)
+
+    # Approved system consultations occupy the calendar even when their
+    # Google event has not been synchronized yet.
+    for consultation in ConsultationRequest.objects.filter(
+        faculty=faculty,
+        date=now.date(),
+        status='approved',
+    ):
+        consider_event(consultation.date, consultation.start_time, consultation.end_time, 'busy')
+
+    # During a sync, include the fresh Google response immediately as well as
+    # the reconciled local records, so status does not wait for another read.
+    for item in google_events or []:
         if item.get('status') == 'cancelled' or item.get('transparency') == 'transparent':
             continue
         values = _google_event_values(item)
-        if not values or values['date'] != now.date():
-            continue
-        if not values['start_time']:
-            active_status = 'on_leave' if values['event_type'] == 'on-leave' else 'busy'
-            break
-        start = datetime.combine(values['date'], values['start_time'])
-        end = datetime.combine(values['date'], values['end_time'] or values['start_time'])
-        if end <= start:
-            end += timedelta(days=1)
-        if start <= now.replace(tzinfo=None) < end:
-            candidate = 'on_leave' if values['event_type'] == 'on-leave' else 'busy'
-            if candidate == 'on_leave' or active_status is None:
-                active_status = candidate
+        if values:
+            candidate = 'on_leave' if values['event_type'] == 'on-leave' else (
+                'virtual_only' if values['event_type'] == 'virtual' else 'busy'
+            )
+            consider_event(values['date'], values['start_time'], values['end_time'], candidate)
 
     next_status = active_status or faculty.manual_status
     if faculty.current_status != next_status:
@@ -681,6 +719,12 @@ def _update_status_from_calendar(faculty, google_events):
             status=next_status,
             changed_at=changed_at,
         )
+    return next_status
+
+
+def _update_status_from_calendar(faculty, google_events=None):
+    """Backward-compatible wrapper for calendar sync callers."""
+    return refresh_faculty_status(faculty, google_events=google_events)
 
 
 def disconnect_google_calendar(user):
