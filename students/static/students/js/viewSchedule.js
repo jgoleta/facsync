@@ -14,8 +14,86 @@ const queueFacultyStatus = document.getElementById('queue-faculty-status');
 const queuePosition = document.getElementById('queue-position');
 const waitTime = document.getElementById('wait-time');
 const walkInNote = document.getElementById('walk-in-note');
+const queueMessage = document.getElementById('queue-message');
+const facultyId = document.body.dataset.facultyId;
+let activeQueue = null;
 
 let currentView = 'monthly'; // Default view
+
+function getCsrfToken() {
+  const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
+  return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+}
+
+function ordinal(value) {
+  const number = Number(value);
+  const suffix = number % 10 === 1 && number % 100 !== 11 ? 'st'
+    : number % 10 === 2 && number % 100 !== 12 ? 'nd'
+      : number % 10 === 3 && number % 100 !== 13 ? 'rd' : 'th';
+  return `${number}${suffix}`;
+}
+
+function renderWalkInState(data) {
+  activeQueue = data.queue;
+  if (queueFacultyName) queueFacultyName.textContent = data.faculty_name;
+  if (queueFacultyStatus) {
+    const statusLabels = {
+      available: 'available',
+      busy: 'busy',
+      virtual_only: 'virtual only',
+      on_leave: 'on leave',
+      unavailable: 'unavailable',
+    };
+    queueFacultyStatus.textContent = statusLabels[data.faculty_status] || data.faculty_status || 'status unavailable';
+    queueFacultyStatus.className = `status-${data.faculty_status || 'offline'}`;
+  }
+
+  if (activeQueue) {
+    queueInitialState?.classList.add('hidden');
+    queueActiveState?.classList.remove('hidden');
+    if (queuePosition) queuePosition.textContent = ordinal(activeQueue.position);
+    if (queueMessage) {
+      queueMessage.textContent = activeQueue.status === 'called'
+        ? 'The faculty member asked you to enter the office now.'
+        : 'You are in the walk-in queue. Please wait for the faculty notification.';
+    }
+    return;
+  }
+
+  queueInitialState?.classList.remove('hidden');
+  queueActiveState?.classList.add('hidden');
+  if (joinQueueBtn) {
+    joinQueueBtn.disabled = !data.walk_ins_enabled;
+    joinQueueBtn.textContent = data.walk_ins_enabled ? 'Join Walk-in Queue' : 'Walk-ins Unavailable';
+  }
+  if (walkInNote) {
+    walkInNote.textContent = data.walk_ins_enabled
+      ? 'This faculty is currently accepting walk-ins.'
+      : 'The faculty member is not accepting new walk-in students.';
+    walkInNote.classList.remove('hidden');
+  }
+  if (queueMessage) queueMessage.textContent = '';
+}
+
+async function loadWalkInStatus() {
+  if (!facultyId) {
+    if (joinQueueBtn) {
+      joinQueueBtn.disabled = true;
+      joinQueueBtn.textContent = 'Faculty Unavailable';
+    }
+    if (queueMessage) queueMessage.textContent = 'Select a faculty member to join a walk-in queue.';
+    return;
+  }
+  try {
+    const response = await fetch(`/student/api/walk-ins/status/?faculty_id=${encodeURIComponent(facultyId)}`);
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Unable to check walk-in availability.');
+    renderWalkInState(data);
+  } catch (error) {
+    if (joinQueueBtn) joinQueueBtn.disabled = true;
+    if (queueMessage) queueMessage.textContent = error.message;
+  }
+}
 
 const facultySchedule = [
   {
@@ -178,33 +256,18 @@ function renderCalendar() {
   const facultyNameFromURL = urlParams.get('faculty');
   const facultyStatusFromURL = urlParams.get('status') || 'on-leave';
 
-  const selectedFaculty = facultySchedule.find(f => f.name === facultyNameFromURL) || facultySchedule[0];
+  const selectedFaculty = facultySchedule.find(f => f.name === facultyNameFromURL) || {
+    name: selectedFacultyName?.textContent || 'Faculty Schedule',
+    schedule: [],
+  };
   calendarGrid.innerHTML = "";
   legendList.innerHTML = "";
   selectedFacultyName.textContent = selectedFaculty.name;
 
-  // Update Walk-in Queue display
-  if (queueFacultyName) {
-    queueFacultyName.textContent = selectedFaculty.name;
-  }
-  if (queueFacultyStatus) {
-    queueFacultyStatus.textContent = facultyStatusFromURL;
-    queueFacultyStatus.className = `status-${facultyStatusFromURL}`;
-  }
-  // Disable joining queue if faculty is not available
+  // Walk-in availability is loaded from the faculty's persisted setting.
   if (joinQueueBtn) {
-    if (facultyStatusFromURL !== 'available') {
-      joinQueueBtn.disabled = true;
-      joinQueueBtn.textContent = 'Faculty Not Available';
-      if (walkInNote) walkInNote.classList.add('hidden');
-    } else {
-      joinQueueBtn.disabled = false;
-      joinQueueBtn.textContent = 'Join Walk-in Queue';
-      if (walkInNote) {
-        walkInNote.textContent = 'This faculty is currently accepting walk-ins.';
-        walkInNote.classList.remove('hidden');
-      }
-    }
+    joinQueueBtn.disabled = true;
+    joinQueueBtn.textContent = 'Checking Walk-ins...';
   }
 
   let daysToRender;
@@ -377,25 +440,44 @@ if (myConsultationsBtn) {
 }
 
 if (joinQueueBtn) {
-    joinQueueBtn.addEventListener('click', () => {
-        if (queueInitialState && queueActiveState) {
-            // In a real app, you'd get this data from a server
-            queuePosition.textContent = '3rd';
-            waitTime.textContent = '15 minutes';
-
-            queueInitialState.classList.add('hidden');
-            queueActiveState.classList.remove('hidden');
-        }
-    });
+  joinQueueBtn.addEventListener('click', async () => {
+    joinQueueBtn.disabled = true;
+    if (queueMessage) queueMessage.textContent = 'Joining walk-in queue...';
+    try {
+      const response = await fetch('/student/api/walk-ins/join/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ faculty_id: facultyId }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Unable to join the walk-in queue.');
+      await loadWalkInStatus();
+    } catch (error) {
+      if (queueMessage) queueMessage.textContent = error.message;
+      await loadWalkInStatus();
+    }
+  });
 }
 
 if (cancelQueueBtn) {
-    cancelQueueBtn.addEventListener('click', () => {
-        if (queueInitialState && queueActiveState) {
-            queueInitialState.classList.remove('hidden');
-            queueActiveState.classList.add('hidden');
-        }
-    });
+  cancelQueueBtn.addEventListener('click', async () => {
+    if (!activeQueue) return;
+    cancelQueueBtn.disabled = true;
+    try {
+      const response = await fetch(`/faculty/api/walk-ins/${encodeURIComponent(activeQueue.queue_id)}/`, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'cancel' }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Unable to leave the queue.');
+      await loadWalkInStatus();
+    } catch (error) {
+      if (queueMessage) queueMessage.textContent = error.message;
+    } finally {
+      cancelQueueBtn.disabled = false;
+    }
+  });
 }
 
 openModalBtn.addEventListener('click', () => {
@@ -460,3 +542,5 @@ if (viewControls) {
 }
 
 renderCalendar();
+loadWalkInStatus();
+window.setInterval(loadWalkInStatus, 10000);

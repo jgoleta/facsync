@@ -16,6 +16,12 @@ function parseISOToDisplay(iso){
   try{return new Date(iso).toLocaleString();}catch(e){return iso}
 }
 
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>'"]/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
+  }[character]));
+}
+
 function populateDepartments(){
   const depts = Array.from(new Set(cards.map(c=>c.dataset.dept))).sort();
   // clear existing except the 'all' option
@@ -88,14 +94,46 @@ function attachCardHandlers(){
   }));
   facultyGrid.querySelectorAll('.btn.view').forEach(b=>b.addEventListener('click',e=>{
     const id = e.target.dataset.id; const card = facultyGrid.querySelector(`.card[data-id="${id}"]`);
-    const facultyName = card.querySelector('.card-title').textContent.trim();
-    const facultyStatus = card.dataset.status;
-    window.location.href = `viewSchedule.html?faculty=${encodeURIComponent(facultyName)}&status=${encodeURIComponent(facultyStatus)}`;
+    window.location.href = `/student/view-schedule/?faculty_id=${encodeURIComponent(id)}`;
   }));
   facultyGrid.querySelectorAll('.card-notify').forEach(b=>b.addEventListener('click',e=>{
     const card = e.target.closest('.card');
     alert(`Notifications for ${card.querySelector('.card-title').textContent}`);
   }));
+}
+
+function renderFacultyDirectory() {
+  const dataElement = document.getElementById('faculty-directory');
+  if (!dataElement) return;
+  let directory = [];
+  try {
+    directory = JSON.parse(dataElement.textContent || '[]');
+  } catch (error) {
+    return;
+  }
+  if (!directory.length) return;
+
+  facultyGrid.innerHTML = directory.map((faculty) => `
+    <article class="card" data-id="${escapeHtml(faculty.faculty_id)}" data-dept="${escapeHtml(faculty.department)}" data-status="${escapeHtml(faculty.status)}" data-lastupdated="${escapeHtml(faculty.updated_at || '')}">
+      <div class="card-left">
+        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <circle cx="12" cy="8" r="3.2" fill="#e6eefc" />
+          <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#e6eefc" />
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-title">${escapeHtml(faculty.name)}</div>
+        <div class="card-sub">${escapeHtml(faculty.department)}</div>
+        <div class="status-row"><span class="status-badge status-${faculty.status}"></span>
+          <i class="status-note">${escapeHtml(faculty.walk_ins_enabled ? 'Accepting walk-ins' : (faculty.note || 'Walk-ins unavailable'))}</i>
+        </div>
+        <div class="meta">${escapeHtml(faculty.updated_at ? `Last updated: ${parseISOToDisplay(faculty.updated_at)}` : 'No recent status update')}</div>
+        <div class="card-actions">
+          <button type="button" class="btn view" data-id="${escapeHtml(faculty.faculty_id)}">View Schedule</button>
+        </div>
+      </div>
+    </article>
+  `).join('');
 }
 
 function insertNotifyButtons(){
@@ -111,7 +149,7 @@ function insertNotifyButtons(){
 }
 
 function loadCardsFromDOM(){
-  // Cards are already in the DOM (inlined in dashboardStudent.html)
+  renderFacultyDirectory();
   cards = Array.from(facultyGrid.querySelectorAll('.card'));
   cards.forEach(c=>{
     const iso = c.dataset.lastupdated;
@@ -124,6 +162,23 @@ function loadCardsFromDOM(){
   renderCards();
 }
 
+async function refreshFacultyDirectory() {
+  try {
+    const response = await fetch('/student/api/faculty-statuses/');
+    const data = await response.json();
+    if (!response.ok) return;
+    const dataElement = document.getElementById('faculty-directory');
+    if (dataElement) dataElement.textContent = JSON.stringify(data.faculty || []);
+    renderFacultyDirectory();
+    cards = Array.from(facultyGrid.querySelectorAll('.card'));
+    insertNotifyButtons();
+    attachCardHandlers();
+    renderCards();
+  } catch (error) {
+    // Keep the last known directory visible if a background refresh fails.
+  }
+}
+
 // Wire up filters
 deptFilter.addEventListener('change',renderCards);
 availableToggle.addEventListener('change',renderCards);
@@ -131,3 +186,4 @@ let searchTimer=null;searchInput.addEventListener('input',()=>{clearTimeout(sear
 
 // Init
 loadCardsFromDOM();
+window.setInterval(refreshFacultyDirectory, 10000);

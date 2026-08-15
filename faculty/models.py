@@ -22,9 +22,11 @@ class FacultyProfile(models.Model):
     # Manual status is retained so a failed/revoked calendar sync can safely
     # fall back to the faculty member's last explicit status.
     manual_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='available')
+    manual_status_override = models.BooleanField(default=False)
     # Preserve the previous connected-calendar behavior for existing users;
     # disconnecting explicitly turns this off.
     sync_enabled = models.BooleanField(default=True)
+    walk_ins_enabled = models.BooleanField(default=False)
     last_calendar_sync_at = models.DateTimeField(null=True, blank=True)
     photo_url = models.URLField(blank=True)
     biography = models.TextField(blank=True, default='')
@@ -169,6 +171,7 @@ class ConsultationRequest(models.Model):
 class WalkInQueue(models.Model):
     QUEUE_STATUS_CHOICES = [
         ('waiting', 'Waiting'),
+        ('called', 'Called to Office'),
         ('completed', 'Completed'),
         ('cancelled', 'Cancelled'),
     ]
@@ -190,6 +193,7 @@ class WalkInQueue(models.Model):
     status = models.CharField(max_length=16, choices=QUEUE_STATUS_CHOICES, default='waiting')
     joined_at = models.DateTimeField()
     served_at = models.DateTimeField(null=True, blank=True)
+    notified_at = models.DateTimeField(null=True, blank=True)
     student_message = models.TextField(blank=True)
     faculty_note = models.TextField(blank=True)
 

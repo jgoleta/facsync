@@ -1,14 +1,108 @@
+import json
+from datetime import timedelta
+from zoneinfo import ZoneInfo
+
 from django.test import TestCase
 from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.conf import settings
+from django.utils import timezone
 from unittest.mock import patch
 
-from .models import ConsultationRequest, FacultyProfile, GoogleCalendarConnection
+from .models import ConsultationRequest, FacultyProfile, GoogleCalendarConnection, WalkInQueue
 from .models import ScheduleEvent
-from .facultyServices.googleCalendarService import sync_google_calendar
+from .facultyServices.googleCalendarService import refresh_faculty_status, sync_google_calendar
 
 
 class FacultyViewTests(TestCase):
+    def _make_faculty_and_student(self, suffix='walk-in'):
+        faculty_user = get_user_model().objects.create_user(
+            username=f'faculty-{suffix}',
+            password='test-password',
+        )
+        student = get_user_model().objects.create_user(
+            username=f'student-{suffix}',
+            password='test-password',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id=f'faculty-{suffix}',
+            user=faculty_user,
+            department_id='CCS',
+        )
+        return faculty_user, student, faculty
+
+    def test_faculty_can_toggle_walk_in_availability(self):
+        faculty_user, _student, faculty = self._make_faculty_and_student('toggle')
+        self.client.force_login(faculty_user)
+
+        response = self.client.post(
+            reverse('faculty:api_walk_in_preference'),
+            data='{"enabled":true}',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['walk_ins_enabled'])
+        faculty.refresh_from_db()
+        self.assertTrue(faculty.walk_ins_enabled)
+
+    def test_student_can_join_only_when_walk_ins_are_enabled(self):
+        faculty_user, student, faculty = self._make_faculty_and_student('join')
+        self.client.force_login(student)
+
+        response = self.client.post(
+            reverse('students:api_join_walk_in_queue'),
+            data=json.dumps({'faculty_id': faculty.faculty_id}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(WalkInQueue.objects.count(), 0)
+
+        faculty.walk_ins_enabled = True
+        faculty.save(update_fields=['walk_ins_enabled'])
+        response = self.client.post(
+            reverse('students:api_join_walk_in_queue'),
+            data=json.dumps({'faculty_id': faculty.faculty_id, 'message': 'I need help.'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 201)
+        queue = WalkInQueue.objects.get()
+        self.assertEqual(queue.user, student)
+        self.assertEqual(queue.status, 'waiting')
+
+    def test_faculty_can_notify_and_complete_walk_in_student(self):
+        faculty_user, student, faculty = self._make_faculty_and_student('lifecycle')
+        faculty.walk_ins_enabled = True
+        faculty.save(update_fields=['walk_ins_enabled'])
+        queue = WalkInQueue.objects.create(
+            queue_id='walk-in-lifecycle',
+            faculty=faculty,
+            user=student,
+            position=1,
+            joined_at='2026-08-15T09:00:00Z',
+        )
+        self.client.force_login(faculty_user)
+
+        response = self.client.post(
+            reverse('faculty:api_walk_in_detail', args=[queue.queue_id]),
+            data='{"action":"notify"}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        queue.refresh_from_db()
+        self.assertEqual(queue.status, 'called')
+        self.assertIsNotNone(queue.notified_at)
+
+        response = self.client.post(
+            reverse('faculty:api_walk_in_detail', args=[queue.queue_id]),
+            data='{"action":"complete"}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        queue.refresh_from_db()
+        self.assertEqual(queue.status, 'completed')
+        self.assertIsNotNone(queue.served_at)
+
     def test_dashboard_page_renders(self):
         user = get_user_model().objects.create_user(
             username='faculty-dashboard-test',
@@ -43,6 +137,86 @@ class FacultyViewTests(TestCase):
         self.assertEqual(profile.current_status, 'on_leave')
         self.assertEqual(profile.status_note, 'Out of office today')
         self.assertEqual(profile.status_history.count(), 1)
+
+    def test_status_is_derived_from_an_active_system_calendar_event(self):
+        user = get_user_model().objects.create_user(
+            username='faculty-calendar-status-test',
+            password='test-password',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-calendar-status-test',
+            user=user,
+            department_id='CCS',
+        )
+        local_now = timezone.localtime(
+            timezone.now(),
+            ZoneInfo(getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)),
+        )
+        ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Current class',
+            event_type='busy',
+            date=local_now.date(),
+            start_time=(local_now - timedelta(minutes=10)).time(),
+            end_time=(local_now + timedelta(minutes=10)).time(),
+        )
+
+        self.assertEqual(refresh_faculty_status(faculty), 'busy')
+        faculty.refresh_from_db()
+        self.assertEqual(faculty.current_status, 'busy')
+
+        faculty.manual_status = 'on_leave'
+        faculty.manual_status_override = True
+        faculty.save(update_fields=['manual_status', 'manual_status_override'])
+        self.assertEqual(refresh_faculty_status(faculty), 'on_leave')
+
+        faculty.manual_status = 'available'
+        faculty.manual_status_override = False
+        faculty.save(update_fields=['manual_status', 'manual_status_override'])
+        ScheduleEvent.objects.filter(faculty=faculty).delete()
+        self.assertEqual(refresh_faculty_status(faculty), 'available')
+
+    def test_manual_status_can_be_cleared_back_to_calendar_status(self):
+        user = get_user_model().objects.create_user(
+            username='faculty-status-mode-test',
+            password='test-password',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-status-mode-test',
+            user=user,
+            department_id='CCS',
+        )
+        local_now = timezone.localtime(
+            timezone.now(),
+            ZoneInfo(getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)),
+        )
+        ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Current class',
+            event_type='busy',
+            date=local_now.date(),
+            start_time=(local_now - timedelta(minutes=10)).time(),
+            end_time=(local_now + timedelta(minutes=10)).time(),
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse('faculty:update_status'),
+            data='{"status":"on-leave","manual_override":true}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'on_leave')
+
+        response = self.client.post(
+            reverse('faculty:update_status'),
+            data='{"manual_override":false}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'busy')
+        faculty.refresh_from_db()
+        self.assertFalse(faculty.manual_status_override)
 
     @patch('faculty.views.create_google_event')
     def test_schedule_event_is_created_in_google_and_locally(self, create_google_event):
