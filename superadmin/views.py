@@ -1,5 +1,23 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .forms import DeptHeadInviteForm
 
+
+@login_required
+def invite_depthead(request):
+    if request.method == 'POST':
+        form = DeptHeadInviteForm(request.POST)
+        if form.is_valid():
+            invite = form.save(commit=False)
+            invite.invited_by = request.user
+            invite.save()
+            messages.success(request, f"Dept Head invitation created for {invite.email}.")
+        else:
+            for error_list in form.errors.values():
+                for error in error_list:
+                    messages.error(request, error)
+    return redirect('superadmin:manage_admins')
 
 def superadmin_dashboard(request):
     return render(request, 'superadmin/superadminDashboard.html')

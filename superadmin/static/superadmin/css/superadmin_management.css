@@ -1,3 +1,98 @@
+.message-success {
+    color: green;
+}
+
+.message-error {
+    color: red;
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+.modal-overlay.hidden {
+    display: none;
+}
+
+.modal {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    width: min(90vw, 480px);
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+    box-shadow: 0 12px 30px rgba(20, 33, 61, 0.1);
+    position: relative;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.modal-header h2 {
+    margin: 0 0 4px;
+}
+
+.modal-header p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.8rem;
+    line-height: 1;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.modal-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.modal-form-group label {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.modal-form-group input,
+.modal-form-group select {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font: inherit;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+}
+
 .management-table-wrapper {
     background: #fff;
     border: 1px solid var(--border);

@@ -10,4 +10,5 @@ urlpatterns = [
     path('admins/', views.manage_admins, name='manage_admins'),
     path('faculty/', views.manage_faculty, name='manage_faculty'),
     path('students/', views.manage_students, name='manage_students'),
+    path('invite-depthead/', views.invite_depthead, name='invite_depthead'),
 ]

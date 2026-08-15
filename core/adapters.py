@@ -1,8 +1,10 @@
+import email
+
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.core.exceptions import ImmediateHttpResponse
 from django.shortcuts import redirect
 from django.contrib import messages
-from .models import FacultyInvite
+from .models import FacultyInvite, DeptHeadInvite
 
 class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
 
@@ -19,7 +21,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                 raise ImmediateHttpResponse(redirect('core:login'))
             return
 
-        # New account — check for a pre-added faculty invite FIRST, regardless of session role
+        #new account, check for faculty invites first
         try:
             invite = FacultyInvite.objects.get(email__iexact=email, used=False)
             sociallogin.user.role = 'faculty'
@@ -33,7 +35,21 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
         except FacultyInvite.DoesNotExist:
             pass
 
-        # No invite matched — fall back to session-role-based registration flow
+        #new account, no faculty invite, check for depthead invites
+        try:
+            depthead_invite = DeptHeadInvite.objects.get(email__iexact=email, used=False)
+            sociallogin.user.role = 'depthead'
+            sociallogin.user.account_status = 'active'
+            sociallogin.user.department = depthead_invite.department
+            depthead_invite.used = True
+            depthead_invite.save()
+            if 'registration_role' in request.session:
+                del request.session['registration_role']
+            return
+        except DeptHeadInvite.DoesNotExist:
+            pass
+        
+        #No invite matched — fall back to session-role-based registration flow
         role = request.session.get('registration_role')
 
         if not role:
