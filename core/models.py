@@ -39,3 +39,12 @@ class FacultyInvite(models.Model):
     def __str__(self):
         return f"Invite for {self.email} ({self.department})"
 
+class DeptHeadInvite(models.Model):
+    email = models.EmailField(unique=True)
+    department = models.CharField(max_length=100)
+    invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='depthead_invites_sent')
+    created_at = models.DateTimeField(auto_now_add=True)
+    used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Dept Head invite for {self.email} ({self.department})"

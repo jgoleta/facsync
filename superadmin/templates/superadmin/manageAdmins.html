@@ -60,8 +60,15 @@
                         Manage accounts for Department Heads and Support Office staff.
                     </p>
                 </div>
-                <button class="btn-primary">Add New Admin</button>
+                <button id="openInviteDeptheadBtn" class="btn-primary">Add New Admin</button>
             </header>
+            {% if messages %}
+            {% for message in messages %}
+            {% if forloop.last %}
+            <p class="message-{{ message.tags }}">{{ message }}</p>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
 
             <div class="management-table-wrapper">
                 <table>
@@ -116,6 +123,42 @@
             </div>
         </main>
     </div>
+    <div class="modal-overlay hidden" id="inviteDeptheadModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inviteDeptheadModalTitle">
+            <div class="modal-header">
+                <div>
+                    <h2 id="inviteDeptheadModalTitle">Add Dept Head</h2>
+                    <p>Pre-register a Dept Head email for instant activation on first login.</p>
+                </div>
+                <button type="button" class="modal-close" id="closeInviteDeptheadModal">×</button>
+            </div>
+            <form method="post" action="{% url 'superadmin:invite_depthead' %}" class="modal-form">
+                {% csrf_token %}
+                <div class="modal-form-group">
+                    <label for="deptheadEmail">Email</label>
+                    <input id="deptheadEmail" name="email" type="email" placeholder="depthead@adnu.edu.ph" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="deptheadDepartment">Department</label>
+                    <select id="deptheadDepartment" name="department" required>
+                        <option value="chss">College of Humanities and Social Sciences</option>
+                        <option value="cba">College of Business and Accountancy</option>
+                        <option value="ccs">College of Computer Studies</option>
+                        <option value="ced">College of Education</option>
+                        <option value="csea">College of Science, Engineering, and Architecture</option>
+                        <option value="con">College of Nursing</option>
+                        <option value="col">College of Law</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelInviteDeptheadModal">Cancel</button>
+                    <button type="submit" class="btn-primary">Send Invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="{% static 'superadmin/js/manageAdmins.js' %}"></script>
 </body>
 
 </html>

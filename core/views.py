@@ -49,7 +49,7 @@ def post_login_redirect(request):
     elif user.role == 'depthead':
         return redirect('depthead:admin_dashboard')
     elif user.role == 'superadmin':
-        return redirect('superadmin:dashboard')
+        return redirect('superadmin:superadmin_dashboard')
 
     return redirect('core:landing')
 
