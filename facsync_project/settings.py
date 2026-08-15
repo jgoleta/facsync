@@ -103,7 +103,7 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
         'AUTH_PARAMS': {
             'access_type': 'online',
-            'hd': 'gbox.adnu.edu.ph',
+            #'hd': 'gbox.adnu.edu.ph',
             'prompt': 'select_account',
         },
     }
