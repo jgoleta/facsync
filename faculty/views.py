@@ -2,6 +2,7 @@ import json
 from datetime import date, time
 
 from django.contrib.auth.decorators import login_required
+from core.decorators import role_required
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
@@ -115,6 +116,7 @@ def _event_json(event):
 
 
 @login_required
+@role_required('faculty')
 def dashboard(request):
     """Render the faculty dashboard with the current status presentation."""
     faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
@@ -143,6 +145,7 @@ def dashboard(request):
 
 
 @login_required
+@role_required('faculty')
 @csrf_protect
 def update_status(request):
     """Save a faculty member's manual status and append a status-history record."""
@@ -193,6 +196,7 @@ def update_status(request):
 
 
 @login_required
+@role_required('faculty')
 def booking_management(request):
     """Render the faculty booking-management page."""
     faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
@@ -207,6 +211,7 @@ def booking_management_legacy(request):
 
 
 @login_required
+@role_required('faculty')
 @csrf_protect
 def profile(request):
     """Render or update the faculty profile and Google Calendar integration settings."""
@@ -238,6 +243,7 @@ def profile(request):
 
 
 @login_required
+@role_required('faculty')
 def schedule(request):
     """Render the faculty schedule page."""
     faculty_profile = _faculty_for_request(request)
@@ -268,6 +274,7 @@ def _walk_in_json(queue):
 
 
 @login_required
+@role_required('faculty')
 @csrf_protect
 def api_walk_in_preference(request):
     """Read or update the signed-in faculty member's walk-in availability."""
@@ -295,6 +302,7 @@ def api_walk_in_preference(request):
 
 
 @login_required
+@role_required('faculty')
 def api_faculty_walk_ins(request):
     """List the signed-in faculty member's active walk-in queue."""
     if request.method != 'GET':
@@ -315,6 +323,7 @@ def api_faculty_walk_ins(request):
 
 
 @login_required
+@role_required('faculty')
 @csrf_protect
 def api_walk_in_detail(request, queue_id):
     """Allow a faculty member to manage a queue entry or a student to cancel it."""
@@ -387,6 +396,7 @@ def api_walk_in_detail(request, queue_id):
 
 
 @login_required
+@role_required('faculty')
 def calendar_connect(request):
     """Start OAuth or finish the legacy Google Calendar OAuth callback."""
     if request.method != 'GET':
@@ -424,6 +434,7 @@ def calendar_connect(request):
 
 
 @login_required
+@role_required('faculty')
 def calendar_callback(request):
     """Finish the dedicated Google Calendar OAuth callback flow."""
     if request.GET.get('error'):
@@ -447,6 +458,7 @@ def calendar_callback(request):
 
 
 @login_required
+@role_required('faculty')
 @csrf_protect
 def calendar_disconnect(request):
     """Revoke the faculty member's Google Calendar access and clear local links."""
@@ -457,6 +469,7 @@ def calendar_disconnect(request):
 
 
 @login_required
+@role_required('faculty')
 def calendar_status(request):
     """Return connection, preference, last-sync, and error information as JSON."""
     connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
@@ -470,6 +483,7 @@ def calendar_status(request):
 
 
 @login_required
+@role_required('faculty')
 @csrf_protect
 def calendar_preference(request):
     """Enable or disable calendar synchronization for the current faculty member."""
@@ -506,6 +520,7 @@ def calendar_preference(request):
 
 
 @login_required
+@role_required('faculty')
 @csrf_protect
 def api_schedule_events(request):
     """List, create, and optionally pull-sync the faculty member's schedule events."""
@@ -566,6 +581,7 @@ def api_schedule_events(request):
 
 
 @login_required
+@role_required('faculty')
 @csrf_protect
 def api_schedule_event_detail(request, pk):
     """Read, update, or delete one faculty schedule event and its Google counterpart."""
@@ -689,6 +705,7 @@ def _notify_consultation_student(consultation, subject, body):
 
 
 @login_required
+@role_required('faculty')
 @csrf_protect
 def api_consultation(request, request_id):
     """Approve, decline, reschedule, cancel, or inspect a consultation request."""
