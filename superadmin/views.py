@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
 from django.contrib import messages
 from .forms import DeptHeadInviteForm
+from core.models import User
 
 
 @login_required
@@ -34,7 +35,10 @@ def manage_departments(request):
 @login_required
 @role_required('superadmin')
 def manage_admins(request):
-    return render(request, 'superadmin/manageAdmins.html')
+    depthead_accounts = User.objects.filter(role='depthead')
+    return render(request, 'superadmin/manageAdmins.html', {
+        'depthead_accounts': depthead_accounts
+    })
 
 @login_required
 @role_required('superadmin')

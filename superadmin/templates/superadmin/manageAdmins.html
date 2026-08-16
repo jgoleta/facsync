@@ -82,42 +82,21 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% for admin in depthead_accounts %}
                         <tr>
-                            <td>Dr. John Doe</td>
-                            <td>john.doe@university.edu</td>
+                            <td>{{ admin.get_full_name|default:admin.username }}</td>
+                            <td>{{ admin.email }}</td>
                             <td>Dept. Head</td>
-                            <td>College of Computer Studies</td>
+                            <td>{{ admin.department }}</td>
                             <td class="actions">
                                 <button>Edit</button><button class="danger">Remove</button>
                             </td>
                         </tr>
+                        {% empty %}
                         <tr>
-                            <td>Dr. Jane Smith</td>
-                            <td>jane.smith@university.edu</td>
-                            <td>Dept. Head</td>
-                            <td>College of Engineering</td>
-                            <td class="actions">
-                                <button>Edit</button><button class="danger">Remove</button>
-                            </td>
+                            <td colspan="5" class="empty-state">No Dept Head accounts yet.</td>
                         </tr>
-                        <tr>
-                            <td>Ada Wong</td>
-                            <td>ada.wong@university.edu</td>
-                            <td>Dept. Head</td>
-                            <td>College of Nursing</td>
-                            <td class="actions">
-                                <button>Edit</button><button class="danger">Remove</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Emily White</td>
-                            <td>emily.white@university.edu</td>
-                            <td>Dept. Head</td>
-                            <td>College of Education</td>
-                            <td class="actions">
-                                <button>Edit</button><button class="danger">Remove</button>
-                            </td>
-                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
