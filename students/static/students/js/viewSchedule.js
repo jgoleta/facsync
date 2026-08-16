@@ -51,17 +51,23 @@ function renderWalkInState(data) {
   if (activeQueue) {
     queueInitialState?.classList.add('hidden');
     queueActiveState?.classList.remove('hidden');
+    // Keep the faculty notification visible while the student is in the active queue state.
+    queueActiveState?.classList.toggle('is-called', activeQueue.status === 'called');
     if (queuePosition) queuePosition.textContent = ordinal(activeQueue.position);
     if (queueMessage) {
-      queueMessage.textContent = activeQueue.status === 'called'
-        ? 'The faculty member asked you to enter the office now.'
+      const isCalled = activeQueue.status === 'called';
+      queueMessage.textContent = isCalled
+        ? 'You are being called now. Please enter the faculty office.'
         : 'You are in the walk-in queue. Please wait for the faculty notification.';
+      queueMessage.classList.toggle('is-called', isCalled);
+      queueMessage.classList.toggle('is-waiting', !isCalled);
     }
     return;
   }
 
   queueInitialState?.classList.remove('hidden');
   queueActiveState?.classList.add('hidden');
+  queueActiveState?.classList.remove('is-called');
   if (joinQueueBtn) {
     joinQueueBtn.disabled = !data.walk_ins_enabled;
     joinQueueBtn.textContent = data.walk_ins_enabled ? 'Join Walk-in Queue' : 'Walk-ins Unavailable';
@@ -72,7 +78,10 @@ function renderWalkInState(data) {
       : 'The faculty member is not accepting new walk-in students.';
     walkInNote.classList.remove('hidden');
   }
-  if (queueMessage) queueMessage.textContent = '';
+  if (queueMessage) {
+    queueMessage.textContent = '';
+    queueMessage.classList.remove('is-called', 'is-waiting');
+  }
 }
 
 async function loadWalkInStatus() {
@@ -299,14 +308,19 @@ function renderCalendar() {
     dayContent.className = 'day-content';
 
     const hourHeight = 60; // 60px per hour.
+    const dayStartHour = 6;
+    const dayEndHour = 18;
 
-    for (let i = 8; i <= 17; i++) { // 8 AM to 5 PM
+    // Keep the student daily schedule aligned with the faculty 6 AM–6 PM window.
+    for (let i = dayStartHour; i <= dayEndHour; i++) {
       const timeLabel = document.createElement('div');
       timeLabel.className = 'time-label';
       timeLabel.textContent = i > 12 ? `${i - 12}:00 PM` : (i === 12 ? '12:00 PM' : `${i}:00 AM`);
-      timeLabel.style.height = `${hourHeight}px`;
+      timeLabel.style.height = `${i === dayEndHour ? 0 : hourHeight}px`;
+      if (i === dayEndHour) timeLabel.classList.add('time-label-end');
       timeScale.appendChild(timeLabel);
 
+      if (i === dayEndHour) continue;
       const gridLine = document.createElement('div');
       gridLine.className = 'time-grid-line';
       gridLine.style.height = `${hourHeight}px`;
@@ -321,20 +335,43 @@ function renderCalendar() {
     const dayEntry = selectedFaculty.schedule.find(entry => entry.date === dateKey);
 
     if (dayEntry) {
-      const visibleEvents = dayEntry.events.slice(0, 2);
-      const overflowEvents = dayEntry.events.slice(2);
+      const visibleDayEvents = dayEntry.events.filter((event) => {
+        if (!event.startTime || !event.endTime) return true;
+        const [startHour, startMinute] = event.startTime.split(':').map(Number);
+        const [endHour, endMinute] = event.endTime.split(':').map(Number);
+        return endHour * 60 + endMinute > dayStartHour * 60
+          && startHour * 60 + startMinute < dayEndHour * 60;
+      });
+      const visibleEvents = visibleDayEvents.slice(0, 2);
+      const overflowEvents = visibleDayEvents.slice(2);
 
       visibleEvents.forEach(event => {
         const item = document.createElement("div");
         item.className = "slot-item";
-        item.innerHTML = `<strong>${event.title}</strong>${event.startTime} - ${event.endTime}`;
+        const eventTime = event.startTime && event.endTime
+          ? `${event.startTime} - ${event.endTime}`
+          : 'All day';
+        item.innerHTML = `<strong>${event.title}</strong>${eventTime}`;
         item.addEventListener('click', () => openEventModal(event, dateKey));
+
+        if (!event.startTime || !event.endTime) {
+          item.classList.add('all-day-item');
+          dayContent.appendChild(item);
+          return;
+        }
 
         const [startHour, startMinute] = event.startTime.split(':').map(Number);
         const [endHour, endMinute] = event.endTime.split(':').map(Number);
+        const eventStartMinutes = startHour * 60 + startMinute;
+        const eventEndMinutes = endHour * 60 + endMinute;
+        const visibleStartMinutes = Math.max(eventStartMinutes, dayStartHour * 60);
+        const visibleEndMinutes = Math.min(eventEndMinutes, dayEndHour * 60);
 
-        const top = ((startHour - 8) * hourHeight) + (startMinute / 60 * hourHeight);
-        const durationMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+        // Skip events outside the visible daily range and clip overlapping events to it.
+        if (visibleEndMinutes <= visibleStartMinutes) return;
+
+        const top = ((visibleStartMinutes - dayStartHour * 60) / 60) * hourHeight;
+        const durationMinutes = visibleEndMinutes - visibleStartMinutes;
         const height = (durationMinutes / 60) * hourHeight;
 
         item.style.position = 'absolute';
@@ -435,7 +472,8 @@ const detailCloseBtns = document.querySelectorAll("[data-close-modal='eventDetai
 
 if (myConsultationsBtn) {
     myConsultationsBtn.addEventListener('click', () => {
-        window.location.href = 'consultationRequests.html';
+        // Use Django's resolved URL so this works from any student page.
+        window.location.href = myConsultationsBtn.dataset.consultationsUrl || '/student/consultation-requests/';
     });
 }
 
@@ -522,12 +560,36 @@ detailCloseBtns.forEach((btn) => {
   });
 });
 
-consultationForm.addEventListener('submit', (e) => {
+if (consultationForm) {
+  consultationForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    console.log('Form submitted');
-    consultationModal.classList.add('hidden');
-    alert('Consultation booked!');
-});
+    const submitButton = consultationForm.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
+
+    try {
+      // Save the request before closing the modal so it appears in My Consultations.
+      const response = await fetch('/student/api/consultation-requests/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          faculty_id: facultyId,
+          date: document.getElementById('dateSelect').value,
+          start_time: document.getElementById('timeSelect').value,
+          message: document.getElementById('message').value,
+        }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Unable to book the consultation.');
+      consultationModal.classList.add('hidden');
+      consultationForm.reset();
+      alert('Consultation request sent.');
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      if (submitButton) submitButton.disabled = false;
+    }
+  });
+}
 
 if (viewControls) {
     const viewButtons = viewControls.querySelectorAll('.view-btn');

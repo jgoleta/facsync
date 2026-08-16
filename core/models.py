@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
+from .departments import get_department_label
 
 class User(AbstractUser):
     ROLE_CHOICES = [
@@ -28,6 +29,11 @@ class User(AbstractUser):
     profile_completed = models.BooleanField(default=False)
     student_id = models.CharField(max_length=20, blank=True, null=True)
     year_level = models.CharField(max_length=1, choices=YEAR_LEVEL_CHOICES, blank=True, null=True)
+
+    @property
+    def department_name(self):
+        """Return the full department name, including for legacy CCS records."""
+        return get_department_label(self.department)
 
 class FacultyInvite(models.Model):
     email = models.EmailField(unique=True)

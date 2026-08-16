@@ -19,7 +19,6 @@
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
-                <a href="#" class="nav-btn">Profile</a>
                 <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
@@ -35,13 +34,14 @@
                     <div class="visual-card">
                         <span class="visual-chip">Quick summary</span>
                         <div class="visual-stat">
-                            <span>2</span>
+                            <span>{{ upcoming_booking_count }}</span>
                             <small>Upcoming bookings</small>
                         </div>
                         <div class="visual-stat">
-                            <span>4</span>
+                            <span>{{ available_faculty_count }}</span>
                             <small>Faculty available now</small>
                         </div>
+                        {% if student_department %}<small class="summary-department">{{ student_department }}</small>{% endif %}
                     </div>
                 </div>
             </section>

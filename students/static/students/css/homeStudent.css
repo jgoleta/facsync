@@ -96,6 +96,15 @@ body {
   font-size: 0.95rem;
 }
 
+.summary-department {
+  display: block;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 .page-intro .eyebrow,
 .announcement-banner .announcement-title {
   text-transform: uppercase;

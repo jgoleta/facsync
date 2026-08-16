@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260815-mobile-width">
+    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260816-status-buttons">
 </head>
 
 <body>
@@ -60,53 +60,40 @@
                     <div class="consultation-header">
                         <h2>Consultation Requests</h2>
                         <div class="filter-buttons">
-                            <button class="filter-btn active" data-filter="pending">Pending</button>
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="pending">Pending</button>
                             <button class="filter-btn" data-filter="approved">Approved</button>
+                            <button class="filter-btn" data-filter="completed">Completed</button>
                         </div>
                     </div>
                     <ul class="consultation-request-list">
-                        <li class="request-item" data-status="pending">
+                        {% for consultation in consultation_requests %}
+                        <li class="request-item" data-status="{{ consultation.status }}" data-request-id="{{ consultation.request_id }}">
                             <div class="request-info">
-                                <p class="student-name">John Marston</p>
-                                <p class="request-time">Date: July 5, 2026 at 2:00 PM</p>
-                                <p class="request-message"><strong>Message:</strong> "Hi Dr. Morgan, I'd like to discuss my project proposal."</p>
+                                <p class="student-name">{{ consultation.user.get_full_name|default:consultation.user.username }}</p>
+                                <p class="request-time">
+                                    Date: {{ consultation.date|date:"F j, Y" }}
+                                    {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
+                                    {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
+                                </p>
+                                {% if consultation.student_message %}<p class="request-message"><strong>Message:</strong> {{ consultation.student_message }}</p>{% endif %}
                             </div>
                             <div class="request-actions">
-                                <textarea placeholder="Add an optional note..."></textarea>
+                                {% if consultation.faculty_note %}<p class="faculty-note"><strong>Your Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
+                                {% if consultation.status == 'pending' %}<textarea placeholder="Add an optional note..."></textarea>{% endif %}
                                 <div class="action-buttons">
-                                    <button class="btn-approve">Approve</button>
-                                    <button class="btn-decline">Decline</button>
+                                    {% if consultation.status == 'pending' %}
+                                    <button type="button" class="btn-approve" data-action="approved">Approve</button>
+                                    <button type="button" class="btn-decline" data-action="declined">Decline</button>
+                                    {% elif consultation.status == 'approved' %}
+                                    <button type="button" class="btn-approve" data-action="completed">Mark as Completed</button>
+                                    {% endif %}
                                 </div>
                             </div>
                         </li>
-                        <li class="request-item" data-status="approved">
-                            <div class="request-info">
-                                <p class="student-name">Arthur Pendragon</p>
-                                <p class="request-time">Date: July 4, 2026 at 10:00 AM</p>
-                                <p class="request-message"><strong>Message:</strong> "Follow-up on our last discussion about paper revision"</p>
-                            </div>
-                            <div class="request-actions">
-                                <p class="faculty-note"><strong>Your Note:</strong> Approved. See you then.</p>
-                                <div class="action-buttons">
-                                    <button class="btn-approve">Mark as Completed</button>
-                                </div>
-                            </div>
-                        </li>
-                        <li class="request-item" data-status="pending">
-                            <div class="request-info">
-                                <p class="student-name">Sadie Adler</p>
-                                <p class="request-time">Date: July 6, 2026 at 3:30 PM</p>
-                                <p class="request-message"><strong>Message:</strong> "Can we go over my thesis Chapter 1 draft?"</p>
-                            </div>
-                            <div class="request-actions">
-                                <textarea placeholder="Add an optional note..."></textarea>
-                                <div class="action-buttons">
-                                    <button class="btn-approve">Approve</button>
-                                    <button class="btn-decline">Decline</button>
-                                </div>
-                            </div>
-                        </li>
-                        
+                        {% empty %}
+                        <li class="request-item empty-request">No consultation requests yet.</li>
+                        {% endfor %}
                     </ul>
                 </div>
             </div>
@@ -137,7 +124,7 @@
             </div>
         </main>
     </div>
-    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260815-manual-status"></script>
+    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260816-consultation-actions"></script>
 </body>
 
 </html>

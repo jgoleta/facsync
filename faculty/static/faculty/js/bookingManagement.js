@@ -33,16 +33,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const called = student.status === 'called';
             const item = document.createElement('li');
             item.className = 'queue-item';
+            // Use explicit actions so notify, complete, and remove stay unambiguous.
             item.innerHTML = `
                 <div class="queue-summary">
                     <p class="student-name">${escapeHtml(student.student_name)}</p>
                     <p class="student-meta">Position ${student.position} · Queued ${new Date(student.joined_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
+                    <p class="student-department">Department: ${escapeHtml(student.student_department || 'Not assigned')}</p>
                     ${student.student_message ? `<p class="student-note">${escapeHtml(student.student_message)}</p>` : ''}
                     <div class="student-status"><span class="status-badge status-${called ? 'called' : 'pending'}">${called ? 'Notified' : 'Waiting'}</span></div>
                 </div>
                 <div class="queue-item-actions">
-                    <button type="button" class="btn-notify" data-id="${escapeHtml(student.queue_id)}" ${called ? 'disabled' : ''}>${called ? 'Student Notified' : 'Notify Student'}</button>
-                    <button type="button" class="btn-mark-complete" data-id="${escapeHtml(student.queue_id)}">Mark Complete</button>
+                    <button type="button" class="btn-notify" data-id="${escapeHtml(student.queue_id)}" data-action="notify" ${called ? 'disabled' : ''}>${called ? 'Student Notified' : 'Notify Student'}</button>
+                    <button type="button" class="btn-mark-complete" data-id="${escapeHtml(student.queue_id)}" data-action="complete">Mark Complete</button>
+                    <button type="button" class="btn-remove" data-id="${escapeHtml(student.queue_id)}" data-action="remove">Remove</button>
                 </div>
             `;
             queueList.appendChild(item);
@@ -118,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!button) return;
         button.disabled = true;
         try {
-            await updateQueue(button.dataset.id, button.classList.contains('btn-notify') ? 'notify' : 'complete');
+            await updateQueue(button.dataset.id, button.dataset.action);
         } catch (error) {
             walkInStatus.textContent = error.message;
         } finally {

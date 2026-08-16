@@ -282,15 +282,19 @@ document.addEventListener("DOMContentLoaded", () => {
       dayContent.className = "day-content";
 
       const hourHeight = 60; // 60px per hour.
+      const dayStartHour = 6;
+      const dayEndHour = 18;
 
-      for (let i = 6; i <= 21; i++) {
-        // 6 AM to 9 PM
+      // Keep the daily faculty schedule limited to the requested 6 AM–6 PM window.
+      for (let i = dayStartHour; i <= dayEndHour; i++) {
         const timeLabel = document.createElement("div");
         timeLabel.className = "time-label";
         timeLabel.textContent = formatTime12(`${i}:00`);
-        timeLabel.style.height = `${hourHeight}px`;
+        timeLabel.style.height = `${i === dayEndHour ? 0 : hourHeight}px`;
+        if (i === dayEndHour) timeLabel.classList.add("time-label-end");
         timeScale.appendChild(timeLabel);
 
+        if (i === dayEndHour) continue;
         const gridLine = document.createElement("div");
         gridLine.className = "time-grid-line";
         gridLine.style.height = `${hourHeight}px`;
@@ -334,11 +338,17 @@ document.addEventListener("DOMContentLoaded", () => {
             .split(":")
             .map(Number);
           const [endHour, endMinute] = event.endTime.split(":").map(Number);
+          const eventStartMinutes = startHour * 60 + startMinute;
+          const eventEndMinutes = endHour * 60 + endMinute;
+          const visibleStartMinutes = Math.max(eventStartMinutes, dayStartHour * 60);
+          const visibleEndMinutes = Math.min(eventEndMinutes, dayEndHour * 60);
+
+          // Skip events outside the visible daily range and clip overlapping events to it.
+          if (visibleEndMinutes <= visibleStartMinutes) return;
 
           const top =
-            (startHour - 6) * hourHeight + (startMinute / 60) * hourHeight;
-          const durationMinutes =
-            endHour * 60 + endMinute - (startHour * 60 + startMinute);
+            ((visibleStartMinutes - dayStartHour * 60) / 60) * hourHeight;
+          const durationMinutes = visibleEndMinutes - visibleStartMinutes;
           const height = (durationMinutes / 60) * hourHeight;
 
           item.style.position = "absolute";

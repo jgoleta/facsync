@@ -240,6 +240,47 @@ a.btn-danger {
   margin: -8px 0 16px;
 }
 
+#queue-message:empty {
+  display: none;
+}
+
+#queue-message.is-waiting {
+  margin: 0 0 16px;
+}
+
+#queue-message.is-called {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 18px;
+  padding: 14px 16px;
+  border: 2px solid #39a96b;
+  border-radius: 12px;
+  background: #e9f9ef;
+  color: #126b3e;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 5px 16px rgba(39, 145, 87, 0.16);
+  animation: queue-notification-pulse 1.8s ease-out 2;
+}
+
+#queue-message.is-called::before {
+  content: '🔔';
+  flex: 0 0 auto;
+  font-size: 1.25rem;
+}
+
+#queue-active-state.is-called .queue-position-display span:last-child {
+  color: #16804b;
+}
+
+@keyframes queue-notification-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
 .faculty-status #queue-faculty-status {
   font-weight: 700;
   text-transform: capitalize;
@@ -480,6 +521,10 @@ a.btn-danger {
 }
 
 .time-label:first-child {
+  top: 0;
+}
+
+.time-label-end {
   top: 0;
 }
 

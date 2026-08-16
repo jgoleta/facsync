@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Consultations</title>
-    <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}">
+    <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}?v=20260816-dashboard-link">
 </head>
 
 <body>
@@ -33,95 +33,33 @@
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
                             <option value="declined">Declined</option>
+                            <option value="cancelled">Cancelled</option>
                             <option value="completed">Completed</option>
                         </select>
                     </div>
-                    <a href="{% url 'students:dashboard' %}" class="btn return-btn">Dashboard</a>
+                    <a href="{% url 'students:dashboard' %}" class="btn return-btn" aria-label="Return to student dashboard">Return to Dashboard</a>
                 </div>
                 <ul class="consultation-request-list">
-                    <li class="request-item" data-status="pending">
+                    {% for consultation in consultations %}
+                    <li class="request-item" data-status="{{ consultation.status }}">
                         <div class="request-info">
-                            <p class="faculty-name">Grace Kim</p>
-                            <p class="request-time">Date: July 10, 2026 at 10:00 AM</p>
-                            <p class="request-message"><strong>Your Message:</strong> "Grade Consultation."</p>
+                            <p class="faculty-name">{{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}</p>
+                            <p class="request-time">
+                                Date: {{ consultation.date|date:"F j, Y" }}
+                                {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
+                                {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
+                            </p>
+                            {% if consultation.student_message %}<p class="request-message"><strong>Your Message:</strong> {{ consultation.student_message }}</p>{% endif %}
+                            <p class="request-id">Request ID: {{ consultation.request_id }}</p>
+                            {% if consultation.faculty_note %}<p class="faculty-note"><strong>Faculty Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
                         </div>
                         <div class="request-status">
-                            <span class="status-badge status-pending">pending</span>
+                            <span class="status-badge status-{{ consultation.status }}">{{ consultation.get_status_display }}</span>
                         </div>
                     </li>
-                    <li class="request-item" data-status="completed">
-                        <div class="request-info">
-                            <p class="faculty-name">Henry Alvarez</p>
-                            <p class="request-time">Date: July 1, 2026 at 4:00 PM</p>
-                            <p class="request-message"><strong>Your Message:</strong> "Grade Consultation."</p>
-                        </div>
-                        <div class="request-status">
-                            <span class="status-badge status-completed">Completed</span>
-                        </div>
-                    </li>
-                    <li class="request-item" data-status="pending">
-                        <div class="request-info">
-                            <p class="faculty-name">Frank Ortiz</p>
-                            <p class="request-time">Date: July 5, 2026 at 2:00 PM</p>
-                            <p class="request-message"><strong>Your Message:</strong> "I'd like to discuss my project proposal."</p>
-                        </div>
-                        <div class="request-status">
-                            <span class="status-badge status-pending">Pending</span>
-                        </div>
-                    </li>
-                    <li class="request-item" data-status="approved">
-                        <div class="request-info">
-                            <p class="faculty-name">Geralt of Rivia</p>
-                            <p class="request-time">Date: July 5, 2026 at 2:00 PM</p>
-                            <p class="request-message"><strong>Your Message:</strong> "Hi Sir Geralt, I'd like to discuss my project proposal."</p>
-                            <p class="faculty-note"><strong>Faculty Note:</strong> "Approved. Please come to my office."</p>
-                        </div>
-                        <div class="request-status">
-                            <span class="status-badge status-approved">Approved</span>
-                        </div>
-                    </li>
-                    <li class="request-item" data-status="approved">
-                        <div class="request-info">
-                            <p class="faculty-name">Arthur Morgan</p>
-                            <p class="request-time">Date: July 5, 2026 at 2:00 PM</p>
-                            <p class="request-message"><strong>Your Message:</strong> "Hi Sir Morgan, I'd like to discuss my project proposal."</p>
-                            <p class="faculty-note"><strong>Faculty Note:</strong> "Approved. Please come to my office."</p>
-                        </div>
-                        <div class="request-status">
-                            <span class="status-badge status-approved">Approved</span>
-                        </div>
-                    </li>
-                    <li class="request-item" data-status="pending">
-                        <div class="request-info">
-                            <p class="faculty-name">Leon Kennedy</p>
-                            <p class="request-time">Date: July 6, 2026 at 10:00 AM</p>
-                            <p class="request-message"><strong>Your Message:</strong> "Follow-up on our last discussion."</p>
-                        </div>
-                        <div class="request-status">
-                            <span class="status-badge status-pending">Pending</span>
-                        </div>
-                    </li>
-                    <li class="request-item" data-status="declined">
-                        <div class="request-info">
-                            <p class="faculty-name">Joel Miller</p>
-                            <p class="request-time">Date: July 7, 2026 at 3:30 PM</p>
-                             <p class="request-message"><strong>Your Message:</strong> "Can we go over my thesis Chapter 1 draft?"</p>
-                            <p class="faculty-note"><strong>Faculty Note:</strong> "I am not available at this time. Please book another slot."</p>
-                        </div>
-                        <div class="request-status">
-                            <span class="status-badge status-declined">Declined</span>
-                        </div>
-                    </li>
-                     <li class="request-item" data-status="completed">
-                        <div class="request-info">
-                            <p class="faculty-name">Max Payne</p>
-                            <p class="request-time">Date: June 28, 2026 at 11:00 AM</p>
-                            <p class="request-message"><strong>Your Message:</strong> "Quick question about the last lecture."</p>
-                        </div>
-                        <div class="request-status">
-                            <span class="status-badge status-completed">Completed</span>
-                        </div>
-                    </li>
+                    {% empty %}
+                    <li class="empty-state">You have no consultation requests yet.</li>
+                    {% endfor %}
                 </ul>
             </div>
         </main>

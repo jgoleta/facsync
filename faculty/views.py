@@ -120,6 +120,9 @@ def dashboard(request):
     faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
     if faculty_profile:
         refresh_faculty_status(faculty_profile)
+    consultation_requests = ConsultationRequest.objects.filter(
+        faculty=faculty_profile,
+    ).select_related('user').order_by('-date', '-start_time') if faculty_profile else []
     current_status = faculty_profile.current_status if faculty_profile else 'available'
     status_css_class = {
         'available': 'available',
@@ -135,6 +138,7 @@ def dashboard(request):
         'manual_status_override': faculty_profile.manual_status_override if faculty_profile else False,
         'status_css_class': status_css_class,
         'status_label': status_label,
+        'consultation_requests': consultation_requests,
     })
 
 
@@ -251,6 +255,8 @@ def _walk_in_json(queue):
         'faculty_id': queue.faculty.faculty_id,
         'student_name': queue.user.get_full_name() or queue.user.username,
         'student_email': queue.user.email,
+        # Send the readable department name instead of an internal code.
+        'student_department': queue.user.department_name,
         'status': queue.status,
         'position': queue.position,
         'student_message': queue.student_message,
@@ -311,7 +317,7 @@ def api_faculty_walk_ins(request):
 @login_required
 @csrf_protect
 def api_walk_in_detail(request, queue_id):
-    """Allow a faculty member to notify/complete a queue entry or a student to cancel it."""
+    """Allow a faculty member to manage a queue entry or a student to cancel it."""
     queue = get_object_or_404(
         WalkInQueue.objects.select_related('faculty', 'faculty__user', 'user'),
         queue_id=queue_id,
@@ -367,6 +373,14 @@ def api_walk_in_detail(request, queue_id):
         queue.served_at = timezone.now()
         queue.faculty_note = str(payload.get('faculty_note') or queue.faculty_note or '').strip()
         queue.save(update_fields=['status', 'served_at', 'faculty_note'])
+        return JsonResponse(_walk_in_json(queue))
+
+    if action == 'remove':
+        # Cancel rather than delete so the queue history remains available.
+        if queue.status not in ['waiting', 'called']:
+            return JsonResponse({'error': 'This queue entry is no longer active.'}, status=409)
+        queue.status = 'cancelled'
+        queue.save(update_fields=['status'])
         return JsonResponse(_walk_in_json(queue))
 
     return JsonResponse({'error': 'Invalid queue action.'}, status=400)

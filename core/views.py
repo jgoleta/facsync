@@ -43,7 +43,7 @@ def post_login_redirect(request):
             return redirect('core:faculty_profile_setup')
 
     if user.role == 'student':
-        return redirect('students:dashboard')
+        return redirect('students:home')
     elif user.role == 'faculty':
         return redirect('faculty:dashboard')
     elif user.role == 'depthead':
@@ -61,7 +61,7 @@ def student_profile_setup(request):
             user = form.save(commit=False)
             user.profile_completed = True
             user.save()
-            return redirect('students:dashboard')
+            return redirect('students:home')
     else:
         form = StudentProfileForm(instance=request.user)
 

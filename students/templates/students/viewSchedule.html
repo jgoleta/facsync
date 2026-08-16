@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | View Faculty Schedule</title>
-    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}?v=20260816-notification-alert">
 </head>
 
 <body data-faculty-id="{{ selected_faculty.faculty_id|default:'' }}">
@@ -58,12 +58,12 @@
                 <ul id="legendList" class="legend-list"></ul>
                 <div class="card-section">
                     <h2>Walk-in Queue</h2>
+                    <p id="queue-message" class="walk-in-note" role="status" aria-live="polite"></p>
                     <div id="queue-initial-state">
                         <div class="faculty-status">
                             <span id="queue-faculty-name">{{ selected_faculty.user.get_full_name|default:'This faculty member' }}</span> is currently <span id="queue-faculty-status">checking walk-in availability</span>.
                         </div>
                         <p id="walk-in-note" class="walk-in-note hidden"></p>
-                        <p id="queue-message" class="walk-in-note" role="status" aria-live="polite"></p>
                         <button type="button" id="join-queue-btn" class="primary-button" disabled>Join Walk-in Queue</button>
                     </div>
                     <div id="queue-active-state" class="hidden">
@@ -76,7 +76,6 @@
                     </div>
                 </div>
                 <div class="actions">
-                    <button id="my-consultations-btn" class="secondary-button">My Consultations</button>
                     <button id="book-consultation-btn" class="secondary-button">Book Consultation</button>
                     <a href="{% url 'students:dashboard' %}" class="secondary-link">Back to dashboard</a>
                 </div>
@@ -155,7 +154,7 @@
         </div>
     </div>
 
-    <script src="{% static 'students/js/viewSchedule.js' %}"></script>
+    <script src="{% static 'students/js/viewSchedule.js' %}?v=20260816-consultations"></script>
 </body>
 
 </html>

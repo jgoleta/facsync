@@ -13,3 +13,8 @@ Manual status updates — two-click toggle for faculty who don't use Google Cale
 + Office/department closure status — visible to students in real time
 + Analytics dashboard — descriptive, pattern, and AI-generated prescriptive insights (Google Gemini API)
 + -based account management — pre-assigned roles with an approval workflow for self-registration
+
+# Command
++ python -m venv venv
++ venv\Scripts\activate
++ pip install -r requirements.txt

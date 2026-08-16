@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (liveStatusIcon) liveStatusIcon.textContent = statusIcons[selectedStatus];
 
-    // --- Consultation Request Filtering ---
+    // --- Consultation Request Filtering and Actions ---
     const filterButtons = document.querySelectorAll('.filter-btn');
     const requestItems = document.querySelectorAll('.request-item');
 
@@ -149,5 +149,34 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    requestItems.forEach((item) => {
+        item.querySelectorAll('[data-action]').forEach((button) => {
+            button.addEventListener('click', async () => {
+                const requestId = item.dataset.requestId;
+                const note = item.querySelector('textarea')?.value || '';
+                if (!requestId) return;
+
+                button.disabled = true;
+                try {
+                    // Persist the faculty decision, then reload the real request list.
+                    const response = await fetch(`/faculty/api/consultations/${encodeURIComponent(requestId)}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCsrfToken(),
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ status: button.dataset.action, faculty_note: note }),
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(data.error || 'Unable to update the consultation request.');
+                    window.location.reload();
+                } catch (error) {
+                    button.disabled = false;
+                    window.alert(error.message);
+                }
+            });
+        });
+    });
     console.log('Faculty dashboard script loaded.');
 });

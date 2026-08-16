@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from core.departments import get_department_label
 
 
 class FacultyProfile(models.Model):
@@ -30,6 +31,11 @@ class FacultyProfile(models.Model):
     last_calendar_sync_at = models.DateTimeField(null=True, blank=True)
     photo_url = models.URLField(blank=True)
     biography = models.TextField(blank=True, default='')
+
+    @property
+    def department_name(self):
+        """Return the full department name, including for legacy CCS records."""
+        return get_department_label(self.department_id)
 
     class Meta:
         verbose_name = 'Faculty Profile'
@@ -151,6 +157,7 @@ class ConsultationRequest(models.Model):
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='pending')
+    student_message = models.TextField(blank=True, default='')
     faculty_note = models.TextField(blank=True)
     google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)
     google_calendar_id = models.CharField(max_length=1024, null=True, blank=True)

@@ -1,5 +1,7 @@
 import json
+import json
 import uuid
+from datetime import date, datetime, time, timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -8,7 +10,8 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_protect
 
-from faculty.models import FacultyProfile, StatusHistory, WalkInQueue
+from core.departments import get_department_label
+from faculty.models import ConsultationRequest, FacultyProfile, WalkInQueue
 from faculty.facultyServices.googleCalendarService import refresh_faculty_status
 
 
@@ -57,7 +60,7 @@ def _faculty_directory():
         directory.append({
             'faculty_id': faculty.faculty_id,
             'name': faculty.user.get_full_name() or faculty.user.username,
-            'department': faculty.department_id,
+            'department': faculty.department_name,
             'status': faculty.current_status,
             'note': faculty.status_note,
             'walk_ins_enabled': faculty.walk_ins_enabled,
@@ -67,12 +70,8 @@ def _faculty_directory():
 
 @login_required
 def dashboard(request):
-    faculty_statuses = FacultyProfile.objects.select_related('user').all()
-    status_history = StatusHistory.objects.select_related('faculty__user').order_by('-changed_at')[:10]
     faculty_directory = _faculty_directory()
     return render(request, 'students/dashboardStudent.html', {
-        'faculty_statuses': faculty_statuses,
-        'status_history': status_history,
         'faculty_directory': faculty_directory,
     })
 
@@ -85,11 +84,107 @@ def view_schedule(request):
         'selected_faculty': faculty,
     })
 
+@login_required
 def consultation_requests(request):
-    return render(request, 'students/consultationRequests.html')
+    """Show only the signed-in student's consultation requests."""
+    consultations = ConsultationRequest.objects.filter(
+        user=request.user,
+    ).select_related('faculty__user')
+    return render(request, 'students/consultationRequests.html', {
+        'consultations': consultations,
+    })
 
+
+def _consultation_json(consultation):
+    """Serialize a student's consultation for the booking and listing APIs."""
+    return {
+        'request_id': consultation.request_id,
+        'faculty_name': consultation.faculty.user.get_full_name() or consultation.faculty.user.username,
+        'status': consultation.status,
+        'status_label': consultation.get_status_display(),
+        'date': consultation.date.isoformat(),
+        'start_time': consultation.start_time.isoformat() if consultation.start_time else None,
+        'end_time': consultation.end_time.isoformat() if consultation.end_time else None,
+        'student_message': consultation.student_message,
+        'faculty_note': consultation.faculty_note,
+    }
+
+
+@login_required
+@csrf_protect
+def api_consultation_requests(request):
+    """List or create consultation requests owned by the signed-in student."""
+    consultations = ConsultationRequest.objects.filter(
+        user=request.user,
+    ).select_related('faculty__user')
+
+    if request.method == 'GET':
+        return JsonResponse({'consultations': [_consultation_json(item) for item in consultations]})
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        payload = _json_body(request)
+        faculty_id = str(payload.get('faculty_id') or '').strip()
+        date_value = date.fromisoformat(str(payload.get('date') or ''))
+        start_time = time.fromisoformat(str(payload.get('start_time') or ''))
+    except (TypeError, ValueError, KeyError) as exc:
+        return JsonResponse({'error': 'A valid faculty, date, and start time are required.'}, status=400)
+
+    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id)
+    requested_end_time = payload.get('end_time')
+    try:
+        end_time = time.fromisoformat(str(requested_end_time)) if requested_end_time else (
+            datetime.combine(date_value, start_time) + timedelta(hours=1)
+        ).time()
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Invalid consultation end time.'}, status=400)
+
+    if end_time <= start_time:
+        return JsonResponse({'error': 'The consultation must end after it starts.'}, status=400)
+
+    consultation = ConsultationRequest.objects.create(
+        request_id=uuid.uuid4().hex,
+        user=request.user,
+        faculty=faculty,
+        date=date_value,
+        start_time=start_time,
+        end_time=end_time,
+        student_message=str(payload.get('message') or '').strip(),
+    )
+    return JsonResponse(_consultation_json(consultation), status=201)
+
+@login_required
 def home(request):
-    return render(request, 'students/homeStudent.html')
+    """Render department-scoped student home-page summary counts."""
+    today = timezone.localdate()
+    current_time = timezone.localtime().time()
+    upcoming_bookings = ConsultationRequest.objects.filter(
+        user=request.user,
+        status='approved',
+    ).select_related('faculty').order_by('date', 'start_time')
+    upcoming_booking_count = sum(
+        1 for booking in upcoming_bookings
+        if booking.date > today
+        or (booking.date == today and (booking.start_time is None or booking.start_time >= current_time))
+    )
+
+    student_department = get_department_label(request.user.department)
+    available_faculty_count = 0
+    if student_department:
+        for faculty in FacultyProfile.objects.select_related('user').all():
+            # Match canonical department names so CCS and ccs records remain compatible.
+            if get_department_label(faculty.department_id) != student_department:
+                continue
+            refresh_faculty_status(faculty)
+            if faculty.current_status == 'available':
+                available_faculty_count += 1
+
+    return render(request, 'students/homeStudent.html', {
+        'upcoming_booking_count': upcoming_booking_count,
+        'available_faculty_count': available_faculty_count,
+        'student_department': student_department,
+    })
 
 
 @login_required

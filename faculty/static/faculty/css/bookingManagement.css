@@ -102,7 +102,8 @@ body {
 .btn-primary,
 .btn-secondary,
 .btn-mark-complete,
-.btn-notify {
+.btn-notify,
+.btn-remove {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -144,7 +145,8 @@ body {
 .btn-primary:hover,
 .btn-secondary:hover,
 .btn-notify:hover,
-.btn-mark-complete:hover {
+.btn-mark-complete:hover,
+.btn-remove:hover {
   transform: translateY(-2px);
 }
 
@@ -330,10 +332,15 @@ body {
 }
 
 .student-meta,
+.student-department,
 .student-note {
   margin: 0;
   color: var(--queue-muted);
   font-size: 0.86rem;
+}
+
+.student-department {
+  margin-top: 3px;
 }
 
 .student-note {
@@ -376,7 +383,8 @@ body {
 }
 
 .btn-notify,
-.btn-mark-complete {
+.btn-mark-complete,
+.btn-remove {
   min-height: 38px;
   padding: 8px 12px;
   border-radius: 10px;
@@ -392,6 +400,12 @@ body {
   border-color: #bfe1d2;
   background: var(--queue-green-soft);
   color: #14724d;
+}
+
+.btn-remove {
+  border-color: #f2c2c2;
+  background: #fff3f3;
+  color: #b42318;
 }
 
 .btn-notify:disabled {

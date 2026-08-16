@@ -221,6 +221,8 @@ h2 {
 }
 
 .status-mode-row .btn-secondary {
+  width: auto !important;
+  flex: 0 0 auto;
   padding: 7px 11px;
   font-size: 0.82rem;
   white-space: nowrap;
@@ -234,6 +236,8 @@ h2 {
 }
 
 .status-update-action .btn-primary {
+  width: auto !important;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
