@@ -4,6 +4,7 @@ import uuid
 from datetime import date, datetime, time, timedelta
 
 from django.contrib.auth.decorators import login_required
+from core.decorators import role_required
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -69,6 +70,7 @@ def _faculty_directory():
     return directory
 
 @login_required
+@role_required('student')
 def dashboard(request):
     faculty_directory = _faculty_directory()
     return render(request, 'students/dashboardStudent.html', {
@@ -76,6 +78,7 @@ def dashboard(request):
     })
 
 @login_required
+@role_required('student')
 def view_schedule(request):
     faculty = _faculty_for_schedule(request)
     if faculty:
@@ -85,6 +88,7 @@ def view_schedule(request):
     })
 
 @login_required
+@role_required('student')
 def consultation_requests(request):
     """Show only the signed-in student's consultation requests."""
     consultations = ConsultationRequest.objects.filter(
@@ -111,6 +115,7 @@ def _consultation_json(consultation):
 
 
 @login_required
+@role_required('student')
 @csrf_protect
 def api_consultation_requests(request):
     """List or create consultation requests owned by the signed-in student."""
@@ -155,6 +160,7 @@ def api_consultation_requests(request):
     return JsonResponse(_consultation_json(consultation), status=201)
 
 @login_required
+@role_required('student')
 def home(request):
     """Render department-scoped student home-page summary counts."""
     today = timezone.localdate()
@@ -188,6 +194,7 @@ def home(request):
 
 
 @login_required
+@role_required('student')
 def api_faculty_statuses(request):
     """Return calendar-derived faculty statuses for live student dashboards."""
     if request.method != 'GET':
@@ -196,6 +203,7 @@ def api_faculty_statuses(request):
 
 
 @login_required
+@role_required('student')
 def api_walk_in_status(request):
     """Return walk-in availability and the signed-in student's queue state."""
     if request.method != 'GET':
@@ -219,6 +227,7 @@ def api_walk_in_status(request):
 
 
 @login_required
+@role_required('student')
 @csrf_protect
 def api_join_walk_in_queue(request):
     """Join a faculty member's walk-in queue only while walk-ins are enabled."""

@@ -28,10 +28,6 @@ def register_faculty(request):
     request.session['registration_role'] = 'faculty'
     return redirect('google_login')
 
-def faculty_pending_registration(request):
-    email = request.session.get('pending_faculty_email', '')
-    return render(request, 'core/facultyPendingRegistration.html', {'email': email})
-
 @login_required
 def post_login_redirect(request):
     user = request.user
@@ -144,6 +140,8 @@ def faculty_pending_registration(request):
 def pending_approval_notice(request):
     return render(request, 'core/pendingApproval.html')
 
+
+@login_required
 def dev_login_as(request, user_id):
     if not settings.DEBUG:
         raise Http404()

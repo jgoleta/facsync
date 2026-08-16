@@ -26,3 +26,4 @@ urlpatterns = [
     path('depthead/', include('depthead.urls')),
     path('superadmin/', include('superadmin.urls')),
 ]
+
