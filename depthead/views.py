@@ -1,9 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
-from core.models import User, FacultyInvite
+from core.models import User, FacultyInvite, OfficeClosure
 from django.contrib import messages
-from .forms import FacultyInviteForm
+from .forms import FacultyInviteForm, OfficeClosureForm
 
 @login_required
 @role_required('depthead')
@@ -78,7 +78,20 @@ def faculty_monitoring(request):
 @login_required
 @role_required('depthead')
 def department_settings(request):
-    return render(request, 'depthead/departmentSettings.html')
+    closure, _ = OfficeClosure.objects.get_or_create(department=request.user.department)
+    if request.method == 'POST':
+        form = OfficeClosureForm(request.POST, instance=closure)
+        if form.is_valid():
+            closure = form.save(commit=False)
+            closure.department = request.user.department
+            closure.updated_by = request.user
+            closure.save()
+            messages.success(request, "Office closure settings updated.")
+            return redirect('depthead:department_settings')
+    else:
+        form = OfficeClosureForm(instance=closure)
+
+    return render(request, 'depthead/departmentSettings.html', {'closure_form': form})
 
 @login_required
 @role_required('depthead')

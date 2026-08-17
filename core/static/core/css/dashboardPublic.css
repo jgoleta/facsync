@@ -1,4 +1,10 @@
 /* Student dashboard styles */
+.card-closed {
+  opacity: 0.5;
+  filter: grayscale(60%);
+  pointer-events: none;
+}
+
 .container {
   max-width: 80%;
   margin: 24px auto;

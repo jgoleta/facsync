@@ -2,6 +2,7 @@ import json
 import json
 import uuid
 from datetime import date, datetime, time, timedelta
+from core.models import OfficeClosure
 
 from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
@@ -38,6 +39,13 @@ def _walk_in_json(queue):
         'faculty_note': queue.faculty_note,
     }
 
+def _closed_department_map():
+    closures = OfficeClosure.objects.filter(is_closed=True)
+    result = {}
+    for c in closures:
+        label = get_department_label(c.department) or c.department
+        result[label] = c.reason or f"{label} is currently closed."
+    return result
 
 def _faculty_for_schedule(request):
     faculty_id = request.GET.get('faculty_id')
@@ -54,7 +62,8 @@ def _faculty_for_schedule(request):
     return faculty
 
 
-def _faculty_directory():
+def _faculty_directory(closed_department_codes=None):
+    closed_department_codes = closed_department_codes or set()
     directory = []
     for faculty in FacultyProfile.objects.select_related('user').all():
         refresh_faculty_status(faculty)
@@ -66,15 +75,21 @@ def _faculty_directory():
             'note': faculty.status_note,
             'walk_ins_enabled': faculty.walk_ins_enabled,
             'updated_at': faculty.status_updated_at.isoformat() if faculty.status_updated_at else None,
+            'is_dept_closed': faculty.department_id in closed_department_codes,
         })
     return directory
+
+def _closed_department_codes():
+    return set(OfficeClosure.objects.filter(is_closed=True).values_list('department', flat=True))
 
 @login_required
 @role_required('student')
 def dashboard(request):
-    faculty_directory = _faculty_directory()
+    faculty_directory = _faculty_directory(_closed_department_codes())
+    closed_departments = _closed_department_map()
     return render(request, 'students/dashboardStudent.html', {
         'faculty_directory': faculty_directory,
+        'closed_departments': closed_departments,
     })
 
 @login_required
@@ -83,8 +98,12 @@ def view_schedule(request):
     faculty = _faculty_for_schedule(request)
     if faculty:
         refresh_faculty_status(faculty)
+    closure = None
+    if faculty:
+        closure = OfficeClosure.objects.filter(department=faculty.department_id, is_closed=True).first()
     return render(request, 'students/viewSchedule.html', {
         'selected_faculty': faculty,
+        'department_closure': closure,
     })
 
 @login_required
@@ -137,6 +156,8 @@ def api_consultation_requests(request):
         return JsonResponse({'error': 'A valid faculty, date, and start time are required.'}, status=400)
 
     faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id)
+    if OfficeClosure.objects.filter(department=faculty.department_id, is_closed=True).exists():
+        return JsonResponse({'error': 'This department is currently closed and not accepting consultation requests.'}, status=409)
     requested_end_time = payload.get('end_time')
     try:
         end_time = time.fromisoformat(str(requested_end_time)) if requested_end_time else (
@@ -196,10 +217,12 @@ def home(request):
 @login_required
 @role_required('student')
 def api_faculty_statuses(request):
-    """Return calendar-derived faculty statuses for live student dashboards."""
     if request.method != 'GET':
         return HttpResponse(status=405)
-    return JsonResponse({'faculty': _faculty_directory()})
+    return JsonResponse({
+        'faculty': _faculty_directory(_closed_department_codes()),
+        'closed_departments': _closed_department_map(),
+    })
 
 
 @login_required
@@ -248,6 +271,10 @@ def api_join_walk_in_queue(request):
             FacultyProfile.objects.select_for_update().select_related('user'),
             faculty_id=faculty_id,
         )
+        if OfficeClosure.objects.filter(department=faculty.department_id, is_closed=True).exists():
+            return JsonResponse({'error': 'This department is currently closed and not accepting walk-ins.'}, status=409)
+        if not faculty.walk_ins_enabled:
+            return JsonResponse({'error': 'This faculty member is not accepting walk-ins.'}, status=409)
         if not faculty.walk_ins_enabled:
             return JsonResponse({'error': 'This faculty member is not accepting walk-ins.'}, status=409)
 
