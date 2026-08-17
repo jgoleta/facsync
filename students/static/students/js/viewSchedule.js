@@ -1,35 +1,66 @@
 const calendarGrid = document.getElementById("calendarGrid");
 const legendList = document.getElementById("legendList");
 const selectedFacultyName = document.getElementById("selectedFacultyName");
-const dayLabels = document.querySelector('.day-labels');
-const viewControls = document.querySelector('.view-controls');
+const dayLabels = document.querySelector(".day-labels");
+const viewControls = document.querySelector(".view-controls");
 
 // --- Walk-in Queue Elements ---
-const joinQueueBtn = document.getElementById('join-queue-btn');
-const cancelQueueBtn = document.getElementById('cancel-queue-btn');
-const queueInitialState = document.getElementById('queue-initial-state');
-const queueActiveState = document.getElementById('queue-active-state');
-const queueFacultyName = document.getElementById('queue-faculty-name');
-const queueFacultyStatus = document.getElementById('queue-faculty-status');
-const queuePosition = document.getElementById('queue-position');
-const waitTime = document.getElementById('wait-time');
-const walkInNote = document.getElementById('walk-in-note');
-const queueMessage = document.getElementById('queue-message');
+const joinQueueBtn = document.getElementById("join-queue-btn");
+const cancelQueueBtn = document.getElementById("cancel-queue-btn");
+const queueInitialState = document.getElementById("queue-initial-state");
+const queueActiveState = document.getElementById("queue-active-state");
+const queueFacultyName = document.getElementById("queue-faculty-name");
+const queueFacultyStatus = document.getElementById("queue-faculty-status");
+const queuePosition = document.getElementById("queue-position");
+const waitTime = document.getElementById("wait-time");
+const walkInNote = document.getElementById("walk-in-note");
+const queueMessage = document.getElementById("queue-message");
+const isDeptClosed = document.body.dataset.deptClosed === "true";
+const closureReason =
+  document.body.dataset.closureReason || "This department is currently closed.";
+const closureNotice = document.getElementById("departmentClosureNotice");
+
+function applyClosureLockdown() {
+  if (!isDeptClosed) return;
+  if (closureNotice) {
+    closureNotice.textContent = closureReason;
+    closureNotice.classList.remove("hidden");
+  }
+  if (joinQueueBtn) {
+    joinQueueBtn.disabled = true;
+    joinQueueBtn.textContent = "Department Closed";
+  }
+  if (openModalBtn) {
+    openModalBtn.disabled = true;
+    openModalBtn.textContent = "Department Closed";
+  }
+  if (queueMessage) {
+    queueMessage.textContent =
+      "This department is currently closed and not accepting walk-ins.";
+  }
+}
 const facultyId = document.body.dataset.facultyId;
 let activeQueue = null;
 
-let currentView = 'monthly'; // Default view
+let currentView = "monthly"; // Default view
 
 function getCsrfToken() {
-  const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
-  return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+  const cookie = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("csrftoken="));
+  return cookie ? decodeURIComponent(cookie.split("=")[1]) : "";
 }
 
 function ordinal(value) {
   const number = Number(value);
-  const suffix = number % 10 === 1 && number % 100 !== 11 ? 'st'
-    : number % 10 === 2 && number % 100 !== 12 ? 'nd'
-      : number % 10 === 3 && number % 100 !== 13 ? 'rd' : 'th';
+  const suffix =
+    number % 10 === 1 && number % 100 !== 11
+      ? "st"
+      : number % 10 === 2 && number % 100 !== 12
+        ? "nd"
+        : number % 10 === 3 && number % 100 !== 13
+          ? "rd"
+          : "th";
   return `${number}${suffix}`;
 }
 
@@ -38,49 +69,58 @@ function renderWalkInState(data) {
   if (queueFacultyName) queueFacultyName.textContent = data.faculty_name;
   if (queueFacultyStatus) {
     const statusLabels = {
-      available: 'available',
-      busy: 'busy',
-      virtual_only: 'virtual only',
-      on_leave: 'on leave',
-      unavailable: 'unavailable',
+      available: "available",
+      busy: "busy",
+      virtual_only: "virtual only",
+      on_leave: "on leave",
+      unavailable: "unavailable",
     };
-    queueFacultyStatus.textContent = statusLabels[data.faculty_status] || data.faculty_status || 'status unavailable';
-    queueFacultyStatus.className = `status-${data.faculty_status || 'offline'}`;
+    queueFacultyStatus.textContent =
+      statusLabels[data.faculty_status] ||
+      data.faculty_status ||
+      "status unavailable";
+    queueFacultyStatus.className = `status-${data.faculty_status || "offline"}`;
   }
 
   if (activeQueue) {
-    queueInitialState?.classList.add('hidden');
-    queueActiveState?.classList.remove('hidden');
+    queueInitialState?.classList.add("hidden");
+    queueActiveState?.classList.remove("hidden");
     // Keep the faculty notification visible while the student is in the active queue state.
-    queueActiveState?.classList.toggle('is-called', activeQueue.status === 'called');
-    if (queuePosition) queuePosition.textContent = ordinal(activeQueue.position);
+    queueActiveState?.classList.toggle(
+      "is-called",
+      activeQueue.status === "called",
+    );
+    if (queuePosition)
+      queuePosition.textContent = ordinal(activeQueue.position);
     if (queueMessage) {
-      const isCalled = activeQueue.status === 'called';
+      const isCalled = activeQueue.status === "called";
       queueMessage.textContent = isCalled
-        ? 'You are being called now. Please enter the faculty office.'
-        : 'You are in the walk-in queue. Please wait for the faculty notification.';
-      queueMessage.classList.toggle('is-called', isCalled);
-      queueMessage.classList.toggle('is-waiting', !isCalled);
+        ? "You are being called now. Please enter the faculty office."
+        : "You are in the walk-in queue. Please wait for the faculty notification.";
+      queueMessage.classList.toggle("is-called", isCalled);
+      queueMessage.classList.toggle("is-waiting", !isCalled);
     }
     return;
   }
 
-  queueInitialState?.classList.remove('hidden');
-  queueActiveState?.classList.add('hidden');
-  queueActiveState?.classList.remove('is-called');
+  queueInitialState?.classList.remove("hidden");
+  queueActiveState?.classList.add("hidden");
+  queueActiveState?.classList.remove("is-called");
   if (joinQueueBtn) {
     joinQueueBtn.disabled = !data.walk_ins_enabled;
-    joinQueueBtn.textContent = data.walk_ins_enabled ? 'Join Walk-in Queue' : 'Walk-ins Unavailable';
+    joinQueueBtn.textContent = data.walk_ins_enabled
+      ? "Join Walk-in Queue"
+      : "Walk-ins Unavailable";
   }
   if (walkInNote) {
     walkInNote.textContent = data.walk_ins_enabled
-      ? 'This faculty is currently accepting walk-ins.'
-      : 'The faculty member is not accepting new walk-in students.';
-    walkInNote.classList.remove('hidden');
+      ? "This faculty is currently accepting walk-ins."
+      : "The faculty member is not accepting new walk-in students.";
+    walkInNote.classList.remove("hidden");
   }
   if (queueMessage) {
-    queueMessage.textContent = '';
-    queueMessage.classList.remove('is-called', 'is-waiting');
+    queueMessage.textContent = "";
+    queueMessage.classList.remove("is-called", "is-waiting");
   }
 }
 
@@ -88,15 +128,20 @@ async function loadWalkInStatus() {
   if (!facultyId) {
     if (joinQueueBtn) {
       joinQueueBtn.disabled = true;
-      joinQueueBtn.textContent = 'Faculty Unavailable';
+      joinQueueBtn.textContent = "Faculty Unavailable";
     }
-    if (queueMessage) queueMessage.textContent = 'Select a faculty member to join a walk-in queue.';
+    if (queueMessage)
+      queueMessage.textContent =
+        "Select a faculty member to join a walk-in queue.";
     return;
   }
   try {
-    const response = await fetch(`/student/api/walk-ins/status/?faculty_id=${encodeURIComponent(facultyId)}`);
+    const response = await fetch(
+      `/student/api/walk-ins/status/?faculty_id=${encodeURIComponent(facultyId)}`,
+    );
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Unable to check walk-in availability.');
+    if (!response.ok)
+      throw new Error(data.error || "Unable to check walk-in availability.");
     renderWalkInState(data);
   } catch (error) {
     if (joinQueueBtn) joinQueueBtn.disabled = true;
@@ -151,58 +196,74 @@ const facultySchedule = [
     name: "Leon Kennedy",
     department: "College of Business and Accountancy",
     schedule: [
-        { date: "2026-06-03", events: [{ title: "Class", startTime: "13:00", endTime: "15:00" }] },
-        { date: "2026-06-10", events: [{ title: "Class", startTime: "13:00", endTime: "15:00" }] },
-    ]
+      {
+        date: "2026-06-03",
+        events: [{ title: "Class", startTime: "13:00", endTime: "15:00" }],
+      },
+      {
+        date: "2026-06-10",
+        events: [{ title: "Class", startTime: "13:00", endTime: "15:00" }],
+      },
+    ],
   },
   {
     name: "Joel Miller",
     department: "College of Humanities and Social Sciences",
     schedule: [
-        { date: "2026-06-04", events: [{ title: "Consultation Hours", startTime: "10:00", endTime: "12:00" }] },
-    ]
+      {
+        date: "2026-06-04",
+        events: [
+          { title: "Consultation Hours", startTime: "10:00", endTime: "12:00" },
+        ],
+      },
+    ],
   },
   {
     name: "Max Payne",
     department: "College of Computer Studies",
-    schedule: []
+    schedule: [],
   },
   {
     name: "Geralt of Rivia",
     department: "College of Nursing",
     schedule: [
-        { date: "2026-06-08", events: [{ title: "Lab Supervision", startTime: "09:00", endTime: "12:00" }] },
-    ]
+      {
+        date: "2026-06-08",
+        events: [
+          { title: "Lab Supervision", startTime: "09:00", endTime: "12:00" },
+        ],
+      },
+    ],
   },
   {
     name: "Frank Ortiz",
     department: "College of Nursing",
-    schedule: []
+    schedule: [],
   },
   {
     name: "Grace Kim",
     department: "College of Engineering",
-    schedule: []
+    schedule: [],
   },
   {
     name: "Henry Alvarez",
     department: "College of Humanities and Social Sciences",
-    schedule: []
+    schedule: [],
   },
   {
     name: "Irene Patel",
     department: "College of Humanities and Social Sciences",
-    schedule: []
+    schedule: [],
   },
   {
     name: "Julia Rivers",
     department: "College of Education",
-    schedule: []
+    schedule: [],
   },
   {
     name: "Kevin Zhou",
     department: "College of Computer Studies",
-    schedule: []
+    schedule: [],
   },
 ];
 
@@ -213,60 +274,63 @@ function formatEventTime(eventData) {
 }
 
 function openDayScheduleModal(dateKey, dayLabel, events) {
-  const modal = document.getElementById('dayScheduleModal');
-  const titleEl = document.getElementById('dayScheduleTitle');
-  const listEl = document.getElementById('dayScheduleList');
+  const modal = document.getElementById("dayScheduleModal");
+  const titleEl = document.getElementById("dayScheduleTitle");
+  const listEl = document.getElementById("dayScheduleList");
 
   if (!modal || !titleEl || !listEl) return;
 
   titleEl.textContent = `Schedule for ${dayLabel}`;
-  listEl.innerHTML = '';
+  listEl.innerHTML = "";
 
   events.forEach((eventData) => {
-    const item = document.createElement('li');
+    const item = document.createElement("li");
     item.innerHTML = `
       <div class="details-item-title">
         <span>${eventData.title}</span>
-        <span class="details-item-type type-${eventData.type || 'busy'}">${eventData.type || 'busy'}</span>
+        <span class="details-item-type type-${eventData.type || "busy"}">${eventData.type || "busy"}</span>
       </div>
       <div class="details-item-meta">${formatEventTime(eventData)}</div>
     `;
-    item.addEventListener('click', () => {
+    item.addEventListener("click", () => {
       openEventModal(eventData, dateKey);
-      modal.classList.add('hidden');
+      modal.classList.add("hidden");
     });
     listEl.appendChild(item);
   });
 
-  modal.classList.remove('hidden');
+  modal.classList.remove("hidden");
 }
 
 function openEventModal(eventData, dateKey) {
-  const modal = document.getElementById('eventDetailModal');
-  const titleEl = document.getElementById('eventDetailTitle');
-  const typeEl = document.getElementById('eventDetailType');
-  const timeEl = document.getElementById('eventDetailTime');
-  const descriptionEl = document.getElementById('eventDetailDescription');
+  const modal = document.getElementById("eventDetailModal");
+  const titleEl = document.getElementById("eventDetailTitle");
+  const typeEl = document.getElementById("eventDetailType");
+  const timeEl = document.getElementById("eventDetailTime");
+  const descriptionEl = document.getElementById("eventDetailDescription");
 
   if (!modal || !titleEl || !typeEl || !timeEl || !descriptionEl) return;
 
   activeEventContext = { dateKey, eventData };
   titleEl.textContent = eventData.title;
-  typeEl.textContent = eventData.type || 'busy';
-  typeEl.className = `event-detail-type type-${eventData.type || 'busy'}`;
+  typeEl.textContent = eventData.type || "busy";
+  typeEl.className = `event-detail-type type-${eventData.type || "busy"}`;
   const timeText = `${eventData.startTime} - ${eventData.endTime}`;
   timeEl.textContent = timeText;
-  descriptionEl.textContent = eventData.description || 'No description provided.';
-  modal.classList.remove('hidden');
+  descriptionEl.textContent =
+    eventData.description || "No description provided.";
+  modal.classList.remove("hidden");
 }
 
 function renderCalendar() {
   const urlParams = new URLSearchParams(window.location.search);
-  const facultyNameFromURL = urlParams.get('faculty');
-  const facultyStatusFromURL = urlParams.get('status') || 'on-leave';
+  const facultyNameFromURL = urlParams.get("faculty");
+  const facultyStatusFromURL = urlParams.get("status") || "on-leave";
 
-  const selectedFaculty = facultySchedule.find(f => f.name === facultyNameFromURL) || {
-    name: selectedFacultyName?.textContent || 'Faculty Schedule',
+  const selectedFaculty = facultySchedule.find(
+    (f) => f.name === facultyNameFromURL,
+  ) || {
+    name: selectedFacultyName?.textContent || "Faculty Schedule",
     schedule: [],
   };
   calendarGrid.innerHTML = "";
@@ -276,36 +340,37 @@ function renderCalendar() {
   // Walk-in availability is loaded from the faculty's persisted setting.
   if (joinQueueBtn) {
     joinQueueBtn.disabled = true;
-    joinQueueBtn.textContent = 'Checking Walk-ins...';
+    joinQueueBtn.textContent = "Checking Walk-ins...";
   }
 
   let daysToRender;
-  const today = new Date('2026-06-09'); // Fixed date for demo purposes
+  const today = new Date("2026-06-09"); // Fixed date for demo purposes
   const daysInMonth = 30; // Hardcoded for June
 
-  if (currentView === 'monthly') {
+  if (currentView === "monthly") {
     daysToRender = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-    calendarGrid.classList.remove('daily-view-grid');
-    calendarGrid.style.gridTemplateColumns = '';
-    if (dayLabels) dayLabels.style.display = '';
-  } else if (currentView === 'weekly') {
+    calendarGrid.classList.remove("daily-view-grid");
+    calendarGrid.style.gridTemplateColumns = "";
+    if (dayLabels) dayLabels.style.display = "";
+  } else if (currentView === "weekly") {
     const dayOfMonth = today.getDate();
     const dayOfWeek = (today.getDay() + 6) % 7; // Mon=0
     const weekStart = dayOfMonth - dayOfWeek;
     daysToRender = Array.from({ length: 7 }, (_, i) => weekStart + i);
-    calendarGrid.classList.remove('daily-view-grid');
-    calendarGrid.style.gridTemplateColumns = '';
-    if (dayLabels) dayLabels.style.display = '';
-  } else { // daily
-    if (dayLabels) dayLabels.style.display = 'none';
-    calendarGrid.style.gridTemplateColumns = 'auto 1fr';
-    calendarGrid.classList.add('daily-view-grid');
+    calendarGrid.classList.remove("daily-view-grid");
+    calendarGrid.style.gridTemplateColumns = "";
+    if (dayLabels) dayLabels.style.display = "";
+  } else {
+    // daily
+    if (dayLabels) dayLabels.style.display = "none";
+    calendarGrid.style.gridTemplateColumns = "auto 1fr";
+    calendarGrid.classList.add("daily-view-grid");
 
-    const timeScale = document.createElement('div');
-    timeScale.className = 'time-scale';
+    const timeScale = document.createElement("div");
+    timeScale.className = "time-scale";
 
-    const dayContent = document.createElement('div');
-    dayContent.className = 'day-content';
+    const dayContent = document.createElement("div");
+    dayContent.className = "day-content";
 
     const hourHeight = 60; // 60px per hour.
     const dayStartHour = 6;
@@ -313,16 +378,17 @@ function renderCalendar() {
 
     // Keep the student daily schedule aligned with the faculty 6 AM–6 PM window.
     for (let i = dayStartHour; i <= dayEndHour; i++) {
-      const timeLabel = document.createElement('div');
-      timeLabel.className = 'time-label';
-      timeLabel.textContent = i > 12 ? `${i - 12}:00 PM` : (i === 12 ? '12:00 PM' : `${i}:00 AM`);
+      const timeLabel = document.createElement("div");
+      timeLabel.className = "time-label";
+      timeLabel.textContent =
+        i > 12 ? `${i - 12}:00 PM` : i === 12 ? "12:00 PM" : `${i}:00 AM`;
       timeLabel.style.height = `${i === dayEndHour ? 0 : hourHeight}px`;
-      if (i === dayEndHour) timeLabel.classList.add('time-label-end');
+      if (i === dayEndHour) timeLabel.classList.add("time-label-end");
       timeScale.appendChild(timeLabel);
 
       if (i === dayEndHour) continue;
-      const gridLine = document.createElement('div');
-      gridLine.className = 'time-grid-line';
+      const gridLine = document.createElement("div");
+      gridLine.className = "time-grid-line";
       gridLine.style.height = `${hourHeight}px`;
       dayContent.appendChild(gridLine);
     }
@@ -332,54 +398,63 @@ function renderCalendar() {
 
     const day = today.getDate();
     const dateKey = `2026-06-${String(day).padStart(2, "0")}`;
-    const dayEntry = selectedFaculty.schedule.find(entry => entry.date === dateKey);
+    const dayEntry = selectedFaculty.schedule.find(
+      (entry) => entry.date === dateKey,
+    );
 
     if (dayEntry) {
       const visibleDayEvents = dayEntry.events.filter((event) => {
         if (!event.startTime || !event.endTime) return true;
-        const [startHour, startMinute] = event.startTime.split(':').map(Number);
-        const [endHour, endMinute] = event.endTime.split(':').map(Number);
-        return endHour * 60 + endMinute > dayStartHour * 60
-          && startHour * 60 + startMinute < dayEndHour * 60;
+        const [startHour, startMinute] = event.startTime.split(":").map(Number);
+        const [endHour, endMinute] = event.endTime.split(":").map(Number);
+        return (
+          endHour * 60 + endMinute > dayStartHour * 60 &&
+          startHour * 60 + startMinute < dayEndHour * 60
+        );
       });
       const visibleEvents = visibleDayEvents.slice(0, 2);
       const overflowEvents = visibleDayEvents.slice(2);
 
-      visibleEvents.forEach(event => {
+      visibleEvents.forEach((event) => {
         const item = document.createElement("div");
         item.className = "slot-item";
-        const eventTime = event.startTime && event.endTime
-          ? `${event.startTime} - ${event.endTime}`
-          : 'All day';
+        const eventTime =
+          event.startTime && event.endTime
+            ? `${event.startTime} - ${event.endTime}`
+            : "All day";
         item.innerHTML = `<strong>${event.title}</strong>${eventTime}`;
-        item.addEventListener('click', () => openEventModal(event, dateKey));
+        item.addEventListener("click", () => openEventModal(event, dateKey));
 
         if (!event.startTime || !event.endTime) {
-          item.classList.add('all-day-item');
+          item.classList.add("all-day-item");
           dayContent.appendChild(item);
           return;
         }
 
-        const [startHour, startMinute] = event.startTime.split(':').map(Number);
-        const [endHour, endMinute] = event.endTime.split(':').map(Number);
+        const [startHour, startMinute] = event.startTime.split(":").map(Number);
+        const [endHour, endMinute] = event.endTime.split(":").map(Number);
         const eventStartMinutes = startHour * 60 + startMinute;
         const eventEndMinutes = endHour * 60 + endMinute;
-        const visibleStartMinutes = Math.max(eventStartMinutes, dayStartHour * 60);
+        const visibleStartMinutes = Math.max(
+          eventStartMinutes,
+          dayStartHour * 60,
+        );
         const visibleEndMinutes = Math.min(eventEndMinutes, dayEndHour * 60);
 
         // Skip events outside the visible daily range and clip overlapping events to it.
         if (visibleEndMinutes <= visibleStartMinutes) return;
 
-        const top = ((visibleStartMinutes - dayStartHour * 60) / 60) * hourHeight;
+        const top =
+          ((visibleStartMinutes - dayStartHour * 60) / 60) * hourHeight;
         const durationMinutes = visibleEndMinutes - visibleStartMinutes;
         const height = (durationMinutes / 60) * hourHeight;
 
-        item.style.position = 'absolute';
+        item.style.position = "absolute";
         item.style.top = `${top}px`;
         item.style.height = `${height - 4}px`; // -4 for padding/border visual adjustment
-        item.style.left = '8px';
-        item.style.right = '8px';
-        item.style.zIndex = '1';
+        item.style.left = "8px";
+        item.style.right = "8px";
+        item.style.zIndex = "1";
 
         dayContent.appendChild(item);
 
@@ -412,7 +487,7 @@ function renderCalendar() {
 
     if (day > 0 && day <= daysInMonth) {
       const date = new Date(2026, 5, day); // 5 is June
-      const dayOfWeek = date.toLocaleDateString('en-US', { weekday: 'short' });
+      const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "short" });
       header.textContent = `${dayOfWeek} ${day}`;
       column.appendChild(header);
 
@@ -431,7 +506,7 @@ function renderCalendar() {
           const item = document.createElement("div");
           item.className = "slot-item";
           item.innerHTML = `<strong>${event.title}</strong>${event.startTime} - ${event.endTime}`;
-          item.addEventListener('click', () => openEventModal(event, dateKey));
+          item.addEventListener("click", () => openEventModal(event, dateKey));
           body.appendChild(item);
 
           const legendItem = document.createElement("li");
@@ -453,42 +528,54 @@ function renderCalendar() {
       }
       column.appendChild(body);
     } else {
-      column.classList.add('disabled');
+      column.classList.add("disabled");
     }
     calendarGrid.appendChild(column);
   });
 }
 
 // Modal functionality
-const consultationModal = document.getElementById('consultationModal');
-const eventDetailModal = document.getElementById('eventDetailModal');
-const dayScheduleModal = document.getElementById('dayScheduleModal');
-const dayScheduleCloseBtns = document.querySelectorAll("[data-close-modal='dayScheduleModal']");
-const openModalBtn = document.getElementById('book-consultation-btn');
-const closeModalBtn = document.querySelector('#consultationModal .modal-close-btn');
-const consultationForm = document.getElementById('consultationForm');
-const myConsultationsBtn = document.getElementById('my-consultations-btn');
-const detailCloseBtns = document.querySelectorAll("[data-close-modal='eventDetailModal']");
+const consultationModal = document.getElementById("consultationModal");
+const eventDetailModal = document.getElementById("eventDetailModal");
+const dayScheduleModal = document.getElementById("dayScheduleModal");
+const dayScheduleCloseBtns = document.querySelectorAll(
+  "[data-close-modal='dayScheduleModal']",
+);
+const openModalBtn = document.getElementById("book-consultation-btn");
+const closeModalBtn = document.querySelector(
+  "#consultationModal .modal-close-btn",
+);
+const consultationForm = document.getElementById("consultationForm");
+const myConsultationsBtn = document.getElementById("my-consultations-btn");
+const detailCloseBtns = document.querySelectorAll(
+  "[data-close-modal='eventDetailModal']",
+);
 
 if (myConsultationsBtn) {
-    myConsultationsBtn.addEventListener('click', () => {
-        // Use Django's resolved URL so this works from any student page.
-        window.location.href = myConsultationsBtn.dataset.consultationsUrl || '/student/consultation-requests/';
-    });
+  myConsultationsBtn.addEventListener("click", () => {
+    // Use Django's resolved URL so this works from any student page.
+    window.location.href =
+      myConsultationsBtn.dataset.consultationsUrl ||
+      "/student/consultation-requests/";
+  });
 }
 
 if (joinQueueBtn) {
-  joinQueueBtn.addEventListener('click', async () => {
+  joinQueueBtn.addEventListener("click", async () => {
     joinQueueBtn.disabled = true;
-    if (queueMessage) queueMessage.textContent = 'Joining walk-in queue...';
+    if (queueMessage) queueMessage.textContent = "Joining walk-in queue...";
     try {
-      const response = await fetch('/student/api/walk-ins/join/', {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json' },
+      const response = await fetch("/student/api/walk-ins/join/", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCsrfToken(),
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ faculty_id: facultyId }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Unable to join the walk-in queue.');
+      if (!response.ok)
+        throw new Error(data.error || "Unable to join the walk-in queue.");
       await loadWalkInStatus();
     } catch (error) {
       if (queueMessage) queueMessage.textContent = error.message;
@@ -498,17 +585,24 @@ if (joinQueueBtn) {
 }
 
 if (cancelQueueBtn) {
-  cancelQueueBtn.addEventListener('click', async () => {
+  cancelQueueBtn.addEventListener("click", async () => {
     if (!activeQueue) return;
     cancelQueueBtn.disabled = true;
     try {
-      const response = await fetch(`/faculty/api/walk-ins/${encodeURIComponent(activeQueue.queue_id)}/`, {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'cancel' }),
-      });
+      const response = await fetch(
+        `/faculty/api/walk-ins/${encodeURIComponent(activeQueue.queue_id)}/`,
+        {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": getCsrfToken(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: "cancel" }),
+        },
+      );
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Unable to leave the queue.');
+      if (!response.ok)
+        throw new Error(data.error || "Unable to leave the queue.");
       await loadWalkInStatus();
     } catch (error) {
       if (queueMessage) queueMessage.textContent = error.message;
@@ -518,71 +612,77 @@ if (cancelQueueBtn) {
   });
 }
 
-openModalBtn.addEventListener('click', () => {
-  consultationModal.classList.remove('hidden');
+openModalBtn.addEventListener("click", () => {
+  consultationModal.classList.remove("hidden");
 });
 
-closeModalBtn.addEventListener('click', () => {
-  consultationModal.classList.add('hidden');
+closeModalBtn.addEventListener("click", () => {
+  consultationModal.classList.add("hidden");
 });
 
-consultationModal.addEventListener('click', (e) => {
+consultationModal.addEventListener("click", (e) => {
   if (e.target === consultationModal) {
-    consultationModal.classList.add('hidden');
+    consultationModal.classList.add("hidden");
   }
 });
 
 if (eventDetailModal) {
-  eventDetailModal.addEventListener('click', (e) => {
+  eventDetailModal.addEventListener("click", (e) => {
     if (e.target === eventDetailModal) {
-      eventDetailModal.classList.add('hidden');
+      eventDetailModal.classList.add("hidden");
     }
   });
 }
 
 if (dayScheduleModal) {
-  dayScheduleModal.addEventListener('click', (e) => {
+  dayScheduleModal.addEventListener("click", (e) => {
     if (e.target === dayScheduleModal) {
-      dayScheduleModal.classList.add('hidden');
+      dayScheduleModal.classList.add("hidden");
     }
   });
 }
 
 dayScheduleCloseBtns.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    if (dayScheduleModal) dayScheduleModal.classList.add('hidden');
+  btn.addEventListener("click", () => {
+    if (dayScheduleModal) dayScheduleModal.classList.add("hidden");
   });
 });
 
 detailCloseBtns.forEach((btn) => {
-  btn.addEventListener('click', () => {
-    if (eventDetailModal) eventDetailModal.classList.add('hidden');
+  btn.addEventListener("click", () => {
+    if (eventDetailModal) eventDetailModal.classList.add("hidden");
   });
 });
 
 if (consultationForm) {
-  consultationForm.addEventListener('submit', async (e) => {
+  consultationForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const submitButton = consultationForm.querySelector('button[type="submit"]');
+    const submitButton = consultationForm.querySelector(
+      'button[type="submit"]',
+    );
     if (submitButton) submitButton.disabled = true;
 
     try {
       // Save the request before closing the modal so it appears in My Consultations.
-      const response = await fetch('/student/api/consultation-requests/', {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json' },
+      const response = await fetch("/student/api/consultation-requests/", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": getCsrfToken(),
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           faculty_id: facultyId,
-          date: document.getElementById('dateSelect').value,
-          start_time: document.getElementById('timeSelect').value,
-          message: document.getElementById('message').value,
+          date: document.getElementById("dateSelect").value,
+          start_time: document.getElementById("timeSelect").value,
+          message: document.getElementById("message").value,
         }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Unable to book the consultation.');
-      consultationModal.classList.add('hidden');
+      if (!response.ok)
+        throw new Error(data.error || "Unable to book the consultation.");
+      consultationModal.classList.add("hidden");
       consultationForm.reset();
-      alert('Consultation request sent.');
+      alert("Consultation request sent.");
     } catch (error) {
       alert(error.message);
     } finally {
@@ -592,17 +692,20 @@ if (consultationForm) {
 }
 
 if (viewControls) {
-    const viewButtons = viewControls.querySelectorAll('.view-btn');
-    viewButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            viewControls.querySelector('.active').classList.remove('active');
-            button.classList.add('active');
-            currentView = button.dataset.view;
-            renderCalendar();
-        });
+  const viewButtons = viewControls.querySelectorAll(".view-btn");
+  viewButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      viewControls.querySelector(".active").classList.remove("active");
+      button.classList.add("active");
+      currentView = button.dataset.view;
+      renderCalendar();
     });
+  });
 }
 
 renderCalendar();
-loadWalkInStatus();
-window.setInterval(loadWalkInStatus, 10000);
+applyClosureLockdown();
+if (!isDeptClosed) {
+  loadWalkInStatus();
+  window.setInterval(loadWalkInStatus, 10000);
+}

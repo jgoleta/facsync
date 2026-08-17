@@ -306,6 +306,7 @@
     </div>
 
     {{ faculty_directory|json_script:"faculty-directory" }}
+    {{ closed_departments|json_script:"closed-departments" }}
     <script src="{% static 'students/js/dashboardStudent.js' %}"></script>
 </body>
 

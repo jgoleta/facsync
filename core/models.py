@@ -54,3 +54,15 @@ class DeptHeadInvite(models.Model):
 
     def __str__(self):
         return f"Dept Head invite for {self.email} ({self.department})"
+
+class OfficeClosure(models.Model):
+    department = models.CharField(max_length=100, unique=True)
+    is_closed = models.BooleanField(default=False)
+    reason = models.TextField(blank=True)
+    closure_start = models.DateField(null=True, blank=True)
+    closure_end = models.DateField(null=True, blank=True)
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='office_closures_updated')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.department} - {'Closed' if self.is_closed else 'Open'}"

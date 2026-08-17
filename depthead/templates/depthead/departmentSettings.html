@@ -17,13 +17,34 @@
             gap: 24px;
             align-items: start;
         }
+    
         .settings-card h2 {
             margin-top: 0;
             margin-bottom: 20px;
         }
+    
         .announcements-card .card-header {
             padding-bottom: 0;
         }
+    
+        .form-group input[type="date"] {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font: inherit;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    
+        .closure-date-pair {
+            display: flex;
+            gap: 16px;
+        }
+    
+        .closure-date-pair .form-group {
+            flex: 1;
+        }
+    
         @media (max-width: 1024px) {
             .settings-grid {
                 grid-template-columns: 1fr;
@@ -100,17 +121,42 @@
                             <label for="dept-desc">Description</label>
                             <textarea id="dept-desc">The forefront of innovation and technology education.</textarea>
                         </div>
-                        <div class="form-group form-group-toggle">
-                            <label for="closure-toggle">Office Closure</label>
-                            <p>Activate to prevent new bookings and notify users of office closure.</p>
-                            <input type="checkbox" id="closure-toggle" class="toggle-switch">
-                        </div>
-                        <div class="form-group">
-                            <label for="closure-dates">Closure Date Range</label>
-                            <input type="text" id="closure-dates" placeholder="e.g., 2026-12-20 to 2027-01-05">
-                        </div>
                         <div class="form-actions">
                             <button type="submit" class="primary-button">Save Changes</button>
+                        </div>
+                    </form>
+                
+                    <h2 style="margin-top: 32px;">Office Closure</h2>
+                    {% if messages %}
+                    {% for message in messages %}
+                    {% if forloop.last %}
+                    <p class="message-{{ message.tags }}">{{ message }}</p>
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                    <form method="post" class="settings-form">
+                        {% csrf_token %}
+                        <div class="form-group form-group-toggle">
+                            <label for="{{ closure_form.is_closed.id_for_label }}">Office Closure</label>
+                            <p>Activate to prevent new bookings and notify users of office closure.</p>
+                            {{ closure_form.is_closed }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ closure_form.reason.id_for_label }}">Reason (optional)</label>
+                            {{ closure_form.reason }}
+                        </div>
+                        <div class="closure-date-pair">
+                            <div class="form-group">
+                                <label for="{{ closure_form.closure_start.id_for_label }}">Closure Start</label>
+                                {{ closure_form.closure_start }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ closure_form.closure_end.id_for_label }}">Closure End</label>
+                                {{ closure_form.closure_end }}
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="primary-button">Save Closure Settings</button>
                         </div>
                     </form>
                 </div>
