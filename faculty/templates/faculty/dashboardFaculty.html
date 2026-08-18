@@ -124,7 +124,16 @@
             </div>
         </main>
     </div>
+
+    <div id="announcementModal" class="modal-overlay hidden" data-fetch-url="{% url 'faculty:active_announcements' %}">
+        <div class="modal">
+            <h2>Announcements</h2>
+            <div id="announcementList" class="announcement-list"></div>
+            <button id="closeAnnouncementModal" class="btn-secondary">Close</button>
+        </div>
+    </div>
     <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260816-consultation-actions"></script>
+    <script src="{% static 'core/js/announcements.js' %}"></script>
 </body>
 
 </html>

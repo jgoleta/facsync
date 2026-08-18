@@ -1,4 +1,6 @@
-from .models import User, OfficeClosure
+from datetime import timezone as dt_timezone
+from django.utils import timezone
+from .models import User, OfficeClosure, DepartmentAnnouncement
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -7,6 +9,8 @@ from .forms import StudentProfileForm, FacultyRegistrationForm, FacultyProfileSe
 from django.contrib.auth import login as auth_login
 from django.http import Http404
 from allauth.socialaccount.models import SocialAccount
+from .services import get_active_announcements
+from django.http import JsonResponse
 
 def landing_page(request):
     return render(request, 'core/landingPage.html')
@@ -76,6 +80,20 @@ def dashboard_public(request):
         'faculty_cards': faculty_cards,
         'closures': closure_list,
         'department_choices': DEPARTMENT_CHOICES,
+        'announcements': get_active_announcements(),
+    })
+
+def active_announcements_public(request):
+    qs = DepartmentAnnouncement.objects.filter(expiry__gt=timezone.now())
+    return JsonResponse({
+        'announcements': [
+            {
+                'department': a.get_department_display(),
+                'message': a.message,
+                'posted_at': a.posted_at.strftime('%b %d, %Y'),
+            }
+            for a in qs
+        ]
     })
 
 def register_student(request):

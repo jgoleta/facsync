@@ -1,6 +1,8 @@
 from django import forms
 from .models import User
 from .departments import DEPARTMENT_CHOICES
+from django.utils import timezone
+from core.models import DepartmentAnnouncement
 
 class StudentProfileForm(forms.ModelForm):
     department = forms.ChoiceField(choices=DEPARTMENT_CHOICES)
@@ -21,3 +23,26 @@ class FacultyRegistrationForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['department']  #office_location, faculty_id go to FacultyProfile
+
+
+class DepartmentAnnouncementForm(forms.ModelForm):
+    expiry_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        help_text="Leave blank to auto-expire 7 days after posting."
+    )
+
+    class Meta:
+        model = DepartmentAnnouncement
+        fields = ['message']
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        expiry_date = self.cleaned_data.get('expiry_date')
+        if expiry_date:
+            instance.expiry = timezone.make_aware(
+                timezone.datetime.combine(expiry_date, timezone.datetime.max.time())
+            )
+        if commit:
+            instance.save()
+        return instance

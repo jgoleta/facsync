@@ -56,7 +56,16 @@
 
     {{ faculty_directory|json_script:"faculty-directory" }}
     {{ closed_departments|json_script:"closed-departments" }}
+
+    <div id="announcementModal" class="modal-overlay hidden" data-fetch-url="{% url 'students:active_announcements' %}">
+        <div class="modal">
+            <h2>Announcements</h2>
+            <div id="announcementList" class="announcement-list"></div>
+            <button id="closeAnnouncementModal" class="btn-secondary">Close</button>
+        </div>
+    </div>
     <script src="{% static 'students/js/dashboardStudent.js' %}"></script>
+    <script src="{% static 'core/js/announcements.js' %}"></script>
 </body>
 
 </html>

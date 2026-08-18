@@ -1,10 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
-from core.models import User, FacultyInvite, OfficeClosure
+from core.models import User, FacultyInvite, OfficeClosure, DepartmentAnnouncement
+from core.forms import DepartmentAnnouncementForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm
 from faculty.models import FacultyProfile
+from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 @login_required
 @role_required('depthead')
@@ -124,7 +128,15 @@ def department_settings(request):
     else:
         form = OfficeClosureForm(instance=closure)
 
-    return render(request, 'depthead/departmentSettings.html', {'closure_form': form})
+    department_announcements = DepartmentAnnouncement.objects.filter(
+        department=request.user.department,
+        expiry__gt=timezone.now()
+    )
+
+    return render(request, 'depthead/departmentSettings.html', {
+        'closure_form': form,
+        'department_announcements': department_announcements,
+    })
 
 @login_required
 @role_required('depthead')
@@ -135,3 +147,32 @@ def peak_analytics(request):
 @role_required('depthead')
 def faculty_trends(request):
     return render(request, 'depthead/facultyTrends.html')
+
+@login_required
+@role_required('depthead')
+@require_POST
+def create_announcement(request):
+    if not request.user.department:
+        return JsonResponse(
+            {'success': False, 'error': "Your account has no department set. Contact a Super Admin."},
+            status=400
+        )
+
+    form = DepartmentAnnouncementForm(request.POST)
+    if not form.is_valid():
+        errors = [e for error_list in form.errors.values() for e in error_list]
+        return JsonResponse({'success': False, 'error': ' '.join(errors)}, status=400)
+
+    announcement = form.save(commit=False)
+    announcement.department = request.user.department
+    announcement.posted_by = request.user
+    announcement.save()
+
+    return JsonResponse({
+        'success': True,
+        'announcement': {
+            'message': announcement.message,
+            'posted_at': announcement.posted_at.strftime('%b %d, %Y'),
+            'expiry': announcement.expiry.strftime('%b %d, %Y'),
+        }
+    })
