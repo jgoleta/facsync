@@ -1,3 +1,11 @@
+.btn-primary.danger {
+    background: #dc3545;
+}
+
+.btn-primary.danger:hover {
+    background: #c82333;
+}
+
 .pending-requests-list {
     display: flex;
     flex-direction: column;

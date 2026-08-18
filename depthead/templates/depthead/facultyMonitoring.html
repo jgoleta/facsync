@@ -69,34 +69,18 @@
             </header>
 
             <div class="monitoring-grid">
-                <div class="faculty-card status-available">
+                {% for item in faculty_list %}
+                <div class="faculty-card {{ item.status_class }}">
                     <div class="card-header">
-                        <h4>Dr. Arthur Morgan</h4>
-                        <span class="status-badge">Available</span>
+                        <h4>{{ item.name }}</h4>
+                        <span class="status-badge">{{ item.status_label }}</span>
                     </div>
-                    <p>Last updated: 5 minutes ago</p>
+                    <p>{% if item.updated_at %}Last updated: {{ item.updated_at|timesince }} ago{% else %}Not yet updated{% endif %}
+                    </p>
                 </div>
-                <div class="faculty-card status-busy">
-                    <div class="card-header">
-                        <h4>Dr. Sarah Johnson</h4>
-                        <span class="status-badge">Busy</span>
-                    </div>
-                    <p>Last updated: 1 hour ago</p>
-                </div>
-                <div class="faculty-card status-unavailable">
-                    <div class="card-header">
-                        <h4>Prof. Leon Kennedy</h4>
-                        <span class="status-badge">Unavailable</span>
-                    </div>
-                    <p>Last updated: 3 days ago</p>
-                </div>
-                 <div class="faculty-card status-available">
-                    <div class="card-header">
-                        <h4>Prof. Ada Wong</h4>
-                        <span class="status-badge">Available</span>
-                    </div>
-                    <p>Last updated: 15 minutes ago</p>
-                </div>
+                {% empty %}
+                <p class="empty-state">No active faculty in your department yet.</p>
+                {% endfor %}
             </div>
         </main>
     </div>

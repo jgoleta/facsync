@@ -156,7 +156,7 @@ function renderFacultyDirectory() {
   facultyGrid.innerHTML = directory
     .map(
       (faculty) => `
-    <article class="card" data-id="${escapeHtml(faculty.faculty_id)}" data-dept="${escapeHtml(faculty.department)}" data-status="${escapeHtml(faculty.status)}" data-lastupdated="${escapeHtml(faculty.updated_at || "")}">
+    <article class="card${faculty.is_dept_closed ? " card-closed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-dept="${escapeHtml(faculty.department)}" data-status="${escapeHtml(faculty.status)}" data-lastupdated="${escapeHtml(faculty.updated_at || "")}">
       <div class="card-left">
         <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
           <circle cx="12" cy="8" r="3.2" fill="#e6eefc" />

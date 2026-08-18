@@ -164,6 +164,7 @@ USE_TZ = True
 STATIC_URL = 'static/'
 LOGIN_REDIRECT_URL = '/post-login/'
 LOGOUT_REDIRECT_URL = '/'
+LOGIN_URL = 'core:login'
 SOCIALACCOUNT_LOGIN_ON_GET = True
 ACCOUNT_LOGOUT_ON_GET = True
 AUTH_USER_MODEL = 'core.User'

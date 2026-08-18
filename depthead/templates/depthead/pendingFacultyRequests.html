@@ -136,7 +136,12 @@
                             <td><span class="status-tag active">Active</span></td>
                             <td class="actions">
                                 <button>Upload Schedule</button>
-                                <button class="danger">Remove</button>
+                                <form method="post" action="{% url 'depthead:remove_faculty' user.id %}" class="remove-faculty-form"
+                                    style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="button" class="danger btn-remove-trigger"
+                                        data-faculty-name="{{ user.get_full_name|default:user.username }}">Remove</button>
+                                </form>
                             </td>
                         </tr>
                         {% endfor %}
@@ -173,6 +178,23 @@
     </div>
     
     <script src="{% static 'depthead/js/pendingFacultyRequests.js' %}"></script>
+    <script src="{% static 'depthead/js/removeConfirm.js' %}"></script>
+    <div class="modal-overlay hidden" id="removeConfirmModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="removeConfirmModalTitle">
+            <div class="modal-header">
+                <div>
+                    <h2 id="removeConfirmModalTitle">Remove Faculty</h2>
+                    <p>Permanently remove <strong id="removeConfirmFacultyName"></strong>? This deletes their schedule and
+                        consultation history and cannot be undone.</p>
+                </div>
+                <button type="button" class="modal-close" id="closeRemoveConfirmModal">×</button>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="cancelRemoveConfirmModal">Cancel</button>
+                <button type="button" class="btn-primary danger" id="confirmRemoveBtn">Remove Permanently</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

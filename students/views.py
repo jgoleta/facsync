@@ -72,7 +72,7 @@ def _faculty_directory(closed_department_codes=None):
             'name': faculty.user.get_full_name() or faculty.user.username,
             'department': faculty.department_name,
             'status': faculty.current_status,
-            'note': faculty.status_note,
+            'note': 'Department closed' if faculty.department_id in closed_department_codes else faculty.status_note,
             'walk_ins_enabled': faculty.walk_ins_enabled,
             'updated_at': faculty.status_updated_at.isoformat() if faculty.status_updated_at else None,
             'is_dept_closed': faculty.department_id in closed_department_codes,
