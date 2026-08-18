@@ -165,27 +165,38 @@
                         <h2>Announcements</h2>
                         <p>Create and manage department announcements.</p>
                     </header>
-                    <form id="announcement-form" class="settings-form">
-                        <div class="form-group">
-                            <label for="ann-title">Title</label>
-                            <input type="text" id="ann-title" placeholder="Announcement title">
-                        </div>
+                
+                    <form id="announcement-form" class="settings-form" method="post" action="{% url 'depthead:create_announcement' %}">
+                        {% csrf_token %}
                         <div class="form-group">
                             <label for="ann-message">Message</label>
-                            <textarea id="ann-message" placeholder="Write your announcement here..."></textarea>
+                            <textarea id="ann-message" name="message" required placeholder="Write your announcement here..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="ann-expiry">Expires on (optional)</label>
+                            <input type="date" id="ann-expiry" name="expiry_date" min="{% now 'Y-m-d' %}">
+                            <small class="form-hint">Leave blank to auto-expire 7 days after posting.</small>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="primary-button">Post Announcement</button>
                         </div>
                     </form>
-
+                
                     <div id="announcements-list" class="announcements-list">
-                        <!-- Announcements will be rendered here -->
+                        {% for a in department_announcements %}
+                        <div class="announcement-item">
+                            <p>{{ a.message }}</p>
+                            <small>Posted {{ a.posted_at|date:"M d, Y" }} · Expires {{ a.expiry|date:"M d, Y" }}</small>
+                        </div>
+                        {% empty %}
+                        <p class="empty-state">No active announcements.</p>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
         </main>
     </div>
     <script src="{% static 'depthead/js/departmentSettings.js' %}"></script>
+    <script src="{% static 'core/js/announcements.js' %}"></script>
 </body>
 </html>

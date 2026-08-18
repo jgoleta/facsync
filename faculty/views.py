@@ -10,6 +10,11 @@ from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_protect
+from core.services import get_active_announcements
+from django.http import JsonResponse
+from django.utils import timezone
+
+from core.models import DepartmentAnnouncement
 
 from .facultyServices.googleCalendarService import (
     GoogleCalendarError,
@@ -141,8 +146,27 @@ def dashboard(request):
         'status_css_class': status_css_class,
         'status_label': status_label,
         'consultation_requests': consultation_requests,
+        'announcements': get_active_announcements(request.user.department),
     })
 
+
+@login_required
+@role_required('faculty')
+def active_announcements(request):
+    qs = DepartmentAnnouncement.objects.filter(
+        department=request.user.department,
+        expiry__gt=timezone.now()
+    )
+    return JsonResponse({
+        'announcements': [
+            {
+                'department': a.get_department_display(),
+                'message': a.message,
+                'posted_at': a.posted_at.strftime('%b %d, %Y'),
+            }
+            for a in qs
+        ]
+    })
 
 @login_required
 @role_required('faculty')

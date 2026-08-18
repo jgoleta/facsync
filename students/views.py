@@ -2,7 +2,8 @@ import json
 import json
 import uuid
 from datetime import date, datetime, time, timedelta
-from core.models import OfficeClosure
+from core.models import OfficeClosure, DepartmentAnnouncement 
+from core.services import get_active_announcements
 
 from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
@@ -90,6 +91,7 @@ def dashboard(request):
     return render(request, 'students/dashboardStudent.html', {
         'faculty_directory': faculty_directory,
         'closed_departments': closed_departments,
+        'announcements': get_active_announcements(request.user.department),
     })
 
 @login_required
@@ -104,6 +106,24 @@ def view_schedule(request):
     return render(request, 'students/viewSchedule.html', {
         'selected_faculty': faculty,
         'department_closure': closure,
+    })
+
+@login_required
+@role_required('student')
+def active_announcements(request):
+    qs = DepartmentAnnouncement.objects.filter(
+        department=request.user.department,
+        expiry__gt=timezone.now()
+    )
+    return JsonResponse({
+        'announcements': [
+            {
+                'department': a.get_department_display(),
+                'message': a.message,
+                'posted_at': a.posted_at.strftime('%b %d, %Y'),
+            }
+            for a in qs
+        ]
     })
 
 @login_required

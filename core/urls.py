@@ -16,4 +16,5 @@ urlpatterns = [
     path('register/faculty/pending-approval/', views.pending_approval_notice, name='pending_approval_notice'),
     path('dev-login/<int:user_id>/', views.dev_login_as, name='dev_login_as'),
     path('setup/faculty-profile/', views.faculty_profile_setup, name='faculty_profile_setup'),
+    path('announcements/active/', views.active_announcements_public, name='active_announcements_public'),
 ]

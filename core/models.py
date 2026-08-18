@@ -1,7 +1,12 @@
 from django.contrib.auth.models import AbstractUser
+from datetime import timedelta
+from django.utils import timezone
 from django.db import models
 from django.conf import settings
 from .departments import get_department_label
+
+from core.departments import DEPARTMENT_CHOICES
+
 
 class User(AbstractUser):
     ROLE_CHOICES = [
@@ -66,3 +71,25 @@ class OfficeClosure(models.Model):
 
     def __str__(self):
         return f"{self.department} - {'Closed' if self.is_closed else 'Open'}"
+
+class DepartmentAnnouncement(models.Model):
+    department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES)
+    message = models.TextField()
+    posted_at = models.DateTimeField(auto_now_add=True)
+    expiry = models.DateTimeField()
+    posted_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    class Meta:
+        ordering = ['-posted_at']
+
+    def save(self, *args, **kwargs):
+        if not self.expiry:
+            self.expiry = timezone.now() + timedelta(days=7)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_active(self):
+        return timezone.now() < self.expiry
+
+    def __str__(self):
+        return f"{self.get_department_display()}: {self.message[:40]}"
