@@ -60,3 +60,19 @@
 .status-unavailable .status-badge {
   background-color: #ef4444;
 }
+
+.faculty-card.status-virtual {
+  border-left-color: #3b82f6;
+}
+
+.status-virtual .status-badge {
+  background-color: #3b82f6;
+}
+
+.faculty-card.status-on-leave {
+  border-left-color: #a1a1aa;
+}
+
+.status-on-leave .status-badge {
+  background-color: #a1a1aa;
+}
