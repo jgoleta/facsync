@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
-from core.models import User, FacultyInvite, OfficeClosure, DepartmentAnnouncement
-from core.forms import DepartmentAnnouncementForm
+from core.models import User, FacultyInvite, OfficeClosure, DepartmentAnnouncement, Department
+from core.forms import DepartmentAnnouncementForm, DepartmentDescriptionForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm
 from faculty.models import FacultyProfile
@@ -134,9 +134,12 @@ def department_settings(request):
         expiry__gt=timezone.now()
     )
 
+    department = Department.objects.filter(code__iexact=request.user.department).first()
+
     return render(request, 'depthead/departmentSettings.html', {
         'closure_form': form,
         'department_announcements': department_announcements,
+        'department': department,
     })
 
 @login_required
@@ -185,3 +188,23 @@ def create_announcement(request):
             'expiry': announcement.expiry.strftime('%b %d, %Y'),
         }
     })
+
+@login_required
+@role_required('depthead')
+def edit_department_description(request):
+    department = Department.objects.filter(code__iexact=request.user.department).first()
+    if not department:
+        messages.error(request, "Your department could not be found. Contact a Super Admin.")
+        return redirect('depthead:department_settings')
+
+    if request.method == 'POST':
+        form = DepartmentDescriptionForm(request.POST, instance=department)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Department description updated.")
+        else:
+            for error_list in form.errors.values():
+                for error in error_list:
+                    messages.error(request, error)
+
+    return redirect('depthead:department_settings')

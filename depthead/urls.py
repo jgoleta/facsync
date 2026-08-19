@@ -25,4 +25,5 @@ urlpatterns = [
     path('invite-faculty/', views.invite_faculty, name='invite_faculty'),
     path('faculty/<int:user_id>/remove/', views.remove_faculty, name='remove_faculty'),
     path('announcements/create/', views.create_announcement, name='create_announcement'),
+    path('department/edit-description/', views.edit_department_description, name='edit_department_description'),
 ]
