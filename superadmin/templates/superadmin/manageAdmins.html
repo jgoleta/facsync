@@ -89,7 +89,13 @@
                             <td>Dept. Head</td>
                             <td>{{ admin.department }}</td>
                             <td class="actions">
-                                <button>Edit</button><button class="danger">Remove</button>
+                                <button type="button" class="edit-depthead-btn" data-id="{{ admin.id }}" data-role="{{ admin.role }}"
+                                    data-department="{{ admin.department }}">Edit</button>
+                                <form method="post" action="{% url 'superadmin:remove_depthead' admin.id %}" class="inline-form"
+                                    onsubmit="return confirm('Deactivate {{ admin.username }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="danger">Remove</button>
+                                </form>
                             </td>
                         </tr>
                         {% empty %}
@@ -120,18 +126,42 @@
                 <div class="modal-form-group">
                     <label for="deptheadDepartment">Department</label>
                     <select id="deptheadDepartment" name="department" required>
-                        <option value="chss">College of Humanities and Social Sciences</option>
-                        <option value="cba">College of Business and Accountancy</option>
-                        <option value="ccs">College of Computer Studies</option>
-                        <option value="ced">College of Education</option>
-                        <option value="csea">College of Science, Engineering, and Architecture</option>
-                        <option value="con">College of Nursing</option>
-                        <option value="col">College of Law</option>
+                        {% for value, label in dept_head_form.department.field.choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-secondary" id="cancelInviteDeptheadModal">Cancel</button>
                     <button type="submit" class="btn-primary">Send Invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="editDeptheadModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Edit Dept Head</h2>
+            <form method="post" id="editDeptheadForm" class="settings-form">
+                {% csrf_token %}
+                <div class="modal-form-group">
+                    <label for="edit-depthead-role">Role</label>
+                    <select id="edit-depthead-role" name="role" required>
+                        {% for value, label in role_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label for="edit-depthead-department">Department</label>
+                    <select id="edit-depthead-department" name="department" required>
+                        {% for value, label in dept_head_form.department.field.choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="closeEditDeptheadModal">Cancel</button>
+                    <button type="submit" class="primary-button">Save Changes</button>
                 </div>
             </form>
         </div>

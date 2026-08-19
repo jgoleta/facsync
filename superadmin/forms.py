@@ -1,9 +1,9 @@
 from django import forms
+from core.departments import get_department_choices
 from core.models import DeptHeadInvite
-from core.forms import DEPARTMENT_CHOICES
 
 class DeptHeadInviteForm(forms.ModelForm):
-    department = forms.ChoiceField(choices=DEPARTMENT_CHOICES)
+    department = forms.ChoiceField(choices=get_department_choices)
 
     class Meta:
         model = DeptHeadInvite

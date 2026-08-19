@@ -58,7 +58,7 @@
                     <h1>Manage Departments</h1>
                     <p>Add, edit, or remove university departments.</p>
                 </div>
-                <button class="btn-primary">Add New Department</button>
+                <button type="button" class="btn-primary" id="openAddDepartmentModal">Add New Department</button>
             </header>
 
             <div class="management-table-wrapper">
@@ -66,36 +66,91 @@
                     <thead>
                         <tr>
                             <th>Department Name</th>
+                            <th>Code</th>
                             <th>Department Head</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
+                        {% for dept in departments %}
                         <tr>
-                            <td>College of Computer Studies</td>
-                            <td>John Doe</td>
-                            <td class="actions"><button>Edit</button><button class="danger">Remove</button></td>
+                            <td>{{ dept.name }}</td>
+                            <td>{{ dept.code }}</td>
+                            <td>
+                                {% for head in dept.head_users %}
+                                {{ head.get_full_name|default:head.username }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                Not assigned
+                                {% endfor %}
+                            </td>
+                            <td class="actions">
+                                <button type="button" class="edit-department-btn" data-id="{{ dept.id }}"
+                                    data-name="{{ dept.name }}" data-description="{{ dept.description }}">Edit</button>
+                                <form method="post" action="{% url 'superadmin:delete_department' dept.id %}"
+                                    class="inline-form"
+                                    onsubmit="return confirm('Remove {{ dept.name }}? This cannot be undone.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="danger">Remove</button>
+                                </form>
+                            </td>
                         </tr>
+                        {% empty %}
                         <tr>
-                            <td>College of Engineering</td>
-                            <td>Jane Smith</td>
-                            <td class="actions"><button>Edit</button><button class="danger">Remove</button></td>
+                            <td colspan="4">No departments yet.</td>
                         </tr>
-                        <tr>
-                            <td>College of Nursing</td>
-                            <td>Ada Wong</td>
-                            <td class="actions"><button>Edit</button><button class="danger">Remove</button></td>
-                        </tr>
-                        <tr>
-                            <td>College of Education</td>
-                            <td>Emily White</td>
-                            <td class="actions"><button>Edit</button><button class="danger">Remove</button></td>
-                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
         </main>
     </div>
+
+    <!-- Add Department Modal -->
+    <div id="addDepartmentModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Add New Department</h2>
+            <form method="post" action="{% url 'superadmin:create_department' %}" class="settings-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="add-dept-name">Department Name</label>
+                    <input type="text" id="add-dept-name" name="name" required
+                        placeholder="e.g. College of Communication Studies">
+                </div>
+                <div class="form-group">
+                    <label for="add-dept-description">Description (optional)</label>
+                    <textarea id="add-dept-description" name="description"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="closeAddDepartmentModal">Cancel</button>
+                    <button type="submit" class="primary-button">Add Department</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Department Modal -->
+    <div id="editDepartmentModal" class="modal-overlay hidden">
+        <div class="modal">
+            <h2>Edit Department</h2>
+            <form method="post" id="editDepartmentForm" class="settings-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="edit-dept-name">Department Name</label>
+                    <input type="text" id="edit-dept-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-dept-description">Description (optional)</label>
+                    <textarea id="edit-dept-description" name="description"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" id="closeEditDepartmentModal">Cancel</button>
+                    <button type="submit" class="primary-button">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="{% static 'superadmin/js/manageDepartments.js' %}"></script>
 </body>
 
 </html>

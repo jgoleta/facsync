@@ -1,4 +1,5 @@
 import email
+from urllib import request
 
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.core.exceptions import ImmediateHttpResponse
@@ -18,6 +19,9 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                 raise ImmediateHttpResponse(redirect('core:pending_approval_notice'))
             elif existing_user.account_status == 'declined':
                 messages.error(request, "Your registration was declined. Please contact your Department Head.")
+                raise ImmediateHttpResponse(redirect('core:login'))
+            elif existing_user.account_status == 'deactivated':
+                messages.error(request, "Your account has been deactivated. Please contact a Super Admin.")
                 raise ImmediateHttpResponse(redirect('core:login'))
             return
 

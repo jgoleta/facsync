@@ -257,7 +257,50 @@ input:checked + .slider:before {
   color: var(--muted);
 }
 
-.modal .btn-secondary {
-  align-self: flex-end;
+.modal .form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.modal .form-actions .btn-secondary,
+.modal .form-actions .primary-button {
   width: auto !important;
+  padding: 10px 24px;
+}
+
+.modal .form-group {
+  margin-bottom: 16px;
+}
+
+.modal .form-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.modal .form-group input[type="text"],
+.modal .form-group input[type="date"],
+.modal .form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  color: var(--text);
+}
+
+.modal .form-group input:focus,
+.modal .form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.modal .form-group textarea {
+  min-height: 80px;
+  resize: vertical;
 }

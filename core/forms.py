@@ -1,11 +1,11 @@
 from django import forms
-from .models import User
-from .departments import DEPARTMENT_CHOICES
+from .models import Department, User
+from .departments import DEPARTMENT_CHOICES, get_department_choices
 from django.utils import timezone
 from core.models import DepartmentAnnouncement
 
 class StudentProfileForm(forms.ModelForm):
-    department = forms.ChoiceField(choices=DEPARTMENT_CHOICES)
+    department = forms.ChoiceField(choices=get_department_choices())
 
     class Meta:
         model = User
@@ -16,7 +16,7 @@ class FacultyProfileSetupForm(forms.Form):
     office_location = forms.CharField(max_length=128, label="Office / Room")
 
 class FacultyRegistrationForm(forms.ModelForm):
-    department = forms.ChoiceField(choices=DEPARTMENT_CHOICES)
+    department = forms.ChoiceField(choices=get_department_choices())
     office_location = forms.CharField(max_length=128, label="Office / Room")
     faculty_id = forms.CharField(max_length=64, label="Faculty ID")
 
@@ -46,3 +46,8 @@ class DepartmentAnnouncementForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
+
+class DepartmentForm(forms.ModelForm):
+    class Meta:
+        model = Department
+        fields = ['name', 'description']
