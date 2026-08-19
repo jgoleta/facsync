@@ -70,7 +70,7 @@ if (announcementForm) {
       const data = await response.json();
 
       if (!data.success) {
-        alert(data.error);
+        showToast(data.error);
         return;
       }
 
@@ -86,8 +86,26 @@ if (announcementForm) {
       list.prepend(item);
 
       form.reset();
+      showToast("Announcement posted successfully.");
     } catch (err) {
-      alert("Something went wrong posting your announcement.");
+      showToast("Something went wrong posting your announcement.", true);
     }
   });
+}
+
+function showToast(message, isError = false) {
+  const existing = document.querySelector(".toast");
+  if (existing) existing.remove();
+
+  const toast = document.createElement("div");
+  toast.className = "toast" + (isError ? " error" : "");
+  toast.textContent = message;
+  document.body.appendChild(toast);
+
+  requestAnimationFrame(() => toast.classList.add("show"));
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => toast.remove(), 250);
+  }, 3000);
 }
