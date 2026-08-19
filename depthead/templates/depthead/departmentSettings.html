@@ -112,19 +112,25 @@
             <div class="settings-grid">
                 <div class="settings-card">
                     <h2>General Settings</h2>
-                    <form class="settings-form">
+                    
+                    {% if department %}
+                    <form method="post" action="{% url 'depthead:edit_department_description' %}" class="settings-form">
+                        {% csrf_token %}
                         <div class="form-group">
                             <label for="dept-name">Department Name</label>
-                            <input type="text" id="dept-name" value="College of Computer Studies">
+                            <input type="text" id="dept-name" value="{{ department.name }}" disabled>
                         </div>
                         <div class="form-group">
                             <label for="dept-desc">Description</label>
-                            <textarea id="dept-desc">The forefront of innovation and technology education.</textarea>
+                            <textarea id="dept-desc" name="description">{{ department.description }}</textarea>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="primary-button">Save Changes</button>
                         </div>
                     </form>
+                    {% else %}
+                    <p class="empty-state">Your department could not be found. Contact a Super Admin.</p>
+                    {% endif %}
                 
                     <h2 style="margin-top: 32px;">Office Closure</h2>
                     {% if messages %}

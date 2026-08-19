@@ -51,3 +51,8 @@ class DepartmentForm(forms.ModelForm):
     class Meta:
         model = Department
         fields = ['name', 'description']
+
+class DepartmentDescriptionForm(forms.ModelForm):
+    class Meta:
+        model = Department
+        fields = ['description']
