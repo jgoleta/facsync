@@ -1,5 +1,57 @@
 from django.utils import timezone
-from .models import DepartmentAnnouncement
+from .models import DepartmentAnnouncement, Notification, User
+
+
+def create_notification(recipient, notification_type, title, message, url=''):
+    return Notification.objects.create(
+        recipient=recipient,
+        notification_type=notification_type,
+        title=title,
+        message=message,
+        url=url,
+    )
+
+
+def notify_department_users(department, notification_type, title, message, url='', exclude_user_id=None):
+    recipients = User.objects.filter(
+        department=department,
+        role__in=('student', 'faculty'),
+        account_status='active',
+    )
+    if exclude_user_id:
+        recipients = recipients.exclude(pk=exclude_user_id)
+    return Notification.objects.bulk_create([
+        Notification(
+            recipient=recipient,
+            notification_type=notification_type,
+            title=title,
+            message=message,
+            url=url,
+        )
+        for recipient in recipients
+    ])
+
+
+def notify_faculty_status_subscribers(faculty, status):
+    """Create an in-app notification for students following a faculty member."""
+    from students.models import FacultyStatusSubscription
+
+    status_label = dict(faculty.STATUS_CHOICES).get(status, status)
+    faculty_name = faculty.user.get_full_name() or faculty.user.username
+    url = f'/student/view-schedule/?faculty_id={faculty.faculty_id}'
+    subscriptions = FacultyStatusSubscription.objects.filter(
+        faculty=faculty,
+    ).select_related('student')
+    return Notification.objects.bulk_create([
+        Notification(
+            recipient=subscription.student,
+            notification_type='faculty_status_update',
+            title='Faculty status updated',
+            message=f'{faculty_name} is now {status_label}.',
+            url=url,
+        )
+        for subscription in subscriptions
+    ])
 
 def get_active_announcements(department=None):
     qs = DepartmentAnnouncement.objects.filter(expiry__gt=timezone.now())

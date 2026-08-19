@@ -93,10 +93,12 @@
 .card[data-status="busy"] {
   box-shadow: inset 5px 0 0 0 #ffc107, 0 6px 18px rgba(255, 193, 7, 0.15);
 }
-.card[data-status="virtual"] {
+.card[data-status="virtual"],
+.card[data-status="virtual_only"] {
   box-shadow: inset 5px 0 0 0 #286ea7, 0 6px 18px rgba(108, 117, 125, 0.1);
 }
-.card[data-status="on-leave"] {
+.card[data-status="on-leave"],
+.card[data-status="on_leave"] {
   box-shadow: inset 5px 0 0 0 #6c757d, 0 6px 18px rgba(108, 117, 125, 0.1);
 }
 .card[data-status="unavailable"] {
@@ -106,6 +108,10 @@
 .card .card-notify:focus {
   background: rgba(11, 116, 222, 0.18);
   transform: translateY(-1px);
+}
+.card .card-notify.subscribed {
+  background: #0b74de;
+  color: #fff;
 }
 .card .card-notify svg {
   width: 18px;
@@ -155,10 +161,12 @@
 .status-busy {
   background: #ffc107;
 }
-.status-on-leave {
+.status-on-leave,
+.status-on_leave {
   background: #6c757d;
 }
-.status-virtual {
+.status-virtual,
+.status-virtual_only {
   background: #286ea7;
 }
 .status-unavailable {

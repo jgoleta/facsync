@@ -9,6 +9,7 @@ from django.conf import settings
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from core.services import notify_faculty_status_subscribers
 
 from faculty.models import (
     ConsultationRequest,
@@ -719,6 +720,7 @@ def refresh_faculty_status(faculty, google_events=None):
             status=next_status,
             changed_at=changed_at,
         )
+        notify_faculty_status_subscribers(faculty, next_status)
     return next_status
 
 

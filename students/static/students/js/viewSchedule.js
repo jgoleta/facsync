@@ -1,6 +1,7 @@
 const calendarGrid = document.getElementById("calendarGrid");
 const legendList = document.getElementById("legendList");
 const selectedFacultyName = document.getElementById("selectedFacultyName");
+const facultyStatusNotify = document.getElementById("facultyStatusNotify");
 const dayLabels = document.querySelector(".day-labels");
 const viewControls = document.querySelector(".view-controls");
 
@@ -51,6 +52,43 @@ function getCsrfToken() {
   return cookie ? decodeURIComponent(cookie.split("=")[1]) : "";
 }
 
+function updateFacultyStatusSubscriptionButton(subscribed) {
+  if (!facultyStatusNotify) return;
+  facultyStatusNotify.dataset.subscribed = String(subscribed);
+  facultyStatusNotify.classList.toggle("subscribed", subscribed);
+  facultyStatusNotify.setAttribute(
+    "aria-label",
+    subscribed
+      ? "Stop receiving notifications for this faculty member"
+      : "Receive notifications when this faculty member's status changes",
+  );
+  const label = facultyStatusNotify.querySelector("span");
+  if (label) label.textContent = subscribed ? "Notifications on" : "Notify me";
+}
+
+if (facultyStatusNotify) {
+  facultyStatusNotify.addEventListener("click", async () => {
+    const subscribed = facultyStatusNotify.dataset.subscribed === "true";
+    facultyStatusNotify.disabled = true;
+    try {
+      const response = await fetch(
+        `/student/api/faculty/${encodeURIComponent(facultyId)}/notification-subscription/`,
+        {
+          method: subscribed ? "DELETE" : "POST",
+          headers: { "X-CSRFToken": getCsrfToken() },
+        },
+      );
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Unable to update notification preference.");
+      updateFacultyStatusSubscriptionButton(data.subscribed);
+    } catch (error) {
+      window.alert(error.message);
+    } finally {
+      facultyStatusNotify.disabled = false;
+    }
+  });
+}
+
 function ordinal(value) {
   const number = Number(value);
   const suffix =
@@ -79,7 +117,14 @@ function renderWalkInState(data) {
       statusLabels[data.faculty_status] ||
       data.faculty_status ||
       "status unavailable";
-    queueFacultyStatus.className = `status-${data.faculty_status || "offline"}`;
+    const statusClasses = {
+      available: "available",
+      busy: "busy",
+      virtual_only: "virtual",
+      on_leave: "on-leave",
+      unavailable: "unavailable",
+    };
+    queueFacultyStatus.className = `status-${statusClasses[data.faculty_status] || "offline"}`;
   }
 
   if (activeQueue) {

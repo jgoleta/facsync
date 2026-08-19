@@ -7,9 +7,10 @@
 }
 
 .container {
-  max-width: 90%;
+  width: min(1200px, calc(100% - 32px));
+  max-width: 1200px;
   margin: 24px auto;
-  padding: 0 20px 32px;
+  padding: 0 0 32px;
 }
 
 .consultation-card {
@@ -32,6 +33,7 @@
 .consultation-header h2 {
   margin: 0;
   color: var(--text);
+  line-height: 1.2;
 }
 
 .filter-control {
@@ -57,6 +59,7 @@
   font-weight: 600;
   color: var(--text);
   cursor: pointer;
+  min-width: 150px;
 }
 
 .consultation-request-list {
@@ -76,6 +79,12 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   background: #fbfdff;
+  min-width: 0;
+}
+
+.request-info {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .request-info p {
@@ -103,6 +112,12 @@
   font-size: 0.9rem;
   padding-left: 12px;
   border-left: 3px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.request-info .request-id {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .request-info .faculty-note strong,
@@ -203,5 +218,82 @@
   }
   .consultation-header h2 {
     margin-right: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .container {
+    width: min(100% - 24px, 560px);
+    margin-top: 16px;
+  }
+
+  .consultation-card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .consultation-header {
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .consultation-header h2 {
+    font-size: 1.35rem;
+  }
+
+  .filter-control,
+  .filter-dropdown,
+  .return-btn {
+    width: 100% !important;
+  }
+
+  .filter-dropdown {
+    min-width: 0;
+  }
+
+  .request-item {
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .request-status {
+    align-self: stretch;
+    display: flex;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar {
+    padding: 12px;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .brand {
+    font-size: 1rem;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .nav-links {
+    gap: 4px;
+  }
+
+  .nav-btn {
+    padding: 8px 9px;
+    font-size: 0.85rem;
+  }
+
+  .consultation-card {
+    padding: 12px;
+  }
+
+  .request-item {
+    padding: 13px;
   }
 }

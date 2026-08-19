@@ -1,0 +1,11 @@
+{% if request.user.role == 'student' or request.user.role == 'faculty' %}
+<span class="notification-nav">
+    <span class="hidden">{% csrf_token %}</span>
+    <button type="button" id="notificationBell" class="notification-bell" aria-label="Notifications" aria-expanded="false">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M12 22a2.3 2.3 0 0 0 2.2-1.7H9.8A2.3 2.3 0 0 0 12 22Zm7-5.4-1.4-1.7V10a5.6 5.6 0 0 0-4.4-5.5V3.8a1.2 1.2 0 1 0-2.4 0v.7A5.6 5.6 0 0 0 6.4 10v4.9L5 16.6v1h14v-1Z" />
+        </svg>
+        <span id="notificationCount" class="notification-count hidden">0</span>
+    </button>
+</span>
+{% endif %}

@@ -132,14 +132,52 @@ function attachCardHandlers() {
       window.location.href = `/student/view-schedule/?faculty_id=${encodeURIComponent(id)}`;
     }),
   );
-  facultyGrid.querySelectorAll(".card-notify").forEach((b) =>
-    b.addEventListener("click", (e) => {
-      const card = e.target.closest(".card");
-      alert(
-        `Notifications for ${card.querySelector(".card-title").textContent}`,
-      );
-    }),
+  facultyGrid.querySelectorAll(".card-notify").forEach((button) => {
+    button.addEventListener("click", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const facultyId = button.dataset.id;
+      const subscribed = button.dataset.subscribed === "true";
+      button.disabled = true;
+      try {
+        const response = await fetch(
+          `/student/api/faculty/${encodeURIComponent(facultyId)}/notification-subscription/`,
+          {
+            method: subscribed ? "DELETE" : "POST",
+            headers: { "X-CSRFToken": getCsrfToken() },
+          },
+        );
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Unable to update notification preference.");
+        setSubscriptionButton(button, data.subscribed);
+      } catch (error) {
+        window.alert(error.message);
+      } finally {
+        button.disabled = false;
+      }
+    });
+  });
+}
+
+function getCsrfToken() {
+  const cookie = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("csrftoken="));
+  return cookie ? decodeURIComponent(cookie.split("=")[1]) : "";
+}
+
+function setSubscriptionButton(button, subscribed) {
+  button.dataset.subscribed = String(subscribed);
+  button.classList.toggle("subscribed", subscribed);
+  button.setAttribute(
+    "aria-label",
+    subscribed
+      ? "Stop receiving notifications for this faculty member"
+      : "Receive notifications when this faculty member's status changes",
   );
+  button.title = subscribed
+    ? "Notifications enabled — click to unsubscribe"
+    : "Notify me when this faculty member's status changes";
 }
 
 function renderFacultyDirectory() {
@@ -166,6 +204,9 @@ function renderFacultyDirectory() {
       <div class="card-body">
         <div class="card-title">${escapeHtml(faculty.name)}</div>
         <div class="card-sub">${escapeHtml(faculty.department)}</div>
+        <button type="button" class="card-notify${faculty.is_subscribed ? " subscribed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-subscribed="${faculty.is_subscribed ? "true" : "false"}" aria-label="${faculty.is_subscribed ? "Stop receiving notifications for this faculty member" : "Receive notifications when this faculty member's status changes"}" title="${faculty.is_subscribed ? "Notifications enabled — click to unsubscribe" : "Notify me when this faculty member's status changes"}">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 22a2 2 0 0 0 2.2-1.7H9.8A2.3 2.3 0 0 0 12 22Zm7-5.4-1.4-1.7V10a5.6 5.6 0 0 0-4.4-5.5V3.8a1.2 1.2 0 1 0-2.4 0v.7A5.6 5.6 0 0 0 6.4 10v4.9L5 16.6v1h14v-1Z"/></svg>
+        </button>
         <div class="status-row"><span class="status-badge status-${faculty.status}"></span>
           <i class="status-note">${escapeHtml(faculty.walk_ins_enabled ? "Accepting walk-ins" : faculty.note || "Walk-ins unavailable")}</i>
         </div>
@@ -180,19 +221,6 @@ function renderFacultyDirectory() {
     .join("");
 }
 
-function insertNotifyButtons() {
-  cards.forEach((card) => {
-    if (card.querySelector(".card-notify")) return;
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "card-notify";
-    button.setAttribute("aria-label", "View notifications");
-    button.innerHTML =
-      '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6V10c0-3.1-1.6-5.8-4.5-6.6V3.5c0-.8-.7-1.5-1.5-1.5S10.5 2.7 10.5 3.5v.9C7.6 4.2 6 6.9 6 10v6l-2 2v1h16v-1l-2-2z"/></svg>';
-    card.appendChild(button);
-  });
-}
-
 function loadCardsFromDOM() {
   loadClosedDepartmentsFromDOM();
   renderFacultyDirectory();
@@ -203,7 +231,6 @@ function loadCardsFromDOM() {
     if (meta && iso)
       meta.textContent = "Last updated: " + parseISOToDisplay(iso);
   });
-  insertNotifyButtons();
   populateDepartments();
   attachCardHandlers();
   renderCards();
@@ -223,7 +250,6 @@ async function refreshFacultyDirectory() {
     loadClosedDepartmentsFromDOM();
     renderFacultyDirectory();
     cards = Array.from(facultyGrid.querySelectorAll(".card"));
-    insertNotifyButtons();
     attachCardHandlers();
     renderCards();
   } catch (error) {

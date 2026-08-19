@@ -2,8 +2,8 @@ import json
 import json
 import uuid
 from datetime import date, datetime, time, timedelta
-from core.models import OfficeClosure, DepartmentAnnouncement 
-from core.services import get_active_announcements
+from core.models import OfficeClosure, DepartmentAnnouncement
+from core.services import create_notification, get_active_announcements
 
 from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
@@ -15,6 +15,7 @@ from django.views.decorators.csrf import csrf_protect
 
 from core.departments import get_department_label
 from faculty.models import ConsultationRequest, FacultyProfile, WalkInQueue
+from .models import FacultyStatusSubscription
 from faculty.facultyServices.googleCalendarService import refresh_faculty_status
 
 
@@ -63,8 +64,14 @@ def _faculty_for_schedule(request):
     return faculty
 
 
-def _faculty_directory(closed_department_codes=None):
+def _faculty_directory(closed_department_codes=None, student=None):
     closed_department_codes = closed_department_codes or set()
+    subscribed_faculty_ids = set()
+    if student:
+        subscribed_faculty_ids = set(
+            FacultyStatusSubscription.objects.filter(student=student)
+            .values_list('faculty_id', flat=True)
+        )
     directory = []
     for faculty in FacultyProfile.objects.select_related('user').all():
         refresh_faculty_status(faculty)
@@ -77,6 +84,7 @@ def _faculty_directory(closed_department_codes=None):
             'walk_ins_enabled': faculty.walk_ins_enabled,
             'updated_at': faculty.status_updated_at.isoformat() if faculty.status_updated_at else None,
             'is_dept_closed': faculty.department_id in closed_department_codes,
+            'is_subscribed': faculty.faculty_id in subscribed_faculty_ids,
         })
     return directory
 
@@ -86,7 +94,7 @@ def _closed_department_codes():
 @login_required
 @role_required('student')
 def dashboard(request):
-    faculty_directory = _faculty_directory(_closed_department_codes())
+    faculty_directory = _faculty_directory(_closed_department_codes(), request.user)
     closed_departments = _closed_department_map()
     return render(request, 'students/dashboardStudent.html', {
         'faculty_directory': faculty_directory,
@@ -106,6 +114,12 @@ def view_schedule(request):
     return render(request, 'students/viewSchedule.html', {
         'selected_faculty': faculty,
         'department_closure': closure,
+        'is_subscribed': bool(
+            faculty and FacultyStatusSubscription.objects.filter(
+                student=request.user,
+                faculty=faculty,
+            ).exists()
+        ),
     })
 
 @login_required
@@ -198,6 +212,16 @@ def api_consultation_requests(request):
         end_time=end_time,
         student_message=str(payload.get('message') or '').strip(),
     )
+    create_notification(
+        recipient=faculty.user,
+        notification_type='consultation_request',
+        title='New consultation request',
+        message=(
+            f'{request.user.get_full_name() or request.user.username} requested a consultation '
+            f'on {consultation.date.strftime("%B %d, %Y")}.'
+        ),
+        url='/faculty/dashboard/',
+    )
     return JsonResponse(_consultation_json(consultation), status=201)
 
 @login_required
@@ -240,9 +264,37 @@ def api_faculty_statuses(request):
     if request.method != 'GET':
         return HttpResponse(status=405)
     return JsonResponse({
-        'faculty': _faculty_directory(_closed_department_codes()),
+        'faculty': _faculty_directory(_closed_department_codes(), request.user),
         'closed_departments': _closed_department_map(),
     })
+
+
+@login_required
+@role_required('student')
+@csrf_protect
+def api_faculty_status_subscription(request, faculty_id):
+    if request.method not in {'GET', 'POST', 'DELETE'}:
+        return HttpResponse(status=405)
+
+    faculty = get_object_or_404(FacultyProfile, faculty_id=faculty_id)
+    subscription = FacultyStatusSubscription.objects.filter(
+        student=request.user,
+        faculty=faculty,
+    ).first()
+
+    if request.method == 'GET':
+        return JsonResponse({'subscribed': subscription is not None})
+
+    if request.method == 'POST':
+        FacultyStatusSubscription.objects.get_or_create(
+            student=request.user,
+            faculty=faculty,
+        )
+        return JsonResponse({'subscribed': True})
+
+    if subscription:
+        subscription.delete()
+    return JsonResponse({'subscribed': False})
 
 
 @login_required

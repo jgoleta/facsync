@@ -1,6 +1,7 @@
+import json
 from datetime import timezone as dt_timezone
 from django.utils import timezone
-from .models import User, OfficeClosure, DepartmentAnnouncement
+from .models import User, OfficeClosure
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -9,8 +10,9 @@ from .forms import StudentProfileForm, FacultyRegistrationForm, FacultyProfileSe
 from django.contrib.auth import login as auth_login
 from django.http import Http404
 from allauth.socialaccount.models import SocialAccount
-from .services import get_active_announcements
 from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from .models import Notification
 
 def landing_page(request):
     return render(request, 'core/landingPage.html')
@@ -80,21 +82,58 @@ def dashboard_public(request):
         'faculty_cards': faculty_cards,
         'closures': closure_list,
         'department_choices': DEPARTMENT_CHOICES,
-        'announcements': get_active_announcements(),
     })
 
-def active_announcements_public(request):
-    qs = DepartmentAnnouncement.objects.filter(expiry__gt=timezone.now())
-    return JsonResponse({
-        'announcements': [
-            {
-                'department': a.get_department_display(),
-                'message': a.message,
-                'posted_at': a.posted_at.strftime('%b %d, %Y'),
-            }
-            for a in qs
-        ]
-    })
+@login_required
+@require_http_methods(['GET', 'POST', 'DELETE'])
+def notifications_api(request):
+    if request.user.role not in {'student', 'faculty'}:
+        return JsonResponse({'error': 'Notifications are unavailable for this account.'}, status=403)
+
+    if request.method == 'GET':
+        notifications = Notification.objects.filter(recipient=request.user)[:50]
+        return JsonResponse({
+            'unread_count': Notification.objects.filter(
+                recipient=request.user,
+                is_read=False,
+            ).count(),
+            'notifications': [
+                {
+                    'id': notification.id,
+                    'type': notification.notification_type,
+                    'title': notification.title,
+                    'message': notification.message,
+                    'url': notification.url,
+                    'is_read': notification.is_read,
+                    'created_at': notification.created_at.isoformat(),
+                }
+                for notification in notifications
+            ],
+        })
+
+    if request.method == 'POST':
+        try:
+            payload = json.loads(request.body.decode('utf-8') or '{}')
+        except (TypeError, ValueError, UnicodeDecodeError):
+            payload = {}
+        queryset = Notification.objects.filter(recipient=request.user, is_read=False)
+        notification_id = payload.get('notification_id')
+        if notification_id:
+            queryset = queryset.filter(pk=notification_id)
+        updated = queryset.update(is_read=True)
+        return JsonResponse({'updated': updated})
+
+    try:
+        notification_id = json.loads(request.body.decode('utf-8') or '{}').get('notification_id')
+    except (TypeError, ValueError, UnicodeDecodeError):
+        notification_id = None
+    if not notification_id:
+        return JsonResponse({'error': 'notification_id is required.'}, status=400)
+    deleted, _ = Notification.objects.filter(
+        recipient=request.user,
+        pk=notification_id,
+    ).delete()
+    return JsonResponse({'deleted': deleted})
 
 def register_student(request):
     request.session['registration_role'] = 'student'
