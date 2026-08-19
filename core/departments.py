@@ -1,5 +1,6 @@
 """Department labels shared by forms, views, and API responses."""
 
+
 DEPARTMENT_CHOICES = [
     ('chss', 'College of Humanities and Social Sciences'),
     ('cba', 'College of Business and Accountancy'),
@@ -26,3 +27,7 @@ def get_department_label(value):
     return DEPARTMENT_LABELS.get(department.lower(), {
         'CCS': 'College of Computer Studies',
     }.get(department.upper(), department))
+
+def get_department_choices():
+    from core.models import Department
+    return [(d.code, d.name) for d in Department.objects.all().order_by('name')]

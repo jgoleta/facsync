@@ -15,10 +15,12 @@ class User(AbstractUser):
         ('depthead', 'Department Head'),
         ('superadmin', 'Super Admin'),
     ]
+    
     STATUS_CHOICES = [
-        ('active', 'Active'),
-        ('pending', 'Pending'),
-        ('declined', 'Declined'),
+    ('active', 'Active'),
+    ('pending', 'Pending'),
+    ('declined', 'Declined'),
+    ('deactivated', 'Deactivated'),
     ]
 
     YEAR_LEVEL_CHOICES = [
@@ -71,6 +73,33 @@ class OfficeClosure(models.Model):
 
     def __str__(self):
         return f"{self.department} - {'Closed' if self.is_closed else 'Open'}"
+
+class Department(models.Model):
+    code = models.CharField(max_length=20, unique=True, blank=True)
+    name = models.CharField(max_length=150, unique=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def generate_code(self):
+        #skip words so College of Computer Studies = CCS not COCS
+        skip_words = {'of', 'and', 'the', 'for'}
+        words = [w for w in self.name.split() if w.lower() not in skip_words]
+        base_code = ''.join(w[0].upper() for w in words) or 'DEPT'
+
+        code = base_code
+        counter = 1
+        while Department.objects.filter(code=code).exclude(pk=self.pk).exists():
+            counter += 1
+            code = f"{base_code}{counter}"
+        return code
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = self.generate_code()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
 
 class DepartmentAnnouncement(models.Model):
     department = models.CharField(max_length=20, choices=DEPARTMENT_CHOICES)
