@@ -15,29 +15,23 @@ body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text);
   background: linear-gradient(135deg, #f8fbff 0%, var(--bg) 100%);
-  padding-top: 80px;
+  padding-top: 0;
 }
 
 .page-shell {
   min-height: 100vh;
-  padding: 24px;
+  padding: 0;
 }
 
 .topbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
+  width: auto;
   padding: 16px 24px;
   background: var(--primary-dark);
-  backdrop-filter: blur(14px);
-  border: 1px solid var(--border);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
+  border-bottom: 1px solid var(--border);
+  position: static;
 }
 
 .nav-btn {
@@ -47,12 +41,12 @@ body {
   padding: 10px 16px;
   border-radius: 999px;
   transition: background 0.2s ease;
-  background: var(--primary);
+  background: transparent;
 }
 
 .nav-btn:hover {
-  background: var(--text-light);
-  color: var(--text);
+  background: var(--primary);
+  color: var(--text-light);
   transition:
     background 0.2s ease,
     color 0.2s ease;
@@ -60,7 +54,7 @@ body {
 
 main {
   max-width: 95%;
-  margin: 0 auto;
+  margin: 32px auto 0;
 }
 
 .hero {
@@ -236,12 +230,22 @@ main {
   padding: 13px 22px;
 }
 
+.cta .btn-large {
+  display: inline-flex;
+  width: auto !important;
+  align-items: center;
+  justify-content: center;
+}
+
 .footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
   padding: 16px 24px;
-  margin: 40px -24px -24px;
+  margin: 40px 0 0;
+  gap: 16px;
   color: var(--muted);
   bottom: 0;
   left: 0;
@@ -356,7 +360,7 @@ main {
 
 @media (max-width: 640px) {
   .page-shell {
-    padding: 14px;
+    padding: 0;
   }
 
   .topbar {
@@ -367,7 +371,28 @@ main {
     padding-top: 20px;
   }
 
+  main {
+    margin-top: 20px;
+  }
+
   .cta {
     padding: 24px 16px;
+  }
+
+  .footer {
+    align-items: flex-start;
+    flex-direction: column;
+    margin-top: 28px;
+    padding: 16px;
+  }
+
+  .footer > div:last-child {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+  }
+
+  .footer a {
+    margin-left: 0;
   }
 }

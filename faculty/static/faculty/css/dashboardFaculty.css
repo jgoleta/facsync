@@ -477,6 +477,29 @@ h2 {
   .consultation-request-list {
     grid-template-columns: 1fr;
   }
+
+  .status-mode-row,
+  .status-update-action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .status-mode-row .btn-secondary,
+  .status-update-action .btn-primary {
+    width: 100% !important;
+  }
+
+  .status-feedback {
+    min-height: 0;
+  }
+
+  .request-actions .action-buttons {
+    flex-wrap: wrap;
+  }
+
+  .request-actions .action-buttons > * {
+    flex: 1 1 130px;
+  }
 }
 
 /* Equal-sized status tiles. */

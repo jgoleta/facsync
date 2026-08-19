@@ -293,8 +293,21 @@ a.btn-danger {
 }
 
 .faculty-status #queue-faculty-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-weight: 700;
   text-transform: capitalize;
+}
+
+.faculty-status #queue-faculty-status[class^="status-"]::before {
+  content: "";
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 .status-available {
@@ -302,9 +315,25 @@ a.btn-danger {
 }
 
 .status-busy {
-  color: #ffc107 !important;
+  color: #c88700 !important;
 }
 
+.status-virtual,
+.status-virtual_only {
+  color: #286ea7 !important;
+}
+
+.status-on-leave,
+.status-on_leave {
+  color: #6c757d !important;
+}
+
+#queue-faculty-status.status-on-leave,
+#queue-faculty-status.status-on_leave {
+  color: #6c757d !important;
+}
+
+.status-unavailable,
 .status-offline {
   color: #dc3545 !important;
 }
@@ -755,9 +784,45 @@ a.btn-danger {
 }
 
 @media (max-width: 600px) {
+  .schedule-shell {
+    margin-top: 16px;
+    padding: 0 12px 24px;
+  }
+
+  .schedule-card,
+  .legend-card {
+    border-radius: 14px;
+  }
+
+  .schedule-card {
+    padding: 16px;
+  }
+
+  .legend-card {
+    padding: 16px;
+  }
+
   .schedule-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .schedule-header h1 {
+    font-size: clamp(1.65rem, 8vw, 2rem);
+  }
+
+  .header-meta {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .faculty-display {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .faculty-status-notify {
+    justify-content: center;
   }
 
   .nav-btn {
@@ -801,5 +866,23 @@ a.btn-danger {
 
   .modal-content .consultation-header p {
     font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .header-meta {
+    flex-direction: column;
+  }
+
+  .faculty-display,
+  .faculty-status-notify,
+  .date-pill,
+  .sync-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .calendar-grid:not(.daily-view-grid) {
+    gap: 8px;
   }
 }

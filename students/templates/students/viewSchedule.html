@@ -3,11 +3,12 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260819-responsive">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | View Faculty Schedule</title>
-    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}?v=20260816-notification-alert">
+    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}?v=20260819-responsive">
+    <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
 
 <body data-faculty-id="{{ selected_faculty.faculty_id|default:'' }}"
@@ -21,6 +22,7 @@
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
+                {% include 'core/_notification_nav.html' %}
                 <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
                 <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
             </nav>
@@ -41,6 +43,12 @@
                                 <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" />
                             </svg>
                         </div>
+                        {% if selected_faculty %}
+                        <button type="button" id="facultyStatusNotify" class="faculty-status-notify{% if is_subscribed %} subscribed{% endif %}" data-subscribed="{{ is_subscribed|yesno:'true,false' }}" aria-label="{% if is_subscribed %}Stop receiving notifications for this faculty member{% else %}Receive notifications when this faculty member's status changes{% endif %}">
+                            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 22a2 2 0 0 0 2.2-1.7H9.8A2.3 2.3 0 0 0 12 22Zm7-5.4-1.4-1.7V10a5.6 5.6 0 0 0-4.4-5.5V3.8a1.2 1.2 0 1 0-2.4 0v.7A5.6 5.6 0 0 0 6.4 10v4.9L5 16.6v1h14v-1Z"/></svg>
+                            <span>{% if is_subscribed %}Notifications on{% else %}Notify me{% endif %}</span>
+                        </button>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -158,6 +166,7 @@
     </div>
 
     <script src="{% static 'students/js/viewSchedule.js' %}?v=20260816-consultations"></script>
+    <script src="{% static 'core/js/notifications.js' %}"></script>
 </body>
 
 </html>

@@ -12,5 +12,6 @@ urlpatterns = [
     path('api/walk-ins/status/', views.api_walk_in_status, name='api_walk_in_status'),
     path('api/walk-ins/join/', views.api_join_walk_in_queue, name='api_join_walk_in_queue'),
     path('api/faculty-statuses/', views.api_faculty_statuses, name='api_faculty_statuses'),
+    path('api/faculty/<str:faculty_id>/notification-subscription/', views.api_faculty_status_subscription, name='api_faculty_status_subscription'),
     path('announcements/active/', views.active_announcements, name='active_announcements'),
 ]

@@ -3,11 +3,12 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260819-responsive">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Profile</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}">
+    <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}?v=20260819-responsive">
+    <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
 
 <body>
@@ -19,6 +20,7 @@
                 <span>FacSync</span>
             </a>
             <nav class="nav-links">
+                {% include 'core/_notification_nav.html' %}
                 <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
@@ -123,5 +125,6 @@
         </main>
     </div>
     <script src="{% static 'faculty/js/profile.js' %}"></script>
+    <script src="{% static 'core/js/notifications.js' %}"></script>
 </body>
 </html>

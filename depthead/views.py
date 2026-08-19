@@ -9,6 +9,7 @@ from faculty.models import FacultyProfile
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from core.services import notify_department_users
 
 @login_required
 @role_required('depthead')
@@ -167,6 +168,14 @@ def create_announcement(request):
     announcement.department = request.user.department
     announcement.posted_by = request.user
     announcement.save()
+    notify_department_users(
+        department=announcement.department,
+        notification_type='announcement',
+        title='Department announcement',
+        message=announcement.message,
+        url='',
+        exclude_user_id=request.user.id,
+    )
 
     return JsonResponse({
         'success': True,

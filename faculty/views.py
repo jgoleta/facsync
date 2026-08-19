@@ -10,7 +10,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_protect
-from core.services import get_active_announcements
+from core.services import create_notification, get_active_announcements
 from django.http import JsonResponse
 from django.utils import timezone
 
@@ -796,6 +796,17 @@ def api_consultation(request, request_id):
             if consultation.calendar_sync_status != 'failed':
                 consultation.calendar_sync_status = 'not_configured'
         consultation.save()
+        if new_status in {'approved', 'declined'}:
+            create_notification(
+                recipient=consultation.user,
+                notification_type='booking_confirmation',
+                title=f'Booking {new_status}',
+                message=(
+                    f'Your consultation request with {consultation.faculty} was '
+                    f'{new_status}.'
+                ),
+                url='/student/consultation-requests/',
+            )
         if new_status in {'declined', 'cancelled'}:
             _notify_consultation_student(
                 consultation,

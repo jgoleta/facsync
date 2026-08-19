@@ -7,8 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Public Dashboard</title>
-    <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}">
-    <link rel="stylesheet" href="{% static 'core/css/landingPage.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}?v=20260819-status-colors">
 </head>
 
 <body>
@@ -87,16 +86,7 @@
         </main>
     </div>
     
-    <div id="announcementModal" class="modal-overlay hidden" data-fetch-url="{% url 'core:active_announcements_public' %}">
-        <div class="modal">
-            <h2>Announcements</h2>
-            <div id="announcementList" class="announcement-list"></div>
-            <button id="closeAnnouncementModal" class="btn-secondary">Close</button>
-        </div>
-    </div>
-
     <script src="{% static 'students/js/dashboardStudent.js' %}"></script>
-    <script src="{% static 'core/js/announcements.js' %}"></script>
 </body>
 
 </html>
