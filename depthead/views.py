@@ -5,11 +5,12 @@ from core.models import User, FacultyInvite, OfficeClosure, DepartmentAnnounceme
 from core.forms import DepartmentAnnouncementForm, DepartmentDescriptionForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm
-from faculty.models import FacultyProfile
+from faculty.models import FacultyProfile, ConsultationRequest
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from core.services import notify_department_users
+from datetime import timedelta, date
 
 @login_required
 @role_required('depthead')
@@ -78,7 +79,57 @@ def remove_faculty(request, user_id):
 @login_required
 @role_required('depthead')
 def admin_dashboard(request):
-    return render(request, 'depthead/adminDashboard.html')
+    today = date.today()
+    month_start = today.replace(day=1)
+    last_month_end = month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+
+    dept_code = request.user.department
+    department = Department.objects.filter(code__iexact=dept_code).first()
+
+    consultations_qs = ConsultationRequest.objects.filter(
+        faculty__department_id__iexact=dept_code
+    )
+
+    total_this_month = consultations_qs.filter(date__gte=month_start).count()
+    total_last_month = consultations_qs.filter(
+        date__gte=last_month_start, date__lte=last_month_end
+    ).count()
+    total_change_pct = (
+        round(((total_this_month - total_last_month) / total_last_month) * 100)
+        if total_last_month > 0 else None
+    )
+
+    completed_this_month = consultations_qs.filter(
+        date__gte=month_start, status='completed'
+    ).count()
+    completed_last_month = consultations_qs.filter(
+        date__gte=last_month_start, date__lte=last_month_end, status='completed'
+    ).count()
+    completed_change_pct = (
+        round(((completed_this_month - completed_last_month) / completed_last_month) * 100)
+        if completed_last_month > 0 else None
+    )
+
+    faculty_qs = FacultyProfile.objects.filter(
+        user__role='faculty',
+        user__account_status='active',
+        department_id__iexact=dept_code,
+    )
+    active_faculty_count = faculty_qs.count()
+    available_now_count = faculty_qs.filter(current_status='available').count()
+    available_now_pct = round((available_now_count / active_faculty_count) * 100) if active_faculty_count else 0
+
+    return render(request, 'depthead/adminDashboard.html', {
+        'department': department,
+        'total_this_month': total_this_month,
+        'total_change_pct': total_change_pct,
+        'completed_this_month': completed_this_month,
+        'completed_change_pct': completed_change_pct,
+        'active_faculty_count': active_faculty_count,
+        'available_now_count': available_now_count,
+        'available_now_pct': available_now_pct,
+    })
 
 @login_required
 @role_required('depthead')
