@@ -140,7 +140,7 @@
                     {% endif %}
                     {% endfor %}
                     {% endif %}
-                    <form method="post" class="settings-form">
+                    <form method="post" id="closure-form" class="settings-form">
                         {% csrf_token %}
                         <div class="form-group form-group-toggle">
                             <label for="{{ closure_form.is_closed.id_for_label }}">Office Closure</label>
@@ -201,6 +201,9 @@
                 </div>
             </div>
         </main>
+    </div>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
     </div>
     <script src="{% static 'depthead/js/departmentSettings.js' %}"></script>
     <script src="{% static 'core/js/announcements.js' %}"></script>

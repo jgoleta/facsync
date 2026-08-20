@@ -31,3 +31,40 @@
       .replace(/'/g, "&#39;");
   }
 })();
+
+document.addEventListener("DOMContentLoaded", function () {
+  const closureForm = document.getElementById("closure-form");
+  if (!closureForm) return;
+
+  closureForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const overlay = document.getElementById("loadingOverlay");
+    const csrfToken = closureForm.querySelector(
+      "[name=csrfmiddlewaretoken]",
+    ).value;
+    const formData = new FormData(closureForm);
+
+    if (overlay) overlay.classList.add("show");
+
+    try {
+      const response = await fetch(closureForm.action || window.location.href, {
+        method: "POST",
+        headers: { "X-CSRFToken": csrfToken },
+        body: formData,
+      });
+      const data = await response.json();
+
+      if (!data.success) {
+        showToast(data.error, true);
+        return;
+      }
+
+      showToast("Office closure settings updated.");
+    } catch (err) {
+      showToast("Something went wrong saving closure settings.", true);
+    } finally {
+      if (overlay) overlay.classList.remove("show");
+    }
+  });
+});
