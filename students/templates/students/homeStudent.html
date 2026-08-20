@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260819-responsive">
+    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260820-sticky-nav">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Student Home</title>
@@ -53,7 +53,11 @@
                 <div class="announcement-icon">!</div>
                 <div>
                     <p class="announcement-title">Today's Announcement</p>
-                    <p class="announcement-text">Important: Faculty consultation slots are limited this week. Book early and check the schedule so you can secure your preferred time.</p>
+                    {% if department_announcement %}
+                    <p class="announcement-text">{{ department_announcement.message }}</p>
+                    {% else %}
+                    <p class="announcement-text">There are no announcements for your department today.</p>
+                    {% endif %}
                 </div>
             </section>
 
