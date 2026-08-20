@@ -13,6 +13,7 @@ from allauth.socialaccount.models import SocialAccount
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from .models import Notification
+from core.departments import get_department_label
 
 def landing_page(request):
     return render(request, 'core/landingPage.html')
@@ -40,14 +41,13 @@ STATUS_NOTE_DEFAULTS = {
 }
 
 def dashboard_public(request):
-    department_labels = dict(DEPARTMENT_CHOICES)
 
     closures = OfficeClosure.objects.filter(is_closed=True)
     closed_department_codes = set(closures.values_list('department', flat=True))
 
     closure_list = [
         {
-            'department_name': department_labels.get(c.department, c.department),
+            'department_name': get_department_label(c.department),
             'reason': c.reason,
             'closure_start': c.closure_start,
             'closure_end': c.closure_end,
@@ -69,7 +69,7 @@ def dashboard_public(request):
         faculty_cards.append({
             'id': profile.faculty_id,
             'name': profile.user.get_full_name() or profile.user.username,
-            'department_name': department_labels.get(profile.department_id, profile.department_id),
+            'department_name': get_department_label(profile.department_id),
             'data_status': data_status,
             'status_class': status_class,
             'status_note': 'Department closed' if is_dept_closed else (profile.status_note or STATUS_NOTE_DEFAULTS.get(status_key, '')),
