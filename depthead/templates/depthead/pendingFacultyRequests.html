@@ -99,14 +99,16 @@
                             <td>{{ user.faculty_profile.faculty_id }}</td>
                             <td>{{ user.faculty_profile.office_location }}</td>
                             <td>
-                                <form method="post" action="{% url 'depthead:approve_faculty' user.id %}" style="display:inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-primary">Approve</button>
-                                </form>
-                                <form method="post" action="{% url 'depthead:decline_faculty' user.id %}" style="display:inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn-secondary">Decline</button>
-                                </form>
+                                                                <form method="post" action="{% url 'depthead:approve_faculty' user.id %}" class="status-action-form"
+                                                                    style="display:inline;">
+                                                                    {% csrf_token %}
+                                                                    <button type="submit" class="btn-primary">Approve</button>
+                                                                </form>
+                                                                <form method="post" action="{% url 'depthead:decline_faculty' user.id %}" class="status-action-form"
+                                                                    style="display:inline;">
+                                                                    {% csrf_token %}
+                                                                    <button type="submit" class="btn-secondary">Decline</button>
+                                                                </form>
                             </td>
                         </tr>
                         {% endfor %}
@@ -177,8 +179,7 @@
         </div>
     </div>
     
-    <script src="{% static 'depthead/js/pendingFacultyRequests.js' %}"></script>
-    <script src="{% static 'depthead/js/removeConfirm.js' %}"></script>
+    
     <div class="modal-overlay hidden" id="removeConfirmModal">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="removeConfirmModalTitle">
             <div class="modal-header">
@@ -195,6 +196,12 @@
             </div>
         </div>
     </div>
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+        </div>
+        <script src="{% static 'core/js/announcements.js' %}"></script>
+    <script src="{% static 'depthead/js/pendingFacultyRequests.js' %}"></script>
+    <script src="{% static 'depthead/js/removeConfirm.js' %}"></script>
 </body>
 
 </html>

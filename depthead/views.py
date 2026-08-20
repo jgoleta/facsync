@@ -14,8 +14,8 @@ from core.services import notify_department_users
 @login_required
 @role_required('depthead')
 def pending_faculty_requests(request):
-    pending_faculty = User.objects.filter(role='faculty', account_status='pending', department=request.user.department)
-    active_faculty = User.objects.filter(role='faculty', account_status='active', department=request.user.department)
+    pending_faculty = User.objects.filter(role='faculty', account_status='pending', department__iexact=request.user.department)
+    active_faculty = User.objects.filter(role='faculty', account_status='active', department__iexact=request.user.department)
     return render(request, 'depthead/pendingFacultyRequests.html', {
         'pending_faculty': pending_faculty,
         'active_faculty': active_faculty,
@@ -25,21 +25,24 @@ def pending_faculty_requests(request):
 @login_required
 @role_required('depthead')
 def approve_faculty(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', department=request.user.department)
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', department__iexact=request.user.department)
     if request.method == 'POST':
         faculty_user.account_status = 'active'
         faculty_user.save()
-    return redirect('depthead:pending_faculty_requests')
+        return JsonResponse({'success': True, 'message': f"{faculty_user.get_full_name() or faculty_user.username} approved."})
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 
 @login_required
 @role_required('depthead')
 def decline_faculty(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', department=request.user.department)
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', department__iexact=request.user.department)
     if request.method == 'POST':
         faculty_user.account_status = 'declined'
         faculty_user.save()
-    return redirect('depthead:pending_faculty_requests')
+        return JsonResponse({'success': True, 'message': f"{faculty_user.get_full_name() or faculty_user.username} declined."})
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
 
 @login_required
 @role_required('depthead')
@@ -64,11 +67,12 @@ def invite_faculty(request):
 @login_required
 @role_required('depthead')
 def remove_faculty(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='active', department=request.user.department)
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='active', department__iexact=request.user.department)
     if request.method == 'POST':
+        name = faculty_user.get_full_name() or faculty_user.username
         faculty_user.delete()
-        messages.success(request, "Faculty account removed.")
-    return redirect('depthead:pending_faculty_requests')
+        return JsonResponse({'success': True, 'message': f"{name} removed."})
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 
 @login_required
@@ -116,7 +120,7 @@ def faculty_monitoring(request):
 @login_required
 @role_required('depthead')
 def department_settings(request):
-    closure, _ = OfficeClosure.objects.get_or_create(department=request.user.department)
+    closure, _ = OfficeClosure.objects.get_or_create(department__iexact=request.user.department)
     if request.method == 'POST':
         form = OfficeClosureForm(request.POST, instance=closure)
         if form.is_valid():
@@ -124,13 +128,16 @@ def department_settings(request):
             closure.department = request.user.department
             closure.updated_by = request.user
             closure.save()
-            messages.success(request, "Office closure settings updated.")
-            return redirect('depthead:department_settings')
+            return JsonResponse({'success': True})
+        errors = ' '.join(
+            error for error_list in form.errors.values() for error in error_list
+        )
+        return JsonResponse({'success': False, 'error': errors or 'Unable to save closure settings.'})
     else:
         form = OfficeClosureForm(instance=closure)
 
     department_announcements = DepartmentAnnouncement.objects.filter(
-        department=request.user.department,
+        department__iexact=request.user.department,
         expiry__gt=timezone.now()
     )
 

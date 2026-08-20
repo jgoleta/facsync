@@ -50,6 +50,7 @@ if (announcementForm) {
     const messageInput = document.getElementById("ann-message");
     const expiryInput = document.getElementById("ann-expiry");
     const list = document.getElementById("announcements-list");
+    const overlay = document.getElementById("loadingOverlay");
 
     const formData = new FormData();
     formData.append("message", messageInput.value);
@@ -61,6 +62,8 @@ if (announcementForm) {
       "[name=csrfmiddlewaretoken]",
     ).value;
 
+    overlay.classList.add("show");
+
     try {
       const response = await fetch(form.action, {
         method: "POST",
@@ -70,7 +73,7 @@ if (announcementForm) {
       const data = await response.json();
 
       if (!data.success) {
-        showToast(data.error);
+        showToast(data.error, true);
         return;
       }
 
@@ -89,6 +92,8 @@ if (announcementForm) {
       showToast("Announcement posted successfully.");
     } catch (err) {
       showToast("Something went wrong posting your announcement.", true);
+    } finally {
+      overlay.classList.remove("show");
     }
   });
 }
