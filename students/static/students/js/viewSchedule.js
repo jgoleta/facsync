@@ -194,128 +194,64 @@ async function loadWalkInStatus() {
   }
 }
 
-const facultySchedule = [
-  {
-    name: "Arthur Morgan",
-    department: "College of Computer Studies",
-    schedule: [
-      {
-        date: "2026-06-02",
-        events: [{ title: "Class", startTime: "09:00", endTime: "10:30" }],
-      },
-      {
-        date: "2026-06-05",
-        events: [{ title: "Meeting", startTime: "08:30", endTime: "11:00" }],
-      },
-      {
-        date: "2026-06-09",
-        events: [{ title: "Class", startTime: "09:30", endTime: "12:30" }],
-      },
-      {
-        date: "2026-06-12",
-        events: [
-          { title: "Meeting", startTime: "10:00", endTime: "11:00" },
-          { title: "Class", startTime: "13:00", endTime: "14:30" },
-          { title: "Office Hours", startTime: "15:00", endTime: "16:00" },
-        ],
-      },
-      {
-        date: "2026-06-17",
-        events: [{ title: "Class", startTime: "09:00", endTime: "13:00" }],
-      },
-      {
-        date: "2026-06-21",
-        events: [{ title: "Meeting", startTime: "11:00", endTime: "12:00" }],
-      },
-      {
-        date: "2026-06-26",
-        events: [{ title: "Class", startTime: "08:00", endTime: "12:00" }],
-      },
-      {
-        date: "2026-06-30",
-        events: [{ title: "Meeting", startTime: "09:00", endTime: "10:00" }],
-      },
-    ],
-  },
-  {
-    name: "Leon Kennedy",
-    department: "College of Business and Accountancy",
-    schedule: [
-      {
-        date: "2026-06-03",
-        events: [{ title: "Class", startTime: "13:00", endTime: "15:00" }],
-      },
-      {
-        date: "2026-06-10",
-        events: [{ title: "Class", startTime: "13:00", endTime: "15:00" }],
-      },
-    ],
-  },
-  {
-    name: "Joel Miller",
-    department: "College of Humanities and Social Sciences",
-    schedule: [
-      {
-        date: "2026-06-04",
-        events: [
-          { title: "Consultation Hours", startTime: "10:00", endTime: "12:00" },
-        ],
-      },
-    ],
-  },
-  {
-    name: "Max Payne",
-    department: "College of Computer Studies",
-    schedule: [],
-  },
-  {
-    name: "Geralt of Rivia",
-    department: "College of Nursing",
-    schedule: [
-      {
-        date: "2026-06-08",
-        events: [
-          { title: "Lab Supervision", startTime: "09:00", endTime: "12:00" },
-        ],
-      },
-    ],
-  },
-  {
-    name: "Frank Ortiz",
-    department: "College of Nursing",
-    schedule: [],
-  },
-  {
-    name: "Grace Kim",
-    department: "College of Engineering",
-    schedule: [],
-  },
-  {
-    name: "Henry Alvarez",
-    department: "College of Humanities and Social Sciences",
-    schedule: [],
-  },
-  {
-    name: "Irene Patel",
-    department: "College of Humanities and Social Sciences",
-    schedule: [],
-  },
-  {
-    name: "Julia Rivers",
-    department: "College of Education",
-    schedule: [],
-  },
-  {
-    name: "Kevin Zhou",
-    department: "College of Computer Studies",
-    schedule: [],
-  },
-];
+const facultySchedule = {
+  name: selectedFacultyName?.textContent || "Faculty Schedule",
+  schedule: [],
+};
+
+async function loadFacultySchedule() {
+  if (!facultyId) {
+    renderCalendar();
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `/student/api/schedule-events/?faculty_id=${encodeURIComponent(facultyId)}`,
+    );
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Unable to load schedule.");
+
+    const byDate = {};
+    (data.events || []).forEach((event) => {
+      const dateKey = event.date;
+      if (!byDate[dateKey]) byDate[dateKey] = { date: dateKey, events: [] };
+      byDate[dateKey].events.push({
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        type: event.event_type,
+        startTime: event.start_time ? event.start_time.slice(0, 5) : null,
+        endTime: event.end_time ? event.end_time.slice(0, 5) : null,
+      });
+    });
+
+    facultySchedule.schedule = Object.values(byDate).sort(
+      (a, b) => new Date(a.date) - new Date(b.date),
+    );
+    renderCalendar();
+  } catch (error) {
+    console.error("Failed to load faculty schedule", error);
+    facultySchedule.schedule = [];
+    renderCalendar();
+  }
+}
 
 let activeEventContext = null;
 
 function formatEventTime(eventData) {
-  return `${eventData.startTime} - ${eventData.endTime}`;
+  if (!eventData.startTime && !eventData.endTime) return "All day";
+  return `${eventData.startTime || ""}${eventData.endTime ? ` - ${eventData.endTime}` : ""}`;
+}
+
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>'"]/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "'": "&#39;",
+    '"': "&quot;",
+  })[character]);
 }
 
 function openDayScheduleModal(dateKey, dayLabel, events) {
@@ -332,8 +268,8 @@ function openDayScheduleModal(dateKey, dayLabel, events) {
     const item = document.createElement("li");
     item.innerHTML = `
       <div class="details-item-title">
-        <span>${eventData.title}</span>
-        <span class="details-item-type type-${eventData.type || "busy"}">${eventData.type || "busy"}</span>
+        <span>${escapeHtml(eventData.title)}</span>
+        <span class="details-item-type type-${escapeHtml(eventData.type || "busy")}">${escapeHtml(eventData.type || "busy")}</span>
       </div>
       <div class="details-item-meta">${formatEventTime(eventData)}</div>
     `;
@@ -360,24 +296,14 @@ function openEventModal(eventData, dateKey) {
   titleEl.textContent = eventData.title;
   typeEl.textContent = eventData.type || "busy";
   typeEl.className = `event-detail-type type-${eventData.type || "busy"}`;
-  const timeText = `${eventData.startTime} - ${eventData.endTime}`;
-  timeEl.textContent = timeText;
+  timeEl.textContent = formatEventTime(eventData);
   descriptionEl.textContent =
     eventData.description || "No description provided.";
   modal.classList.remove("hidden");
 }
 
 function renderCalendar() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const facultyNameFromURL = urlParams.get("faculty");
-  const facultyStatusFromURL = urlParams.get("status") || "on-leave";
-
-  const selectedFaculty = facultySchedule.find(
-    (f) => f.name === facultyNameFromURL,
-  ) || {
-    name: selectedFacultyName?.textContent || "Faculty Schedule",
-    schedule: [],
-  };
+  const selectedFaculty = facultySchedule;
   calendarGrid.innerHTML = "";
   legendList.innerHTML = "";
   selectedFacultyName.textContent = selectedFaculty.name;
@@ -389,8 +315,12 @@ function renderCalendar() {
   }
 
   let daysToRender;
-  const today = new Date("2026-06-09"); // Fixed date for demo purposes
-  const daysInMonth = 30; // Hardcoded for June
+  const today = new Date();
+  const year = today.getFullYear();
+  const monthIndex = today.getMonth();
+  const monthName = today.toLocaleDateString("en-US", { month: "short" });
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const monthNumber = String(monthIndex + 1).padStart(2, "0");
 
   if (currentView === "monthly") {
     daysToRender = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -442,7 +372,7 @@ function renderCalendar() {
     calendarGrid.appendChild(dayContent);
 
     const day = today.getDate();
-    const dateKey = `2026-06-${String(day).padStart(2, "0")}`;
+    const dateKey = `${year}-${monthNumber}-${String(day).padStart(2, "0")}`;
     const dayEntry = selectedFaculty.schedule.find(
       (entry) => entry.date === dateKey,
     );
@@ -467,7 +397,7 @@ function renderCalendar() {
           event.startTime && event.endTime
             ? `${event.startTime} - ${event.endTime}`
             : "All day";
-        item.innerHTML = `<strong>${event.title}</strong>${eventTime}`;
+        item.innerHTML = `<strong>${escapeHtml(event.title)}</strong>${eventTime}`;
         item.addEventListener("click", () => openEventModal(event, dateKey));
 
         if (!event.startTime || !event.endTime) {
@@ -504,7 +434,7 @@ function renderCalendar() {
         dayContent.appendChild(item);
 
         const legendItem = document.createElement("li");
-        legendItem.textContent = `${event.title} • Jun ${day} • ${event.startTime} - ${event.endTime}`;
+        legendItem.textContent = `${event.title} • ${monthName} ${day} • ${event.startTime} - ${event.endTime}`;
         legendList.appendChild(legendItem);
       });
 
@@ -515,7 +445,7 @@ function renderCalendar() {
         overflowBtn.textContent = `+${overflowEvents.length} more`;
         overflowBtn.addEventListener("click", (event) => {
           event.stopPropagation();
-          openDayScheduleModal(dateKey, `Jun ${day}`, dayEntry.events);
+          openDayScheduleModal(dateKey, `${monthName} ${day}`, dayEntry.events);
         });
         dayContent.appendChild(overflowBtn);
       }
@@ -531,7 +461,7 @@ function renderCalendar() {
     header.className = "day-header";
 
     if (day > 0 && day <= daysInMonth) {
-      const date = new Date(2026, 5, day); // 5 is June
+      const date = new Date(year, monthIndex, day);
       const dayOfWeek = date.toLocaleDateString("en-US", { weekday: "short" });
       header.textContent = `${dayOfWeek} ${day}`;
       column.appendChild(header);
@@ -539,7 +469,7 @@ function renderCalendar() {
       const body = document.createElement("div");
       body.className = "day-body";
 
-      const dateKey = `2026-06-${String(day).padStart(2, "0")}`;
+      const dateKey = `${year}-${monthNumber}-${String(day).padStart(2, "0")}`;
       const dayEntry = selectedFaculty.schedule.find(
         (entry) => entry.date === dateKey,
       );
@@ -550,12 +480,12 @@ function renderCalendar() {
         visibleEvents.forEach((event) => {
           const item = document.createElement("div");
           item.className = "slot-item";
-          item.innerHTML = `<strong>${event.title}</strong>${event.startTime} - ${event.endTime}`;
+          item.innerHTML = `<strong>${escapeHtml(event.title)}</strong>${formatEventTime(event)}`;
           item.addEventListener("click", () => openEventModal(event, dateKey));
           body.appendChild(item);
 
           const legendItem = document.createElement("li");
-          legendItem.textContent = `${event.title} • Jun ${day} • ${event.startTime} - ${event.endTime}`;
+          legendItem.textContent = `${event.title} • ${monthName} ${day} • ${event.startTime} - ${event.endTime}`;
           legendList.appendChild(legendItem);
         });
 
@@ -566,7 +496,7 @@ function renderCalendar() {
           overflowBtn.textContent = `+${overflowEvents.length} more`;
           overflowBtn.addEventListener("click", (event) => {
             event.stopPropagation();
-            openDayScheduleModal(dateKey, `Jun ${day}`, dayEntry.events);
+            openDayScheduleModal(dateKey, `${monthName} ${day}`, dayEntry.events);
           });
           body.appendChild(overflowBtn);
         }
@@ -749,6 +679,7 @@ if (viewControls) {
 }
 
 renderCalendar();
+loadFacultySchedule();
 applyClosureLockdown();
 if (!isDeptClosed) {
   loadWalkInStatus();

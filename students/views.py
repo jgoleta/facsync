@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_protect
 
 from core.departments import get_department_label
-from faculty.models import ConsultationRequest, FacultyProfile, WalkInQueue
+from faculty.models import ConsultationRequest, FacultyProfile, ScheduleEvent, WalkInQueue
 from .models import FacultyStatusSubscription
 from faculty.facultyServices.googleCalendarService import refresh_faculty_status
 
@@ -122,6 +122,34 @@ def view_schedule(request):
         ),
     })
 
+
+def _schedule_event_json(event):
+    """Serialize a faculty schedule event for student calendar clients."""
+    return {
+        'id': event.pk,
+        'title': event.title,
+        'description': event.description,
+        'event_type': event.event_type,
+        'date': event.date.isoformat(),
+        'start_time': event.start_time.isoformat() if event.start_time else None,
+        'end_time': event.end_time.isoformat() if event.end_time else None,
+    }
+
+
+@login_required
+@role_required('student')
+def api_schedule_events(request):
+    """Return the selected faculty member's published schedule events."""
+    if request.method != 'GET':
+        return HttpResponse(status=405)
+
+    faculty = get_object_or_404(FacultyProfile, faculty_id=request.GET.get('faculty_id'))
+    events = ScheduleEvent.objects.filter(faculty=faculty).order_by('date', 'start_time')
+    return JsonResponse({
+        'faculty_id': faculty.faculty_id,
+        'events': [_schedule_event_json(event) for event in events],
+    })
+
 @login_required
 @role_required('student')
 def active_announcements(request):
@@ -227,7 +255,7 @@ def api_consultation_requests(request):
 @login_required
 @role_required('student')
 def home(request):
-    """Render department-scoped student home-page summary counts."""
+    """Render student summary counts and the student's department announcement."""
     today = timezone.localdate()
     current_time = timezone.localtime().time()
     upcoming_bookings = ConsultationRequest.objects.filter(
@@ -241,6 +269,10 @@ def home(request):
     )
 
     student_department = get_department_label(request.user.department)
+    department_announcement = DepartmentAnnouncement.objects.filter(
+        department__iexact=request.user.department or '',
+        expiry__gt=timezone.now(),
+    ).first()
     available_faculty_count = 0
     if student_department:
         for faculty in FacultyProfile.objects.select_related('user').all():
@@ -255,6 +287,7 @@ def home(request):
         'upcoming_booking_count': upcoming_booking_count,
         'available_faculty_count': available_faculty_count,
         'student_department': student_department,
+        'department_announcement': department_announcement,
     })
 
 

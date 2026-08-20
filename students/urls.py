@@ -7,6 +7,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('home/', views.home, name='home'),
     path('view-schedule/', views.view_schedule, name='view_schedule'),
+    path('api/schedule-events/', views.api_schedule_events, name='api_schedule_events'),
     path('consultation-requests/', views.consultation_requests, name='consultation_requests'),
     path('api/consultation-requests/', views.api_consultation_requests, name='api_consultation_requests'),
     path('api/walk-ins/status/', views.api_walk_in_status, name='api_walk_in_status'),
