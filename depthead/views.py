@@ -104,7 +104,7 @@ def faculty_monitoring(request):
     profiles = FacultyProfile.objects.select_related('user').filter(
         user__role='faculty',
         user__account_status='active',
-        department_id=request.user.department,
+        department_id__iexact=request.user.department,
     )
     faculty_list = []
     for profile in profiles:
@@ -120,7 +120,10 @@ def faculty_monitoring(request):
 @login_required
 @role_required('depthead')
 def department_settings(request):
-    closure, _ = OfficeClosure.objects.get_or_create(department__iexact=request.user.department)
+    closure, _ = OfficeClosure.objects.get_or_create(
+        department__iexact=request.user.department,
+        defaults={'department': request.user.department}
+    )
     if request.method == 'POST':
         form = OfficeClosureForm(request.POST, instance=closure)
         if form.is_valid():
