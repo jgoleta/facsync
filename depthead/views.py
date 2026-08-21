@@ -270,13 +270,51 @@ def peak_analytics(request):
         .annotate(count=Count('request_id'))
         .order_by('-count')
     )
-    if weekday_counts:
-        top_day = weekday_counts[0]
-        peak_day_label = WEEKDAY_LABELS.get(top_day['weekday'], 'Unknown')
-        peak_day_count = top_day['count']
+    weekday_totals = {i: 0 for i in range(1, 8)}
+    for row in weekday_counts:
+        weekday_totals[row['weekday']] = row['count']
+
+    if any(weekday_totals.values()):
+        top_weekday_num = max(weekday_totals.items(), key=lambda x: x[1])[0]
+        peak_day_label = WEEKDAY_LABELS.get(top_weekday_num, 'Unknown')
+        peak_day_count = weekday_totals[top_weekday_num]
     else:
         peak_day_label = "No data"
         peak_day_count = 0
+
+    # Build pie chart slices
+    total_weekday_requests = sum(weekday_totals.values())
+    pie_colors = ['#2563eb', '#3b82f6', '#60a5fa', '#93c5fd', '#1d4ed8', '#1e40af', '#bfdbfe']
+    pie_slices = []
+    if total_weekday_requests > 0:
+        cx, cy, r = 110, 110, 90
+        start_angle = -90  # start at top
+        for i in range(1, 8):
+            count = weekday_totals[i]
+            if count == 0:
+                continue
+            fraction = count / total_weekday_requests
+            sweep_angle = fraction * 360
+            end_angle = start_angle + sweep_angle
+
+            import math
+            start_rad = math.radians(start_angle)
+            end_rad = math.radians(end_angle)
+            x1 = cx + r * math.cos(start_rad)
+            y1 = cy + r * math.sin(start_rad)
+            x2 = cx + r * math.cos(end_rad)
+            y2 = cy + r * math.sin(end_rad)
+            large_arc = 1 if sweep_angle > 180 else 0
+
+            path = f"M {cx},{cy} L {x1:.2f},{y1:.2f} A {r},{r} 0 {large_arc} 1 {x2:.2f},{y2:.2f} Z"
+            pie_slices.append({
+                'path': path,
+                'color': pie_colors[(i - 1) % len(pie_colors)],
+                'label': WEEKDAY_LABELS[i],
+                'count': count,
+                'pct': round(fraction * 100),
+            })
+            start_angle = end_angle
 
     #supply-demand gap (today's requests / currently available faculty)
     today_request_count = consultations_qs.filter(date=date.today()).count()
@@ -367,6 +405,7 @@ def faculty_trends(request):
             'availability_rate': availability_rate,
         })
 
+    
     #chart bars, one per faculty
     max_bar_height = 160
     baseline_y = 250

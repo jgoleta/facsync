@@ -89,3 +89,49 @@ table td:first-child {
     font-size: 0.9rem;
 }
 
+.chart-card {
+    padding: 16px 20px;
+}
+
+.chart-graphic svg {
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+}
+
+.chart-caption {
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.pie-chart-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.pie-svg {
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+}
+
+.pie-legend {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
