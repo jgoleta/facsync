@@ -313,7 +313,6 @@ def peak_analytics(request):
         'load_distribution': load_distribution_list,
     })
 
-
 @login_required
 @role_required('depthead')
 def faculty_trends(request):

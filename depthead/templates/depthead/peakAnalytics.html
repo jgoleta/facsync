@@ -80,48 +80,57 @@
                                 <line x1="80" y1="170" x2="500" y2="170" />
                                 <line x1="80" y1="130" x2="500" y2="130" />
                             </g>
-                            <rect x="95" y="180" width="32" height="70" rx="6" fill="#2563eb" />
-                            <rect x="165" y="150" width="32" height="100" rx="6" fill="#3b82f6" />
-                            <rect x="235" y="120" width="32" height="130" rx="6" fill="#60a5fa" />
-                            <rect x="305" y="90" width="32" height="160" rx="6" fill="#93c5fd" />
-                            <rect x="375" y="140" width="32" height="110" rx="6" fill="#2563eb" />
-                            <rect x="445" y="165" width="32" height="85" rx="6" fill="#3b82f6" />
+                            {% for bar in chart_bars %}
+                            <rect x="{{ bar.x }}" y="{{ bar.y }}" width="32" height="{{ bar.height }}" rx="6" fill="#2563eb">
+                                <title>{{ bar.label }}: {{ bar.count }} requests</title>
+                            </rect>
+                            {% endfor %}
                             <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
-                                <text x="95" y="270">8AM</text>
-                                <text x="165" y="270">10AM</text>
-                                <text x="235" y="270">12PM</text>
-                                <text x="305" y="270">2PM</text>
-                                <text x="375" y="270">4PM</text>
-                                <text x="445" y="270">6PM</text>
+                                {% for bar in chart_bars %}
+                                {% if forloop.counter0|divisibleby:2 %}
+                                <text x="{{ bar.x }}" y="270">{{ bar.label }}</text>
+                                {% endif %}
+                                {% endfor %}
                             </g>
                         </svg>
                     </div>
+                    <div class="chart-caption-group">
+                        <p class="chart-caption">Peak hour: {{ peak_hour_label }} ({{ peak_hour_count }} requests)</p>
+                        <p class="chart-caption">Peak day: {{ peak_day_label }} ({{ peak_day_count }} requests)</p>
+                    </div>
                 </div>
-                <div class="chart-card">
+                <div class="chart-card ratio-card">
                     <h3>Supply-Demand Gap</h3>
-                    <div class="chart-graphic" role="img" aria-label="Supply demand gap chart">
-                        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="40" y="30" width="520" height="240" rx="16" fill="#ffffff" />
-                            <line x1="80" y1="250" x2="500" y2="250" stroke="#cbd5e1" />
-                            <path d="M80 220 C140 205, 170 175, 220 165 S330 145, 380 130 S470 110, 500 90" stroke="#ef4444" stroke-width="4" fill="none" stroke-linecap="round" />
-                            <path d="M80 200 C140 190, 170 170, 220 160 S330 140, 380 120 S470 95, 500 70" stroke="#2563eb" stroke-width="4" fill="none" stroke-linecap="round" />
-                            <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
-                                <text x="80" y="270">Mon</text>
-                                <text x="200" y="270">Wed</text>
-                                <text x="320" y="270">Fri</text>
-                                <text x="440" y="270">Sun</text>
-                            </g>
-                        </svg>
+                    <div class="ratio-display">
+                        <span class="ratio-value">{{ today_request_count }}:{{ available_faculty_count }}</span>
+                    </div>
+                    <div class="ratio-labels">
+                        <span>{{ today_request_count }} student requests today</span>
+                        <span>{{ available_faculty_count }} faculty available now</span>
                     </div>
                 </div>
                 <div class="table-card">
-                    <h3>Most Requested Faculty</h3>
+                    <h3>Faculty Consultation Load Distribution</h3>
                     <table>
-                        <thead><tr><th>Rank</th><th>Faculty Name</th><th>Requests</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Faculty Name</th>
+                                <th>Requests</th>
+                            </tr>
+                        </thead>
                         <tbody>
-                            <tr><td>1</td><td>Dr. Arthur Morgan</td><td>152</td></tr>
-                            <tr><td>2</td><td>Dr. Sarah Johnson</td><td>141</td></tr>
-                            <tr><td>3</td><td>Prof. Leon Kennedy</td><td>110</td></tr>
+                            {% for faculty in load_distribution %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ faculty.name }}</td>
+                                <td>{{ faculty.count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="empty-state">No consultation data yet.</td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
