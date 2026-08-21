@@ -5,14 +5,16 @@ from core.models import User, FacultyInvite, OfficeClosure, DepartmentAnnounceme
 from core.forms import DepartmentAnnouncementForm, DepartmentDescriptionForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm
-from faculty.models import FacultyProfile, ConsultationRequest
+from faculty.models import FacultyProfile, ConsultationRequest, StatusHistory
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from core.services import notify_department_users
-from django.db.models import Count
+from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
 from django.db.models.functions import ExtractHour, ExtractWeekDay
 from datetime import timedelta, date
+from django.utils.timesince import timesince
+
 
 @login_required
 @role_required('depthead')
@@ -66,6 +68,7 @@ def invite_faculty(request):
                 for error in error_list:
                     messages.error(request, error)
     return redirect('depthead:pending_faculty_requests')
+
 
 @login_required
 @role_required('depthead')
@@ -133,15 +136,18 @@ def admin_dashboard(request):
         'available_now_pct': available_now_pct,
     })
 
+
 @login_required
 @role_required('depthead')
 def admin_faculty(request):
     return render(request, 'depthead/adminFaculty.html')
 
+
 @login_required
 @role_required('depthead')
 def student_behavior(request):
     return render(request, 'depthead/studentBehavior.html')
+
 
 STATUS_LABELS = {
     'available': ('Available', 'status-available'),
@@ -150,6 +156,7 @@ STATUS_LABELS = {
     'on_leave': ('On Leave', 'status-on-leave'),
     'unavailable': ('Unavailable', 'status-unavailable'),
 }
+
 
 @login_required
 @role_required('depthead')
@@ -169,6 +176,7 @@ def faculty_monitoring(request):
             'updated_at': profile.status_updated_at,
         })
     return render(request, 'depthead/facultyMonitoring.html', {'faculty_list': faculty_list})
+
 
 @login_required
 @role_required('depthead')
@@ -205,6 +213,7 @@ def department_settings(request):
         'department': department,
     })
 
+
 WEEKDAY_LABELS = {
     1: 'Sunday', 2: 'Monday', 3: 'Tuesday', 4: 'Wednesday',
     5: 'Thursday', 6: 'Friday', 7: 'Saturday',
@@ -228,7 +237,7 @@ def peak_analytics(request):
         .annotate(count=Count('request_id'))
         .order_by('hour')
     )
-    hourly_data = {h: 0 for h in range(7, 20)}  #7am–7pm
+    hourly_data = {h: 0 for h in range(7, 20)}  #7am-7pm
     for row in hourly_counts:
         if row['hour'] in hourly_data:
             hourly_data[row['hour']] = row['count']
@@ -307,7 +316,122 @@ def peak_analytics(request):
 @login_required
 @role_required('depthead')
 def faculty_trends(request):
-    return render(request, 'depthead/facultyTrends.html')
+    dept_code = request.user.department
+    window_start = timezone.now() - timedelta(days=7)
+
+    faculty_qs = FacultyProfile.objects.filter(
+        user__role='faculty',
+        user__account_status='active',
+        department_id__iexact=dept_code,
+    ).select_related('user')
+
+    trends = []
+
+    for profile in faculty_qs:
+        name = profile.user.get_full_name() or profile.user.username
+
+        #status update freq per day (rolling 7-day)
+        status_change_count = StatusHistory.objects.filter(
+            faculty=profile,
+            changed_at__gte=window_start,
+        ).count()
+        updates_per_day = round(status_change_count / 7, 1)
+
+        last_update_row = StatusHistory.objects.filter(faculty=profile).order_by('-changed_at').first()
+        last_update_display = f"{timesince(last_update_row.changed_at)} ago" if last_update_row else "No data"
+
+        #consultation completion rate
+        all_requests = ConsultationRequest.objects.filter(faculty=profile)
+        total_requests = all_requests.count()
+        completed_requests = all_requests.filter(status='completed').count()
+        completion_rate = round((completed_requests / total_requests) * 100) if total_requests else None
+
+        #average response time hrs
+        responded = all_requests.filter(approved_at__isnull=False).annotate(
+            response_time=ExpressionWrapper(
+                F('approved_at') - F('requested_at'), output_field=DurationField()
+            )
+        )
+        avg_response = responded.aggregate(avg=Avg('response_time'))['avg']
+        avg_response_hours = round(avg_response.total_seconds() / 3600, 1) if avg_response else None
+
+        #availability rate (rolling 7-day)
+        availability_rate = calculate_availability_rate(profile, window_start)
+
+        trends.append({
+            'name': name,
+            'updates_per_day': updates_per_day,
+            'last_update_display': last_update_display,
+            'completion_rate': completion_rate,
+            'avg_response_hours': avg_response_hours,
+            'availability_rate': availability_rate,
+        })
+
+    #chart bars, one per faculty
+    max_bar_height = 160
+    baseline_y = 250
+    bar_width = 40
+    gap = 70
+    start_x = 100
+    chart_bars = []
+    for i, t in enumerate(trends):
+        rate = t['availability_rate'] or 0
+        height = round((rate / 100) * max_bar_height)
+        chart_bars.append({
+            'x': start_x + i * gap,
+            'y': baseline_y - height,
+            'height': height,
+            'label': t['name'].split()[0] if t['name'] else '',
+            'rate': rate,
+        })
+
+    return render(request, 'depthead/facultyTrends.html', {
+        'trends': trends,
+        'chart_bars': chart_bars,
+    })
+
+
+def calculate_availability_rate(profile, window_start):
+    now = timezone.now()
+
+    carry_in = StatusHistory.objects.filter(
+        faculty=profile,
+        changed_at__lt=window_start,
+    ).order_by('-changed_at').first()
+
+    rows = list(StatusHistory.objects.filter(
+        faculty=profile,
+        changed_at__gte=window_start,
+    ).order_by('changed_at'))
+
+    if not rows and not carry_in:
+        return None
+
+    timeline = []
+    if carry_in:
+        timeline.append((window_start, carry_in.status))
+    for row in rows:
+        timeline.append((row.changed_at, row.status))
+
+    if not timeline:
+        return None
+
+    total_seconds = 0
+    available_seconds = 0
+    for i, (start, status) in enumerate(timeline):
+        end = timeline[i + 1][0] if i + 1 < len(timeline) else now
+        duration = (end - start).total_seconds()
+        if duration < 0:
+            continue
+        total_seconds += duration
+        if status == 'available':
+            available_seconds += duration
+
+    if total_seconds == 0:
+        return None
+
+    return round((available_seconds / total_seconds) * 100)
+
 
 @login_required
 @role_required('depthead')
@@ -345,6 +469,7 @@ def create_announcement(request):
             'expiry': announcement.expiry.strftime('%b %d, %Y'),
         }
     })
+
 
 @login_required
 @role_required('depthead')

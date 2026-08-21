@@ -70,12 +70,10 @@
 
             <div class="analytics-grid">
                 <div class="chart-card">
-                    <h3>Average Availability Patterns</h3>
-                    <div class="chart-graphic" role="img" aria-label="Availability patterns chart">
+                    <h3>Faculty Availability Rate (Last 7 Days)</h3>
+                    <div class="chart-graphic" role="img" aria-label="Faculty availability rate chart">
                         <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
                             <rect x="40" y="30" width="520" height="240" rx="16" fill="#ffffff" />
-                            <path d="M80 230 L180 190 L260 150 L340 170 L420 100 L500 70" stroke="#2563eb" stroke-width="4" fill="none" stroke-linecap="round" />
-                            <path d="M80 230 L180 190 L260 150 L340 170 L420 100 L500 70 L500 250 L80 250 Z" fill="rgba(37,99,235,0.12)" />
                             <g stroke="#cbd5e1" stroke-width="1">
                                 <line x1="80" y1="250" x2="500" y2="250" />
                                 <line x1="80" y1="210" x2="500" y2="210" />
@@ -83,44 +81,69 @@
                                 <line x1="80" y1="130" x2="500" y2="130" />
                                 <line x1="80" y1="90" x2="500" y2="90" />
                             </g>
-                            <g fill="#2563eb">
-                                <circle cx="180" cy="190" r="6" />
-                                <circle cx="260" cy="150" r="6" />
-                                <circle cx="340" cy="170" r="6" />
-                                <circle cx="420" cy="100" r="6" />
-                                <circle cx="500" cy="70" r="6" />
-                            </g>
+                            {% for bar in chart_bars %}
+                            <rect x="{{ bar.x }}" y="{{ bar.y }}" width="40" height="{{ bar.height }}" rx="6" fill="#2563eb">
+                                <title>{{ bar.label }}: {{ bar.rate }}% available</title>
+                            </rect>
+                            {% endfor %}
                             <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
-                                <text x="70" y="265">Mon</text>
-                                <text x="160" y="265">Tue</text>
-                                <text x="240" y="265">Wed</text>
-                                <text x="320" y="265">Thu</text>
-                                <text x="400" y="265">Fri</text>
-                                <text x="480" y="265">Sat</text>
-                                
+                                {% for bar in chart_bars %}
+                                <text x="{{ bar.x }}" y="270">{{ bar.label }}</text>
+                                {% endfor %}
                             </g>
                         </svg>
                     </div>
                 </div>
+                
                 <div class="table-card">
                     <h3>Status Update Frequency</h3>
                     <table>
-                        <thead><tr><th>Faculty Name</th><th>Last Update</th><th>Frequency</th><th class="flag">Flag</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Faculty Name</th>
+                                <th>Last Update</th>
+                                <th>Frequency (updates/day)</th>
+                            </tr>
+                        </thead>
                         <tbody>
-                            <tr><td>Dr. Arthur Morgan</td><td>2 hours ago</td><td>High</td><td></td></tr>
-                            <tr><td>Dr. Sarah Johnson</td><td>8 hours ago</td><td>Medium</td><td></td></tr>
-                            <tr><td>Prof. Leon Kennedy</td><td>3 days ago</td><td>Low</td><td class="flag">🚩</td></tr>
+                            {% for t in trends %}
+                            <tr>
+                                <td>{{ t.name }}</td>
+                                <td>{{ t.last_update_display }}</td>
+                                <td>{{ t.updates_per_day }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="empty-state">No faculty data yet.</td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
+                
                 <div class="table-card">
                     <h3>Request & Response Rates</h3>
                     <table>
-                        <thead><tr><th>Faculty Name</th><th>Decline Rate</th><th>Avg. Response Time</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>Faculty Name</th>
+                                <th>Completion Rate</th>
+                                <th>Avg. Response Time</th>
+                            </tr>
+                        </thead>
                         <tbody>
-                            <tr><td>Dr. Arthur Morgan</td><td>5%</td><td>15 min</td></tr>
-                            <tr><td>Dr. Sarah Johnson</td><td>8%</td><td>45 min</td></tr>
-                            <tr><td>Prof. Leon Kennedy</td><td>15%</td><td>3 hours</td></tr>
+                            {% for t in trends %}
+                            <tr>
+                                <td>{{ t.name }}</td>
+                                <td>{% if t.completion_rate is not None %}{{ t.completion_rate }}%{% else %}No data{% endif %}</td>
+                                <td>{% if t.avg_response_hours is not None %}{{ t.avg_response_hours }}h{% else %}No data{% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="empty-state">No faculty data yet.</td>
+                            </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>

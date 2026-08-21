@@ -164,6 +164,8 @@ class ConsultationRequest(models.Model):
     calendar_sync_status = models.CharField(max_length=16, default='not_configured')
     calendar_sync_error = models.TextField(blank=True)
     last_calendar_sync_at = models.DateTimeField(null=True, blank=True)
+    requested_at = models.DateTimeField(auto_now_add=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['-date']
