@@ -64,3 +64,28 @@ table td:first-child {
         grid-column: span 2;
     }
 }
+
+.ratio-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 32px;
+}
+
+.ratio-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.ratio-labels {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+

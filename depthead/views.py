@@ -10,6 +10,8 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from core.services import notify_department_users
+from django.db.models import Count
+from django.db.models.functions import ExtractHour, ExtractWeekDay
 from datetime import timedelta, date
 
 @login_required
@@ -203,10 +205,104 @@ def department_settings(request):
         'department': department,
     })
 
+WEEKDAY_LABELS = {
+    1: 'Sunday', 2: 'Monday', 3: 'Tuesday', 4: 'Wednesday',
+    5: 'Thursday', 6: 'Friday', 7: 'Saturday',
+}  # Django's ExtractWeekDay: 1=Sunday ... 7=Saturday
+
+
 @login_required
 @role_required('depthead')
 def peak_analytics(request):
-    return render(request, 'depthead/peakAnalytics.html')
+    dept_code = request.user.department
+
+    consultations_qs = ConsultationRequest.objects.filter(
+        faculty__department_id__iexact=dept_code
+    )
+
+    #Peak consultation hour (by start_time, excludes null times)
+    hourly_counts = (
+        consultations_qs.exclude(start_time__isnull=True)
+        .annotate(hour=ExtractHour('start_time'))
+        .values('hour')
+        .annotate(count=Count('request_id'))
+        .order_by('hour')
+    )
+    hourly_data = {h: 0 for h in range(7, 20)}  #7am–7pm
+    for row in hourly_counts:
+        if row['hour'] in hourly_data:
+            hourly_data[row['hour']] = row['count']
+
+    max_count = max(hourly_data.values()) if any(hourly_data.values()) else 1
+    chart_bars = []
+    bar_width = 32
+    gap = 38
+    start_x = 95
+    max_bar_height = 160
+    baseline_y = 250
+
+    for i, (hour, count) in enumerate(hourly_data.items()):
+        bar_height = round((count / max_count) * max_bar_height) if max_count else 0
+        chart_bars.append({
+            'x': start_x + i * gap,
+            'y': baseline_y - bar_height,
+            'height': bar_height,
+            'label': f"{hour % 12 or 12}{'AM' if hour < 12 else 'PM'}",
+            'count': count,
+        })
+
+    peak_hour_row = max(hourly_data.items(), key=lambda x: x[1]) if any(hourly_data.values()) else (None, 0)
+    peak_hour_label = f"{peak_hour_row[0] % 12 or 12}{'AM' if peak_hour_row[0] < 12 else 'PM'}" if peak_hour_row[0] is not None else "No data"
+
+    #peak consultation day
+    weekday_counts = (
+        consultations_qs.annotate(weekday=ExtractWeekDay('date'))
+        .values('weekday')
+        .annotate(count=Count('request_id'))
+        .order_by('-count')
+    )
+    if weekday_counts:
+        top_day = weekday_counts[0]
+        peak_day_label = WEEKDAY_LABELS.get(top_day['weekday'], 'Unknown')
+        peak_day_count = top_day['count']
+    else:
+        peak_day_label = "No data"
+        peak_day_count = 0
+
+    #supply-demand gap (today's requests / currently available faculty)
+    today_request_count = consultations_qs.filter(date=date.today()).count()
+    available_faculty_count = FacultyProfile.objects.filter(
+        user__role='faculty',
+        user__account_status='active',
+        department_id__iexact=dept_code,
+        current_status='available',
+    ).count()
+
+    #faculty consultation load distribution (top 5 faculty by request count)
+    load_distribution = (
+        consultations_qs.values('faculty__faculty_id', 'faculty__user__first_name', 'faculty__user__last_name', 'faculty__user__username')
+        .annotate(request_count=Count('request_id'))
+        .order_by('-request_count')[:5]
+    )
+    load_distribution_list = []
+    for row in load_distribution:
+        full_name = f"{row['faculty__user__first_name']} {row['faculty__user__last_name']}".strip()
+        load_distribution_list.append({
+            'name': full_name or row['faculty__user__username'],
+            'count': row['request_count'],
+        })
+
+    return render(request, 'depthead/peakAnalytics.html', {
+        'hourly_data': hourly_data,
+        'chart_bars': chart_bars,
+        'peak_hour_label': peak_hour_label,
+        'peak_hour_count': peak_hour_row[1],
+        'peak_day_label': peak_day_label,
+        'peak_day_count': peak_day_count,
+        'today_request_count': today_request_count,
+        'available_faculty_count': available_faculty_count,
+        'load_distribution': load_distribution_list,
+    })
 
 @login_required
 @role_required('depthead')
