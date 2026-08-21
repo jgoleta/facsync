@@ -766,6 +766,8 @@ def api_consultation(request, request_id):
 
         old_status = consultation.status
         consultation.status = new_status
+        if new_status == 'approved' and not consultation.approved_at:
+            consultation.approved_at = timezone.now()
         if 'faculty_note' in payload:
             consultation.faculty_note = str(payload.get('faculty_note') or '').strip()
 
