@@ -655,7 +655,10 @@ def refresh_faculty_status(faculty, google_events=None):
     active_status = None
     calendar_events = ScheduleEvent.objects.filter(
         faculty=faculty,
-        date=now.date(),
+    ).filter(
+        models.Q(date=now.date())
+        | models.Q(start_month__isnull=False)
+        | models.Q(date__isnull=True)
     ).filter(
         # Local events are always part of the system calendar. Synced Google
         # events count while their latest local copy is still in sync.
@@ -666,9 +669,30 @@ def refresh_faculty_status(faculty, google_events=None):
 
     status_priority = {'busy': 1, 'virtual_only': 2, 'on_leave': 3}
 
-    def consider_event(event_date, start_time, end_time, candidate):
+    def consider_event(
+        event_date,
+        start_time,
+        end_time,
+        candidate,
+        recurring_day=None,
+        start_month=None,
+        end_month=None,
+    ):
         nonlocal active_status
-        if event_date != now.date():
+        if event_date is None or start_month is not None:
+            if end_month is None:
+                return
+            month_is_active = (
+                start_month <= now.month <= end_month
+                if start_month <= end_month
+                else now.month >= start_month or now.month <= end_month
+            )
+            if not month_is_active:
+                return
+            if recurring_day and recurring_day != now.strftime('%A').casefold():
+                return
+            event_date = now.date()
+        elif event_date != now.date():
             return
         if start_time is None:
             is_active = True
@@ -685,7 +709,15 @@ def refresh_faculty_status(faculty, google_events=None):
         candidate = 'on_leave' if event.event_type == 'on-leave' else (
             'virtual_only' if event.event_type == 'virtual' else 'busy'
         )
-        consider_event(event.date, event.start_time, event.end_time, candidate)
+        consider_event(
+            event.date,
+            event.start_time,
+            event.end_time,
+            candidate,
+            event.day_of_week,
+            event.start_month,
+            event.end_month,
+        )
 
     # Approved system consultations occupy the calendar even when their
     # Google event has not been synchronized yet.

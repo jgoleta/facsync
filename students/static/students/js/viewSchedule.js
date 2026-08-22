@@ -199,6 +199,34 @@ const facultySchedule = {
   schedule: [],
 };
 
+const weekdayIndexes = {
+  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6,
+};
+
+function localDateKey(value) {
+  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+}
+
+function monthIsIncluded(month, startMonth, endMonth) {
+  if (!startMonth || !endMonth) return true;
+  if (startMonth <= endMonth) return month >= startMonth && month <= endMonth;
+  return month >= startMonth || month <= endMonth;
+}
+
+function recurringDateKeys(dayOfWeek, startMonth, endMonth) {
+  const today = new Date();
+  const first = new Date(today.getFullYear(), today.getMonth(), 1 - 7);
+  const last = new Date(today.getFullYear(), today.getMonth() + 1, 7);
+  const target = dayOfWeek ? weekdayIndexes[dayOfWeek] : null;
+  const dates = [];
+  for (let cursor = new Date(first); cursor <= last; cursor.setDate(cursor.getDate() + 1)) {
+    if (monthIsIncluded(cursor.getMonth() + 1, startMonth, endMonth)
+      && (target === null || cursor.getDay() === target)) dates.push(localDateKey(cursor));
+  }
+  return dates;
+}
+
 async function loadFacultySchedule() {
   if (!facultyId) {
     renderCalendar();
@@ -214,15 +242,26 @@ async function loadFacultySchedule() {
 
     const byDate = {};
     (data.events || []).forEach((event) => {
-      const dateKey = event.date;
-      if (!byDate[dateKey]) byDate[dateKey] = { date: dateKey, events: [] };
-      byDate[dateKey].events.push({
+      const eventData = {
         id: event.id,
         title: event.title,
         description: event.description,
+        location: event.location || "",
+        status: event.status || event.event_type,
         type: event.event_type,
+        isRecurring: Boolean(event.is_recurring),
+        dayOfWeek: event.day_of_week === "none" ? "" : (event.day_of_week || ""),
+        startMonth: event.start_month,
+        endMonth: event.end_month,
         startTime: event.start_time ? event.start_time.slice(0, 5) : null,
         endTime: event.end_time ? event.end_time.slice(0, 5) : null,
+      };
+      const dateKeys = event.is_recurring
+        ? recurringDateKeys(eventData.dayOfWeek, event.start_month, event.end_month)
+        : (event.date ? [event.date] : []);
+      dateKeys.forEach((dateKey) => {
+        if (!byDate[dateKey]) byDate[dateKey] = { date: dateKey, events: [] };
+        byDate[dateKey].events.push(eventData);
       });
     });
 

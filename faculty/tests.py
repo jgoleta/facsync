@@ -3,6 +3,7 @@ from datetime import timedelta
 from zoneinfo import ZoneInfo
 
 from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.conf import settings
@@ -223,6 +224,7 @@ class FacultyViewTests(TestCase):
         user = get_user_model().objects.create_user(
             username='faculty-local-event-test',
             password='test-password',
+            role='faculty',
         )
         faculty = FacultyProfile.objects.create(
             faculty_id='faculty-local-event-test',
@@ -248,6 +250,40 @@ class FacultyViewTests(TestCase):
         event = faculty.schedule_events.get(title='Local planning')
         self.assertEqual(event.google_event_id, 'google-event-1')
         create_google_event.assert_called_once()
+
+    @patch('faculty.views.create_google_event')
+    def test_recurring_event_stays_local_when_google_is_connected(self, create_google_event):
+        user = get_user_model().objects.create_user(
+            username='faculty-recurring-event-test',
+            password='test-password',
+            role='faculty',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-recurring-event-test',
+            user=user,
+            department_id='CCS',
+        )
+        self.client.force_login(user)
+        GoogleCalendarConnection.objects.create(
+            user=user,
+            google_user_id='google-user',
+            access_token='access-token',
+            refresh_token='refresh-token',
+        )
+
+        response = self.client.post(
+            reverse('faculty:api_schedule_events'),
+            data='{"title":"Recurring class","event_type":"busy","date":null,'
+                 '"day_of_week":"monday","start_month":8,"end_month":5,'
+                 '"start_time":"09:00","end_time":"10:00"}',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        event = faculty.schedule_events.get(title='Recurring class')
+        self.assertIsNone(event.date)
+        self.assertIsNone(event.google_event_id)
+        create_google_event.assert_not_called()
 
     @patch('faculty.facultyServices.googleCalendarService.create_google_event')
     @patch('faculty.facultyServices.googleCalendarService.list_google_events')
@@ -338,6 +374,222 @@ class FacultyViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'faculty/scheduleFaculty.html')
         self.assertContains(response, f'href="{reverse("faculty:booking_management")}"')
+
+    def _make_csv_faculty(self, suffix='csv'):
+        user = get_user_model().objects.create_user(
+            username=f'faculty-csv-{suffix}',
+            password='test-password',
+            role='faculty',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id=f'faculty-csv-{suffix}',
+            user=user,
+            department_id='CCS',
+        )
+        self.client.force_login(user)
+        return faculty
+
+    def test_schedule_template_download_has_canonical_csv_headers(self):
+        self._make_csv_faculty('template')
+
+        response = self.client.get(reverse('faculty:schedule_template'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('schedule_template.csv', response['Content-Disposition'])
+        self.assertTrue(response.content.startswith(
+            b'event_title,short_description,room_location,recurring_day,start_month,end_month,start_time,end_time,status_type'
+        ))
+
+    def test_csv_schedule_upload_appends_schedule_and_returns_preview(self):
+        faculty = self._make_csv_faculty('upload')
+        ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Old event',
+            event_type='busy',
+            date='2026-09-01',
+            start_time='08:00',
+            end_time='09:00',
+        )
+        upload = SimpleUploadedFile(
+            'schedule.csv',
+            b'event_title,short_description,room_location,recurring_day,start_month,end_month,start_time,end_time,status_type\n'
+            b'Introductory lecture,Introductory lecture,Room 204,Monday,8,5,09:00,10:30,Busy\n'
+            b'Office hours,Student consultations,,Monday,8,5,13:00,15:00,Busy\n',
+            content_type='text/csv',
+        )
+
+        response = self.client.post(reverse('faculty:upload_schedule'), {'file': upload})
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['added_count'], 2)
+        self.assertEqual(faculty.schedule_events.count(), 3)
+        self.assertTrue(faculty.schedule_events.filter(title='Old event').exists())
+        self.assertEqual(faculty.schedule_events.get(start_time='09:00').location, 'Room 204')
+        self.assertEqual(faculty.schedule_events.get(start_time='13:00').schedule_status, 'Busy')
+        self.assertEqual(faculty.schedule_events.get(start_time='09:00').day_of_week, 'monday')
+        self.assertEqual(faculty.schedule_events.get(start_time='09:00').start_month, 8)
+        self.assertEqual(faculty.schedule_events.get(start_time='09:00').end_month, 5)
+        faculty.refresh_from_db()
+        self.assertIsNotNone(faculty.schedule_last_updated_at)
+
+    def test_invalid_csv_does_not_delete_existing_schedule(self):
+        faculty = self._make_csv_faculty('invalid')
+        ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Keep this',
+            event_type='busy',
+            date='2026-09-01',
+            start_time='09:00',
+            end_time='10:00',
+        )
+        upload = SimpleUploadedFile(
+            'schedule.csv',
+            b'event_title,short_description,room_location,recurring_day,start_month,end_month,start_time,end_time,status_type\n'
+            b'First,First,Room 1,Monday,8,5,09:00,10:00,Busy\n'
+            b'Overlap,Overlap,Room 1,Monday,8,5,09:30,11:00,Busy\n',
+        )
+
+        response = self.client.post(reverse('faculty:upload_schedule'), {'file': upload})
+
+        self.assertEqual(response.status_code, 400)
+        self.assertTrue(any('overlap' in error.lower() for error in response.json()['errors']))
+        self.assertEqual(faculty.schedule_events.count(), 1)
+        self.assertEqual(faculty.schedule_events.get().title, 'Keep this')
+
+    def test_csv_none_day_creates_time_only_month_range(self):
+        faculty = self._make_csv_faculty('none-day')
+        upload = SimpleUploadedFile(
+            'schedule.csv',
+            b'event_title,short_description,room_location,recurring_day,start_month,end_month,start_time,end_time,status_type\n'
+            b'Time only,Time only,,,,,10:30,12:00,Busy\n',
+        )
+
+        response = self.client.post(reverse('faculty:upload_schedule'), {'file': upload})
+
+        self.assertEqual(response.status_code, 201)
+        event = faculty.schedule_events.get()
+        self.assertIsNone(event.date)
+        self.assertEqual(event.day_of_week, '')
+        self.assertIsNone(event.start_month)
+        self.assertIsNone(event.end_month)
+
+    def test_add_event_derives_allocation_months_from_dates(self):
+        faculty = self._make_csv_faculty('allocation-dates')
+
+        response = self.client.post(
+            reverse('faculty:api_schedule_events'),
+            data=json.dumps({
+                'title': 'Recurring class',
+                'description': 'Weekly class',
+                'event_type': 'busy',
+                'day_of_week': 'monday',
+                'start_date': '2026-08-01',
+                'end_date': '2027-05-31',
+                'start_time': '10:30',
+                'end_time': '12:00',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        event = faculty.schedule_events.get()
+        self.assertIsNone(event.date)
+        self.assertEqual((event.start_month, event.end_month), (8, 5))
+
+    def test_add_event_with_empty_recurring_day_remains_date_based(self):
+        faculty = self._make_csv_faculty('date-event')
+
+        response = self.client.post(
+            reverse('faculty:api_schedule_events'),
+            data=json.dumps({
+                'title': 'One-off meeting',
+                'event_type': 'busy',
+                'date': '2026-08-22',
+                'day_of_week': '',
+                'start_date': '2026-08-22',
+                'end_date': '2026-08-22',
+                'start_month': None,
+                'end_month': None,
+                'start_time': '10:30',
+                'end_time': '12:00',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        event = faculty.schedule_events.get()
+        self.assertEqual(event.date.isoformat(), '2026-08-22')
+        self.assertIsNone(event.start_month)
+
+    def test_approved_consultation_is_returned_on_faculty_calendar(self):
+        faculty_user = get_user_model().objects.create_user(
+            username='faculty-approved-calendar-test',
+            password='test-password',
+            role='faculty',
+        )
+        student = get_user_model().objects.create_user(
+            username='student-approved-calendar-test',
+            password='test-password',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-approved-calendar-test',
+            user=faculty_user,
+            department_id='CCS',
+        )
+        ConsultationRequest.objects.create(
+            request_id='approved-calendar-consultation-test',
+            user=student,
+            faculty=faculty,
+            date='2026-08-24',
+            start_time='10:30',
+            end_time='11:30',
+            status='approved',
+        )
+        self.client.force_login(faculty_user)
+
+        response = self.client.get(reverse('faculty:api_schedule_events'))
+
+        self.assertEqual(response.status_code, 200)
+        consultation_event = next(
+            event for event in response.json()['events']
+            if event.get('is_consultation')
+        )
+        self.assertEqual(consultation_event['date'], '2026-08-24')
+        self.assertEqual(consultation_event['start_time'], '10:30:00')
+        self.assertEqual(consultation_event['end_time'], '11:30:00')
+        self.assertIn('student-approved-calendar-test', consultation_event['title'])
+
+    def test_clear_schedule_deletes_only_uploaded_preview_events(self):
+        faculty = self._make_csv_faculty('clear')
+        ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Keep manual event',
+            event_type='busy',
+            date='2026-09-01',
+            start_time='09:00',
+            end_time='10:00',
+        )
+
+        upload = SimpleUploadedFile(
+            'schedule.csv',
+            b'event_title,short_description,room_location,recurring_day,start_month,end_month,start_time,end_time,status_type\n'
+            b'Remove this,Uploaded row,Room 1,Monday,8,5,11:00,12:00,Busy\n',
+            content_type='text/csv',
+        )
+        upload_response = self.client.post(reverse('faculty:upload_schedule'), {'file': upload})
+        uploaded_event_id = upload_response.json()['events'][0]['id']
+
+        response = self.client.post(
+            reverse('faculty:clear_schedule'),
+            data=json.dumps({'event_ids': [uploaded_event_id]}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['deleted_count'], 1)
+        self.assertTrue(faculty.schedule_events.filter(title='Keep manual event').exists())
+        self.assertFalse(faculty.schedule_events.filter(title='Remove this').exists())
 
     def test_calendar_sync_preference_requires_connection_and_can_be_disabled(self):
         user = get_user_model().objects.create_user(

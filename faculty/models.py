@@ -29,6 +29,7 @@ class FacultyProfile(models.Model):
     sync_enabled = models.BooleanField(default=True)
     walk_ins_enabled = models.BooleanField(default=False)
     last_calendar_sync_at = models.DateTimeField(null=True, blank=True)
+    schedule_last_updated_at = models.DateTimeField(null=True, blank=True)
     photo_url = models.URLField(blank=True)
     biography = models.TextField(blank=True, default='')
 
@@ -99,6 +100,15 @@ class StatusHistory(models.Model):
 
 
 class ScheduleEvent(models.Model):
+    WEEKDAY_CHOICES = [
+        ('monday', 'Monday'),
+        ('tuesday', 'Tuesday'),
+        ('wednesday', 'Wednesday'),
+        ('thursday', 'Thursday'),
+        ('friday', 'Friday'),
+        ('saturday', 'Saturday'),
+        ('sunday', 'Sunday'),
+    ]
     EVENT_TYPES = [
         ('busy', 'Busy'),
         ('unavailable', 'Unavailable'),
@@ -109,8 +119,13 @@ class ScheduleEvent(models.Model):
     faculty = models.ForeignKey(FacultyProfile, on_delete=models.CASCADE, related_name='schedule_events')
     title = models.CharField(max_length=128)
     description = models.TextField(blank=True)
+    location = models.CharField(max_length=128, blank=True)
+    schedule_status = models.CharField(max_length=32, blank=True)
     event_type = models.CharField(max_length=16, choices=EVENT_TYPES, default='busy')
-    date = models.DateField()
+    date = models.DateField(null=True, blank=True)
+    day_of_week = models.CharField(max_length=9, choices=WEEKDAY_CHOICES, blank=True)
+    start_month = models.PositiveSmallIntegerField(null=True, blank=True)
+    end_month = models.PositiveSmallIntegerField(null=True, blank=True)
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)
