@@ -16,4 +16,6 @@ urlpatterns = [
     path('departments/<int:department_id>/delete/', views.delete_department, name='delete_department'),
     path('admins/depthead/<int:user_id>/edit/', views.edit_depthead, name='edit_depthead'),
     path('admins/depthead/<int:user_id>/remove/', views.remove_depthead, name='remove_depthead'),
+    path('invite-faculty/', views.invite_faculty_superadmin, name='invite_faculty_superadmin'),
+    path('faculty/<int:user_id>/remove/', views.remove_faculty_superadmin, name='remove_faculty_superadmin'),
 ]
