@@ -87,6 +87,117 @@ table tbody tr:last-child td {
   transition: background-color 0.2s ease;
 }
 
+.schedule-upload-modal {
+  width: min(95vw, 1100px);
+  max-width: 1100px;
+  overflow-y: auto;
+}
+
+.faculty-schedule-upload-status {
+  min-height: 1.25em;
+  margin: 0 0 14px;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.faculty-schedule-upload-status.error {
+  color: #b91c1c;
+}
+
+.schedule-file-picker {
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.faculty-schedule-preview-wrap {
+  overflow-x: auto;
+}
+
+.management-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.management-table-header h2 {
+  margin: 0;
+}
+
+.management-table-header .btn-primary {
+  flex-shrink: 0;
+}
+
+.management-table-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: nowrap;
+}
+
+.management-table-header-actions .header-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  box-sizing: border-box;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.management-table-header-actions .btn-secondary {
+  border-color: #cbd8e8;
+  background: #f8fbff;
+  color: #334155;
+}
+
+.management-table-header-actions .btn-secondary:hover {
+  border-color: #9db8da;
+  background: #eef5ff;
+  color: #1d4ed8;
+}
+
+.management-table-header-actions .btn-primary {
+  min-width: 148px;
+}
+
+.header-action-icon {
+  display: inline-grid;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.btn-secondary .header-action-icon {
+  background: #e4efff;
+  color: #2563eb;
+}
+
+.faculty-schedule-preview-table {
+  min-width: 900px;
+  font-size: 0.82rem;
+}
+
+.faculty-schedule-preview-table.hidden,
+.faculty-schedule-preview-empty.hidden {
+  display: none;
+}
+
+.faculty-schedule-preview-empty {
+  margin: 0;
+  padding: 28px 16px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -204,5 +315,153 @@ table tbody tr:last-child td {
 
   .modal-actions button {
     width: 100%;
+  }
+}
+
+/* Refined Manage Faculty presentation. */
+.main-content > .main-header {
+  margin-bottom: 28px;
+  padding: 8px 0 24px;
+  border-bottom: 1px solid #dce7f3;
+}
+
+.main-header .page-kicker,
+.section-kicker {
+  margin: 0 0 8px;
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.main-header h1 {
+  letter-spacing: -0.04em;
+}
+
+.pending-section,
+.management-table-wrapper {
+  border: 1px solid #dce7f3;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 12px 30px rgba(30, 64, 175, 0.06);
+}
+
+.pending-section {
+  margin-bottom: 22px;
+  padding: 24px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.section-heading h2,
+.management-table-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+}
+
+.section-kicker {
+  margin-bottom: 5px;
+  font-size: 0.66rem;
+}
+
+.section-count {
+  display: grid;
+  min-width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 11px;
+  background: #eaf2ff;
+  color: var(--primary-dark);
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+table thead th {
+  padding-top: 13px;
+  padding-bottom: 13px;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+table tbody tr {
+  transition: background-color 0.18s ease;
+}
+
+table tbody tr:hover {
+  background: #f7faff;
+}
+
+table td:first-child {
+  color: var(--text-primary);
+  font-weight: 750;
+}
+
+table td:nth-child(2) {
+  color: var(--text-secondary);
+}
+
+.actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.actions form {
+  display: inline-flex !important;
+}
+
+.actions .upload-faculty-schedule-btn {
+  border-color: #bfd7fb;
+  background: #eef5ff;
+  color: #1d4ed8;
+}
+
+.actions .upload-faculty-schedule-btn:hover {
+  background: #dbeafe;
+}
+
+.actions button.danger {
+  background: #fff1f2;
+  color: #be123c;
+  border-color: #fecdd3;
+}
+
+.actions button.danger:hover {
+  background: #ffe4e6;
+}
+
+@media (max-width: 520px) {
+  .main-content {
+    padding: 22px 16px;
+  }
+
+  .management-table-header,
+  .management-table-header-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .management-table-header-actions .btn-primary,
+  .management-table-header-actions .btn-secondary,
+  .management-table-header-actions .header-action {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
+  }
+
+  .pending-section,
+  .management-table-wrapper {
+    padding: 18px;
   }
 }

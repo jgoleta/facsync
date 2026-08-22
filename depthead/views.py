@@ -1,3 +1,5 @@
+import csv
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
@@ -5,9 +7,12 @@ from core.models import User, FacultyInvite, OfficeClosure, DepartmentAnnounceme
 from core.forms import DepartmentAnnouncementForm, DepartmentDescriptionForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm
-from faculty.models import FacultyProfile, ConsultationRequest, StatusHistory
+from faculty.models import FacultyProfile, ConsultationRequest, ScheduleEvent, StatusHistory
+from faculty.views import SCHEDULE_CSV_HEADERS, _event_json, _parse_schedule_csv, _schedule_csv_row
 from django.utils import timezone
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
+from django.db import transaction
+from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from core.services import notify_department_users
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
@@ -55,7 +60,7 @@ def invite_faculty(request):
     if request.method == 'POST':
         if not request.user.department:
             messages.error(request, "Your account has no department set. Contact a Super Admin.")
-            return redirect('depthead:pending_faculty_requests')
+            return redirect('depthead:admin_faculty')
         form = FacultyInviteForm(request.POST)
         if form.is_valid():
             invite = form.save(commit=False)
@@ -67,7 +72,7 @@ def invite_faculty(request):
             for error_list in form.errors.values():
                 for error in error_list:
                     messages.error(request, error)
-    return redirect('depthead:pending_faculty_requests')
+    return redirect('depthead:admin_faculty')
 
 
 @login_required
@@ -140,7 +145,86 @@ def admin_dashboard(request):
 @login_required
 @role_required('depthead')
 def admin_faculty(request):
-    return render(request, 'depthead/adminFaculty.html')
+    faculty_users = User.objects.filter(
+        role='faculty',
+        department__iexact=request.user.department,
+    ).select_related('faculty_profile').order_by('first_name', 'last_name', 'username')
+    return render(request, 'depthead/adminFaculty.html', {
+        'pending_faculty': faculty_users.filter(account_status='pending'),
+        'active_faculty': faculty_users.filter(account_status='active'),
+    })
+
+
+@login_required
+@role_required('depthead')
+def faculty_schedule_template(request):
+    """Download the CSV format used for department-head faculty uploads."""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=schedule_template.csv'
+    writer = csv.writer(response)
+    writer.writerow(SCHEDULE_CSV_HEADERS)
+    writer.writerow([
+        'Introductory lecture', 'Introductory lecture', 'Room 204',
+        'Monday', '8', '5', '10:30', '12:00', 'Busy',
+    ])
+    writer.writerow([
+        'Office hours', 'Student consultations', 'Room 204',
+        'Monday', '8', '5', '13:00', '15:00', 'Busy',
+    ])
+    return response
+
+
+@login_required
+@role_required('depthead')
+@csrf_protect
+def upload_faculty_schedule(request, faculty_id):
+    """Append a validated CSV schedule to a selected faculty member in this department."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST requests are allowed.'}, status=405)
+    faculty = get_object_or_404(
+        FacultyProfile.objects.select_related('user'),
+        faculty_id=faculty_id,
+        department_id__iexact=request.user.department,
+        user__role='faculty',
+    )
+    try:
+        rows = _parse_schedule_csv(request.FILES.get('file'))
+    except ValueError as exc:
+        detail = exc.args[0] if exc.args else 'Invalid CSV file.'
+        errors = detail if isinstance(detail, list) else [detail]
+        return JsonResponse({'error': 'The schedule was not saved.', 'errors': errors}, status=400)
+
+    updated_at = timezone.now()
+    with transaction.atomic():
+        events = ScheduleEvent.objects.bulk_create([
+            ScheduleEvent(
+                faculty=faculty,
+                title=row['title'],
+                description=row['description'],
+                location=row['room'],
+                schedule_status=row['status'],
+                event_type=row['event_type'],
+                date=None,
+                day_of_week=row['day_of_week'],
+                start_month=row['start_month'],
+                end_month=row['end_month'],
+                start_time=row['start_time'],
+                end_time=row['end_time'],
+                managed_by_facsync=True,
+                sync_state='local',
+            )
+            for row in rows
+        ])
+        faculty.schedule_last_updated_at = updated_at
+        faculty.save(update_fields=['schedule_last_updated_at'])
+
+    return JsonResponse({
+        'message': f'Schedule uploaded for {faculty.user.get_full_name() or faculty.user.username}. {len(events)} row(s) added.',
+        'added_count': len(events),
+        'last_updated_at': updated_at.isoformat(),
+        'preview': [_schedule_csv_row(event) for event in events],
+        'events': [_event_json(event) for event in events],
+    }, status=201)
 
 
 @login_required

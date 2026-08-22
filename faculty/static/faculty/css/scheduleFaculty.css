@@ -155,13 +155,19 @@
 .legend-card .legend-list {
   max-height: 430px;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 6px;
   scrollbar-gutter: stable;
 }
 
 .legend-card .legend-list li {
   min-height: 35px;
+  height: auto;
   box-sizing: border-box;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .schedule-last-updated {
