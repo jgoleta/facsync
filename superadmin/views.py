@@ -3,7 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from core.decorators import role_required
 from django.contrib import messages
-from .forms import DeptHeadInviteForm
+from django.http import JsonResponse
+from core.departments import get_department_choices
+from .forms import DeptHeadInviteForm, FacultySuperInviteForm
 from core.models import User, Department 
 from core.forms import DepartmentForm
 
@@ -61,9 +63,12 @@ def manage_admins(request):
     })
 
 @login_required
-@role_required('superadmin')
 def manage_faculty(request):
-    return render(request, 'superadmin/manageFaculty.html')
+    faculty_accounts = User.objects.filter(role='faculty')
+    return render(request, 'superadmin/manageFaculty.html', {
+        'faculty_accounts': faculty_accounts,
+        'department_choices': get_department_choices(),
+    })
 
 @login_required
 @role_required('superadmin')
@@ -137,3 +142,28 @@ def remove_depthead(request, user_id):
         depthead.save()
         messages.success(request, f"{depthead.username} has been deactivated.")
     return redirect('superadmin:manage_admins')
+
+@login_required
+def invite_faculty_superadmin(request):
+    if request.method == 'POST':
+        form = FacultySuperInviteForm(request.POST)
+        if form.is_valid():
+            invite = form.save(commit=False)
+            invite.invited_by = request.user
+            invite.save()
+            messages.success(request, f"Invitation created for {invite.email}.")
+        else:
+            for error_list in form.errors.values():
+                for error in error_list:
+                    messages.error(request, error)
+    return redirect('superadmin:manage_faculty')
+
+
+@login_required
+def remove_faculty_superadmin(request, user_id):
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty')
+    if request.method == 'POST':
+        name = faculty_user.get_full_name() or faculty_user.username
+        faculty_user.delete()
+        return JsonResponse({'success': True, 'message': f"{name} removed."})
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)

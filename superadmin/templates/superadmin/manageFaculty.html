@@ -1,5 +1,5 @@
-<!doctype html>
 {% load static %}
+<!doctype html>
 <html lang="en">
 
 <head>
@@ -58,8 +58,11 @@
                     <h1>Manage Faculty Accounts</h1>
                     <p>View, add, or manage faculty accounts across the system.</p>
                 </div>
-                <button class="btn-primary">Add New Faculty</button>
+                <button id="openInviteFacultyBtn" class="btn-primary">Add New Faculty</button>
             </header>
+
+            {% if messages %}{% for message in messages %}{% if forloop.last %}<p class="message-{{ message.tags }}">{{
+                message }}</p>{% endif %}{% endfor %}{% endif %}
 
             <div class="management-table-wrapper">
                 <table>
@@ -73,31 +76,85 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% for f in faculty_accounts %}
                         <tr>
-                            <td>Prof. Maria Santos</td>
-                            <td>maria.santos@university.edu</td>
-                            <td>College of Computer Studies</td>
-                            <td><span class="status-tag active">Active</span></td>
-                            <td class="actions"><button>View Verification</button><button class="danger">Remove</button></td>
+                            <td>{{ f.get_full_name|default:f.username }}</td>
+                            <td>{{ f.email }}</td>
+                            <td>{{ f.department_name }}</td>
+                            <td><span class="status-tag {{ f.account_status }}">{{f.get_account_status_display}}</span></td>
+                            <td class="actions">
+                                <button>View Verification</button>
+                                <button type="button" class="danger btn-remove-trigger-sa"
+                                    data-faculty-name="{{ f.get_full_name|default:f.username }}"
+                                    data-remove-url="{% url 'superadmin:remove_faculty_superadmin' f.id %}">Remove</button>
+                            </td>
                         </tr>
+                        {% empty %}
                         <tr>
-                            <td>Dr. Aaron Cruz</td>
-                            <td>aaron.cruz@university.edu</td>
-                            <td>College of Engineering</td>
-                            <td><span class="status-tag active">Active</span></td>
-                            <td class="actions"><button>View Verification</button><button class="danger">Remove</button></td>
+                            <td colspan="5" class="empty-state">No faculty accounts yet.</td>
                         </tr>
-                        <tr>
-                            <td>Ms. Lina Rivera</td>
-                            <td>lina.rivera@university.edu</td>
-                            <td>College of Business</td>
-                            <td><span class="status-tag inactive">Inactive</span></td>
-                            <td class="actions"><button>View Verification</button><button class="danger">Remove</button><button>Activate</button></td>
-                        </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>
         </main>
     </div>
+
+    <div class="modal-overlay hidden" id="inviteFacultySAModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <h2>Invite Faculty</h2>
+                    <p>Pre-register a faculty email and assign their department.</p>
+                </div>
+                <button type="button" class="modal-close" id="closeInviteFacultySA">×</button>
+            </div>
+            <form method="post" action="{% url 'superadmin:invite_faculty_superadmin' %}" class="modal-form">
+                {% csrf_token %}
+                <div class="modal-form-group">
+                    <label for="saFacultyEmail">Email</label>
+                    <input id="saFacultyEmail" name="email" type="email" placeholder="faculty@gbox.adnu.edu.ph"
+                        required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="saFacultyDept">Department</label>
+                    <select id="saFacultyDept" name="department" required>
+                        {% for code, name in department_choices %}
+                        <option value="{{ code }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelInviteFacultySA">Cancel</button>
+                    <button type="submit" class="btn-primary">Send Invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="removeFacultySAModal">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <h2>Remove Faculty</h2>
+                    <p>Permanently remove <strong id="removeFacultySAName"></strong>? This deletes their schedule and
+                        consultation history and cannot be undone.</p>
+                </div>
+                <button type="button" class="modal-close" id="closeRemoveFacultySA">×</button>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="cancelRemoveFacultySA">Cancel</button>
+                <button type="button" class="btn-primary danger" id="confirmRemoveFacultySA">Remove Permanently</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <script src="{% static 'core/js/announcements.js' %}"></script>
+    <script src="{% static 'superadmin/js/manageFaculty.js' %}"></script>
 </body>
+
 </html>
