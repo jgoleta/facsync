@@ -72,44 +72,57 @@
                 <div class="chart-card">
                     <h3>Consultation Frequency Over Time</h3>
                     <div class="chart-graphic" role="img" aria-label="Consultation frequency over time chart">
-                        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="40" y="30" width="520" height="240" rx="16" fill="#ffffff" />
-                            <path d="M80 220 C120 205, 150 185, 200 180 S270 160, 320 145 S410 115, 500 80" stroke="#2563eb" stroke-width="4" fill="none" stroke-linecap="round" />
-                            <g stroke="#cbd5e1" stroke-width="1">
-                                <line x1="80" y1="250" x2="500" y2="250" />
-                                <line x1="80" y1="210" x2="500" y2="210" />
-                                <line x1="80" y1="170" x2="500" y2="170" />
-                                <line x1="80" y1="130" x2="500" y2="130" />
+                        <svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg">
+                            <g stroke="#eef2f7" stroke-width="1">
+                                <line x1="40" y1="160" x2="530" y2="160" />
+                                <line x1="40" y1="132" x2="530" y2="132" />
+                                <line x1="40" y1="104" x2="530" y2="104" />
+                                <line x1="40" y1="76" x2="530" y2="76" />
+                                <line x1="40" y1="48" x2="530" y2="48" />
                             </g>
-                            <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
-                                <text x="80" y="270">Jan</text>
-                                <text x="180" y="270">Feb</text>
-                                <text x="280" y="270">Mar</text>
-                                <text x="380" y="270">Apr</text>
-                                <text x="480" y="270">May</text>
-                            </g>
+                            <polyline points="{{ polyline_str }}" stroke="#2563eb" stroke-width="3" fill="none"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                            {% for p in line_points %}
+                            <circle cx="{{ p.x }}" cy="{{ p.y }}" r="4" fill="#2563eb">
+                                <title>{{ p.label }}: {{ p.count }} requests</title>
+                            </circle>
+                            <text x="{{ p.x }}" y="176" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#475569"
+                                text-anchor="middle">{{ p.label }}</text>
+                            {% endfor %}
                         </svg>
                     </div>
                 </div>
-                <div class="chart-card">
-                    <h3>Walk-in vs. Scheduled Appointments</h3>
-                    <div class="chart-graphic" role="img" aria-label="Walk-in vs scheduled appointments chart">
-                        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="40" y="30" width="520" height="240" rx="16" fill="#ffffff" />
-                            <rect x="140" y="115" width="80" height="135" rx="8" fill="#2563eb" />
-                            <rect x="260" y="90" width="80" height="160" rx="8" fill="#3b82f6" />
-                            <rect x="380" y="150" width="80" height="100" rx="8" fill="#93c5fd" />
-                            <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
-                                <text x="150" y="270">Walk-in</text>
-                                <text x="270" y="270">Scheduled</text>
-                                <text x="390" y="270">Hybrid</text>
-                            </g>
-                        </svg>
-                    </div>
-                </div>
+            
                 <div class="table-card">
-                    <h3>Common Request Periods</h3>
-                    <p>Requests spike during mid-term and final exam weeks. A smaller peak is observed after the release of major project guidelines.</p>
+                    <h3>Peak Request Period</h3>
+                    <p class="peak-period-display">{{ peak_period_label }}</p>
+                    <p class="chart-caption">{{ peak_period_count }} requests</p>
+                </div>
+            
+                <div class="table-card">
+                    <h3>Student Request Frequency</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Student Name</th>
+                                <th>Requests</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in student_frequency %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ s.name }}</td>
+                                <td>{{ s.count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="empty-state">No consultation data yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </main>

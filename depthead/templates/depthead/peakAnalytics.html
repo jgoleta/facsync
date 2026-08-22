@@ -115,7 +115,7 @@
                         </svg>
                         <ul class="pie-legend">
                             {% for slice in pie_slices %}
-                            <li><span class="legend-dot" style="background: blue"></span>{{ slice.label }} — {{ slice.pct }}%</li>
+                            <li><span class="legend-dot" style="background: {{ slice.color }};"></span>{{ slice.label }} — {{ slice.pct }}%</li>
                             {% empty %}
                             <li class="empty-state">No data yet.</li>
                             {% endfor %}
