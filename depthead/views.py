@@ -339,6 +339,23 @@ def peak_analytics(request):
             'count': row['request_count'],
         })
 
+    max_count = max(hourly_data.values()) if any(hourly_data.values()) else 1
+    chart_bars = []
+    gap = 34
+    start_x = 50
+    max_bar_height = 110
+    baseline_y = 160
+
+    for i, (hour, count) in enumerate(hourly_data.items()):
+        bar_height = round((count / max_count) * max_bar_height) if max_count else 0
+        chart_bars.append({
+            'x': start_x + i * gap,
+            'y': baseline_y - bar_height,
+            'height': bar_height,
+            'label': f"{hour % 12 or 12}{'AM' if hour < 12 else 'PM'}",
+            'count': count,
+        })
+
     return render(request, 'depthead/peakAnalytics.html', {
         'hourly_data': hourly_data,
         'chart_bars': chart_bars,
@@ -346,6 +363,7 @@ def peak_analytics(request):
         'peak_hour_count': peak_hour_row[1],
         'peak_day_label': peak_day_label,
         'peak_day_count': peak_day_count,
+        'pie_slices': pie_slices, 
         'today_request_count': today_request_count,
         'available_faculty_count': available_faculty_count,
         'load_distribution': load_distribution_list,
