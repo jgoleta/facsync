@@ -11,7 +11,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from core.services import notify_department_users
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
-from django.db.models.functions import ExtractHour, ExtractWeekDay
+from django.db.models.functions import ExtractHour, ExtractWeekDay, TruncMonth
 from datetime import timedelta, date
 from django.utils.timesince import timesince
 
@@ -146,7 +146,88 @@ def admin_faculty(request):
 @login_required
 @role_required('depthead')
 def student_behavior(request):
-    return render(request, 'depthead/studentBehavior.html')
+    dept_code = request.user.department
+
+    consultations_qs = ConsultationRequest.objects.filter(
+        faculty__department_id__iexact=dept_code
+    )
+
+    #consultation frequency over the last 6 months (line chart)
+    today = date.today()
+    month_starts = []
+    cursor = today.replace(day=1)
+    for _ in range(6):
+        month_starts.append(cursor)
+        cursor = (cursor - timedelta(days=1)).replace(day=1)
+    month_starts.reverse()  #oldest to newest
+
+    monthly_counts_qs = (
+        consultations_qs.filter(date__gte=month_starts[0])
+        .annotate(month=TruncMonth('date'))
+        .values('month')
+        .annotate(count=Count('request_id'))
+    )
+    monthly_lookup = {row['month']: row['count'] for row in monthly_counts_qs}
+
+    monthly_data = []
+    for m_start in month_starts:
+        monthly_data.append({
+            'month': m_start,
+            'label': m_start.strftime('%b'),
+            'count': monthly_lookup.get(m_start, 0),
+        })
+
+    max_month_count = max((m['count'] for m in monthly_data), default=0) or 1
+    chart_width = 460
+    chart_left = 50
+    chart_bottom = 160
+    chart_top = 40
+    step = chart_width / (len(monthly_data) - 1) if len(monthly_data) > 1 else 0
+
+    line_points = []
+    for i, m in enumerate(monthly_data):
+        x = chart_left + i * step
+        y = chart_bottom - round((m['count'] / max_month_count) * (chart_bottom - chart_top))
+        line_points.append({'x': round(x, 1), 'y': y, 'label': m['label'], 'count': m['count']})
+
+    polyline_str = " ".join(f"{p['x']},{p['y']}" for p in line_points)
+
+    #peak reqyuest periods (all months)
+    all_time_monthly = (
+        consultations_qs.annotate(month=TruncMonth('date'))
+        .values('month')
+        .annotate(count=Count('request_id'))
+        .order_by('-count')
+    )
+    if all_time_monthly:
+        top_month_row = all_time_monthly[0]
+        peak_period_label = top_month_row['month'].strftime('%B %Y')
+        peak_period_count = top_month_row['count']
+    else:
+        peak_period_label = "No data"
+        peak_period_count = 0
+
+    #student request freq (top 10 students by request count)
+    student_counts = (
+        consultations_qs.values('user__id', 'user__first_name', 'user__last_name', 'user__username')
+        .annotate(request_count=Count('request_id'))
+        .order_by('-request_count')[:10]
+    )
+    student_frequency = []
+    for row in student_counts:
+        full_name = f"{row['user__first_name']} {row['user__last_name']}".strip()
+        student_frequency.append({
+            'name': full_name or row['user__username'],
+            'count': row['request_count'],
+        })
+
+    return render(request, 'depthead/studentBehavior.html', {
+        'line_points': line_points,
+        'polyline_str': polyline_str,
+        'peak_period_label': peak_period_label,
+        'peak_period_count': peak_period_count,
+        'student_frequency': student_frequency,
+    })
 
 
 STATUS_LABELS = {
