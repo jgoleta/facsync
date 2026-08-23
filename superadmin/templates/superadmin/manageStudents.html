@@ -13,6 +13,7 @@
 </head>
 
 <body>
+    {% csrf_token %}
     <div class="admin-shell">
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -71,32 +72,48 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>Alice Johnson</td>
-                            <td>alice.j@university.edu</td>
-                            <td>College of Computer Studies</td>
-                            <td><span class="status-tag active">Active</span></td>
-                            <td class="actions"><button>View Verification</button><button class="danger">Remove</button></td>
-                        </tr>
-                        <tr>
-                            <td>Bob Williams</td>
-                            <td>bob.w@university.edu</td>
-                            <td>College of Engineering</td>
-                            <td><span class="status-tag active">Active</span></td>
-                            <td class="actions"><button>View Verification</button><button class="danger">Remove</button></td>
-                        </tr>
-                        <tr>
-                            <td>Charlie Davis</td>
-                            <td>charlie.d@university.edu</td>
-                            <td>College of Business</td>
-                            <td><span class="status-tag inactive">Inactive</span></td>
-                            <td class="actions"><button>View Verification</button><button class="danger">Remove</button><button>Activate</button></td>
-                        </tr>
-                    </tbody>
+                                        <tbody>
+                                            {% for s in student_accounts %}
+                                            <tr>
+                                                <td>{{ s.get_full_name|default:s.username }}</td>
+                                                <td>{{ s.email }}</td>
+                                                <td>{{ s.department_name }}</td>
+                                                <td><span class="status-tag {{ s.account_status }}">{{ s.get_account_status_display }}</span></td>
+                                                <td class="actions">
+                                                    <button type="button" class="danger btn-remove-trigger-student"
+                                                        data-student-name="{{ s.get_full_name|default:s.username }}"
+                                                        data-remove-url="{% url 'superadmin:remove_student_superadmin' s.id %}">Remove</button>
+                                                </td>
+                                            </tr>
+                                            {% empty %}
+                                            <tr>
+                                                <td colspan="5" class="empty-state">No student accounts yet.</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
                 </table>
             </div>
         </main>
     </div>
+        <div class="modal-overlay hidden" id="removeStudentSAModal">
+            <div class="modal">
+                <div class="modal-header">
+                    <div>
+                        <h2>Remove Student</h2>
+                        <p>Permanently remove <strong id="removeStudentSAName"></strong>? This cannot be undone.</p>
+                    </div>
+                    <button type="button" class="modal-close" id="closeRemoveStudentSA">×</button>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelRemoveStudentSA">Cancel</button>
+                    <button type="button" class="btn-primary danger" id="confirmRemoveStudentSA">Remove Permanently</button>
+                </div>
+            </div>
+        </div>
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="loading-spinner"></div>
+        </div>
+        <script src="{% static 'core/js/announcements.js' %}"></script>
+        <script src="{% static 'superadmin/js/manageStudents.js' %}"></script>
 </body>
 </html>

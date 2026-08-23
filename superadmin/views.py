@@ -71,9 +71,21 @@ def manage_faculty(request):
     })
 
 @login_required
-@role_required('superadmin')
 def manage_students(request):
-    return render(request, 'superadmin/manageStudents.html')
+    student_accounts = User.objects.filter(role='student')
+    return render(request, 'superadmin/manageStudents.html', {
+        'student_accounts': student_accounts
+    })
+
+
+@login_required
+def remove_student_superadmin(request, user_id):
+    student_user = get_object_or_404(User, id=user_id, role='student')
+    if request.method == 'POST':
+        name = student_user.get_full_name() or student_user.username
+        student_user.delete()
+        return JsonResponse({'success': True, 'message': f"{name} removed."})
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 @login_required
 @role_required('superadmin')
