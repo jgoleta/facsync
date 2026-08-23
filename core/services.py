@@ -56,7 +56,7 @@ def notify_department_users(department, notification_type, title, message, url='
 
 
 def notify_faculty_status_subscribers(faculty, status):
-    """Create an in-app notification for students following a faculty member."""
+    """Create an in-app notification and send an email for students following a faculty member."""
     from students.models import FacultyStatusSubscription
 
     status_label = dict(faculty.STATUS_CHOICES).get(status, status)
@@ -65,7 +65,8 @@ def notify_faculty_status_subscribers(faculty, status):
     subscriptions = FacultyStatusSubscription.objects.filter(
         faculty=faculty,
     ).select_related('student')
-    return Notification.objects.bulk_create([
+
+    notifications = Notification.objects.bulk_create([
         Notification(
             recipient=subscription.student,
             notification_type='faculty_status_update',
@@ -75,6 +76,25 @@ def notify_faculty_status_subscribers(faculty, status):
         )
         for subscription in subscriptions
     ])
+
+    for subscription in subscriptions:
+        if subscription.student.email:
+            try:
+                send_faculty_status_email(subscription.student, faculty_name, status_label, url)
+            except Exception:
+                pass  #change status regardless if the email notification is successful or not
+
+    return notifications
+
+
+def send_faculty_status_email(student, faculty_name, status_label, url):
+    send_mail(
+        f"{faculty_name} is now {status_label}",
+        f"Hi {student.get_full_name() or student.username},\n\n"
+        f"{faculty_name}, a faculty member you're following on FacSync, is now {status_label}.\n\n"
+        f"View their schedule: {settings.SITE_URL}{url}",
+        settings.DEFAULT_FROM_EMAIL, [student.email], fail_silently=True,
+    )
 
 def get_active_announcements(department=None):
     qs = DepartmentAnnouncement.objects.filter(expiry__gt=timezone.now())

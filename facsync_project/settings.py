@@ -123,6 +123,7 @@ GOOGLE_CALENDAR_SYNC_PAST_DAYS = config('GOOGLE_CALENDAR_SYNC_PAST_DAYS', cast=i
 GOOGLE_CALENDAR_SYNC_FUTURE_DAYS = config('GOOGLE_CALENDAR_SYNC_FUTURE_DAYS', cast=int, default=60)
 
 SITE_ID = 1
+SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000')
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
