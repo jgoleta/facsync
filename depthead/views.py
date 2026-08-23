@@ -793,3 +793,23 @@ def edit_department_description(request):
                     messages.error(request, error)
 
     return redirect('depthead:department_settings')
+
+@login_required
+@role_required('depthead')
+def faculty_monitoring_data(request):
+    profiles = FacultyProfile.objects.select_related('user').filter(
+        user__role='faculty',
+        user__account_status='active',
+        department_id__iexact=request.user.department,
+    )
+    faculty_list = []
+    for profile in profiles:
+        label, css_class = STATUS_LABELS.get(profile.current_status, ('Unknown', 'status-unavailable'))
+        faculty_list.append({
+            'id': profile.faculty_id,
+            'name': profile.user.get_full_name() or profile.user.username,
+            'status_label': label,
+            'status_class': css_class,
+            'updated_at_iso': profile.status_updated_at.isoformat() if profile.status_updated_at else None,
+        })
+    return JsonResponse({'faculty_list': faculty_list})
