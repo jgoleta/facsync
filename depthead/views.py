@@ -67,11 +67,17 @@ def invite_faculty(request):
                 }, status=400)
             messages.error(request, "Your account has no department set. Contact a Super Admin.")
             return redirect('depthead:admin_faculty')
-        form = FacultyInviteForm(request.POST)
+        requested_email = request.POST.get('email', '').strip()
+        used_invite = FacultyInvite.objects.filter(
+            email__iexact=requested_email,
+            used=True,
+        ).first()
+        form = FacultyInviteForm(request.POST, instance=used_invite)
         if form.is_valid():
             invite = form.save(commit=False)
             invite.department = request.user.department
             invite.invited_by = request.user
+            invite.used = False
             invite.save()
             if is_ajax:
                 return JsonResponse({

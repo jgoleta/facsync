@@ -484,6 +484,29 @@ table td:nth-child(2) {
   opacity: 0.5;
 }
 
+.remove-confirm-modal {
+  width: min(92vw, 480px);
+}
+
+.remove-confirm-modal .section-kicker {
+  margin-bottom: 5px;
+}
+
+.remove-confirm-modal .modal-header p:last-child {
+  margin-bottom: 0;
+}
+
+.remove-confirm-warning {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid #fecdd3;
+  border-radius: 10px;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
 .actions .schedule-unavailable,
 .actions .schedule-unavailable:hover {
   cursor: not-allowed;
