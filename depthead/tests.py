@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+from core.models import FacultyInvite
 from faculty.models import FacultyProfile, ScheduleEvent
 
 
@@ -17,6 +18,13 @@ class DeptheadViewTests(TestCase):
             username='depthead-admin-faculty-route-test',
             password='test-password',
             role='depthead',
+            department='CCS',
+        )
+        get_user_model().objects.create_user(
+            username='faculty-without-profile-test',
+            password='test-password',
+            role='faculty',
+            account_status='active',
             department='CCS',
         )
         self.client.force_login(user)
@@ -58,6 +66,42 @@ class DeptheadViewTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()['added_count'], 1)
         self.assertTrue(faculty.schedule_events.filter(title='Department class').exists())
+
+        preview_response = self.client.get(
+            reverse('depthead:view_faculty_schedule_preview', args=[faculty.faculty_id]),
+        )
+        self.assertEqual(preview_response.status_code, 200)
+        self.assertEqual(len(preview_response.json()['preview']), 1)
+
+        delete_response = self.client.post(
+            reverse('depthead:delete_faculty_schedule', args=[faculty.faculty_id]),
+        )
+        self.assertEqual(delete_response.status_code, 200)
+        self.assertTrue(delete_response.json()['success'])
+        self.assertEqual(faculty.schedule_events.count(), 0)
+
+    def test_depthead_can_create_faculty_invite_as_ajax(self):
+        depthead = get_user_model().objects.create_user(
+            username='depthead-invite-test',
+            password='test-password',
+            role='depthead',
+            department='CCS',
+        )
+        self.client.force_login(depthead)
+
+        response = self.client.post(
+            reverse('depthead:invite_faculty'),
+            {'email': 'new-faculty@example.com'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertTrue(response.json()['success'])
+        self.assertTrue(FacultyInvite.objects.filter(
+            email='new-faculty@example.com',
+            department='CCS',
+            invited_by=depthead,
+        ).exists())
 
     def test_student_behavior_renders(self):
         response = self.client.get(reverse('depthead:student_behavior'))

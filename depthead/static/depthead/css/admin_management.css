@@ -431,6 +431,68 @@ table td:nth-child(2) {
   background: #dbeafe;
 }
 
+.faculty-schedule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.faculty-schedule-actions button {
+  padding: 6px 9px;
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+
+.view-faculty-schedule-preview-btn {
+  border: 1px solid #d7e3f2;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #475569;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.view-faculty-schedule-preview-btn:hover {
+  border-color: #9db8da;
+  background: #eef5ff;
+  color: #1d4ed8;
+}
+
+.schedule-preview-actions {
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.btn-danger {
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  padding: 9px 13px;
+  background: #fff1f2;
+  color: #be123c;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 750;
+}
+
+.btn-danger:hover {
+  background: #ffe4e6;
+}
+
+.btn-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.actions .schedule-unavailable,
+.actions .schedule-unavailable:hover {
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #94a3b8;
+  opacity: 0.8;
+}
+
 .actions button.danger {
   background: #fff1f2;
   color: #be123c;
@@ -439,6 +501,45 @@ table td:nth-child(2) {
 
 .actions button.danger:hover {
   background: #ffe4e6;
+}
+
+/* Keep pending-request actions compact without changing the page header buttons. */
+.pending-section td:last-child .btn-primary,
+.pending-section td:last-child .btn-secondary {
+  padding: 8px 13px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.crud-action-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.crud-loading-card {
+  display: flex;
+  min-width: 220px;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 26px 30px;
+  border-radius: 16px;
+  background: rgba(15, 23, 42, 0.9);
+  color: #fff;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.28);
+}
+
+.crud-loading-card .loading-spinner {
+  width: 36px;
+  height: 36px;
+  border-width: 4px;
+}
+
+.crud-loading-card p {
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 @media (max-width: 520px) {

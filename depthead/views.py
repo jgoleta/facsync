@@ -57,8 +57,14 @@ def decline_faculty(request, user_id):
 @login_required
 @role_required('depthead')
 def invite_faculty(request):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         if not request.user.department:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Your account has no department set. Contact a Super Admin.',
+                }, status=400)
             messages.error(request, "Your account has no department set. Contact a Super Admin.")
             return redirect('depthead:admin_faculty')
         form = FacultyInviteForm(request.POST)
@@ -67,8 +73,21 @@ def invite_faculty(request):
             invite.department = request.user.department
             invite.invited_by = request.user
             invite.save()
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': f"Invitation created for {invite.email}.",
+                }, status=201)
             messages.success(request, f"Invitation created for {invite.email}.")
         else:
+            if is_ajax:
+                errors = ' '.join(
+                    error for error_list in form.errors.values() for error in error_list
+                )
+                return JsonResponse({
+                    'success': False,
+                    'error': errors or 'Unable to create the faculty invitation.',
+                }, status=400)
             for error_list in form.errors.values():
                 for error in error_list:
                     messages.error(request, error)
@@ -225,6 +244,58 @@ def upload_faculty_schedule(request, faculty_id):
         'preview': [_schedule_csv_row(event) for event in events],
         'events': [_event_json(event) for event in events],
     }, status=201)
+
+
+@login_required
+@role_required('depthead')
+def view_faculty_schedule_preview(request, faculty_id):
+    """Return the uploaded FacSync schedule rows for a faculty member."""
+    faculty = get_object_or_404(
+        FacultyProfile.objects.select_related('user'),
+        faculty_id=faculty_id,
+        department_id__iexact=request.user.department,
+        user__role='faculty',
+    )
+    events = list(
+        ScheduleEvent.objects.filter(
+            faculty=faculty,
+            managed_by_facsync=True,
+        ).order_by('id')
+    )
+    return JsonResponse({
+        'faculty_id': faculty.faculty_id,
+        'faculty_name': faculty.user.get_full_name() or faculty.user.username,
+        'last_updated_at': faculty.schedule_last_updated_at.isoformat() if faculty.schedule_last_updated_at else None,
+        'preview': [_schedule_csv_row(event) for event in events],
+        'events': [_event_json(event) for event in events],
+    })
+
+
+@login_required
+@role_required('depthead')
+@csrf_protect
+def delete_faculty_schedule(request, faculty_id):
+    """Delete only FacSync-managed uploaded schedule rows for one faculty member."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Only POST requests are allowed.'}, status=405)
+    faculty = get_object_or_404(
+        FacultyProfile.objects.select_related('user'),
+        faculty_id=faculty_id,
+        department_id__iexact=request.user.department,
+        user__role='faculty',
+    )
+    with transaction.atomic():
+        deleted_count, _ = ScheduleEvent.objects.filter(
+            faculty=faculty,
+            managed_by_facsync=True,
+        ).delete()
+        faculty.schedule_last_updated_at = None
+        faculty.save(update_fields=['schedule_last_updated_at'])
+    return JsonResponse({
+        'success': True,
+        'message': f'Uploaded schedule deleted for {faculty.user.get_full_name() or faculty.user.username}.',
+        'deleted_count': deleted_count,
+    })
 
 
 @login_required
