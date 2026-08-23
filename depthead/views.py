@@ -14,7 +14,7 @@ from django.http import HttpResponse, JsonResponse
 from django.db import transaction
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
-from core.services import notify_department_users
+from core.services import notify_department_users, send_faculty_invite_email, send_faculty_approved_email, send_faculty_removed_email
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
 from django.db.models.functions import ExtractHour, ExtractWeekDay, TruncMonth
 from datetime import timedelta, date
@@ -39,6 +39,7 @@ def approve_faculty(request, user_id):
     if request.method == 'POST':
         faculty_user.account_status = 'active'
         faculty_user.save()
+        send_faculty_approved_email(faculty_user)
         return JsonResponse({'success': True, 'message': f"{faculty_user.get_full_name() or faculty_user.username} approved."})
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
@@ -79,6 +80,7 @@ def invite_faculty(request):
             invite.invited_by = request.user
             invite.used = False
             invite.save()
+            send_faculty_invite_email(invite.email, invite.department)
             if is_ajax:
                 return JsonResponse({
                     'success': True,
@@ -106,7 +108,9 @@ def remove_faculty(request, user_id):
     faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='active', department__iexact=request.user.department)
     if request.method == 'POST':
         name = faculty_user.get_full_name() or faculty_user.username
+        email = faculty_user.email
         faculty_user.delete()
+        send_faculty_removed_email(email, name)
         return JsonResponse({'success': True, 'message': f"{name} removed."})
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 

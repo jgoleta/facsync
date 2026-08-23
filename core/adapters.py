@@ -32,7 +32,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
             sociallogin.user.account_status = 'active'
             sociallogin.user.department = invite.department
             invite.used = True
-            invite.save()
+            invite.delete()
             if 'registration_role' in request.session:
                 del request.session['registration_role']
             return
@@ -46,7 +46,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
             sociallogin.user.account_status = 'active'
             sociallogin.user.department = depthead_invite.department
             depthead_invite.used = True
-            depthead_invite.save()
+            depthead_invite.delete()
             if 'registration_role' in request.session:
                 del request.session['registration_role']
             return

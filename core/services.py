@@ -1,5 +1,28 @@
 from django.utils import timezone
 from .models import DepartmentAnnouncement, Notification, User
+from django.core.mail import send_mail
+from django.conf import settings
+
+def send_faculty_invite_email(email, department):
+    send_mail(
+        "You've been invited to FacSync",
+        f"You've been pre-registered as faculty for {department}. Sign in with Google using this email to activate your account.",
+        settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
+    )
+
+def send_faculty_approved_email(user):
+    send_mail(
+        "Your FacSync faculty account is approved",
+        "Your faculty account request has been approved. You can now log in.",
+        settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False,
+    )
+
+def send_faculty_removed_email(email, name):
+    send_mail(
+        "Your FacSync faculty account was removed",
+        f"Hi {name}, your faculty account has been removed by your Department Head.",
+        settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
+    )
 
 
 def create_notification(recipient, notification_type, title, message, url=''):
@@ -65,3 +88,24 @@ def get_active_announcements(department=None):
         }
         for a in qs
     ]
+
+def send_faculty_invite_email(email, department):
+    send_mail(
+        "You've been invited to FacSync",
+        f"You've been pre-registered as faculty for {department}. Sign in with Google using this email to activate your account.",
+        settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
+    )
+
+def send_faculty_approved_email(user):
+    send_mail(
+        "Your FacSync faculty account is approved",
+        "Your faculty account request has been approved. You can now log in.",
+        settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False,
+    )
+
+def send_faculty_removed_email(email, name):
+    send_mail(
+        "Your FacSync faculty account was removed",
+        f"Hi {name}, your faculty account has been removed by your Department Head.",
+        settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
+    )
