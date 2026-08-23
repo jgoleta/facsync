@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Manage Faculty</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_management.css' %}">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_management.css' %}?v=20260823-management-ui-6">
     <link rel="stylesheet" href="{% static 'depthead/css/pendingFacultyRequests.css' %}">
 </head>
 
@@ -66,14 +66,20 @@
         <main class="main-content">
             <header class="main-header with-action">
                 <div>
+                    <p class="page-kicker">Department administration</p>
                     <h1>Manage Faculty Accounts</h1>
-                    <p>Add, edit, or deactivate faculty accounts.</p>
+                    <p>Invite faculty, manage access, and maintain schedules for your department.</p>
                 </div>
-                <button id="addFacultyBtn" class="btn-primary">Add New Faculty</button>
             </header>
 
             <section class="pending-section">
-                <h2>Pending Faculty Requests</h2>
+                <div class="section-heading">
+                    <div>
+                        <p class="section-kicker">Needs review</p>
+                        <h2>Pending Faculty Requests</h2>
+                    </div>
+                    <span class="section-count">{{ pending_faculty|length }}</span>
+                </div>
                 {% if pending_faculty %}
                 <table>
                     <thead>
@@ -95,12 +101,12 @@
                             <td>{{ user.faculty_profile.faculty_id }}</td>
                             <td>{{ user.faculty_profile.office_location }}</td>
                             <td>
-                                <form method="post" action="{% url 'depthead:approve_faculty' user.id %}"
+                                <form method="post" class="crud-action-form" action="{% url 'depthead:approve_faculty' user.id %}"
                                     style="display:inline;">
                                     {% csrf_token %}
                                     <button type="submit" class="btn-primary">Approve</button>
                                 </form>
-                                <form method="post" action="{% url 'depthead:decline_faculty' user.id %}"
+                                <form method="post" class="crud-action-form" action="{% url 'depthead:decline_faculty' user.id %}"
                                     style="display:inline;">
                                     {% csrf_token %}
                                     <button type="submit" class="btn-secondary">Decline</button>
@@ -116,7 +122,22 @@
                 </section>
 
             <section class="management-table-wrapper">
-                <h2>Active Faculty</h2>
+                <div class="management-table-header">
+                    <div>
+                        <p class="section-kicker">Department directory</p>
+                        <h2>Active Faculty</h2>
+                    </div>
+                    <div class="management-table-header-actions">
+                        <a class="btn-secondary header-action" href="{% url 'depthead:faculty_schedule_template' %}" download>
+                            <span class="header-action-icon" aria-hidden="true">↓</span>
+                            <span>Download CSV Format</span>
+                        </a>
+                        <button id="addFacultyBtn" class="btn-primary header-action" type="button">
+                            <span class="header-action-icon" aria-hidden="true">+</span>
+                            <span>Invite Faculty</span>
+                        </button>
+                    </div>
+                </div>
                 <table>
                     <thead>
                         <tr>
@@ -127,20 +148,41 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% for user in active_faculty %}
                         <tr>
-                            <td>Dr. Arthur Morgan</td>
-                            <td>arthur.morgan@university.edu</td>
+                            <td>{{ user.get_full_name|default:user.username }}</td>
+                            <td>{{ user.email }}</td>
                             <td><span class="status-tag active">Active</span></td>
-                            <td class="actions"><button>Upload Schedule</button><button class="danger">Remove</button>
+                            <td class="actions">
+                                {% if user.faculty_profile %}
+                                <div class="faculty-schedule-actions">
+                                    <button type="button" id="upload-schedule-btn-{{ user.faculty_profile.faculty_id }}" class="upload-faculty-schedule-btn"
+                                        data-faculty-id="{{ user.faculty_profile.faculty_id }}"
+                                        data-upload-url="{% url 'depthead:upload_faculty_schedule' user.faculty_profile.faculty_id %}"
+                                        data-preview-url="{% url 'depthead:view_faculty_schedule_preview' user.faculty_profile.faculty_id %}"
+                                        data-delete-url="{% url 'depthead:delete_faculty_schedule' user.faculty_profile.faculty_id %}"
+                                        data-faculty-name="{{ user.get_full_name|default:user.username }}">Upload Schedule</button>
+                                    <button type="button" class="view-faculty-schedule-preview-btn"
+                                        data-faculty-id="{{ user.faculty_profile.faculty_id }}"
+                                        data-preview-url="{% url 'depthead:view_faculty_schedule_preview' user.faculty_profile.faculty_id %}"
+                                        data-delete-url="{% url 'depthead:delete_faculty_schedule' user.faculty_profile.faculty_id %}"
+                                        data-faculty-name="{{ user.get_full_name|default:user.username }}">View Upload Preview</button>
+                                </div>
+                                {% else %}
+                                <button type="button" class="upload-faculty-schedule-btn schedule-unavailable" disabled
+                                    title="This faculty account does not have a faculty profile yet">Schedule Unavailable</button>
+                                {% endif %}
+                                <form method="post" class="crud-action-form" action="{% url 'depthead:remove_faculty' user.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="danger">Remove</button>
+                                </form>
                             </td>
                         </tr>
+                        {% empty %}
                         <tr>
-                            <td>Dr. Sarah Johnson</td>
-                            <td>sarah.j@university.edu</td>
-                            <td><span class="status-tag active">Active</span></td>
-                            <td class="actions"><button>Upload Schedule</button><button class="danger">Remove</button>
-                            </td>
+                            <td colspan="4" class="empty-state">No active faculty accounts.</td>
                         </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </section>
@@ -151,40 +193,64 @@
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
             <div class="modal-header">
                 <div>
-                    <h2 id="facultyModalTitle">Add New Faculty</h2>
-                    <p>Enter faculty details to create a new account.</p>
+                    <h2 id="facultyModalTitle">Invite Faculty</h2>
+                    <p>Enter the faculty member's details to send an invitation.</p>
                 </div>
                 <button type="button" class="modal-close" id="closeFacultyModal">×</button>
             </div>
-            <form id="facultyForm" class="modal-form">
+            <form id="facultyForm" class="modal-form" method="post" action="{% url 'depthead:invite_faculty' %}">
+                {% csrf_token %}
                 <div class="modal-form-group">
                     <label for="facultyName">Name</label>
                     <input id="facultyName" type="text" placeholder="Dr. Maria Santos" required>
                 </div>
                 <div class="modal-form-group">
                     <label for="facultyEmail">Email</label>
-                    <input id="facultyEmail" type="email" placeholder="maria.santos@university.edu" required>
-                </div>
-                <div class="modal-form-group">
-                    <label for="facultyDepartment">Department</label>
-                    <input id="facultyDepartment" type="text" placeholder="College of Computer Studies" required>
-                </div>
-                <div class="modal-form-group">
-                    <label for="facultyStatus">Status</label>
-                    <select id="facultyStatus">
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                    </select>
+                    <input id="facultyEmail" name="email" type="email" placeholder="maria.santos@university.edu" required>
                 </div>
                 <div class="modal-actions">
-                    <button type="button" class="btn-secondary" id="cancelFacultyModal">Cancel</button>
-                    <button type="submit" class="btn-primary">Save Faculty</button>
+                    <button type="submit" class="btn-primary">Send Invite</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script src="{% static 'depthead/js/adminFaculty.js' %}"></script>
+    <input type="file" id="facultyScheduleFile" accept=".csv,text/csv" hidden>
+    <div id="deptheadCsrfToken" class="hidden">{% csrf_token %}</div>
+
+    <div class="modal-overlay hidden" id="facultySchedulePreviewModal">
+        <div class="modal schedule-upload-modal" role="dialog" aria-modal="true" aria-labelledby="facultySchedulePreviewTitle">
+            <div class="modal-header">
+                <div>
+                    <h2 id="facultySchedulePreviewTitle">Schedule Upload Preview</h2>
+                    <p id="facultySchedulePreviewFaculty">Selected faculty</p>
+                </div>
+                <button type="button" class="modal-close" id="closeFacultySchedulePreview">&times;</button>
+            </div>
+            <p id="facultyScheduleUploadStatus" class="faculty-schedule-upload-status" role="status" aria-live="polite"></p>
+            <div class="faculty-schedule-preview-wrap">
+                <p id="facultySchedulePreviewEmpty" class="faculty-schedule-preview-empty">Choose a CSV file from the selected faculty row to preview it here.</p>
+                <table id="facultySchedulePreviewTable" class="faculty-schedule-preview-table hidden">
+                    <thead>
+                        <tr><th>Event Title</th><th>Short Description</th><th>Room / Location</th><th>Recurring Day</th><th>Allocation Months</th><th>Start</th><th>End</th><th>Status</th></tr>
+                    </thead>
+                    <tbody id="facultySchedulePreviewBody"></tbody>
+                </table>
+            </div>
+            <div class="modal-actions schedule-preview-actions">
+                <button type="button" id="deleteFacultyUploadedSchedule" class="btn-danger" disabled>Delete Uploaded Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="crudLoadingModal" class="loading-overlay" role="status" aria-live="polite" aria-label="Processing request">
+        <div class="crud-loading-card">
+            <div class="loading-spinner"></div>
+            <p id="crudLoadingMessage">Processing request...</p>
+        </div>
+    </div>
+
+    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20260823-loading-modal"></script>
 </body>
 
 </html>

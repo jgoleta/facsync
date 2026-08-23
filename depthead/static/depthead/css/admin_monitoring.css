@@ -1,68 +1,238 @@
+.monitoring-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 4px 0 26px;
+}
+
+.page-kicker,
+.section-kicker,
+.faculty-label {
+  margin: 0 0 8px;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.monitoring-header h1 {
+  letter-spacing: -0.04em;
+}
+
+.monitoring-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 14px;
+  border: 1px solid #cfe5d8;
+  border-radius: 999px;
+  background: #f3fbf6;
+  color: #247344;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.monitoring-live-indicator strong {
+  padding-left: 5px;
+  color: #14532d;
+  font-size: 1rem;
+}
+
+.live-dot,
+.status-line i,
+.legend-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.13);
+}
+
+.monitoring-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+  padding: 15px 18px;
+  border: 1px solid #dce7f3;
+  border-radius: 14px;
+  background: linear-gradient(110deg, #f8fbff, #ffffff);
+}
+
+.toolbar-label {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.toolbar-description {
+  color: var(--text-secondary);
+  font-size: 0.82rem;
+}
+
+.status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.status-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend-dot {
+  width: 7px;
+  height: 7px;
+  box-shadow: none;
+}
+
+.legend-dot.busy { background: #f97316; }
+.legend-dot.virtual { background: #3b82f6; }
+.legend-dot.on-leave { background: #a1a1aa; }
+.legend-dot.unavailable { background: #ef4444; }
+
 .monitoring-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+  gap: 18px;
 }
 
 .faculty-card {
-  background-color: var(--bg-card);
+  position: relative;
+  min-height: 145px;
+  overflow: hidden;
+  padding: 22px 20px 17px 70px;
   border: 1px solid var(--border-color);
-  border-left: 5px solid; /* Status color will be applied here */
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 10px 24px rgba(30, 64, 175, 0.07);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.faculty-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 30px rgba(30, 64, 175, 0.12);
+}
+
+.faculty-card::before {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  content: "";
+  background: #94a3b8;
+}
+
+.faculty-avatar {
+  position: absolute;
+  top: 22px;
+  left: 20px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 12px;
+  background: #e7f0ff;
+  color: var(--primary-dark);
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .faculty-card .card-header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .faculty-card h4 {
   margin: 0;
-  font-size: 1.1rem;
+  color: var(--text-primary);
+  font-size: 1.05rem;
 }
 
-.faculty-card p {
-  margin: 0;
-  font-size: 0.9rem;
+.faculty-label {
+  margin-bottom: 4px;
   color: var(--text-secondary);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
 }
 
 .status-badge {
-  padding: 4px 10px;
+  padding: 6px 9px;
   border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 0.7rem;
+  font-weight: 800;
   color: #fff;
+  white-space: nowrap;
+}
+
+.faculty-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 13px;
+  border-top: 1px solid #e4edf7;
+}
+
+.status-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.status-line i {
+  width: 7px;
+  height: 7px;
+  box-shadow: none;
+}
+
+.updated-time {
+  color: #94a3b8;
+  font-size: 0.72rem;
+  white-space: nowrap;
 }
 
 /* Status Colors */
 .faculty-card.status-available {
-  border-left-color: #22c55e;
+  --status-color: #22c55e;
 }
 .status-available .status-badge {
   background-color: #22c55e;
 }
 
 .faculty-card.status-busy {
-  border-left-color: #f97316;
+  --status-color: #f97316;
 }
 .status-busy .status-badge {
   background-color: #f97316;
 }
 
 .faculty-card.status-unavailable {
-  border-left-color: #ef4444;
+  --status-color: #ef4444;
 }
 .status-unavailable .status-badge {
   background-color: #ef4444;
 }
 
 .faculty-card.status-virtual {
-  border-left-color: #3b82f6;
+  --status-color: #3b82f6;
 }
 
 .status-virtual .status-badge {
@@ -70,9 +240,25 @@
 }
 
 .faculty-card.status-on-leave {
-  border-left-color: #a1a1aa;
+  --status-color: #a1a1aa;
 }
 
 .status-on-leave .status-badge {
   background-color: #a1a1aa;
+}
+
+.faculty-card::before { background: var(--status-color, #94a3b8); }
+.faculty-card .status-line i { background: var(--status-color, #94a3b8); }
+
+@media (max-width: 700px) {
+  .monitoring-header,
+  .monitoring-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .monitoring-live-indicator {
+    align-self: stretch;
+    justify-content: center;
+  }
 }

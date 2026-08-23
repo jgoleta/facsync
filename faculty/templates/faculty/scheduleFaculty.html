@@ -7,8 +7,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Schedule</title>
-    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}?v=20260819-responsive">
-    <link rel="stylesheet" href="{% static 'faculty/css/scheduleFaculty.css' %}?v=20260819-responsive">
+    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}?v=20260822-activity-text-fix">
+    <link rel="stylesheet" href="{% static 'faculty/css/scheduleFaculty.css' %}?v=20260822-activity-text-fix">
     <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
 
@@ -63,10 +63,44 @@
                     <a id="view-walkins-btn" class="primary-button" href="{% url 'faculty:booking_management' %}">View Walk-ins</a>
                     <button type="button" id="add-event-btn" class="secondary-button">Add Event</button>
                     <button type="button" id="upload-schedule-btn" class="secondary-button">Upload Schedule</button>
+                    <button type="button" id="view-upload-preview-btn" class="secondary-button">View Upload Preview</button>
+                    <a href="{% url 'faculty:schedule_template' %}" class="secondary-link" download>Download CSV Template</a>
+                    <input type="file" id="schedule-csv-input" accept=".csv,text/csv" hidden>
                     <a href="{% url 'faculty:dashboard' %}" class="secondary-link">Back to dashboard</a>
                 </div>
             </aside>
         </main>
+
+        <div id="schedule-preview-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="schedule-preview-title">
+            <section id="schedule-preview-card" class="modal-content schedule-preview-card schedule-preview-modal" aria-live="polite">
+                <button type="button" class="modal-close-btn" id="schedule-preview-close" aria-label="Close upload preview">&times;</button>
+                <div class="schedule-preview-header">
+                    <div>
+                        <p class="eyebrow">Upload preview</p>
+                        <h2 id="schedule-preview-title">Parsed schedule</h2>
+                    </div>
+                    <span id="schedule-preview-count" class="date-pill"></span>
+                </div>
+                <div class="schedule-preview-table-wrap">
+                    <p id="schedule-preview-empty" class="schedule-preview-empty">Upload a CSV schedule to generate a preview.</p>
+                    <table class="schedule-preview-table">
+                        <thead>
+                            <tr><th>Event Title</th><th>Short Description</th><th>Room / Location</th><th>Recurring Day</th><th>Allocation Months</th><th>Start Time</th><th>End Time</th><th>Status Type</th></tr>
+                        </thead>
+                        <tbody id="schedule-preview-body"></tbody>
+                    </table>
+                </div>
+                <div class="schedule-preview-meta">
+                    <p id="schedule-upload-status" class="calendar-sync-status" role="status" aria-live="polite"></p>
+                    {% if faculty_profile.schedule_last_updated_at %}
+                    <p class="schedule-last-updated">CSV schedule updated {{ faculty_profile.schedule_last_updated_at|date:"M j, Y g:i A" }}</p>
+                    {% endif %}
+                </div>
+                <div class="schedule-preview-actions">
+                    <button type="button" id="clear-schedule-btn" class="btn-danger">Delete Uploaded Schedule</button>
+                </div>
+            </section>
+        </div>
     </div>
 
     <div id="eventDetailModal" class="modal-overlay hidden">
@@ -88,6 +122,10 @@
                         <span>Short Description</span>
                         <p id="eventDetailDescription">No description provided.</p>
                     </div>
+                    <div class="detail-row">
+                        <span>Room / Location</span>
+                        <p id="eventDetailLocation">Not specified.</p>
+                    </div>
                 </div>
 
                 <div class="form-actions">
@@ -106,7 +144,6 @@
                 <div class="consultation-header">
                     <p class="eyebrow">Schedule Management</p>
                     <h1>Add a New Event</h1>
-                    <p>Block out time in your schedule.</p>
                 </div>
 
                 <form id="addEventForm" class="consultation-form">
@@ -127,9 +164,26 @@
                         <label for="eventDescription">Short Description</label>
                         <textarea id="eventDescription" rows="3" placeholder="e.g. Team sync"></textarea>
                     </div>
+                    <div class="form-group">
+                        <label for="eventLocation">Room / Location</label>
+                        <input type="text" id="eventLocation" maxlength="128" placeholder="e.g. Room 204">
+                    </div>
                     <div id="event-date-group" class="form-group">
                         <label for="eventDate">Date</label>
                         <input type="date" id="eventDate" required>
+                    </div>
+                    <div id="event-day-group" class="form-group">
+                        <label for="eventDay">Recurring day</label>
+                        <select id="eventDay">
+                            <option value="">None</option>
+                            <option value="monday">Monday</option>
+                            <option value="tuesday">Tuesday</option>
+                            <option value="wednesday">Wednesday</option>
+                            <option value="thursday">Thursday</option>
+                            <option value="friday">Friday</option>
+                            <option value="saturday">Saturday</option>
+                            <option value="sunday">Sunday</option>
+                        </select>
                     </div>
                     <div id="time-inputs-wrapper">
                         <div class="form-group">
@@ -141,7 +195,6 @@
                             <input type="datetime-local" id="eventEndTime" required>
                         </div>
                     </div>
-                    <!-- dates removed: using datetime-local inputs only -->
                     <div class="form-actions">
                         <button type="submit" class="primary-button">Add Event</button>
                     </div>
@@ -163,7 +216,7 @@
         </div>
     </div>
 
-    <script src="{% static 'faculty/js/scheduleFaculty.js' %}?v=20260816-daily-hours"></script>
+    <script src="{% static 'faculty/js/scheduleFaculty.js' %}?v=20260822-consultation-calendar"></script>
     <script src="{% static 'core/js/notifications.js' %}"></script>
 </body>
 

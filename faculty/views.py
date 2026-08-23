@@ -1,8 +1,12 @@
+import csv
+import io
 import json
+import re
 from datetime import date, time
 
 from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
+from django.db import transaction
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
@@ -40,6 +44,40 @@ from .models import (
 )
 
 
+SCHEDULE_CSV_HEADERS = [
+    'event_title', 'short_description', 'room_location', 'recurring_day',
+    'start_month', 'end_month', 'start_time', 'end_time', 'status_type',
+]
+SCHEDULE_CSV_MAX_BYTES = 2 * 1024 * 1024
+SCHEDULE_CSV_MAX_ROWS = 500
+SCHEDULE_WEEKDAYS = {
+    'monday': 'Monday',
+    'tuesday': 'Tuesday',
+    'wednesday': 'Wednesday',
+    'thursday': 'Thursday',
+    'friday': 'Friday',
+    'saturday': 'Saturday',
+    'sunday': 'Sunday',
+}
+SCHEDULE_MONTHS = set(range(1, 13))
+SCHEDULE_STATUS_TYPES = {
+    'busy': ('Busy', 'busy'),
+    'available': ('Available', 'virtual'),
+    'class': ('Class', 'busy'),
+    'office hours': ('Office Hours', 'busy'),
+    'unavailable': ('Unavailable', 'unavailable'),
+    'on leave': ('On Leave', 'on-leave'),
+}
+SCHEDULE_TIME_RE = re.compile(r'^([01]\d|2[0-3]):([0-5]\d)$')
+
+
+def _schedule_status_label(event):
+    """Return the human-readable status preserved by CSV or manual editing."""
+    if event.schedule_status:
+        return event.schedule_status
+    return dict(ScheduleEvent.EVENT_TYPES).get(event.event_type, event.event_type)
+
+
 def _faculty_for_request(request):
     """Return the signed-in user's faculty profile, if one exists."""
     if not request.user.is_authenticated:
@@ -67,13 +105,66 @@ def _event_values(payload, existing=None):
     if not title:
         raise ValueError('Missing title')
 
+    day_of_week = str(payload.get('day_of_week', existing.day_of_week if existing else '') or '').strip().casefold()
+    if day_of_week == 'none':
+        day_of_week = ''
+    if day_of_week and day_of_week not in SCHEDULE_WEEKDAYS:
+        raise ValueError('Invalid day of week')
+
+    def parse_month(value, field_name):
+        if value in (None, ''):
+            return None
+        try:
+            month = int(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f'Invalid {field_name}') from exc
+        if month not in SCHEDULE_MONTHS:
+            raise ValueError(f'{field_name} must be between 1 and 12')
+        return month
+
+    start_month = parse_month(
+        payload.get('start_month', existing.start_month if existing else None),
+        'start month',
+    )
+    end_month = parse_month(
+        payload.get('end_month', existing.end_month if existing else None),
+        'end month',
+    )
+    allocation_start_date = payload.get('start_date')
+    allocation_end_date = payload.get('end_date')
+    if allocation_start_date or allocation_end_date:
+        try:
+            allocation_start_date = date.fromisoformat(str(allocation_start_date))
+            allocation_end_date = date.fromisoformat(str(allocation_end_date))
+        except (TypeError, ValueError) as exc:
+            raise ValueError('Invalid allocation start or end date') from exc
+        if allocation_start_date > allocation_end_date:
+            raise ValueError('Allocation start date must be on or before the end date')
+        start_month = allocation_start_date.month
+        end_month = allocation_end_date.month
+    recurring = (
+        (
+            'day_of_week' in payload
+            and (bool(day_of_week) or payload.get('date') in (None, ''))
+        )
+        or payload.get('start_month') not in (None, '')
+        or payload.get('end_month') not in (None, '')
+        or bool(existing and (existing.date is None or existing.start_month or existing.end_month))
+    )
+    if recurring and day_of_week and (start_month is None or end_month is None):
+        raise ValueError('Recurring schedules require a start month and end month')
+
     date_value = payload.get('date', existing.date if existing else None)
+    if recurring:
+        date_value = None
     if isinstance(date_value, str):
         try:
             date_value = date.fromisoformat(date_value)
         except ValueError as exc:
             raise ValueError('Invalid date') from exc
-    if not date_value:
+    # A None recurring day is a valid time-only schedule. Date-based events
+    # still require an exact date when they are not marked recurring.
+    if not date_value and not day_of_week and not recurring:
         raise ValueError('Missing date')
 
     start_value = payload.get('start_time', existing.start_time if existing else None)
@@ -88,17 +179,31 @@ def _event_values(payload, existing=None):
             end_value = time.fromisoformat(end_value)
         except ValueError as exc:
             raise ValueError('Invalid end time') from exc
+    if start_value and end_value and start_value >= end_value:
+        raise ValueError('Start time must be earlier than end time')
 
     event_type = payload.get('event_type', existing.event_type if existing else 'busy')
     valid_types = {choice[0] for choice in ScheduleEvent.EVENT_TYPES}
     if event_type not in valid_types:
         raise ValueError('Invalid event type')
 
+    if 'status' in payload:
+        schedule_status = payload.get('status')
+    elif existing and existing.schedule_status and event_type == existing.event_type:
+        schedule_status = existing.schedule_status
+    else:
+        schedule_status = dict(ScheduleEvent.EVENT_TYPES).get(event_type, event_type)
+
     return {
         'title': str(title)[:128],
         'description': payload.get('description', existing.description if existing else '') or '',
+        'location': str(payload.get('location', existing.location if existing else '') or '').strip()[:128],
+        'schedule_status': str(schedule_status or '').strip()[:32],
         'event_type': event_type,
         'date': date_value,
+        'day_of_week': day_of_week,
+        'start_month': start_month if recurring else None,
+        'end_month': end_month if recurring else None,
         'start_time': start_value or None,
         'end_time': end_value or None,
     }
@@ -110,13 +215,188 @@ def _event_json(event):
         'id': event.pk,
         'title': event.title,
         'description': event.description,
+        'location': event.location,
+        'status': _schedule_status_label(event),
         'event_type': event.event_type,
-        'date': event.date.isoformat(),
+        'date': event.date.isoformat() if event.date else None,
+        'is_recurring': event.date is None,
+        'day_of_week': '' if event.day_of_week == 'none' else event.day_of_week,
+        'start_month': event.start_month,
+        'end_month': event.end_month,
         'start_time': event.start_time.isoformat() if event.start_time else None,
         'end_time': event.end_time.isoformat() if event.end_time else None,
         'google_event_id': event.google_event_id,
         'sync_state': event.sync_state,
         'sync_error': event.sync_error,
+    }
+
+
+def _consultation_event_json(consultation):
+    """Serialize an approved consultation as a read-only faculty calendar event."""
+    student_name = consultation.user.get_full_name() or consultation.user.username
+    return {
+        'id': f'consultation:{consultation.request_id}',
+        'request_id': consultation.request_id,
+        'title': f'Consultation with {student_name}',
+        'description': consultation.student_message or 'Approved student consultation.',
+        'location': consultation.faculty.office_location,
+        'status': 'Consultation',
+        'event_type': 'busy',
+        'date': consultation.date.isoformat(),
+        'is_recurring': False,
+        'is_consultation': True,
+        'day_of_week': '',
+        'start_month': None,
+        'end_month': None,
+        'start_time': consultation.start_time.isoformat() if consultation.start_time else None,
+        'end_time': consultation.end_time.isoformat() if consultation.end_time else None,
+        'google_event_id': consultation.google_event_id,
+    }
+
+
+def _csv_error(row_number, message):
+    """Format a validation message consistently for the upload UI/API."""
+    return f'Row {row_number}: {message}'
+
+
+def _parse_schedule_csv(uploaded_file):
+    """Parse and validate a complete schedule CSV before anything is saved."""
+    if not uploaded_file or not getattr(uploaded_file, 'name', '').lower().endswith('.csv'):
+        raise ValueError('Please upload a CSV file with a .csv extension.')
+    if uploaded_file.size == 0:
+        raise ValueError('The CSV file is empty.')
+    if uploaded_file.size > SCHEDULE_CSV_MAX_BYTES:
+        raise ValueError('The CSV file is too large. The maximum size is 2 MB.')
+
+    try:
+        content = uploaded_file.read().decode('utf-8-sig')
+    except UnicodeDecodeError as exc:
+        raise ValueError('The CSV file must use UTF-8 encoding.') from exc
+
+    try:
+        reader = csv.DictReader(io.StringIO(content, newline=''), strict=True)
+        headers = reader.fieldnames
+        csv_rows = list(reader)
+    except csv.Error as exc:
+        raise ValueError(f'Unable to read the CSV file: {exc}') from exc
+    if headers != SCHEDULE_CSV_HEADERS:
+        expected = ', '.join(SCHEDULE_CSV_HEADERS)
+        actual = ', '.join(headers or []) or 'none'
+        raise ValueError(f'Invalid CSV headers. Expected: {expected}. Found: {actual}.')
+
+    parsed = []
+    errors = []
+    intervals_by_day = {}
+    for row_number, row in enumerate(csv_rows, start=2):
+        if None in row and any(str(value or '').strip() for value in row[None]):
+            errors.append(_csv_error(row_number, 'The row contains more values than the nine required columns.'))
+            continue
+        if row is None or all(not str(value or '').strip() for value in row.values() if value is not None):
+            continue
+        if row_number - 1 > SCHEDULE_CSV_MAX_ROWS:
+            errors.append(_csv_error(row_number, f'File exceeds the {SCHEDULE_CSV_MAX_ROWS}-row limit.'))
+            break
+
+        values = {key: (value or '').strip() for key, value in row.items() if key in SCHEDULE_CSV_HEADERS}
+        missing = [key for key in SCHEDULE_CSV_HEADERS if not values.get(key)]
+        # Description, room, recurring day, and status may be blank where defaults apply.
+        missing = [key for key in missing if key in ('event_title', 'start_time', 'end_time')]
+        if missing:
+            errors.append(_csv_error(row_number, f'Missing required value(s): {", ".join(missing)}.'))
+            continue
+
+        try:
+            day_key = values['recurring_day'].casefold() or 'none'
+            day_label = 'None' if day_key == 'none' else SCHEDULE_WEEKDAYS[day_key]
+        except KeyError:
+            errors.append(_csv_error(row_number, 'recurring_day must be a weekday from Monday through Sunday, or None.'))
+            continue
+
+        start_match = SCHEDULE_TIME_RE.fullmatch(values['start_time'])
+        end_match = SCHEDULE_TIME_RE.fullmatch(values['end_time'])
+        if not start_match or not end_match:
+            errors.append(_csv_error(row_number, 'start_time and end_time must use 24-hour HH:MM format.'))
+            continue
+        start_value = time.fromisoformat(values['start_time'])
+        end_value = time.fromisoformat(values['end_time'])
+        if start_value >= end_value:
+            errors.append(_csv_error(row_number, 'start_time must be earlier than end_time.'))
+            continue
+
+        status_key = values['status_type'].casefold() or 'busy'
+        status_data = SCHEDULE_STATUS_TYPES.get(status_key)
+        if status_data is None:
+            errors.append(_csv_error(
+                row_number,
+                'status_type must be one of: Busy, Available, Class, Office Hours, Unavailable, On Leave.',
+            ))
+            continue
+        if len(values['room_location']) > 128:
+            errors.append(_csv_error(row_number, 'room_location must be 128 characters or fewer.'))
+            continue
+
+        start_month = end_month = None
+        if day_key != 'none' or values['start_month'] or values['end_month']:
+            if not values['start_month'] or not values['end_month']:
+                errors.append(_csv_error(row_number, 'Weekday rows require start_month and end_month.'))
+                continue
+            try:
+                start_month = int(values['start_month'])
+                end_month = int(values['end_month'])
+            except ValueError:
+                errors.append(_csv_error(row_number, 'start_month and end_month must be numeric months from 1 to 12.'))
+                continue
+            if start_month not in SCHEDULE_MONTHS or end_month not in SCHEDULE_MONTHS:
+                errors.append(_csv_error(row_number, 'start_month and end_month must be between 1 and 12.'))
+                continue
+
+        interval = (start_value, end_value, row_number)
+        intervals_by_day.setdefault(day_key, []).append(interval)
+        parsed.append({
+            'day': day_label,
+            'day_of_week': '' if day_key == 'none' else day_key,
+            'title': values['event_title'],
+            'description': values['short_description'],
+            'start_time': start_value,
+            'end_time': end_value,
+            'status': status_data[0],
+            'event_type': status_data[1],
+            'room': values['room_location'],
+            'start_month': start_month,
+            'end_month': end_month,
+        })
+
+    for day, intervals in intervals_by_day.items():
+        ordered = sorted(intervals)
+        for previous, current in zip(ordered, ordered[1:]):
+            if current[0] < previous[1]:
+                errors.append(_csv_error(
+                    current[2],
+                    f'Overlaps the {"all-day" if day == "none" else SCHEDULE_WEEKDAYS[day]} time slot from '
+                    f'{previous[0].strftime("%H:%M")} to {previous[1].strftime("%H:%M")}.',
+                ))
+
+    if not parsed and not errors:
+        errors.append('The CSV contains no schedule rows.')
+    if errors:
+        raise ValueError(errors)
+    return parsed
+
+
+def _schedule_csv_row(event):
+    return {
+        'event_title': event.title,
+        'short_description': event.description,
+        'room_location': event.location,
+        'recurring_day': (
+            SCHEDULE_WEEKDAYS.get(event.day_of_week)
+            or ('None' if event.start_month else (event.date.isoformat() if event.date else ''))
+        ),
+        'start_month': event.start_month or '',
+        'end_month': event.end_month or '',
+        'start_time': event.start_time.strftime('%H:%M') if event.start_time else '',
+        'end_time': event.end_time.strftime('%H:%M') if event.end_time else '',
+        'status_type': _schedule_status_label(event),
     }
 
 
@@ -276,6 +556,104 @@ def schedule(request):
     return render(request, 'faculty/scheduleFaculty.html', {
         'faculty_profile': faculty_profile,
     })
+
+
+@login_required
+@role_required('faculty')
+def schedule_template(request):
+    """Download the canonical UTF-8 schedule CSV template."""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename=schedule_template.csv'
+    writer = csv.writer(response)
+    writer.writerow(SCHEDULE_CSV_HEADERS)
+    writer.writerow(['Introductory lecture', 'Introductory lecture', 'Room 204', 'Monday', '8', '5', '10:30', '12:00', 'Busy'])
+    writer.writerow(['Office hours', 'Student consultations', 'Room 204', 'Monday', '8', '5', '13:00', '15:00', 'Busy'])
+    return response
+
+
+@login_required
+@role_required('faculty')
+@csrf_protect
+def upload_schedule(request):
+    """Validate and atomically append rows to the signed-in faculty member's schedule."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    faculty = _faculty_for_request(request)
+    if faculty is None:
+        return JsonResponse({'error': 'No faculty profile'}, status=400)
+    uploaded_file = request.FILES.get('file')
+    try:
+        rows = _parse_schedule_csv(uploaded_file)
+    except ValueError as exc:
+        detail = exc.args[0] if exc.args else 'Invalid CSV file.'
+        errors = detail if isinstance(detail, list) else [detail]
+        return JsonResponse({'error': 'The schedule was not saved.', 'errors': errors}, status=400)
+
+    updated_at = timezone.now()
+    with transaction.atomic():
+        events = ScheduleEvent.objects.bulk_create([
+            ScheduleEvent(
+                faculty=faculty,
+                title=row['title'],
+                description=row['description'],
+                location=row['room'],
+                schedule_status=row['status'],
+                event_type=row['event_type'],
+                date=None,
+                day_of_week=row['day_of_week'],
+                start_month=row['start_month'],
+                end_month=row['end_month'],
+                start_time=row['start_time'],
+                end_time=row['end_time'],
+                managed_by_facsync=True,
+                sync_state='local',
+            )
+            for row in rows
+        ])
+        faculty.schedule_last_updated_at = updated_at
+        faculty.save(update_fields=['schedule_last_updated_at'])
+
+    return JsonResponse({
+        'message': f'Schedule uploaded successfully. {len(events)} row(s) added.',
+        'added_count': len(events),
+        'last_updated_at': updated_at.isoformat(),
+        'preview': [_schedule_csv_row(event) for event in events],
+        'events': [_event_json(event) for event in events],
+    }, status=201)
+
+
+@login_required
+@role_required('faculty')
+@csrf_protect
+def clear_schedule(request):
+    """Delete only the uploaded rows represented by the current preview."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    faculty = _faculty_for_request(request)
+    if faculty is None:
+        return JsonResponse({'error': 'No faculty profile'}, status=400)
+
+    try:
+        payload = _json_body(request)
+    except ValueError as exc:
+        return HttpResponseBadRequest(str(exc))
+    event_ids = payload.get('event_ids')
+    if not isinstance(event_ids, list) or not event_ids:
+        return JsonResponse({'error': 'No uploaded preview rows were selected for deletion.'}, status=400)
+    try:
+        event_ids = [int(event_id) for event_id in event_ids]
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Invalid uploaded preview row IDs.'}, status=400)
+
+    with transaction.atomic():
+        deleted_count, _ = ScheduleEvent.objects.filter(
+            faculty=faculty,
+            pk__in=event_ids,
+            managed_by_facsync=True,
+        ).delete()
+        faculty.schedule_last_updated_at = timezone.now()
+        faculty.save(update_fields=['schedule_last_updated_at'])
+    return JsonResponse({'status': 'deleted', 'deleted_count': deleted_count})
 
 
 def _walk_in_json(queue):
@@ -567,9 +945,20 @@ def api_schedule_events(request):
         elif sync_requested and calendar_connected and not faculty.sync_enabled:
             sync_error = 'Two-way sync is disabled in your profile.'
 
-        events = ScheduleEvent.objects.filter(faculty=faculty).order_by('date', 'start_time')
+        events = list(ScheduleEvent.objects.filter(faculty=faculty))
+        approved_consultations = list(
+            ConsultationRequest.objects.filter(
+                faculty=faculty,
+                status='approved',
+            ).select_related('user', 'faculty')
+        )
+        calendar_events = (
+            [_event_json(event) for event in events]
+            + [_consultation_event_json(consultation) for consultation in approved_consultations]
+        )
+        calendar_events.sort(key=lambda event: (event['date'] or '', event['start_time'] or ''))
         return JsonResponse({
-            'events': [_event_json(event) for event in events],
+            'events': calendar_events,
             'faculty_status': faculty.current_status,
             'calendar_connected': calendar_connected,
             'sync_enabled': sync_enabled,
@@ -585,7 +974,9 @@ def api_schedule_events(request):
 
         event = ScheduleEvent(faculty=faculty, **values)
         connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
-        sync_enabled = bool(connection and faculty.sync_enabled)
+        # Google Calendar requires a concrete date; recurring weekday events
+        # are maintained locally until a dated occurrence is created.
+        sync_enabled = bool(connection and faculty.sync_enabled and event.date)
         try:
             if sync_enabled:
                 google_event = create_google_event(connection, event)
@@ -627,6 +1018,10 @@ def api_schedule_event_detail(request, pk):
             return HttpResponseBadRequest(str(exc))
         for field, value in values.items():
             setattr(event, field, value)
+
+        # A recurring event has no concrete date and cannot be represented by
+        # the one-off Google Calendar event API.
+        sync_enabled = bool(connection and faculty.sync_enabled and event.date)
 
         try:
             if sync_enabled:

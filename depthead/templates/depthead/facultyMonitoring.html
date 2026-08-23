@@ -8,8 +8,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Monitoring</title>
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_monitoring.css' %}">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260822-monitoring-ui">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_monitoring.css' %}?v=20260822-monitoring-ui-2">
 </head>
 
 <body>
@@ -45,7 +45,7 @@
                     <span class="nav-icon">👀</span>
                     <span>Faculty Monitoring</span>
                 </a>
-                <a href="{% url 'depthead:pending_faculty_requests' %}" class="nav-item">
+                <a href="{% url 'depthead:admin_faculty' %}" class="nav-item">
                     <span class="nav-icon">👨‍🏫</span>
                     <span>Manage Faculty</span>
                 </a>
@@ -63,20 +63,48 @@
         </aside>
 
         <main class="main-content">
-            <header class="main-header">
-                <h1>Faculty Monitoring</h1>
-                <p>Real-time status of all faculty in your department.</p>
+            <header class="main-header monitoring-header">
+                <div>
+                    <p class="page-kicker">Department operations</p>
+                    <h1>Faculty Monitoring</h1>
+                    <p>Real-time status of all faculty in your department.</p>
+                </div>
+                <div class="monitoring-live-indicator">
+                    <span class="live-dot"></span>
+                    <span>Live monitoring</span>
+                    <strong>{{ faculty_list|length }}</strong>
+                </div>
             </header>
+
+            <div class="monitoring-toolbar">
+                <div>
+                    <span class="toolbar-label">Current status</span>
+                    <span class="toolbar-description">Availability updates from faculty calendars and status settings.</span>
+                </div>
+                <div class="status-legend" aria-label="Status legend">
+                    <span><i class="legend-dot available"></i>Available</span>
+                    <span><i class="legend-dot busy"></i>Busy</span>
+                    <span><i class="legend-dot virtual"></i>Virtual Only</span>
+                    <span><i class="legend-dot on-leave"></i>On Leave</span>
+                    <span><i class="legend-dot unavailable"></i>Unavailable</span>
+                </div>
+            </div>
 
             <div class="monitoring-grid">
                 {% for item in faculty_list %}
                 <div class="faculty-card {{ item.status_class }}">
+                    <div class="faculty-avatar">{{ item.name|first|upper }}</div>
                     <div class="card-header">
-                        <h4>{{ item.name }}</h4>
+                        <div>
+                            <p class="faculty-label">Faculty member</p>
+                            <h4>{{ item.name }}</h4>
+                        </div>
                         <span class="status-badge">{{ item.status_label }}</span>
                     </div>
-                    <p>{% if item.updated_at %}Last updated: {{ item.updated_at|timesince }} ago{% else %}Not yet updated{% endif %}
-                    </p>
+                    <div class="faculty-card-footer">
+                        <span class="status-line"><i></i>Currently {{ item.status_label|lower }}</span>
+                        <span class="updated-time">{% if item.updated_at %}{{ item.updated_at|timesince }} ago{% else %}No update yet{% endif %}</span>
+                    </div>
                 </div>
                 {% empty %}
                 <p class="empty-state">No active faculty in your department yet.</p>

@@ -8,6 +8,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const syncCalendarBtn = document.getElementById("syncCalendarBtn");
   const walkInToggle = document.getElementById("walkInToggle");
   const walkInFeedback = document.getElementById("walkInFeedback");
+  const uploadScheduleBtn = document.getElementById("upload-schedule-btn");
+  const viewUploadPreviewBtn = document.getElementById("view-upload-preview-btn");
+  const clearScheduleBtn = document.getElementById("clear-schedule-btn");
+  const scheduleCsvInput = document.getElementById("schedule-csv-input");
+  const scheduleUploadStatus = document.getElementById("schedule-upload-status");
+  const schedulePreviewModal = document.getElementById("schedule-preview-modal");
+  const schedulePreviewCard = document.getElementById("schedule-preview-card");
+  const schedulePreviewClose = document.getElementById("schedule-preview-close");
+  const schedulePreviewBody = document.getElementById("schedule-preview-body");
+  const schedulePreviewEmpty = document.getElementById("schedule-preview-empty");
+  const schedulePreviewCount = document.getElementById("schedule-preview-count");
+  let schedulePreviewEventIds = [];
 
   let currentView = "monthly"; // Default view
   let isEditing = false; // To track if the modal is for editing
@@ -58,6 +70,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Schedule object will be populated from the server API
   const facultySchedule = { name: null, schedule: [] };
+  const weekdayIndexes = {
+    sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
+    thursday: 4, friday: 5, saturday: 6,
+  };
+
+  function localDateKey(value) {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+  }
+
+  function monthIsIncluded(month, startMonth, endMonth) {
+    if (!startMonth || !endMonth) return true;
+    if (startMonth <= endMonth) return month >= startMonth && month <= endMonth;
+    return month >= startMonth || month <= endMonth;
+  }
+
+  function recurringDateKeys(dayOfWeek, startMonth, endMonth) {
+    const today = new Date();
+    const first = new Date(today.getFullYear(), today.getMonth(), 1 - 7);
+    const last = new Date(today.getFullYear(), today.getMonth() + 1, 7);
+    const target = dayOfWeek ? weekdayIndexes[dayOfWeek] : null;
+    const dates = [];
+    for (let cursor = new Date(first); cursor <= last; cursor.setDate(cursor.getDate() + 1)) {
+      if (monthIsIncluded(cursor.getMonth() + 1, startMonth, endMonth)
+        && (target === null || cursor.getDay() === target)) dates.push(localDateKey(cursor));
+    }
+    return dates;
+  }
 
   async function fetchEventsFromApi(sync = false) {
     try {
@@ -72,18 +111,31 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       const events = data.events || [];
 
-      // Group events by date into facultySchedule.schedule
+      // Group one-off events by date and expand recurring weekday events into
+      // the dates visible around the current month.
       const map = {};
       events.forEach((ev) => {
-        const dateKey = ev.date.split('T')[0];
-        if (!map[dateKey]) map[dateKey] = { date: dateKey, events: [] };
-        map[dateKey].events.push({
+        const eventData = {
           id: ev.id,
           title: ev.title,
           description: ev.description,
+          location: ev.location || "",
+          status: ev.status || ev.event_type,
           type: ev.event_type,
+          isRecurring: Boolean(ev.is_recurring),
+          dayOfWeek: ev.day_of_week === "none" ? "" : (ev.day_of_week || ""),
+          startMonth: ev.start_month,
+          endMonth: ev.end_month,
           startTime: ev.start_time ? ev.start_time.split('T').pop().slice(0,5) : ev.start_time,
           endTime: ev.end_time ? ev.end_time.split('T').pop().slice(0,5) : ev.end_time,
+          isConsultation: Boolean(ev.is_consultation),
+        };
+        const dateKeys = ev.is_recurring
+          ? recurringDateKeys(eventData.dayOfWeek, ev.start_month, ev.end_month)
+          : (ev.date ? [ev.date.split('T')[0]] : []);
+        dateKeys.forEach((dateKey) => {
+          if (!map[dateKey]) map[dateKey] = { date: dateKey, events: [] };
+          map[dateKey].events.push(eventData);
         });
       });
 
@@ -102,16 +154,139 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function setScheduleUploadStatus(message, isError = false) {
+    if (!scheduleUploadStatus) return;
+    scheduleUploadStatus.textContent = message;
+    scheduleUploadStatus.className = `calendar-sync-status${isError ? " error" : ""}`;
+  }
+
+  function renderSchedulePreview(rows) {
+    if (!schedulePreviewCard || !schedulePreviewBody) return;
+    schedulePreviewBody.innerHTML = "";
+    rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      [row.event_title, row.short_description || "—", row.room_location || "—", row.recurring_day || "None",
+        `${row.start_month || "—"}-${row.end_month || "—"}`, row.start_time, row.end_time, row.status_type || "Busy"]
+        .forEach((value) => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+      schedulePreviewBody.appendChild(tr);
+    });
+    if (schedulePreviewCount) {
+      schedulePreviewCount.textContent = `${rows.length} row${rows.length === 1 ? "" : "s"}`;
+    }
+    if (schedulePreviewEmpty) schedulePreviewEmpty.classList.toggle("hidden", rows.length > 0);
+    if (schedulePreviewModal) schedulePreviewModal.classList.remove("hidden");
+  }
+
+  function closeSchedulePreview() {
+    if (schedulePreviewModal) schedulePreviewModal.classList.add("hidden");
+  }
+
+  if (schedulePreviewClose) schedulePreviewClose.addEventListener("click", closeSchedulePreview);
+  if (schedulePreviewModal) {
+    schedulePreviewModal.addEventListener("click", (event) => {
+      if (event.target === schedulePreviewModal) closeSchedulePreview();
+    });
+  }
+
+  if (viewUploadPreviewBtn) {
+    viewUploadPreviewBtn.addEventListener("click", () => {
+      if (schedulePreviewModal) schedulePreviewModal.classList.remove("hidden");
+    });
+  }
+
+  async function uploadSchedule(file) {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      setScheduleUploadStatus("Please choose a .csv file.", true);
+      return;
+    }
+    const formData = new FormData();
+    formData.append("file", file);
+    if (uploadScheduleBtn) {
+      uploadScheduleBtn.disabled = true;
+      uploadScheduleBtn.textContent = "Uploading...";
+    }
+    setScheduleUploadStatus("Validating and saving schedule...");
+    try {
+      const response = await fetch("/faculty/api/schedule/upload/", {
+        method: "POST",
+        headers: requestHeaders(),
+        body: formData,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const details = (data.errors || [data.error || "Unable to upload schedule."]).join(" ");
+        throw new Error(details);
+      }
+      renderSchedulePreview(data.preview || []);
+      schedulePreviewEventIds = (data.events || [])
+        .map((event) => event.id)
+        .filter((id) => id !== undefined && id !== null);
+      setScheduleUploadStatus(data.message || "Schedule uploaded successfully.");
+      await fetchEventsFromApi();
+    } catch (error) {
+      setScheduleUploadStatus(error.message, true);
+    } finally {
+      if (uploadScheduleBtn) {
+        uploadScheduleBtn.disabled = false;
+        uploadScheduleBtn.textContent = "Upload Schedule";
+      }
+      if (scheduleCsvInput) scheduleCsvInput.value = "";
+    }
+  }
+
+  if (uploadScheduleBtn && scheduleCsvInput) {
+    uploadScheduleBtn.addEventListener("click", () => scheduleCsvInput.click());
+    scheduleCsvInput.addEventListener("change", () => uploadSchedule(scheduleCsvInput.files[0]));
+  }
+
+  if (clearScheduleBtn) {
+    clearScheduleBtn.addEventListener("click", async () => {
+      if (!window.confirm("Delete the uploaded schedule shown in this preview? This cannot be undone.")) return;
+      clearScheduleBtn.disabled = true;
+      setScheduleUploadStatus("Deleting schedule...");
+      try {
+        const response = await fetch("/faculty/api/schedule/clear/", {
+          method: "POST",
+          headers: requestHeaders(true),
+          body: JSON.stringify({ event_ids: schedulePreviewEventIds }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Unable to delete schedule.");
+        if (schedulePreviewBody) schedulePreviewBody.innerHTML = "";
+        if (schedulePreviewEmpty) schedulePreviewEmpty.classList.remove("hidden");
+        schedulePreviewEventIds = [];
+        closeSchedulePreview();
+        setScheduleUploadStatus("Schedule deleted. You can upload a new CSV now.");
+        await fetchEventsFromApi();
+      } catch (error) {
+        setScheduleUploadStatus(error.message, true);
+      } finally {
+        clearScheduleBtn.disabled = false;
+      }
+    });
+  }
+
   async function addEvent(eventData) {
     // Send create request to API
     try {
       const payload = {
         title: eventData.title,
         description: eventData.description,
+        location: eventData.location,
         event_type: eventData.type,
-        date: eventData.date || (eventData.startTime ? eventData.startTime.split('T')[0] : null),
-        start_time: eventData.startTime && eventData.startTime.includes('T') ? eventData.startTime.split('T')[1] : null,
-        end_time: eventData.endTime && eventData.endTime.includes('T') ? eventData.endTime.split('T')[1] : null,
+        date: eventData.date || null,
+        day_of_week: eventData.dayOfWeek || '',
+        start_month: eventData.startMonth || null,
+        end_month: eventData.endMonth || null,
+        start_date: eventData.startDate || null,
+        end_date: eventData.endDate || null,
+        start_time: timeValue(eventData.startTime),
+        end_time: timeValue(eventData.endTime),
       };
       const res = await fetch('/faculty/api/events/', {
         method: 'POST',
@@ -186,6 +361,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const typeEl = document.getElementById("eventDetailType");
     const timeEl = document.getElementById("eventDetailTime");
     const descriptionEl = document.getElementById("eventDetailDescription");
+    const locationEl = document.getElementById("eventDetailLocation");
     const editBtn = document.getElementById("editEventBtn");
     const removeBtn = document.getElementById("removeEventBtn");
 
@@ -193,10 +369,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     activeEventContext = { dateKey, eventData };
     titleEl.textContent = eventData.title;
-    typeEl.textContent = eventData.type || "busy";
+    typeEl.textContent = eventData.status || eventData.type || "busy";
     typeEl.className = `event-detail-type type-${eventData.type || "busy"}`;
     timeEl.textContent = formatEventTime(eventData);
     descriptionEl.textContent = eventData.description || "No description provided.";
+    if (locationEl) locationEl.textContent = eventData.location || "Not specified.";
+    if (editBtn) editBtn.style.display = eventData.isConsultation ? "none" : "";
+    removeBtn.style.display = eventData.isConsultation ? "none" : "";
     modal.classList.remove("hidden");
 
     removeBtn.onclick = () => {
@@ -206,9 +385,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     };
 
-    editBtn.onclick = () => {
+    if (editBtn) {
+      editBtn.onclick = () => {
         openAddEventModalForEdit();
-    };
+      };
+    }
   }
 
   async function deleteEvent(dateKey, eventToDelete) {
@@ -463,13 +644,41 @@ document.addEventListener("DOMContentLoaded", () => {
   const eventTypeSelect = document.getElementById("eventType");
   const eventDateGroup = document.getElementById("event-date-group");
   const eventDateInput = document.getElementById("eventDate");
+  const eventDayGroup = document.getElementById("event-day-group");
+  const eventDayInput = document.getElementById("eventDay");
+
+  function monthFromDate(value) {
+    return value ? Number(value.slice(5, 7)) : null;
+  }
+
+  function timeValue(value) {
+    return value ? value.split('T').pop() : null;
+  }
+  function dateValue(value) {
+    return value ? value.split('T')[0] : '';
+  }
+
+  function selectedRecurringDay() {
+    const value = eventDayInput?.value || '';
+    return value && value.toLowerCase() !== 'none' ? value : '';
+  }
+
+  if (eventDayInput) {
+    eventDayInput.addEventListener("change", () => {
+      if (eventTypeSelect) eventTypeSelect.dispatchEvent(new Event("change"));
+    });
+  }
+
   const timeInputsWrapper = document.getElementById("time-inputs-wrapper");
   const startTimeInput = document.getElementById("eventStartTime");
   const endTimeInput = document.getElementById("eventEndTime");
 
   if (eventTypeSelect && timeInputsWrapper) {
     eventTypeSelect.addEventListener("change", (e) => {
-      if (e.target.value === "on-leave") {
+      if (selectedRecurringDay()) {
+        if (eventDateGroup) eventDateGroup.style.display = "none";
+        if (eventDateInput) eventDateInput.required = false;
+      } else if (e.target.value === "on-leave") {
         if (eventDateGroup) eventDateGroup.style.display = "block";
         if (eventDateInput) eventDateInput.required = true;
         timeInputsWrapper.style.display = "none";
@@ -478,7 +687,7 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         if (eventDateGroup) eventDateGroup.style.display = "none";
         if (eventDateInput) eventDateInput.required = false;
-        timeInputsWrapper.style.display = "block";
+        timeInputsWrapper.style.display = "grid";
         startTimeInput.required = true;
         endTimeInput.required = true;
       }
@@ -496,6 +705,8 @@ document.addEventListener("DOMContentLoaded", () => {
       addEventModal.querySelector('button[type="submit"]').textContent = 'Add Event';
 
       addEventForm.reset();
+      if (eventDayInput) eventDayInput.value = '';
+      if (eventDateGroup) eventDateGroup.classList.remove("hidden");
       if (eventDateInput) {
         const now = new Date();
         eventDateInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -542,15 +753,25 @@ dayScheduleCloseBtns.forEach((btn) => {
   if (addEventForm) {
     addEventForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const recurringDay = selectedRecurringDay();
+      const isRecurring = Boolean(recurringDay);
+      const startInputValue = document.getElementById("eventStartTime").value;
+      const endInputValue = document.getElementById("eventEndTime").value;
       const eventDetails = {
         title: document.getElementById("eventTitle").value,
         type: document.getElementById("eventType").value,
         description: document.getElementById("eventDescription").value,
-        date: eventTypeSelect?.value === "on-leave"
-          ? (eventDateInput ? eventDateInput.value : '')
-          : (document.getElementById("eventStartTime").value || '').split('T')[0],
-        startTime: document.getElementById("eventStartTime").value,
-        endTime: document.getElementById("eventEndTime").value,
+        location: document.getElementById("eventLocation").value,
+        date: isRecurring
+          ? null
+          : (eventTypeSelect?.value === "on-leave" ? (eventDateInput ? eventDateInput.value : '') : dateValue(startInputValue)),
+        dayOfWeek: recurringDay,
+        startDate: dateValue(startInputValue),
+        endDate: dateValue(endInputValue),
+        startMonth: isRecurring ? monthFromDate(dateValue(startInputValue)) : null,
+        endMonth: isRecurring ? monthFromDate(dateValue(endInputValue)) : null,
+        startTime: startInputValue,
+        endTime: endInputValue,
       };
 
       if (isEditing && activeEventContext && activeEventContext.eventData && activeEventContext.eventData.id) {
@@ -559,10 +780,16 @@ dayScheduleCloseBtns.forEach((btn) => {
           const payload = {
             title: eventDetails.title,
             description: eventDetails.description,
+            location: eventDetails.location,
             event_type: eventDetails.type,
-            date: eventDetails.date || (eventDetails.startTime ? eventDetails.startTime.split('T')[0] : null),
-            start_time: eventDetails.startTime && eventDetails.startTime.includes('T') ? eventDetails.startTime.split('T')[1] : null,
-            end_time: eventDetails.endTime && eventDetails.endTime.includes('T') ? eventDetails.endTime.split('T')[1] : null,
+            date: eventDetails.date || null,
+            day_of_week: eventDetails.dayOfWeek,
+            start_month: eventDetails.startMonth || null,
+            end_month: eventDetails.endMonth || null,
+            start_date: eventDetails.startDate || null,
+            end_date: eventDetails.endDate || null,
+            start_time: timeValue(eventDetails.startTime),
+            end_time: timeValue(eventDetails.endTime),
           };
           const res = await fetch(`/faculty/api/events/${activeEventContext.eventData.id}/`, {
             method: 'PUT',
@@ -638,17 +865,36 @@ dayScheduleCloseBtns.forEach((btn) => {
     document.getElementById('eventTitle').value = eventData.title;
     document.getElementById('eventType').value = eventData.type;
     document.getElementById('eventDescription').value = eventData.description || '';
+    document.getElementById('eventLocation').value = eventData.location || '';
+    let recurringStartDate = dateKey;
+    let recurringEndDate = dateKey;
+    if (eventData.isRecurring) {
+      if (eventDateGroup) eventDateGroup.classList.add('hidden');
+      if (eventDateInput) eventDateInput.required = false;
+      if (eventDayGroup) eventDayGroup.classList.remove('hidden');
+      if (eventDayInput) eventDayInput.value = eventData.dayOfWeek || '';
+      const allocationYear = new Date().getFullYear();
+      const endYear = eventData.endMonth < eventData.startMonth ? allocationYear + 1 : allocationYear;
+      recurringStartDate = eventData.startMonth
+        ? `${allocationYear}-${String(eventData.startMonth).padStart(2, '0')}-01`
+        : dateKey;
+      recurringEndDate = eventData.endMonth
+        ? `${endYear}-${String(eventData.endMonth).padStart(2, '0')}-01`
+        : dateKey;
+    } else if (eventDayInput) {
+      eventDayInput.value = '';
+      if (eventDateGroup) eventDateGroup.classList.remove('hidden');
+    }
     if (eventDateInput) eventDateInput.value = dateKey;
 
     if (eventData.type !== 'on-leave') {
       if (eventDateGroup) eventDateGroup.style.display = "none";
       if (eventDateInput) eventDateInput.required = false;
-      timeInputsWrapper.style.display = "block";
+      timeInputsWrapper.style.display = "grid";
       startTimeInput.required = true;
       endTimeInput.required = true;
-      // eventData may have dateKey and startTime like '09:00'
-      document.getElementById('eventStartTime').value = `${dateKey}T${eventData.startTime}`;
-      document.getElementById('eventEndTime').value = `${dateKey}T${eventData.endTime}`;
+      document.getElementById('eventStartTime').value = `${recurringStartDate}T${eventData.startTime || '00:00'}`;
+      document.getElementById('eventEndTime').value = `${recurringEndDate}T${eventData.endTime || '00:00'}`;
     } else {
       if (eventDateGroup) eventDateGroup.style.display = "block";
       if (eventDateInput) eventDateInput.required = true;
