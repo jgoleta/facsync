@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Manage Faculty</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_management.css' %}?v=20260823-management-ui-6">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_management.css' %}?v=20260823-management-ui-8">
     <link rel="stylesheet" href="{% static 'depthead/css/pendingFacultyRequests.css' %}">
 </head>
 
@@ -141,18 +141,20 @@
                 <table>
                     <thead>
                         <tr>
+                            <th>Faculty ID</th>
                             <th>Name</th>
                             <th>Email</th>
-                            <th>Status</th>
+                            <th>Office/Room</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for user in active_faculty %}
                         <tr>
+                            <td>{{ user.faculty_profile.faculty_id|default:'—' }}</td>
                             <td>{{ user.get_full_name|default:user.username }}</td>
                             <td>{{ user.email }}</td>
-                            <td><span class="status-tag active">Active</span></td>
+                            <td>{{ user.faculty_profile.office_location|default:'—' }}</td>
                             <td class="actions">
                                 {% if user.faculty_profile %}
                                 <div class="faculty-schedule-actions">
@@ -172,15 +174,16 @@
                                 <button type="button" class="upload-faculty-schedule-btn schedule-unavailable" disabled
                                     title="This faculty account does not have a faculty profile yet">Schedule Unavailable</button>
                                 {% endif %}
-                                <form method="post" class="crud-action-form" action="{% url 'depthead:remove_faculty' user.id %}" style="display:inline;">
+                                <form method="post" class="crud-action-form remove-faculty-form" action="{% url 'depthead:remove_faculty' user.id %}" style="display:inline;">
                                     {% csrf_token %}
-                                    <button type="submit" class="danger">Remove</button>
+                                    <button type="submit" class="danger remove-faculty-trigger"
+                                        data-faculty-name="{{ user.get_full_name|default:user.username }}">Remove</button>
                                 </form>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="empty-state">No active faculty accounts.</td>
+                            <td colspan="5" class="empty-state">No active faculty accounts.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -243,6 +246,23 @@
         </div>
     </div>
 
+    <div class="modal-overlay hidden" id="removeFacultyConfirmModal">
+        <div class="modal remove-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="removeFacultyConfirmTitle">
+            <div class="modal-header">
+                <div>
+                    <p class="section-kicker">Confirm action</p>
+                    <h2 id="removeFacultyConfirmTitle">Remove Faculty</h2>
+                    <p>Are you sure you want to remove <strong id="removeFacultyName">this faculty member</strong>?</p>
+                </div>
+                <button type="button" class="modal-close" id="closeRemoveFacultyConfirm" aria-label="Close confirmation">&times;</button>
+            </div>
+            <p class="remove-confirm-warning">This will remove the faculty account and its associated schedule data. This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-danger" id="confirmRemoveFaculty">Remove Faculty</button>
+            </div>
+        </div>
+    </div>
+
     <div id="crudLoadingModal" class="loading-overlay" role="status" aria-live="polite" aria-label="Processing request">
         <div class="crud-loading-card">
             <div class="loading-spinner"></div>
@@ -250,7 +270,7 @@
         </div>
     </div>
 
-    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20260823-loading-modal"></script>
+    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20260823-remove-confirmation-2"></script>
 </body>
 
 </html>

@@ -103,6 +103,20 @@ class DeptheadViewTests(TestCase):
             invited_by=depthead,
         ).exists())
 
+        invite = FacultyInvite.objects.get(email='new-faculty@example.com')
+        invite.used = True
+        invite.save(update_fields=['used'])
+
+        reuse_response = self.client.post(
+            reverse('depthead:invite_faculty'),
+            {'email': 'new-faculty@example.com'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(reuse_response.status_code, 201)
+        invite.refresh_from_db()
+        self.assertFalse(invite.used)
+
     def test_student_behavior_renders(self):
         response = self.client.get(reverse('depthead:student_behavior'))
         self.assertEqual(response.status_code, 200)

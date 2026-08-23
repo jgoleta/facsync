@@ -4,12 +4,22 @@
         const facultyForm = document.getElementById('facultyForm');
         const crudLoadingModal = document.getElementById('crudLoadingModal');
         const crudLoadingMessage = document.getElementById('crudLoadingMessage');
+        const removeFacultyConfirmModal = document.getElementById('removeFacultyConfirmModal');
+        const removeFacultyName = document.getElementById('removeFacultyName');
+        const closeRemoveFacultyConfirm = document.getElementById('closeRemoveFacultyConfirm');
+        const confirmRemoveFaculty = document.getElementById('confirmRemoveFaculty');
+        let pendingRemoveForm = null;
 
         function setCrudLoading(isLoading, message = 'Processing request...') {
             if (!crudLoadingModal) return;
             if (crudLoadingMessage) crudLoadingMessage.textContent = message;
             crudLoadingModal.classList.toggle('show', isLoading);
             document.body.setAttribute('aria-busy', isLoading ? 'true' : 'false');
+        }
+
+        function closeRemoveFacultyConfirmation() {
+            if (removeFacultyConfirmModal) removeFacultyConfirmModal.classList.add('hidden');
+            pendingRemoveForm = null;
         }
 
         function openFacultyModal() {
@@ -60,6 +70,32 @@
                 if (submitButton) submitButton.disabled = false;
             }
         });
+
+        document.querySelectorAll('.remove-faculty-trigger').forEach((button) => {
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                pendingRemoveForm = button.closest('.remove-faculty-form');
+                if (removeFacultyName) {
+                    removeFacultyName.textContent = button.dataset.facultyName || 'this faculty member';
+                }
+                if (removeFacultyConfirmModal) removeFacultyConfirmModal.classList.remove('hidden');
+            });
+        });
+
+        if (closeRemoveFacultyConfirm) closeRemoveFacultyConfirm.addEventListener('click', closeRemoveFacultyConfirmation);
+        if (removeFacultyConfirmModal) {
+            removeFacultyConfirmModal.addEventListener('click', (event) => {
+                if (event.target === removeFacultyConfirmModal) closeRemoveFacultyConfirmation();
+            });
+        }
+        if (confirmRemoveFaculty) {
+            confirmRemoveFaculty.addEventListener('click', () => {
+                if (!pendingRemoveForm) return;
+                const form = pendingRemoveForm;
+                closeRemoveFacultyConfirmation();
+                form.requestSubmit();
+            });
+        }
 
 const scheduleFileInput = document.getElementById('facultyScheduleFile');
 const schedulePreviewModal = document.getElementById('facultySchedulePreviewModal');
