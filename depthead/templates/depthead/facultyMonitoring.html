@@ -72,7 +72,7 @@
                 <div class="monitoring-live-indicator">
                     <span class="live-dot"></span>
                     <span>Live monitoring</span>
-                    <strong>{{ faculty_list|length }}</strong>
+                    <strong id="monitoringLiveCount">{{ faculty_list|length }}</strong>
                 </div>
             </header>
 
@@ -90,7 +90,7 @@
                 </div>
             </div>
 
-            <div class="monitoring-grid">
+            <div class="monitoring-grid" id="monitoringGrid" data-refresh-url="{% url 'depthead:faculty_monitoring_data' %}">
                 {% for item in faculty_list %}
                 <div class="faculty-card {{ item.status_class }}">
                     <div class="faculty-avatar">{{ item.name|first|upper }}</div>
@@ -112,5 +112,6 @@
             </div>
         </main>
     </div>
+    <script src="{% static 'depthead/js/facultyMonitoring.js' %}"></script>
 </body>
 </html>
