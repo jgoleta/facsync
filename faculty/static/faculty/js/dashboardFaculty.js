@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Status Controls ---
+
     const statusButtons = document.querySelectorAll('.status-btn');
     const updateStatusButton = document.getElementById('updateStatusBtn');
     const statusMessage = document.getElementById('statusMessage');
@@ -19,10 +21,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     let selectedStatus = document.querySelector('.status-btn.active')?.dataset.status || 'available';
 
+    // Retrieve the CSRF token required by dashboard API requests.
+    function getCsrfToken() {
+        const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
+        return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+    }
+
+    // Convert the API status value into the value used by the status buttons.
     function statusButtonValue(status) {
         return status === 'virtual_only' ? 'virtual' : status === 'on_leave' ? 'on-leave' : status;
     }
 
+    // Update the dashboard status controls with the latest API response.
     function updateStatusPresentation(data) {
         const buttonStatus = statusButtonValue(data.status);
         statusButtons.forEach((button) => {
@@ -43,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (useCalendarStatusBtn) useCalendarStatusBtn.classList.toggle('hidden', !data.manual_override);
     }
 
+    // Track which status the faculty member selected before saving it.
     statusButtons.forEach((button) => {
         button.addEventListener('click', () => {
             statusButtons.forEach((item) => item.classList.remove('active'));
@@ -52,11 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    function getCsrfToken() {
-        const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
-        return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
-    }
-
+    // Save a manually selected faculty status and its note.
     if (updateStatusButton) {
         updateStatusButton.addEventListener('click', async () => {
             updateStatusButton.disabled = true;
@@ -94,6 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Return status control to the values calculated from the faculty calendar.
     if (useCalendarStatusBtn) {
         useCalendarStatusBtn.addEventListener('click', async () => {
             useCalendarStatusBtn.disabled = true;
@@ -126,6 +134,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (liveStatusIcon) liveStatusIcon.textContent = statusIcons[selectedStatus];
 
     // --- Consultation Request Filtering and Actions ---
+
+    // Filter visible consultation requests by their current status.
     const filterButtons = document.querySelectorAll('.filter-btn');
     const requestItems = document.querySelectorAll('.request-item');
 
@@ -150,6 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Submit the faculty decision for an individual consultation request.
     requestItems.forEach((item) => {
         item.querySelectorAll('[data-action]').forEach((button) => {
             button.addEventListener('click', async () => {

@@ -8,10 +8,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Student Dashboard - Faculty</title>
     <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}?v=20260819-status-colors">
+    <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20260824-ui-refresh">
     <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
 
-<body>
+<body class="student-dashboard">
     <div class="page-shell">
         <header class="topbar">
             <a href="{% url 'core:landing' %}" class="brand">
@@ -25,33 +26,46 @@
             </nav>
         </header>
 
-        <main class="container">
-            <header class="toolbar">
-                <h1>Faculty Availability</h1>
-
-                <div class="controls">
-                    <label class="control">
-                        Department:
-                        <select id="deptFilter">
-                            <option value="all">All Departments</option>
-                        </select>
-                    </label>
-
-                    <label class="control toggle">
-                        <input type="checkbox" id="availableToggle" />
-                        Available Now
-                    </label>
-
-                    <label class="control search">
-                        <input id="searchInput" type="search" placeholder="Search faculty by name" />
-                    </label>
-                    
+        <main class="container dashboard-container">
+            <section class="dashboard-hero">
+                <div class="hero-copy">
+                    <p class="eyebrow">Student dashboard</p>
+                    <p>Check live availability, browse schedules, and get notified when a faculty member's status changes.</p>
                 </div>
-            </header>
+            </section>
+
+            <section class="availability-panel" aria-labelledby="availability-title">
+                <header class="toolbar">
+                    <div class="section-heading">
+                        <h2 id="availability-title">Faculty availability</h2>
+                        <p>Use the filters to find the right person and view their schedule.</p>
+                    </div>
+
+                    <div class="controls" aria-label="Filter faculty">
+                        <label class="control">
+                            <span class="control-label">Department</span>
+                            <select id="deptFilter">
+                                <option value="all">All Departments</option>
+                            </select>
+                        </label>
+
+                        <label class="control toggle">
+                            <input type="checkbox" id="availableToggle" />
+                            <span class="toggle-track" aria-hidden="true"><span></span></span>
+                            <span>Available now</span>
+                        </label>
+
+                        <label class="control search">
+                            <span class="control-label">Search</span>
+                            <input id="searchInput" type="search" placeholder="Search faculty by name" />
+                        </label>
+                    </div>
+                </header>
 
             <div id="departmentStatusBanner" class="hidden"></div>
 
-            <section id="facultyGrid" class="grid" aria-live="polite">
+            <section id="facultyGrid" class="grid" aria-live="polite" aria-label="Faculty availability cards">
+            </section>
             </section>
         </main>
     </div>

@@ -8,9 +8,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Public Dashboard</title>
     <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}?v=20260819-status-colors">
+    <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20260824-ui-refresh">
 </head>
 
-<body>
+<body class="student-dashboard public-dashboard">
     <div class="page-shell">
         <header class="topbar">
             <a href="{% url 'core:landing' %}" class="brand">
@@ -23,13 +24,24 @@
             </nav>
         </header>
 
-        <main class="container">
-            <header class="toolbar">
-                <h1>Faculty Availability</h1>
+        <main class="container dashboard-container">
+            <section class="dashboard-hero">
+                <div class="hero-copy">
+                    <p class="eyebrow">Public Dashboard</p>
+                    <p>Check live faculty availability and find the right department for your next visit.</p>
+                </div>
+            </section>
 
-                <div class="controls">
+            <section class="availability-panel" aria-labelledby="availability-title">
+                <header class="toolbar">
+                    <div class="section-heading">
+                        <h1 id="availability-title">Faculty availability</h1>
+                        <p>Use the filters to find a faculty member by college or name.</p>
+                    </div>
+
+                    <div class="controls" aria-label="Filter faculty">
                     <label class="control">
-                        College:
+                        <span class="control-label">College</span>
                         <select id="deptFilter">
                             <option value="all">All Colleges</option>
                             {% for code, label in department_choices %}
@@ -40,14 +52,16 @@
 
                     <label class="control toggle">
                         <input type="checkbox" id="availableToggle" />
-                        Available Now
+                        <span class="toggle-track" aria-hidden="true"><span></span></span>
+                        <span>Available now</span>
                     </label>
 
                     <label class="control search">
+                        <span class="control-label">Search</span>
                         <input id="searchInput" type="search" placeholder="Search faculty by name" />
                     </label>
-                </div>
-            </header>
+                    </div>
+                </header>
 
             <div id="closureBanner" class="closure-banner{% if not closures %} hidden{% endif %}">
                 {% for c in closures %}
@@ -59,7 +73,7 @@
                 {% endfor %}
             </div>
 
-            <section id="facultyGrid" class="grid" aria-live="polite">
+            <section id="facultyGrid" class="grid" aria-live="polite" aria-label="Faculty availability cards">
                 {% for card in faculty_cards %}
                 <article class="card{% if card.is_dept_closed %} card-closed{% endif %}" data-id="{{ card.id }}"
                     data-dept="{{ card.department_name }}" data-status="{{ card.data_status }}"
@@ -82,6 +96,7 @@
                 {% empty %}
                 <p class="empty-state">No faculty available to display right now.</p>
                 {% endfor %}
+            </section>
             </section>
         </main>
     </div>

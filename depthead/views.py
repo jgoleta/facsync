@@ -23,17 +23,6 @@ from django.utils.timesince import timesince
 
 @login_required
 @role_required('depthead')
-def pending_faculty_requests(request):
-    pending_faculty = User.objects.filter(role='faculty', account_status='pending', department__iexact=request.user.department)
-    active_faculty = User.objects.filter(role='faculty', account_status='active', department__iexact=request.user.department)
-    return render(request, 'depthead/pendingFacultyRequests.html', {
-        'pending_faculty': pending_faculty,
-        'active_faculty': active_faculty,
-    })
-
-
-@login_required
-@role_required('depthead')
 def approve_faculty(request, user_id):
     faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', department__iexact=request.user.department)
     if request.method == 'POST':

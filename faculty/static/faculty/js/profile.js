@@ -1,9 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Profile API Helpers ---
+
+    // Retrieve the CSRF token required by profile update requests.
     function getCsrfToken() {
         const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
         return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
     }
 
+    // Save one editable faculty profile field to the server.
     async function saveProfileField(field, value) {
         const body = new URLSearchParams({ field, value });
         const response = await fetch(window.location.pathname, {
@@ -21,6 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Office Location Editing ---
+
+    // Register controls for viewing and updating the faculty office location.
     const officeLocationGroup = document.getElementById('office-location-group');
     if (officeLocationGroup) {
         const locationText = document.getElementById('office-location-text');
@@ -53,6 +59,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Biography Editing ---
+
+    // Register controls for viewing and updating the faculty biography.
     const biographyGroup = document.getElementById('biography-group');
     if (biographyGroup) {
         const bioText = document.getElementById('biography-text');
@@ -92,6 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const lastSync = document.getElementById('calendar-last-sync');
     const syncError = document.getElementById('calendar-sync-error');
 
+    // Update the calendar connection controls to match the current connection state.
     function setCalendarConnected(isConnected) {
         if (isConnected) {
             calendarStatus.textContent = 'Connected';
