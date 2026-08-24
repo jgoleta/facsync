@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Queue Helpers ---
+
     const queueList = document.getElementById('queueList');
     const queueCount = document.getElementById('queueCount');
     const refreshQueueBtn = document.getElementById('refreshQueueBtn');
@@ -9,17 +11,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueCountLarge = document.getElementById('queueCountLarge');
     const lastUpdated = document.getElementById('lastUpdated');
 
+    // Retrieve the CSRF token required by walk-in queue requests.
     function getCsrfToken() {
         const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
         return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
     }
 
+    // Escape student-provided values before inserting them into queue markup.
     function escapeHtml(value) {
         return String(value || '').replace(/[&<>'"]/g, (character) => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;',
         }[character]));
     }
 
+    // --- Queue Rendering ---
+
+    // Render the current walk-in queue and its available actions.
     function renderQueue(queue) {
         queueList.innerHTML = '';
         queueCount.textContent = queue.length;
@@ -52,6 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Queue API and Availability ---
+
+    // Load the walk-in queue and refresh the availability summary.
     async function loadQueue() {
         try {
             const response = await fetch('/faculty/api/walk-ins/');
@@ -76,6 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Save whether new students may join the walk-in queue.
     if (walkInToggle) {
         walkInToggle.addEventListener('change', async () => {
             const enabled = walkInToggle.checked;
@@ -102,6 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Apply an action such as notify, complete, or remove to a queue entry.
     async function updateQueue(queueId, action) {
         const response = await fetch(`/faculty/api/walk-ins/${encodeURIComponent(queueId)}/`, {
             method: 'POST',
@@ -116,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         await loadQueue();
     }
 
+    // Handle queue actions using one delegated click listener.
     queueList.addEventListener('click', async (event) => {
         const button = event.target.closest('[data-id]');
         if (!button) return;

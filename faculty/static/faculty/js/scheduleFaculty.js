@@ -26,23 +26,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let activeEventContext = null;
 
+  // --- Request and Feedback Helpers ---
+
+  // Retrieve the CSRF token required by schedule API requests.
   function getCsrfToken() {
     const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
     return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
   }
 
+  // Build request headers for JSON and multipart schedule API calls.
   function requestHeaders(includeJson = false) {
     const headers = { 'X-CSRFToken': getCsrfToken() };
     if (includeJson) headers['Content-Type'] = 'application/json';
     return headers;
   }
 
+  // Show the result of changing walk-in availability.
   function showWalkInFeedback(message, isError = false) {
     if (!walkInFeedback) return;
     walkInFeedback.textContent = message;
     walkInFeedback.className = `calendar-sync-status${isError ? ' error' : ''}`;
   }
 
+  // --- Walk-in Availability ---
+
+  // Save the faculty member's walk-in availability preference.
   if (walkInToggle) {
     walkInToggle.addEventListener('change', async () => {
       const enabled = walkInToggle.checked;
@@ -68,23 +76,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Schedule object will be populated from the server API
+  // --- Calendar Data and API ---
+
+  // Store the schedule returned by the server for calendar rendering.
   const facultySchedule = { name: null, schedule: [] };
   const weekdayIndexes = {
     sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
     thursday: 4, friday: 5, saturday: 6,
   };
 
+  // Convert a Date object into the YYYY-MM-DD key used by the calendar.
   function localDateKey(value) {
     return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
   }
 
+  // Determine whether a month falls inside an event's recurring month range.
   function monthIsIncluded(month, startMonth, endMonth) {
     if (!startMonth || !endMonth) return true;
     if (startMonth <= endMonth) return month >= startMonth && month <= endMonth;
     return month >= startMonth || month <= endMonth;
   }
 
+  // Expand a recurring weekday event into the date keys shown by the calendar.
   function recurringDateKeys(dayOfWeek, startMonth, endMonth) {
     const today = new Date();
     const first = new Date(today.getFullYear(), today.getMonth(), 1 - 7);
@@ -98,6 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return dates;
   }
 
+  // Fetch schedule events, normalize them, and refresh the calendar display.
   async function fetchEventsFromApi(sync = false) {
     try {
       const res = await fetch(`/faculty/api/events/${sync ? '?sync=1' : ''}`);
@@ -154,12 +168,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // --- Schedule CSV Upload ---
+
+  // Display validation, upload, or deletion feedback for schedule CSV actions.
   function setScheduleUploadStatus(message, isError = false) {
     if (!scheduleUploadStatus) return;
     scheduleUploadStatus.textContent = message;
     scheduleUploadStatus.className = `calendar-sync-status${isError ? " error" : ""}`;
   }
 
+  // Render the rows returned by a schedule CSV upload in the preview modal.
   function renderSchedulePreview(rows) {
     if (!schedulePreviewCard || !schedulePreviewBody) return;
     schedulePreviewBody.innerHTML = "";
@@ -181,6 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (schedulePreviewModal) schedulePreviewModal.classList.remove("hidden");
   }
 
+  // Hide the uploaded schedule preview modal.
   function closeSchedulePreview() {
     if (schedulePreviewModal) schedulePreviewModal.classList.add("hidden");
   }
@@ -198,6 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Validate and upload a faculty schedule CSV file.
   async function uploadSchedule(file) {
     if (!file) return;
     if (!file.name.toLowerCase().endsWith(".csv")) {
@@ -271,8 +291,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // --- Event CRUD and Display Helpers ---
+
+  // Create a new schedule event through the faculty API.
   async function addEvent(eventData) {
-    // Send create request to API
     try {
       const payload = {
         title: eventData.title,
@@ -307,11 +329,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Format an event's time range for calendar and modal labels.
   function formatEventTime(eventData) {
     if (eventData.type === "on-leave") return "All Day";
     return `${formatTime12(eventData.startTime)}${eventData.endTime ? ` - ${formatTime12(eventData.endTime)}` : ""}`;
   }
 
+  // Convert a 24-hour time value into a readable 12-hour format.
   function formatTime12(timeValue) {
     if (!timeValue) return "";
 
@@ -326,6 +350,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return `${hour12}:${minutes} ${period}`;
   }
 
+  // Open a modal listing every event for a selected calendar day.
   function openDayScheduleModal(dateKey, dayLabel, events) {
     const modal = document.getElementById("dayScheduleModal");
     const titleEl = document.getElementById("dayScheduleTitle");
@@ -355,6 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.classList.remove("hidden");
   }
 
+  // Show the selected event's details and available actions.
   function openEventModal(eventData, dateKey) {
     const modal = document.getElementById("eventDetailModal");
     const titleEl = document.getElementById("eventDetailTitle");
@@ -392,8 +418,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Delete a schedule event from the API or remove it from local state.
   async function deleteEvent(dateKey, eventToDelete) {
-    // If event has an id, call DELETE on API
     if (eventToDelete.id) {
       try {
         const res = await fetch(`/faculty/api/events/${eventToDelete.id}/`, {
@@ -422,6 +448,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // --- Calendar Rendering ---
+
+  // Render the current schedule in monthly, weekly, or daily view.
   function renderCalendar() {
     if (!calendarGrid || !legendList) return;
 
@@ -619,6 +648,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Change the active calendar view and render it again.
   if (viewControls) {
     const viewButtons = viewControls.querySelectorAll(".view-btn");
     viewButtons.forEach((button) => {
@@ -631,7 +661,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Modal functionality for adding events
+  // --- Add and Edit Event Modal ---
+
   const addEventModal = document.getElementById("addEventModal");
   const eventDetailModal = document.getElementById("eventDetailModal");
   const dayScheduleModal = document.getElementById("dayScheduleModal");
@@ -647,22 +678,27 @@ document.addEventListener("DOMContentLoaded", () => {
   const eventDayGroup = document.getElementById("event-day-group");
   const eventDayInput = document.getElementById("eventDay");
 
+  // Extract the month number from an HTML date or datetime value.
   function monthFromDate(value) {
     return value ? Number(value.slice(5, 7)) : null;
   }
 
+  // Extract the time portion expected by the schedule API.
   function timeValue(value) {
     return value ? value.split('T').pop() : null;
   }
+  // Extract the date portion from an HTML datetime value.
   function dateValue(value) {
     return value ? value.split('T')[0] : '';
   }
 
+  // Return the selected recurring weekday, or an empty value for one-time events.
   function selectedRecurringDay() {
     const value = eventDayInput?.value || '';
     return value && value.toLowerCase() !== 'none' ? value : '';
   }
 
+  // Keep the date and time fields in sync with recurring-event selection.
   if (eventDayInput) {
     eventDayInput.addEventListener("change", () => {
       if (eventTypeSelect) eventTypeSelect.dispatchEvent(new Event("change"));
@@ -673,6 +709,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const startTimeInput = document.getElementById("eventStartTime");
   const endTimeInput = document.getElementById("eventEndTime");
 
+  // Show and validate the form fields appropriate for the selected event type.
   if (eventTypeSelect && timeInputsWrapper) {
     eventTypeSelect.addEventListener("change", (e) => {
       if (selectedRecurringDay()) {
@@ -694,6 +731,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Reset and open the form for creating a new event.
   if (openModalBtn && addEventModal) {
     openModalBtn.addEventListener("click", () => {
       isEditing = false;
@@ -715,12 +753,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Close the add-event modal from its close button.
   if (closeModalBtn && addEventModal) {
     closeModalBtn.addEventListener("click", () => {
       addEventModal.classList.add("hidden");
     });
   }
 
+  // Close the add-event modal when the backdrop is clicked.
   if (addEventModal) {
     addEventModal.addEventListener("click", (e) => {
       if (e.target === addEventModal) {
@@ -729,6 +769,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Close the event-detail modal when its backdrop is clicked.
   if (eventDetailModal) {
     eventDetailModal.addEventListener("click", (e) => {
       if (e.target === eventDetailModal) {
@@ -737,7 +778,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-if (dayScheduleModal) {
+  // Close the day-schedule modal when its backdrop is clicked.
+  if (dayScheduleModal) {
   dayScheduleModal.addEventListener("click", (e) => {
     if (e.target === dayScheduleModal) {
       dayScheduleModal.classList.add("hidden");
@@ -745,11 +787,13 @@ if (dayScheduleModal) {
   });
 }
 
-dayScheduleCloseBtns.forEach((btn) => {
+  // Close the day-schedule modal from its close buttons.
+  dayScheduleCloseBtns.forEach((btn) => {
   btn.addEventListener("click", () => {
     if (dayScheduleModal) dayScheduleModal.classList.add("hidden");
   });
 });
+  // Create or update an event from the add-event form submission.
   if (addEventForm) {
     addEventForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -832,6 +876,7 @@ dayScheduleCloseBtns.forEach((btn) => {
     });
   }
 
+  // Refresh the schedule from Google Calendar on demand.
   if (syncCalendarBtn) {
     syncCalendarBtn.addEventListener('click', async () => {
       syncCalendarBtn.disabled = true;
@@ -847,6 +892,7 @@ dayScheduleCloseBtns.forEach((btn) => {
     if (data?.calendar_connected) fetchEventsFromApi(true);
   });
 
+  // Open the event form and populate it with the selected event for editing.
   function openAddEventModalForEdit() {
     if (!activeEventContext) return;
 

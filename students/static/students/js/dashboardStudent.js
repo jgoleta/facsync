@@ -40,6 +40,25 @@ function escapeHtml(value) {
   );
 }
 
+function getInitials(name) {
+  return String(name || "F")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
+
+function getStatusLabel(status) {
+  return {
+    available: "Available",
+    busy: "Busy",
+    virtual_only: "Virtual only",
+    on_leave: "On leave",
+    unavailable: "Unavailable",
+  }[status] || "Status unavailable";
+}
+
 function populateDepartments() {
   const depts = Array.from(new Set(cards.map((c) => c.dataset.dept))).sort();
   // clear existing except the 'all' option
@@ -196,10 +215,7 @@ function renderFacultyDirectory() {
       (faculty) => `
     <article class="card${faculty.is_dept_closed ? " card-closed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-dept="${escapeHtml(faculty.department)}" data-status="${escapeHtml(faculty.status)}" data-lastupdated="${escapeHtml(faculty.updated_at || "")}">
       <div class="card-left">
-        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="12" cy="8" r="3.2" fill="#e6eefc" />
-          <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#e6eefc" />
-        </svg>
+        <div class="avatar" aria-hidden="true">${escapeHtml(getInitials(faculty.name))}</div>
       </div>
       <div class="card-body">
         <div class="card-title">${escapeHtml(faculty.name)}</div>
@@ -207,8 +223,9 @@ function renderFacultyDirectory() {
         <button type="button" class="card-notify${faculty.is_subscribed ? " subscribed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-subscribed="${faculty.is_subscribed ? "true" : "false"}" aria-label="${faculty.is_subscribed ? "Stop receiving notifications for this faculty member" : "Receive notifications when this faculty member's status changes"}" title="${faculty.is_subscribed ? "Notifications enabled — click to unsubscribe" : "Notify me when this faculty member's status changes"}">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 22a2 2 0 0 0 2.2-1.7H9.8A2.3 2.3 0 0 0 12 22Zm7-5.4-1.4-1.7V10a5.6 5.6 0 0 0-4.4-5.5V3.8a1.2 1.2 0 1 0-2.4 0v.7A5.6 5.6 0 0 0 6.4 10v4.9L5 16.6v1h14v-1Z"/></svg>
         </button>
-        <div class="status-row"><span class="status-badge status-${faculty.status}"></span>
-          <i class="status-note">${escapeHtml(faculty.walk_ins_enabled ? "Accepting walk-ins" : faculty.note || "Walk-ins unavailable")}</i>
+        <div class="status-row"><span class="status-badge status-${faculty.status}" aria-hidden="true"></span>
+          <span class="status-label">${escapeHtml(getStatusLabel(faculty.status))}</span>
+          <span class="status-note">${escapeHtml(faculty.walk_ins_enabled ? "Accepting walk-ins" : faculty.note || "Walk-ins unavailable")}</span>
         </div>
         <div class="meta">${escapeHtml(faculty.updated_at ? `Last updated: ${parseISOToDisplay(faculty.updated_at)}` : "No recent status update")}</div>
         <div class="card-actions">
