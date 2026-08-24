@@ -193,6 +193,25 @@
   line-height: 1.45;
 }
 
+.student-dashboard .closure-banner {
+  margin: -4px 0 18px;
+  padding: 12px 14px;
+  border: 1px solid #f1d58a;
+  border-radius: 12px;
+  background: #fff9e8;
+  color: #795b12;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.student-dashboard .closure-banner p {
+  margin: 0;
+}
+
+.student-dashboard .closure-banner p + p {
+  margin-top: 8px;
+}
+
 .student-dashboard .grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
