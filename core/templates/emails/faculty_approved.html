@@ -1,0 +1,15 @@
+{% extends "emails/base_email.html" %}
+{% block heading %}Your faculty account is approved{% endblock %}
+{% block body %}
+<p>Hi {{ name }},</p>
+<p>Your faculty account request has been approved. You can now log in and start managing your consultations.</p>
+{% endblock %}
+{% block button %}
+<tr>
+    <td align="center" style="padding:8px 40px 24px 40px;">
+        <a href="{{ site_url }}/login/"
+            style="display:inline-block; background:linear-gradient(45deg,#3b82f6,#0b74de); color:#ffffff; text-decoration:none; font-weight:600; padding:12px 28px; border-radius:999px;">Log
+            In</a>
+    </td>
+</tr>
+{% endblock %}

@@ -1,7 +1,9 @@
 from django.utils import timezone
 from .models import DepartmentAnnouncement, Notification, User
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
+from django.template.loader import render_to_string
+from django.utils.html import strip_tags
 
 def send_faculty_invite_email(email, department):
     send_mail(
@@ -109,23 +111,52 @@ def get_active_announcements(department=None):
         for a in qs
     ]
 
+def _send_html_email(subject, template_name, context, recipient_list, fail_silently=False):
+    context['site_url'] = settings.SITE_URL
+    html_content = render_to_string(f'emails/{template_name}', context)
+    text_content = strip_tags(html_content)
+    msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, recipient_list)
+    msg.attach_alternative(html_content, "text/html")
+    msg.send(fail_silently=fail_silently)
+
+
 def send_faculty_invite_email(email, department):
-    send_mail(
+    _send_html_email(
         "You've been invited to FacSync",
-        f"You've been pre-registered as faculty for {department}. Sign in with Google using this email to activate your account.",
-        settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
+        'faculty_invite.html',
+        {'department': department},
+        [email],
     )
+
 
 def send_faculty_approved_email(user):
-    send_mail(
+    _send_html_email(
         "Your FacSync faculty account is approved",
-        "Your faculty account request has been approved. You can now log in.",
-        settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False,
+        'faculty_approved.html',
+        {'name': user.get_full_name() or user.username},
+        [user.email],
     )
 
+
 def send_faculty_removed_email(email, name):
-    send_mail(
+    _send_html_email(
         "Your FacSync faculty account was removed",
-        f"Hi {name}, your faculty account has been removed by your Department Head.",
-        settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
+        'faculty_removed.html',
+        {'name': name},
+        [email],
+    )
+
+
+def send_faculty_status_email(student, faculty_name, status_label, url):
+    _send_html_email(
+        f"{faculty_name} is now {status_label}",
+        'faculty_status_update.html',
+        {
+            'student_name': student.get_full_name() or student.username,
+            'faculty_name': faculty_name,
+            'status_label': status_label,
+            'url': url,
+        },
+        [student.email],
+        fail_silently=True,
     )
