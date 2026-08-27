@@ -45,6 +45,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
             sociallogin.user.role = 'depthead'
             sociallogin.user.account_status = 'active'
             sociallogin.user.department = depthead_invite.department
+            sociallogin.user.title = depthead_invite.title
             depthead_invite.used = True
             depthead_invite.delete()
             if 'registration_role' in request.session:

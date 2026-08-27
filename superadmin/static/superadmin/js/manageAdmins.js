@@ -35,3 +35,5 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === editModal) editModal.classList.add("hidden");
   });
 });
+
+document.getElementById("edit-depthead-title").value = btn.dataset.title;

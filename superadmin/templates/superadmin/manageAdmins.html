@@ -78,6 +78,7 @@
                             <th>Email</th>
                             <th>Role</th>
                             <th>Department</th>
+                            <th>Title</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -88,6 +89,7 @@
                             <td>{{ admin.email }}</td>
                             <td>Dept. Head</td>
                             <td>{{ admin.department }}</td>
+                            <td>{{ admin.get_title_display|default:"—" }}</td>
                             <td class="actions">
                                 <button type="button" class="edit-depthead-btn" data-id="{{ admin.id }}" data-role="{{ admin.role }}"
                                     data-department="{{ admin.department }}">Edit</button>
@@ -127,6 +129,14 @@
                     <label for="deptheadDepartment">Department</label>
                     <select id="deptheadDepartment" name="department" required>
                         {% for value, label in dept_head_form.department.field.choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label for="deptheadTitle">Title</label>
+                    <select id="deptheadTitle" name="title" required>
+                        {% for value, label in title_choices %}
                         <option value="{{ value }}">{{ label }}</option>
                         {% endfor %}
                     </select>
