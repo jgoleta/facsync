@@ -18,43 +18,43 @@ class DeptheadViewTests(TestCase):
             username='depthead-admin-faculty-route-test',
             password='test-password',
             role='depthead',
-            department='CCS',
+            college='CCS',
         )
         get_user_model().objects.create_user(
             username='faculty-without-profile-test',
             password='test-password',
             role='faculty',
             account_status='active',
-            department='CCS',
+            college='CCS',
         )
         self.client.force_login(user)
         response = self.client.get(reverse('depthead:admin_faculty'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'depthead/adminFaculty.html')
 
-    def test_depthead_can_upload_schedule_for_same_department_faculty(self):
+    def test_depthead_can_upload_schedule_for_same_college_faculty(self):
         depthead = get_user_model().objects.create_user(
             username='depthead-schedule-upload-test',
             password='test-password',
             role='depthead',
-            department='CCS',
+            college='CCS',
         )
         faculty_user = get_user_model().objects.create_user(
             username='faculty-depthead-upload-test',
             password='test-password',
             role='faculty',
-            department='CCS',
+            college='CCS',
         )
         faculty = FacultyProfile.objects.create(
             faculty_id='faculty-depthead-upload-test',
             user=faculty_user,
-            department_id='CCS',
+            college_id='CCS',
         )
         self.client.force_login(depthead)
         upload = SimpleUploadedFile(
             'schedule.csv',
             b'event_title,short_description,room_location,recurring_day,start_month,end_month,start_time,end_time,status_type\n'
-            b'Department class,Class schedule,Room 204,Monday,8,5,10:30,12:00,Busy\n',
+            b'College class,Class schedule,Room 204,Monday,8,5,10:30,12:00,Busy\n',
             content_type='text/csv',
         )
 
@@ -65,7 +65,7 @@ class DeptheadViewTests(TestCase):
 
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()['added_count'], 1)
-        self.assertTrue(faculty.schedule_events.filter(title='Department class').exists())
+        self.assertTrue(faculty.schedule_events.filter(title='College class').exists())
 
         preview_response = self.client.get(
             reverse('depthead:view_faculty_schedule_preview', args=[faculty.faculty_id]),
@@ -85,7 +85,7 @@ class DeptheadViewTests(TestCase):
             username='depthead-invite-test',
             password='test-password',
             role='depthead',
-            department='CCS',
+            college='CCS',
         )
         self.client.force_login(depthead)
 
@@ -99,7 +99,7 @@ class DeptheadViewTests(TestCase):
         self.assertTrue(response.json()['success'])
         self.assertTrue(FacultyInvite.objects.filter(
             email='new-faculty@example.com',
-            department='CCS',
+            college='CCS',
             invited_by=depthead,
         ).exists())
 
@@ -127,10 +127,10 @@ class DeptheadViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'depthead/facultyMonitoring.html')
 
-    def test_department_settings_renders(self):
-        response = self.client.get(reverse('depthead:department_settings'))
+    def test_college_settings_renders(self):
+        response = self.client.get(reverse('depthead:college_settings'))
         self.assertEqual(response.status_code, 200)
-        self.assertTemplateUsed(response, 'depthead/departmentSettings.html')
+        self.assertTemplateUsed(response, 'depthead/collegeSettings.html')
 
     def test_peak_analytics_renders(self):
         response = self.client.get(reverse('depthead:peak_analytics'))

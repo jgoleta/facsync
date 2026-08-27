@@ -1,6 +1,7 @@
 (function () {
   const bell = document.getElementById("notificationBell");
   if (!bell) return;
+  const studentFeedback = window.studentFeedback;
 
   const endpoint = "/api/notifications/";
   const count = document.getElementById("notificationCount");
@@ -34,11 +35,20 @@
     `;
     wrapper.appendChild(menu);
     menu.querySelector(".notification-mark-all").addEventListener("click", async () => {
-      await fetch(endpoint, {
-        method: "POST",
-        headers: { "X-CSRFToken": csrfToken(), "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
+      studentFeedback?.showLoading("Marking notifications as read...");
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "X-CSRFToken": csrfToken(), "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        if (!response.ok) throw new Error("Unable to mark notifications as read.");
+        studentFeedback?.showToast("Notifications marked as read.");
+      } catch (error) {
+        studentFeedback?.showToast(error.message, true);
+      } finally {
+        studentFeedback?.hideLoading();
+      }
       await loadNotifications();
     });
     return menu;
@@ -81,21 +91,39 @@
       remove.textContent = "×";
       remove.addEventListener("click", async (event) => {
         event.stopPropagation();
-        await fetch(endpoint, {
-          method: "DELETE",
-          headers: { "X-CSRFToken": csrfToken(), "Content-Type": "application/json" },
-          body: JSON.stringify({ notification_id: notification.id }),
-        });
+        studentFeedback?.showLoading("Removing notification...");
+        try {
+          const response = await fetch(endpoint, {
+            method: "DELETE",
+            headers: { "X-CSRFToken": csrfToken(), "Content-Type": "application/json" },
+            body: JSON.stringify({ notification_id: notification.id }),
+          });
+          if (!response.ok) throw new Error("Unable to remove notification.");
+          studentFeedback?.showToast("Notification removed successfully.");
+        } catch (error) {
+          studentFeedback?.showToast(error.message, true);
+        } finally {
+          studentFeedback?.hideLoading();
+        }
         await loadNotifications();
       });
 
       async function openNotification() {
         if (!notification.is_read) {
-          await fetch(endpoint, {
-            method: "POST",
-            headers: { "X-CSRFToken": csrfToken(), "Content-Type": "application/json" },
-            body: JSON.stringify({ notification_id: notification.id }),
-          });
+          studentFeedback?.showLoading("Opening notification...");
+          try {
+            const response = await fetch(endpoint, {
+              method: "POST",
+              headers: { "X-CSRFToken": csrfToken(), "Content-Type": "application/json" },
+              body: JSON.stringify({ notification_id: notification.id }),
+            });
+            if (!response.ok) throw new Error("Unable to update notification.");
+          } catch (error) {
+            studentFeedback?.showToast(error.message, true);
+            return;
+          } finally {
+            studentFeedback?.hideLoading();
+          }
         }
         if (notification.url) window.location.href = notification.url;
         else await loadNotifications();

@@ -1,18 +1,19 @@
-const deptFilter = document.getElementById("deptFilter");
+const collegeFilter = document.getElementById("collegeFilter");
 const availableToggle = document.getElementById("availableToggle");
 const searchInput = document.getElementById("searchInput");
 const facultyGrid = document.getElementById("facultyGrid");
-const statusBanner = document.getElementById("departmentStatusBanner");
+const statusBanner = document.getElementById("collegeStatusBanner");
+const studentFeedback = window.studentFeedback;
 
-let closedDepartments = {};
+let closedColleges = {};
 
-function loadClosedDepartmentsFromDOM() {
-  const dataElement = document.getElementById("closed-departments");
+function loadClosedCollegesFromDOM() {
+  const dataElement = document.getElementById("closed-colleges");
   if (!dataElement) return;
   try {
-    closedDepartments = JSON.parse(dataElement.textContent || "{}");
+    closedColleges = JSON.parse(dataElement.textContent || "{}");
   } catch (error) {
-    closedDepartments = {};
+    closedColleges = {};
   }
 }
 
@@ -59,29 +60,29 @@ function getStatusLabel(status) {
   }[status] || "Status unavailable";
 }
 
-function populateDepartments() {
-  const depts = Array.from(new Set(cards.map((c) => c.dataset.dept))).sort();
+function populateColleges() {
+  const colleges = Array.from(new Set(cards.map((c) => c.dataset.college))).sort();
   // clear existing except the 'all' option
-  Array.from(deptFilter.options)
+  Array.from(collegeFilter.options)
     .slice(1)
     .forEach((o) => o.remove());
-  depts.forEach((d) => {
+  colleges.forEach((d) => {
     const opt = document.createElement("option");
     opt.value = d;
     opt.textContent = d;
-    deptFilter.appendChild(opt);
+    collegeFilter.appendChild(opt);
   });
 }
 
-function renderDepartmentStatus() {
-  const selectedDept = deptFilter.value;
-  if (statusBanner && selectedDept !== "all") {
-    if (closedDepartments[selectedDept]) {
-      statusBanner.textContent = closedDepartments[selectedDept];
-      statusBanner.className = "department-status-banner closed";
+function renderCollegeStatus() {
+  const selectedCollege = collegeFilter.value;
+  if (statusBanner && selectedCollege !== "all") {
+    if (closedColleges[selectedCollege]) {
+      statusBanner.textContent = closedColleges[selectedCollege];
+      statusBanner.className = "college-status-banner closed";
     } else {
-      statusBanner.textContent = `The ${selectedDept} is currently open.`;
-      statusBanner.className = "department-status-banner open";
+      statusBanner.textContent = `The ${selectedCollege} is currently open.`;
+      statusBanner.className = "college-status-banner open";
     }
   } else if (statusBanner) {
     statusBanner.className = "hidden";
@@ -89,25 +90,25 @@ function renderDepartmentStatus() {
 }
 
 function renderCards() {
-  const dept = deptFilter.value;
+  const college = collegeFilter.value;
   const onlyAvailable = availableToggle.checked;
   const q = searchInput.value.trim().toLowerCase();
-  renderDepartmentStatus();
+  renderCollegeStatus();
 
   let visibleCount = 0;
   cards.forEach((card) => {
-    const cDept = card.dataset.dept || "";
+    const cCollege = card.dataset.college || "";
     const status = card.dataset.status || "";
     const name = (
       card.querySelector(".card-title")?.textContent || ""
     ).toLowerCase();
     let show = true;
-    if (dept !== "all" && cDept !== dept) show = false;
+    if (college !== "all" && cCollege !== college) show = false;
     if (onlyAvailable && status !== "available") show = false;
     if (q && !name.includes(q)) show = false;
 
-    // If a department is selected and it's closed, don't show any faculty from it.
-    if (dept !== "all" && closedDepartments[dept]) {
+    // If a college is selected and it's closed, don't show any faculty from it.
+    if (college !== "all" && closedColleges[college]) {
       show = false;
     }
 
@@ -123,9 +124,9 @@ function renderCards() {
       facultyGrid.appendChild(noResults);
     }
     noResults.style.display = "block";
-    if (dept !== "all" && closedDepartments[dept]) {
+    if (college !== "all" && closedColleges[college]) {
       noResults.textContent =
-        "Faculty are not shown because this department is currently closed.";
+        "Faculty are not shown because this college is currently closed.";
     } else {
       noResults.textContent = "No faculty match your filters.";
     }
@@ -158,6 +159,7 @@ function attachCardHandlers() {
       const facultyId = button.dataset.id;
       const subscribed = button.dataset.subscribed === "true";
       button.disabled = true;
+      studentFeedback?.showLoading(subscribed ? "Turning off notifications..." : "Enabling notifications...");
       try {
         const response = await fetch(
           `/student/api/faculty/${encodeURIComponent(facultyId)}/notification-subscription/`,
@@ -169,9 +171,13 @@ function attachCardHandlers() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Unable to update notification preference.");
         setSubscriptionButton(button, data.subscribed);
+        studentFeedback?.showToast(
+          data.subscribed ? "Notifications enabled." : "Notifications disabled.",
+        );
       } catch (error) {
-        window.alert(error.message);
+        studentFeedback?.showToast(error.message, true);
       } finally {
+        studentFeedback?.hideLoading();
         button.disabled = false;
       }
     });
@@ -213,13 +219,13 @@ function renderFacultyDirectory() {
   facultyGrid.innerHTML = directory
     .map(
       (faculty) => `
-    <article class="card${faculty.is_dept_closed ? " card-closed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-dept="${escapeHtml(faculty.department)}" data-status="${escapeHtml(faculty.status)}" data-lastupdated="${escapeHtml(faculty.updated_at || "")}">
+    <article class="card${faculty.is_college_closed ? " card-closed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-college="${escapeHtml(faculty.college)}" data-status="${escapeHtml(faculty.status)}" data-lastupdated="${escapeHtml(faculty.updated_at || "")}">
       <div class="card-left">
         <div class="avatar" aria-hidden="true">${escapeHtml(getInitials(faculty.name))}</div>
       </div>
       <div class="card-body">
         <div class="card-title">${escapeHtml(faculty.name)}</div>
-        <div class="card-sub">${escapeHtml(faculty.department)}</div>
+        <div class="card-sub">${escapeHtml(faculty.college)}</div>
         <button type="button" class="card-notify${faculty.is_subscribed ? " subscribed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-subscribed="${faculty.is_subscribed ? "true" : "false"}" aria-label="${faculty.is_subscribed ? "Stop receiving notifications for this faculty member" : "Receive notifications when this faculty member's status changes"}" title="${faculty.is_subscribed ? "Notifications enabled — click to unsubscribe" : "Notify me when this faculty member's status changes"}">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 22a2 2 0 0 0 2.2-1.7H9.8A2.3 2.3 0 0 0 12 22Zm7-5.4-1.4-1.7V10a5.6 5.6 0 0 0-4.4-5.5V3.8a1.2 1.2 0 1 0-2.4 0v.7A5.6 5.6 0 0 0 6.4 10v4.9L5 16.6v1h14v-1Z"/></svg>
         </button>
@@ -239,7 +245,7 @@ function renderFacultyDirectory() {
 }
 
 function loadCardsFromDOM() {
-  loadClosedDepartmentsFromDOM();
+  loadClosedCollegesFromDOM();
   renderFacultyDirectory();
   cards = Array.from(facultyGrid.querySelectorAll(".card"));
   cards.forEach((c) => {
@@ -248,7 +254,7 @@ function loadCardsFromDOM() {
     if (meta && iso)
       meta.textContent = "Last updated: " + parseISOToDisplay(iso);
   });
-  populateDepartments();
+  populateColleges();
   attachCardHandlers();
   renderCards();
 }
@@ -261,10 +267,10 @@ async function refreshFacultyDirectory() {
     const dataElement = document.getElementById("faculty-directory");
     if (dataElement)
       dataElement.textContent = JSON.stringify(data.faculty || []);
-    const closedElement = document.getElementById("closed-departments");
+    const closedElement = document.getElementById("closed-colleges");
     if (closedElement)
-      closedElement.textContent = JSON.stringify(data.closed_departments || {});
-    loadClosedDepartmentsFromDOM();
+      closedElement.textContent = JSON.stringify(data.closed_colleges || {});
+    loadClosedCollegesFromDOM();
     renderFacultyDirectory();
     cards = Array.from(facultyGrid.querySelectorAll(".card"));
     attachCardHandlers();
@@ -275,7 +281,7 @@ async function refreshFacultyDirectory() {
 }
 
 // Wire up filters
-deptFilter.addEventListener("change", renderCards);
+collegeFilter.addEventListener("change", renderCards);
 availableToggle.addEventListener("change", renderCards);
 let searchTimer = null;
 searchInput.addEventListener("input", () => {

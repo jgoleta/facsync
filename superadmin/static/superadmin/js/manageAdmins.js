@@ -21,8 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.id;
       document.getElementById("edit-depthead-role").value = btn.dataset.role;
-      document.getElementById("edit-depthead-department").value =
-        btn.dataset.department;
+      document.getElementById("edit-depthead-college").value =
+        btn.dataset.college;
 
       const form = document.getElementById("editDeptheadForm");
       form.action = `/superadmin/admins/depthead/${id}/edit/`;

@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const facultyFeedback = window.facultyFeedback;
+
     // --- Profile API Helpers ---
 
     // Retrieve the CSRF token required by profile update requests.
@@ -9,19 +11,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Save one editable faculty profile field to the server.
     async function saveProfileField(field, value) {
+        facultyFeedback?.showLoading('Saving profile changes...');
         const body = new URLSearchParams({ field, value });
-        const response = await fetch(window.location.pathname, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCsrfToken(),
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-            body,
-        });
-        if (!response.ok) {
-            throw new Error('Unable to save profile changes.');
+        try {
+            const response = await fetch(window.location.pathname, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body,
+            });
+            if (!response.ok) {
+                throw new Error('Unable to save profile changes.');
+            }
+            return response.json();
+        } finally {
+            facultyFeedback?.hideLoading();
         }
-        return response.json();
     }
 
     // --- Office Location Editing ---
@@ -52,8 +59,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 editBtn.classList.remove('hidden');
                 locationInput.classList.add('hidden');
                 saveBtn.classList.add('hidden');
+                facultyFeedback?.showToast('Office location saved successfully.');
             } catch (error) {
-                window.alert(error.message);
+                facultyFeedback?.showToast(error.message, true);
             }
         });
     }
@@ -86,8 +94,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 editBtn.classList.remove('hidden');
                 bioInput.classList.add('hidden');
                 saveBtn.classList.add('hidden');
+                facultyFeedback?.showToast('Biography saved successfully.');
             } catch (error) {
-                window.alert(error.message);
+                facultyFeedback?.showToast(error.message, true);
             }
         });
     }
@@ -128,13 +137,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!confirm('Disconnect Google Calendar? FacSync copies will be removed, but your Google events will remain in Google Calendar.')) {
                 return;
             }
-            const response = await fetch('/faculty/calendar/disconnect/', {
-                method: 'POST',
-                headers: { 'X-CSRFToken': getCsrfToken() },
-            });
-            if (response.ok) {
+            facultyFeedback?.showLoading('Disconnecting Google Calendar...');
+            try {
+                const response = await fetch('/faculty/calendar/disconnect/', {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCsrfToken() },
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Unable to disconnect Google Calendar.');
                 setCalendarConnected(false);
                 if (lastSync) lastSync.textContent = 'Not synced yet';
+                facultyFeedback?.showToast('Google Calendar disconnected successfully.');
+            } catch (error) {
+                facultyFeedback?.showToast(error.message, true);
+            } finally {
+                facultyFeedback?.hideLoading();
             }
         });
 
@@ -146,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     syncError.textContent = '';
                     syncError.classList.add('hidden');
                 }
+                facultyFeedback?.showLoading('Updating calendar sync...');
                 try {
                     const response = await fetch('/faculty/api/calendar/preference/', {
                         method: 'POST',
@@ -163,6 +181,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.error && syncError) {
                         syncError.textContent = data.error;
                         syncError.classList.remove('hidden');
+                        facultyFeedback?.showToast(data.error, true);
+                    } else {
+                        facultyFeedback?.showToast('Calendar sync preference updated successfully.');
                     }
                 } catch (error) {
                     syncToggle.checked = !enabled;
@@ -170,8 +191,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         syncError.textContent = error.message;
                         syncError.classList.remove('hidden');
                     }
+                    facultyFeedback?.showToast(error.message, true);
                 } finally {
                     syncToggle.disabled = false;
+                    facultyFeedback?.hideLoading();
                 }
             });
         }

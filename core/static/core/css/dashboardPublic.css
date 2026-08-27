@@ -40,18 +40,18 @@
   align-items: center;
   gap: 6px;
 }
-.department-status-banner {
+.college-status-banner {
   padding: 10px;
   border-radius: 6px;
   margin-bottom: 12px;
   border: 1px solid;
 }
-.department-status-banner.closed {
+.college-status-banner.closed {
   background: #fff3cd;
   border-color: #ffeeba;
   color: #856404;
 }
-.department-status-banner.open {
+.college-status-banner.open {
   background: #d4edda;
   border-color: #c3e6cb;
   color: #155724;

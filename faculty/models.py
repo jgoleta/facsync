@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.db import models
-from core.departments import get_department_label
+from core.colleges import get_college_label
 
 
 class FacultyProfile(models.Model):
@@ -14,7 +14,7 @@ class FacultyProfile(models.Model):
 
     faculty_id = models.CharField(max_length=64, primary_key=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='faculty_profile', db_column='user_id')
-    department_id = models.CharField(max_length=64, db_column='department_id')
+    college_id = models.CharField(max_length=64, db_column='college_id')
     office_location = models.CharField(max_length=128, blank=True)
     biography = models.TextField(blank=True)
     current_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='available')
@@ -34,9 +34,9 @@ class FacultyProfile(models.Model):
     biography = models.TextField(blank=True, default='')
 
     @property
-    def department_name(self):
-        """Return the full department name, including for legacy CCS records."""
-        return get_department_label(self.department_id)
+    def college_name(self):
+        """Return the full college name, including for legacy CCS records."""
+        return get_college_label(self.college_id)
 
     class Meta:
         verbose_name = 'Faculty Profile'

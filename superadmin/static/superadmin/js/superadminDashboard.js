@@ -1,15 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const deptSelector = document.getElementById('dept-selector');
-    const departmentViewContainer = document.getElementById('department-view-container');
-    const deptViewHeader = document.getElementById('dept-view-header');
-    const deptSummaryCards = document.getElementById('dept-summary-cards');
-    const deptInsightsPanel = document.getElementById('dept-insights-panel');
+    const collegeSelector = document.getElementById('college-selector');
+    const collegeViewContainer = document.getElementById('college-view-container');
+    const collegeViewHeader = document.getElementById('college-view-header');
+    const collegeSummaryCards = document.getElementById('college-summary-cards');
+    const collegeInsightsPanel = document.getElementById('college-insights-panel');
 
     let consultationTrendChart = null;
-    let departmentKpiChart = null;
+    let collegeKpiChart = null;
 
-    // Dummy data for department analytics
-    const departmentData = {
+    // Dummy data for college analytics
+    const collegeData = {
         ccs: {
             name: 'College of Computer Studies',
             stats: {
@@ -50,10 +50,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <p><strong>Suggestion:</strong> Create a "Common Questions" guide for first-year engineering students to reduce faculty load on repetitive queries.</p>
             `
         },
-        // Data for other departments can be added here
+        // Data for other colleges can be added here
     };
 
-    function renderConsultationTrendChart(deptKey) {
+    function renderConsultationTrendChart(collegeKey) {
         const ctx = document.getElementById('consultationTrendChart');
         if (!ctx) return;
 
@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 labels: trendData.labels,
                 datasets: [{
                     label: 'Total Consultations',
-                    data: trendData.data[deptKey] || [50, 60, 70, 80, 90, 100], // default data
+                    data: trendData.data[collegeKey] || [50, 60, 70, 80, 90, 100], // default data
                     fill: false,
                     borderColor: 'rgb(75, 192, 192)',
                     tension: 0.1
@@ -91,12 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function renderDepartmentKpiChart(deptKey) {
-        const ctx = document.getElementById('departmentKpiChart');
+    function renderCollegeKpiChart(collegeKey) {
+        const ctx = document.getElementById('collegeKpiChart');
         if (!ctx) return;
 
-        if (departmentKpiChart) {
-            departmentKpiChart.destroy();
+        if (collegeKpiChart) {
+            collegeKpiChart.destroy();
         }
 
         const kpiData = {
@@ -107,13 +107,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         };
 
-        departmentKpiChart = new Chart(ctx, {
+        collegeKpiChart = new Chart(ctx, {
             type: 'radar',
             data: {
                 labels: kpiData.labels,
                 datasets: [{
-                    label: departmentData[deptKey].name,
-                    data: kpiData.data[deptKey] || [80, 70, 85, 75, 90], // default
+                    label: collegeData[collegeKey].name,
+                    data: kpiData.data[collegeKey] || [80, 70, 85, 75, 90], // default
                     fill: true,
                     backgroundColor: 'rgba(54, 162, 235, 0.2)',
                     borderColor: 'rgb(54, 162, 235)',
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
             options: {
                 responsive: true,
                 plugins: {
-                    title: { display: true, text: 'Department Performance KPIs (%)' }
+                    title: { display: true, text: 'College Performance KPIs (%)' }
                 },
                 scales: {
                     r: {
@@ -139,15 +139,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    deptSelector.addEventListener('change', () => {
-        const selectedDept = deptSelector.value;
+    collegeSelector.addEventListener('change', () => {
+        const selectedCollege = collegeSelector.value;
 
-        if (selectedDept && departmentData[selectedDept]) {
-            const data = departmentData[selectedDept];
+        if (selectedCollege && collegeData[selectedCollege]) {
+            const data = collegeData[selectedCollege];
 
-            deptViewHeader.textContent = `${data.name} Overview`;
+            collegeViewHeader.textContent = `${data.name} Overview`;
 
-            deptSummaryCards.innerHTML = `
+            collegeSummaryCards.innerHTML = `
                 <div class="card">
                     <h3>Total Consultations</h3>
                     <p class="stat">${data.stats.consultations}</p>
@@ -170,14 +170,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
 
-            deptInsightsPanel.innerHTML = data.insights;
+            collegeInsightsPanel.innerHTML = data.insights;
 
-            departmentViewContainer.classList.remove('hidden');
+            collegeViewContainer.classList.remove('hidden');
 
-            renderConsultationTrendChart(selectedDept);
-            renderDepartmentKpiChart(selectedDept);
+            renderConsultationTrendChart(selectedCollege);
+            renderCollegeKpiChart(selectedCollege);
         } else {
-            departmentViewContainer.classList.add('hidden');
+            collegeViewContainer.classList.add('hidden');
         }
     });
 });

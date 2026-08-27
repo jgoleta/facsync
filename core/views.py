@@ -6,14 +6,14 @@ from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from faculty.models import FacultyProfile
-from .forms import StudentProfileForm, FacultyRegistrationForm, FacultyProfileSetupForm, DEPARTMENT_CHOICES
+from .forms import StudentProfileForm, FacultyRegistrationForm, FacultyProfileSetupForm, COLLEGE_CHOICES
 from django.contrib.auth import login as auth_login
 from django.http import Http404
 from allauth.socialaccount.models import SocialAccount
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from .models import Notification
-from core.departments import get_department_label
+from core.colleges import get_college_label
 
 def landing_page(request):
     return render(request, 'core/landingPage.html')
@@ -43,11 +43,11 @@ STATUS_NOTE_DEFAULTS = {
 def dashboard_public(request):
 
     closures = OfficeClosure.objects.filter(is_closed=True)
-    closed_department_codes = set(closures.values_list('department', flat=True))
+    closed_college_codes = set(closures.values_list('college', flat=True))
 
     closure_list = [
         {
-            'department_name': get_department_label(c.department),
+            'college_name': get_college_label(c.college),
             'reason': c.reason,
             'closure_start': c.closure_start,
             'closure_end': c.closure_end,
@@ -65,23 +65,23 @@ def dashboard_public(request):
     for profile in faculty_profiles:
         status_key = profile.current_status
         data_status, status_class = STATUS_DISPLAY_MAP.get(status_key, ('available', 'status-available'))
-        is_dept_closed = profile.department_id in closed_department_codes
+        is_college_closed = profile.college_id in closed_college_codes
         faculty_cards.append({
             'id': profile.faculty_id,
             'name': profile.user.get_full_name() or profile.user.username,
-            'department_name': get_department_label(profile.department_id),
+            'college_name': get_college_label(profile.college_id),
             'data_status': data_status,
             'status_class': status_class,
-            'status_note': 'Department closed' if is_dept_closed else (profile.status_note or STATUS_NOTE_DEFAULTS.get(status_key, '')),
+            'status_note': 'College closed' if is_college_closed else (profile.status_note or STATUS_NOTE_DEFAULTS.get(status_key, '')),
             'last_updated_iso': profile.status_updated_at.isoformat() if profile.status_updated_at else '',
             'last_updated_display': profile.status_updated_at.strftime('%Y-%m-%d %H:%M') if profile.status_updated_at else 'Not yet updated',
-            'is_dept_closed': is_dept_closed,
+            'is_college_closed': is_college_closed,
         })
 
     return render(request, 'core/dashboardPublic.html', {
         'faculty_cards': faculty_cards,
         'closures': closure_list,
-        'department_choices': DEPARTMENT_CHOICES,
+        'college_choices': COLLEGE_CHOICES,
     })
 
 @login_required
@@ -186,7 +186,7 @@ def faculty_profile_setup(request):
             FacultyProfile.objects.create(
                 faculty_id=form.cleaned_data['faculty_id'],
                 user=request.user,
-                department_id=request.user.department,
+                college_id=request.user.college,
                 office_location=form.cleaned_data['office_location'],
             )
             request.user.profile_completed = True
@@ -218,7 +218,7 @@ def faculty_pending_registration(request):
                 last_name=last_name,
                 role='faculty',
                 account_status='pending',
-                department=form.cleaned_data['department'],
+                college=form.cleaned_data['college'],
                 profile_completed=True,
             )
 
@@ -234,7 +234,7 @@ def faculty_pending_registration(request):
             FacultyProfile.objects.create(
                 faculty_id=form.cleaned_data['faculty_id'],
                 user=user,
-                department_id=form.cleaned_data['department'],
+                college_id=form.cleaned_data['college'],
                 office_location=form.cleaned_data['office_location'],
             )
 

@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{% static 'core/css/admin_shared.css' %}" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FacSync | Manage Departments</title>
+    <title>FacSync | Manage Colleges</title>
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}" />
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_management.css' %}" />
 </head>
@@ -26,9 +26,9 @@
                     <span class="nav-icon">👑</span>
                     <span>System Overview</span>
                 </a>
-                <a href="{% url 'superadmin:manage_departments' %}" class="nav-item active">
+                <a href="{% url 'superadmin:manage_colleges' %}" class="nav-item active">
                     <span class="nav-icon">🏢</span>
-                    <span>Manage Departments</span>
+                    <span>Manage Colleges</span>
                 </a>
                 <a href="{% url 'superadmin:manage_admins' %}" class="nav-item">
                     <span class="nav-icon">👤</span>
@@ -55,40 +55,40 @@
         <main class="main-content">
             <header class="main-header with-action">
                 <div>
-                    <h1>Manage Departments</h1>
-                    <p>Add, edit, or remove university departments.</p>
+                    <h1>Manage Colleges</h1>
+                    <p>Add, edit, or remove university colleges.</p>
                 </div>
-                <button type="button" class="btn-primary" id="openAddDepartmentModal">Add New Department</button>
+                <button type="button" class="btn-primary" id="openAddCollegeModal">Add New College</button>
             </header>
 
             <div class="management-table-wrapper">
                 <table>
                     <thead>
                         <tr>
-                            <th>Department Name</th>
+                            <th>College Name</th>
                             <th>Code</th>
-                            <th>Department Head</th>
+                            <th>College Head</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for dept in departments %}
+                        {% for college in colleges %}
                         <tr>
-                            <td>{{ dept.name }}</td>
-                            <td>{{ dept.code }}</td>
+                            <td>{{ college.name }}</td>
+                            <td>{{ college.code }}</td>
                             <td>
-                                {% for head in dept.head_users %}
+                                {% for head in college.head_users %}
                                 {{ head.get_full_name|default:head.username }}{% if not forloop.last %}, {% endif %}
                                 {% empty %}
                                 Not assigned
                                 {% endfor %}
                             </td>
                             <td class="actions">
-                                <button type="button" class="edit-department-btn" data-id="{{ dept.id }}"
-                                    data-name="{{ dept.name }}" data-description="{{ dept.description }}">Edit</button>
-                                <form method="post" action="{% url 'superadmin:delete_department' dept.id %}"
+                                <button type="button" class="edit-college-btn" data-id="{{ college.id }}"
+                                    data-name="{{ college.name }}" data-description="{{ college.description }}">Edit</button>
+                                <form method="post" action="{% url 'superadmin:delete_college' college.id %}"
                                     class="inline-form"
-                                    onsubmit="return confirm('Remove {{ dept.name }}? This cannot be undone.');">
+                                    onsubmit="return confirm('Remove {{ college.name }}? This cannot be undone.');">
                                     {% csrf_token %}
                                     <button type="submit" class="danger">Remove</button>
                                 </form>
@@ -96,7 +96,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4">No departments yet.</td>
+                            <td colspan="4">No colleges yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -105,52 +105,52 @@
         </main>
     </div>
 
-    <!-- Add Department Modal -->
-    <div id="addDepartmentModal" class="modal-overlay hidden">
+    <!-- Add College Modal -->
+    <div id="addCollegeModal" class="modal-overlay hidden">
         <div class="modal">
-            <h2>Add New Department</h2>
-            <form method="post" action="{% url 'superadmin:create_department' %}" class="settings-form">
+            <h2>Add New College</h2>
+            <form method="post" action="{% url 'superadmin:create_college' %}" class="settings-form">
                 {% csrf_token %}
                 <div class="form-group">
-                    <label for="add-dept-name">Department Name</label>
-                    <input type="text" id="add-dept-name" name="name" required
+                    <label for="add-college-name">College Name</label>
+                    <input type="text" id="add-college-name" name="name" required
                         placeholder="e.g. College of Communication Studies">
                 </div>
                 <div class="form-group">
-                    <label for="add-dept-description">Description (optional)</label>
-                    <textarea id="add-dept-description" name="description"></textarea>
+                    <label for="add-college-description">Description (optional)</label>
+                    <textarea id="add-college-description" name="description"></textarea>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="closeAddDepartmentModal">Cancel</button>
-                    <button type="submit" class="primary-button">Add Department</button>
+                    <button type="button" class="btn-secondary" id="closeAddCollegeModal">Cancel</button>
+                    <button type="submit" class="primary-button">Add College</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Edit Department Modal -->
-    <div id="editDepartmentModal" class="modal-overlay hidden">
+    <!-- Edit College Modal -->
+    <div id="editCollegeModal" class="modal-overlay hidden">
         <div class="modal">
-            <h2>Edit Department</h2>
-            <form method="post" id="editDepartmentForm" class="settings-form">
+            <h2>Edit College</h2>
+            <form method="post" id="editCollegeForm" class="settings-form">
                 {% csrf_token %}
                 <div class="form-group">
-                    <label for="edit-dept-name">Department Name</label>
-                    <input type="text" id="edit-dept-name" name="name" required>
+                    <label for="edit-college-name">College Name</label>
+                    <input type="text" id="edit-college-name" name="name" required>
                 </div>
                 <div class="form-group">
-                    <label for="edit-dept-description">Description (optional)</label>
-                    <textarea id="edit-dept-description" name="description"></textarea>
+                    <label for="edit-college-description">Description (optional)</label>
+                    <textarea id="edit-college-description" name="description"></textarea>
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="closeEditDepartmentModal">Cancel</button>
+                    <button type="button" class="btn-secondary" id="closeEditCollegeModal">Cancel</button>
                     <button type="submit" class="primary-button">Save Changes</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script src="{% static 'superadmin/js/manageDepartments.js' %}"></script>
+    <script src="{% static 'superadmin/js/manageColleges.js' %}"></script>
 </body>
 
 </html>

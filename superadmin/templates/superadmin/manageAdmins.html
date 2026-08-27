@@ -26,9 +26,9 @@
                     <span class="nav-icon">👑</span>
                     <span>System Overview</span>
                 </a>
-                <a href="{% url 'superadmin:manage_departments' %}" class="nav-item">
+                <a href="{% url 'superadmin:manage_colleges' %}" class="nav-item">
                     <span class="nav-icon">🏢</span>
-                    <span>Manage Departments</span>
+                    <span>Manage Colleges</span>
                 </a>
                 <a href="{% url 'superadmin:manage_admins' %}" class="nav-item active">
                     <span class="nav-icon">👤</span>
@@ -57,7 +57,7 @@
                 <div>
                     <h1>Manage Admin Accounts</h1>
                     <p>
-                        Manage accounts for Department Heads and Support Office staff.
+                        Manage accounts for College Heads and Support Office staff.
                     </p>
                 </div>
                 <button id="openInviteDeptheadBtn" class="btn-primary">Add New Admin</button>
@@ -77,7 +77,7 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Role</th>
-                            <th>Department</th>
+                            <th>College</th>
                             <th>Title</th>
                             <th>Actions</th>
                         </tr>
@@ -87,12 +87,12 @@
                         <tr>
                             <td>{{ admin.get_full_name|default:admin.username }}</td>
                             <td>{{ admin.email }}</td>
-                            <td>Dept. Head</td>
-                            <td>{{ admin.department }}</td>
+                            <td>College Head</td>
+                            <td>{{ admin.college }}</td>
                             <td>{{ admin.get_title_display|default:"—" }}</td>
                             <td class="actions">
                                 <button type="button" class="edit-depthead-btn" data-id="{{ admin.id }}" data-role="{{ admin.role }}"
-                                    data-department="{{ admin.department }}">Edit</button>
+                                    data-college="{{ admin.college }}">Edit</button>
                                 <form method="post" action="{% url 'superadmin:remove_depthead' admin.id %}" class="inline-form"
                                     onsubmit="return confirm('Deactivate {{ admin.username }}?');">
                                     {% csrf_token %}
@@ -102,7 +102,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="empty-state">No Dept Head accounts yet.</td>
+                            <td colspan="5" class="empty-state">No College Head accounts yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -114,8 +114,8 @@
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inviteDeptheadModalTitle">
             <div class="modal-header">
                 <div>
-                    <h2 id="inviteDeptheadModalTitle">Add Dept Head</h2>
-                    <p>Pre-register a Dept Head email for instant activation on first login.</p>
+                    <h2 id="inviteDeptheadModalTitle">Add College Head</h2>
+                    <p>Pre-register a College Head email for instant activation on first login.</p>
                 </div>
                 <button type="button" class="modal-close" id="closeInviteDeptheadModal">×</button>
             </div>
@@ -126,9 +126,9 @@
                     <input id="deptheadEmail" name="email" type="email" placeholder="depthead@adnu.edu.ph" required>
                 </div>
                 <div class="modal-form-group">
-                    <label for="deptheadDepartment">Department</label>
-                    <select id="deptheadDepartment" name="department" required>
-                        {% for value, label in dept_head_form.department.field.choices %}
+                    <label for="deptheadCollege">College</label>
+                    <select id="deptheadCollege" name="college" required>
+                        {% for value, label in dept_head_form.college.field.choices %}
                         <option value="{{ value }}">{{ label }}</option>
                         {% endfor %}
                     </select>
@@ -150,7 +150,7 @@
     </div>
     <div id="editDeptheadModal" class="modal-overlay hidden">
         <div class="modal">
-            <h2>Edit Dept Head</h2>
+                <h2>Edit College Head</h2>
             <form method="post" id="editDeptheadForm" class="settings-form">
                 {% csrf_token %}
                 <div class="modal-form-group">
@@ -162,9 +162,9 @@
                     </select>
                 </div>
                 <div class="modal-form-group">
-                    <label for="edit-depthead-department">Department</label>
-                    <select id="edit-depthead-department" name="department" required>
-                        {% for value, label in dept_head_form.department.field.choices %}
+                    <label for="edit-depthead-college">College</label>
+                    <select id="edit-depthead-college" name="college" required>
+                        {% for value, label in dept_head_form.college.field.choices %}
                         <option value="{{ value }}">{{ label }}</option>
                         {% endfor %}
                     </select>

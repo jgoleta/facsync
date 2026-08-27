@@ -9,8 +9,8 @@ FacSync replaces fragmented, informal communication (Messenger, Google Chat, ema
 Manual status updates — two-click toggle for faculty who don't use Google Calendar
 + Consultation scheduling — in-person or virtual (with auto-generated Google Meet links), with approve/decline workflow
 + Digital walk-in queue — join, track position, get notified when it's your turn
-+ Weekly schedule management — faculty self-manage, or Department Heads upload on their behalf
-+ Office/department closure status — visible to students in real time
++ Weekly schedule management — faculty self-manage, or College Heads upload on their behalf
++ Office/college closure status — visible to students in real time
 + Analytics dashboard — descriptive, pattern, and AI-generated prescriptive insights (Google Gemini API)
 + -based account management — pre-assigned roles with an approval workflow for self-registration
 

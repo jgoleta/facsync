@@ -3,8 +3,8 @@ import csv
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.decorators import role_required
-from core.models import User, FacultyInvite, OfficeClosure, DepartmentAnnouncement, Department
-from core.forms import DepartmentAnnouncementForm, DepartmentDescriptionForm
+from core.models import User, FacultyInvite, OfficeClosure, CollegeAnnouncement, College
+from core.forms import CollegeAnnouncementForm, CollegeDescriptionForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm
 from faculty.models import FacultyProfile, ConsultationRequest, ScheduleEvent, StatusHistory
@@ -14,7 +14,7 @@ from django.http import HttpResponse, JsonResponse
 from django.db import transaction
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
-from core.services import notify_department_users, send_faculty_invite_email, send_faculty_approved_email, send_faculty_removed_email
+from core.services import notify_college_users, send_faculty_invite_email, send_faculty_approved_email, send_faculty_removed_email
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
 from django.db.models.functions import ExtractHour, ExtractWeekDay, TruncMonth
 from datetime import timedelta, date
@@ -24,7 +24,7 @@ from django.utils.timesince import timesince
 @login_required
 @role_required('depthead')
 def approve_faculty(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', department__iexact=request.user.department)
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', college__iexact=request.user.college)
     if request.method == 'POST':
         faculty_user.account_status = 'active'
         faculty_user.save()
@@ -36,7 +36,7 @@ def approve_faculty(request, user_id):
 @login_required
 @role_required('depthead')
 def decline_faculty(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', department__iexact=request.user.department)
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', college__iexact=request.user.college)
     if request.method == 'POST':
         faculty_user.account_status = 'declined'
         faculty_user.save()
@@ -49,13 +49,13 @@ def decline_faculty(request, user_id):
 def invite_faculty(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
-        if not request.user.department:
+        if not request.user.college:
             if is_ajax:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Your account has no department set. Contact a Super Admin.',
+                    'error': 'Your account has no college set. Contact a Super Admin.',
                 }, status=400)
-            messages.error(request, "Your account has no department set. Contact a Super Admin.")
+            messages.error(request, "Your account has no college set. Contact a Super Admin.")
             return redirect('depthead:admin_faculty')
         requested_email = request.POST.get('email', '').strip()
         used_invite = FacultyInvite.objects.filter(
@@ -65,11 +65,11 @@ def invite_faculty(request):
         form = FacultyInviteForm(request.POST, instance=used_invite)
         if form.is_valid():
             invite = form.save(commit=False)
-            invite.department = request.user.department
+            invite.college = request.user.college
             invite.invited_by = request.user
             invite.used = False
             invite.save()
-            send_faculty_invite_email(invite.email, invite.department)
+            send_faculty_invite_email(invite.email, invite.college)
             if is_ajax:
                 return JsonResponse({
                     'success': True,
@@ -94,7 +94,7 @@ def invite_faculty(request):
 @login_required
 @role_required('depthead')
 def remove_faculty(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='active', department__iexact=request.user.department)
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='active', college__iexact=request.user.college)
     if request.method == 'POST':
         name = faculty_user.get_full_name() or faculty_user.username
         email = faculty_user.email
@@ -112,11 +112,11 @@ def admin_dashboard(request):
     last_month_end = month_start - timedelta(days=1)
     last_month_start = last_month_end.replace(day=1)
 
-    dept_code = request.user.department
-    department = Department.objects.filter(code__iexact=dept_code).first()
+    college_code = request.user.college
+    college = College.objects.filter(code__iexact=college_code).first()
 
     consultations_qs = ConsultationRequest.objects.filter(
-        faculty__department_id__iexact=dept_code
+        faculty__college_id__iexact=college_code
     )
 
     total_this_month = consultations_qs.filter(date__gte=month_start).count()
@@ -142,14 +142,14 @@ def admin_dashboard(request):
     faculty_qs = FacultyProfile.objects.filter(
         user__role='faculty',
         user__account_status='active',
-        department_id__iexact=dept_code,
+        college_id__iexact=college_code,
     )
     active_faculty_count = faculty_qs.count()
     available_now_count = faculty_qs.filter(current_status='available').count()
     available_now_pct = round((available_now_count / active_faculty_count) * 100) if active_faculty_count else 0
 
     return render(request, 'depthead/adminDashboard.html', {
-        'department': department,
+        'college': college,
         'total_this_month': total_this_month,
         'total_change_pct': total_change_pct,
         'completed_this_month': completed_this_month,
@@ -167,7 +167,7 @@ def admin_faculty(request):
 
     faculty_users = list(User.objects.filter(
         role='faculty',
-        department__iexact=request.user.department,
+        college__iexact=request.user.college,
     ).select_related('faculty_profile').order_by('first_name', 'last_name', 'username'))
 
     for user in faculty_users:
@@ -182,7 +182,7 @@ def admin_faculty(request):
 @login_required
 @role_required('depthead')
 def faculty_schedule_template(request):
-    """Download the CSV format used for department-head faculty uploads."""
+    """Download the CSV format used for college-head faculty uploads."""
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename=schedule_template.csv'
     writer = csv.writer(response)
@@ -202,13 +202,13 @@ def faculty_schedule_template(request):
 @role_required('depthead')
 @csrf_protect
 def upload_faculty_schedule(request, faculty_id):
-    """Append a validated CSV schedule to a selected faculty member in this department."""
+    """Append a validated CSV schedule to a selected faculty member in this college."""
     if request.method != 'POST':
         return JsonResponse({'error': 'Only POST requests are allowed.'}, status=405)
     faculty = get_object_or_404(
         FacultyProfile.objects.select_related('user'),
         faculty_id=faculty_id,
-        department_id__iexact=request.user.department,
+        college_id__iexact=request.user.college,
         user__role='faculty',
     )
     try:
@@ -258,7 +258,7 @@ def view_faculty_schedule_preview(request, faculty_id):
     faculty = get_object_or_404(
         FacultyProfile.objects.select_related('user'),
         faculty_id=faculty_id,
-        department_id__iexact=request.user.department,
+        college_id__iexact=request.user.college,
         user__role='faculty',
     )
     events = list(
@@ -286,7 +286,7 @@ def delete_faculty_schedule(request, faculty_id):
     faculty = get_object_or_404(
         FacultyProfile.objects.select_related('user'),
         faculty_id=faculty_id,
-        department_id__iexact=request.user.department,
+        college_id__iexact=request.user.college,
         user__role='faculty',
     )
     with transaction.atomic():
@@ -306,10 +306,10 @@ def delete_faculty_schedule(request, faculty_id):
 @login_required
 @role_required('depthead')
 def student_behavior(request):
-    dept_code = request.user.department
+    college_code = request.user.college
 
     consultations_qs = ConsultationRequest.objects.filter(
-        faculty__department_id__iexact=dept_code
+        faculty__college_id__iexact=college_code
     )
 
     #consultation frequency over the last 6 months (line chart)
@@ -406,7 +406,7 @@ def faculty_monitoring(request):
     profiles = FacultyProfile.objects.select_related('user').filter(
         user__role='faculty',
         user__account_status='active',
-        department_id__iexact=request.user.department,
+        college_id__iexact=request.user.college,
     )
     faculty_list = []
     for profile in profiles:
@@ -426,16 +426,16 @@ def faculty_monitoring(request):
 
 @login_required
 @role_required('depthead')
-def department_settings(request):
+def college_settings(request):
     closure, _ = OfficeClosure.objects.get_or_create(
-        department__iexact=request.user.department,
-        defaults={'department': request.user.department}
+        college__iexact=request.user.college,
+        defaults={'college': request.user.college}
     )
     if request.method == 'POST':
         form = OfficeClosureForm(request.POST, instance=closure)
         if form.is_valid():
             closure = form.save(commit=False)
-            closure.department = request.user.department
+            closure.college = request.user.college
             closure.updated_by = request.user
             closure.save()
             return JsonResponse({'success': True})
@@ -446,17 +446,17 @@ def department_settings(request):
     else:
         form = OfficeClosureForm(instance=closure)
 
-    department_announcements = DepartmentAnnouncement.objects.filter(
-        department__iexact=request.user.department,
+    college_announcements = CollegeAnnouncement.objects.filter(
+        college__iexact=request.user.college,
         expiry__gt=timezone.now()
     )
 
-    department = Department.objects.filter(code__iexact=request.user.department).first()
+    college = College.objects.filter(code__iexact=request.user.college).first()
 
-    return render(request, 'depthead/departmentSettings.html', {
+    return render(request, 'depthead/collegeSettings.html', {
         'closure_form': form,
-        'department_announcements': department_announcements,
-        'department': department,
+        'college_announcements': college_announcements,
+        'college': college,
     })
 
 
@@ -469,10 +469,10 @@ WEEKDAY_LABELS = {
 @login_required
 @role_required('depthead')
 def peak_analytics(request):
-    dept_code = request.user.department
+    college_code = request.user.college
 
     consultations_qs = ConsultationRequest.objects.filter(
-        faculty__department_id__iexact=dept_code
+        faculty__college_id__iexact=college_code
     )
 
     #Peak consultation hour (by start_time, excludes null times)
@@ -567,7 +567,7 @@ def peak_analytics(request):
     available_faculty_count = FacultyProfile.objects.filter(
         user__role='faculty',
         user__account_status='active',
-        department_id__iexact=dept_code,
+        college_id__iexact=college_code,
         current_status='available',
     ).count()
 
@@ -618,13 +618,13 @@ def peak_analytics(request):
 @login_required
 @role_required('depthead')
 def faculty_trends(request):
-    dept_code = request.user.department
+    college_code = request.user.college
     window_start = timezone.now() - timedelta(days=7)
 
     faculty_qs = FacultyProfile.objects.filter(
         user__role='faculty',
         user__account_status='active',
-        department_id__iexact=dept_code,
+        college_id__iexact=college_code,
     ).select_related('user')
 
     trends = []
@@ -740,25 +740,25 @@ def calculate_availability_rate(profile, window_start):
 @role_required('depthead')
 @require_POST
 def create_announcement(request):
-    if not request.user.department:
+    if not request.user.college:
         return JsonResponse(
-            {'success': False, 'error': "Your account has no department set. Contact a Super Admin."},
+            {'success': False, 'error': "Your account has no college set. Contact a Super Admin."},
             status=400
         )
 
-    form = DepartmentAnnouncementForm(request.POST)
+    form = CollegeAnnouncementForm(request.POST)
     if not form.is_valid():
         errors = [e for error_list in form.errors.values() for e in error_list]
         return JsonResponse({'success': False, 'error': ' '.join(errors)}, status=400)
 
     announcement = form.save(commit=False)
-    announcement.department = request.user.department
+    announcement.college = request.user.college
     announcement.posted_by = request.user
     announcement.save()
-    notify_department_users(
-        department=announcement.department,
+    notify_college_users(
+        college=announcement.college,
         notification_type='announcement',
-        title='Department announcement',
+        title='College announcement',
         message=announcement.message,
         url='',
         exclude_user_id=request.user.id,
@@ -776,23 +776,23 @@ def create_announcement(request):
 
 @login_required
 @role_required('depthead')
-def edit_department_description(request):
-    department = Department.objects.filter(code__iexact=request.user.department).first()
-    if not department:
-        messages.error(request, "Your department could not be found. Contact a Super Admin.")
-        return redirect('depthead:department_settings')
+def edit_college_description(request):
+    college = College.objects.filter(code__iexact=request.user.college).first()
+    if not college:
+        messages.error(request, "Your college could not be found. Contact a Super Admin.")
+        return redirect('depthead:college_settings')
 
     if request.method == 'POST':
-        form = DepartmentDescriptionForm(request.POST, instance=department)
+        form = CollegeDescriptionForm(request.POST, instance=college)
         if form.is_valid():
             form.save()
-            messages.success(request, "Department description updated.")
+            messages.success(request, "College description updated.")
         else:
             for error_list in form.errors.values():
                 for error in error_list:
                     messages.error(request, error)
 
-    return redirect('depthead:department_settings')
+    return redirect('depthead:college_settings')
 
 @login_required
 @role_required('depthead')
@@ -801,7 +801,7 @@ def faculty_monitoring_data(request):
     profiles = FacultyProfile.objects.select_related('user').filter(
         user__role='faculty',
         user__account_status='active',
-        department_id__iexact=request.user.department,
+        college_id__iexact=request.user.college,
     )
     faculty_list = []
     for profile in profiles:

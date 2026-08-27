@@ -1,14 +1,14 @@
 from django.utils import timezone
-from .models import DepartmentAnnouncement, Notification, User
+from .models import CollegeAnnouncement, Notification, User
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
-def send_faculty_invite_email(email, department):
+def send_faculty_invite_email(email, college):
     send_mail(
         "You've been invited to FacSync",
-        f"You've been pre-registered as faculty for {department}. Sign in with Google using this email to activate your account.",
+        f"You've been pre-registered as faculty for {college}. Sign in with Google using this email to activate your account.",
         settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
     )
 
@@ -22,7 +22,7 @@ def send_faculty_approved_email(user):
 def send_faculty_removed_email(email, name):
     send_mail(
         "Your FacSync faculty account was removed",
-        f"Hi {name}, your faculty account has been removed by your Department Head.",
+        f"Hi {name}, your faculty account has been removed by your College Head.",
         settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
     )
 
@@ -37,9 +37,9 @@ def create_notification(recipient, notification_type, title, message, url=''):
     )
 
 
-def notify_department_users(department, notification_type, title, message, url='', exclude_user_id=None):
+def notify_college_users(college, notification_type, title, message, url='', exclude_user_id=None):
     recipients = User.objects.filter(
-        department=department,
+        college=college,
         role__in=('student', 'faculty'),
         account_status='active',
     )
@@ -98,13 +98,13 @@ def send_faculty_status_email(student, faculty_name, status_label, url):
         settings.DEFAULT_FROM_EMAIL, [student.email], fail_silently=True,
     )
 
-def get_active_announcements(department=None):
-    qs = DepartmentAnnouncement.objects.filter(expiry__gt=timezone.now())
-    if department:
-        qs = qs.filter(department=department)
+def get_active_announcements(college=None):
+    qs = CollegeAnnouncement.objects.filter(expiry__gt=timezone.now())
+    if college:
+        qs = qs.filter(college=college)
     return [
         {
-            'department': a.get_department_display(),
+            'college': a.get_college_display(),
             'message': a.message,
             'posted_at': a.posted_at.strftime('%b %d, %Y'),
         }
@@ -120,11 +120,11 @@ def _send_html_email(subject, template_name, context, recipient_list, fail_silen
     msg.send(fail_silently=fail_silently)
 
 
-def send_faculty_invite_email(email, department):
+def send_faculty_invite_email(email, college):
     _send_html_email(
         "You've been invited to FacSync",
         'faculty_invite.html',
-        {'department': department},
+        {'college': college},
         [email],
     )
 

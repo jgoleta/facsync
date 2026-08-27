@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const facultyFeedback = window.facultyFeedback;
+
     // --- Queue Helpers ---
 
     const queueList = document.getElementById('queueList');
@@ -45,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="queue-summary">
                     <p class="student-name">${escapeHtml(student.student_name)}</p>
                     <p class="student-meta">Position ${student.position} · Queued ${new Date(student.joined_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</p>
-                    <p class="student-department">Department: ${escapeHtml(student.student_department || 'Not assigned')}</p>
+                    <p class="student-college">College: ${escapeHtml(student.student_college || 'Not assigned')}</p>
                     ${student.student_message ? `<p class="student-note">${escapeHtml(student.student_message)}</p>` : ''}
                     <div class="student-status"><span class="status-badge status-${called ? 'called' : 'pending'}">${called ? 'Notified' : 'Waiting'}</span></div>
                 </div>
@@ -62,7 +64,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Queue API and Availability ---
 
     // Load the walk-in queue and refresh the availability summary.
-    async function loadQueue() {
+    async function loadQueue(showLoading = false) {
+        if (showLoading) facultyFeedback?.showLoading('Loading walk-in queue...');
         try {
             const response = await fetch('/faculty/api/walk-ins/');
             const data = await response.json();
@@ -83,6 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
             walkInStatus.textContent = error.message;
             lastUpdated.textContent = 'Unable to refresh';
             queueList.innerHTML = '<li class="queue-item empty-state"><p>Unable to load the queue.</p></li>';
+            if (showLoading) facultyFeedback?.showToast(error.message, true);
+        } finally {
+            if (showLoading) facultyFeedback?.hideLoading();
         }
     }
 
@@ -91,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
         walkInToggle.addEventListener('change', async () => {
             const enabled = walkInToggle.checked;
             walkInToggle.disabled = true;
+            facultyFeedback?.showLoading('Updating walk-in availability...');
             try {
                 const response = await fetch('/faculty/api/walk-ins/preference/', {
                     method: 'POST',
@@ -104,28 +111,36 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!response.ok) throw new Error(data.error || 'Unable to update walk-in availability.');
                 walkInToggle.checked = data.walk_ins_enabled;
                 await loadQueue();
+                facultyFeedback?.showToast('Walk-in availability updated successfully.');
             } catch (error) {
                 walkInToggle.checked = !enabled;
                 walkInStatus.textContent = error.message;
+                facultyFeedback?.showToast(error.message, true);
             } finally {
                 walkInToggle.disabled = false;
+                facultyFeedback?.hideLoading();
             }
         });
     }
 
     // Apply an action such as notify, complete, or remove to a queue entry.
     async function updateQueue(queueId, action) {
-        const response = await fetch(`/faculty/api/walk-ins/${encodeURIComponent(queueId)}/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCsrfToken(),
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ action }),
-        });
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || 'Unable to update the queue entry.');
-        await loadQueue();
+        facultyFeedback?.showLoading('Updating queue entry...');
+        try {
+            const response = await fetch(`/faculty/api/walk-ins/${encodeURIComponent(queueId)}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ action }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'Unable to update the queue entry.');
+            await loadQueue();
+        } finally {
+            facultyFeedback?.hideLoading();
+        }
     }
 
     // Handle queue actions using one delegated click listener.
@@ -135,14 +150,16 @@ document.addEventListener('DOMContentLoaded', () => {
         button.disabled = true;
         try {
             await updateQueue(button.dataset.id, button.dataset.action);
+            facultyFeedback?.showToast('Walk-in queue updated successfully.');
         } catch (error) {
             walkInStatus.textContent = error.message;
+            facultyFeedback?.showToast(error.message, true);
         } finally {
             button.disabled = false;
         }
     });
 
-    refreshQueueBtn.addEventListener('click', loadQueue);
-    loadQueue();
+    refreshQueueBtn.addEventListener('click', () => loadQueue(true));
+    loadQueue(true);
     window.setInterval(loadQueue, 10000);
 });

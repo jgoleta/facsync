@@ -72,7 +72,7 @@ async function refreshFacultyMonitoring() {
 
     if (facultyList.length === 0) {
       grid.innerHTML =
-        '<p class="empty-state">No active faculty in your department yet.</p>';
+        '<p class="empty-state">No active faculty in your college yet.</p>';
     } else {
       grid.innerHTML = facultyList.map(renderFacultyCard).join("");
     }

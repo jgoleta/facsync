@@ -18,7 +18,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
             if existing_user.account_status == 'pending':
                 raise ImmediateHttpResponse(redirect('core:pending_approval_notice'))
             elif existing_user.account_status == 'declined':
-                messages.error(request, "Your registration was declined. Please contact your Department Head.")
+                messages.error(request, "Your registration was declined. Please contact your College Head.")
                 raise ImmediateHttpResponse(redirect('core:login'))
             elif existing_user.account_status == 'deactivated':
                 messages.error(request, "Your account has been deactivated. Please contact a Super Admin.")
@@ -30,7 +30,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
             invite = FacultyInvite.objects.get(email__iexact=email, used=False)
             sociallogin.user.role = 'faculty'
             sociallogin.user.account_status = 'active'
-            sociallogin.user.department = invite.department
+            sociallogin.user.college = invite.college
             invite.used = True
             invite.delete()
             if 'registration_role' in request.session:
@@ -44,7 +44,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
             depthead_invite = DeptHeadInvite.objects.get(email__iexact=email, used=False)
             sociallogin.user.role = 'depthead'
             sociallogin.user.account_status = 'active'
-            sociallogin.user.department = depthead_invite.department
+            sociallogin.user.college = depthead_invite.college
             sociallogin.user.title = depthead_invite.title
             depthead_invite.used = True
             depthead_invite.delete()

@@ -26,9 +26,9 @@
                     <span class="nav-icon">👑</span>
                     <span>System Overview</span>
                 </a>
-                <a href="{% url 'superadmin:manage_departments' %}" class="nav-item">
+                <a href="{% url 'superadmin:manage_colleges' %}" class="nav-item">
                     <span class="nav-icon">🏢</span>
-                    <span>Manage Departments</span>
+                    <span>Manage Colleges</span>
                 </a>
                 <a href="{% url 'superadmin:manage_admins' %}" class="nav-item">
                     <span class="nav-icon">👤</span>
@@ -70,7 +70,7 @@
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
-                            <th>Department</th>
+                            <th>College</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
@@ -80,7 +80,7 @@
                         <tr>
                             <td>{{ f.get_full_name|default:f.username }}</td>
                             <td>{{ f.email }}</td>
-                            <td>{{ f.department_name }}</td>
+                            <td>{{ f.college_name }}</td>
                             <td><span class="status-tag {{ f.account_status }}">{{f.get_account_status_display}}</span></td>
                             <td class="actions">
                                 <button>View Verification</button>
@@ -105,7 +105,7 @@
             <div class="modal-header">
                 <div>
                     <h2>Invite Faculty</h2>
-                    <p>Pre-register a faculty email and assign their department.</p>
+                    <p>Pre-register a faculty email and assign their college.</p>
                 </div>
                 <button type="button" class="modal-close" id="closeInviteFacultySA">×</button>
             </div>
@@ -117,9 +117,9 @@
                         required>
                 </div>
                 <div class="modal-form-group">
-                    <label for="saFacultyDept">Department</label>
-                    <select id="saFacultyDept" name="department" required>
-                        {% for code, name in department_choices %}
+                    <label for="saFacultyDept">College</label>
+                    <select id="saFacultyDept" name="college" required>
+                        {% for code, name in college_choices %}
                         <option value="{{ code }}">{{ name }}</option>
                         {% endfor %}
                     </select>

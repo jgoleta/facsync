@@ -16,28 +16,29 @@ const queuePosition = document.getElementById("queue-position");
 const waitTime = document.getElementById("wait-time");
 const walkInNote = document.getElementById("walk-in-note");
 const queueMessage = document.getElementById("queue-message");
-const isDeptClosed = document.body.dataset.deptClosed === "true";
+const studentFeedback = window.studentFeedback;
+const isCollegeClosed = document.body.dataset.collegeClosed === "true";
 const closureReason =
-  document.body.dataset.closureReason || "This department is currently closed.";
-const closureNotice = document.getElementById("departmentClosureNotice");
+  document.body.dataset.closureReason || "This college is currently closed.";
+const closureNotice = document.getElementById("collegeClosureNotice");
 
 function applyClosureLockdown() {
-  if (!isDeptClosed) return;
+  if (!isCollegeClosed) return;
   if (closureNotice) {
     closureNotice.textContent = closureReason;
     closureNotice.classList.remove("hidden");
   }
   if (joinQueueBtn) {
     joinQueueBtn.disabled = true;
-    joinQueueBtn.textContent = "Department Closed";
+    joinQueueBtn.textContent = "College Closed";
   }
   if (openModalBtn) {
     openModalBtn.disabled = true;
-    openModalBtn.textContent = "Department Closed";
+    openModalBtn.textContent = "College Closed";
   }
   if (queueMessage) {
     queueMessage.textContent =
-      "This department is currently closed and not accepting walk-ins.";
+      "This college is currently closed and not accepting walk-ins.";
   }
 }
 const facultyId = document.body.dataset.facultyId;
@@ -70,6 +71,7 @@ if (facultyStatusNotify) {
   facultyStatusNotify.addEventListener("click", async () => {
     const subscribed = facultyStatusNotify.dataset.subscribed === "true";
     facultyStatusNotify.disabled = true;
+    studentFeedback?.showLoading(subscribed ? "Turning off notifications..." : "Enabling notifications...");
     try {
       const response = await fetch(
         `/student/api/faculty/${encodeURIComponent(facultyId)}/notification-subscription/`,
@@ -81,9 +83,13 @@ if (facultyStatusNotify) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Unable to update notification preference.");
       updateFacultyStatusSubscriptionButton(data.subscribed);
+      studentFeedback?.showToast(
+        data.subscribed ? "Notifications enabled." : "Notifications disabled.",
+      );
     } catch (error) {
-      window.alert(error.message);
+      studentFeedback?.showToast(error.message, true);
     } finally {
+      studentFeedback?.hideLoading();
       facultyStatusNotify.disabled = false;
     }
   });
@@ -152,10 +158,15 @@ function renderWalkInState(data) {
   queueActiveState?.classList.add("hidden");
   queueActiveState?.classList.remove("is-called");
   if (joinQueueBtn) {
-    joinQueueBtn.disabled = !data.walk_ins_enabled;
-    joinQueueBtn.textContent = data.walk_ins_enabled
-      ? "Join Walk-in Queue"
-      : "Walk-ins Unavailable";
+    const facultyUnavailable = data.faculty_status === "unavailable";
+    const walkInsUnavailable = facultyUnavailable || !data.walk_ins_enabled;
+    joinQueueBtn.classList.toggle("faculty-unavailable", walkInsUnavailable);
+    joinQueueBtn.disabled = walkInsUnavailable;
+    joinQueueBtn.textContent = facultyUnavailable
+      ? "Faculty Unavailable"
+      : data.walk_ins_enabled
+        ? "Join Walk-in Queue"
+        : "Walk-ins Unavailable";
   }
   if (walkInNote) {
     walkInNote.textContent = data.walk_ins_enabled
@@ -173,6 +184,7 @@ async function loadWalkInStatus() {
   if (!facultyId) {
     if (joinQueueBtn) {
       joinQueueBtn.disabled = true;
+      joinQueueBtn.classList.add("faculty-unavailable");
       joinQueueBtn.textContent = "Faculty Unavailable";
     }
     if (queueMessage)
@@ -189,7 +201,10 @@ async function loadWalkInStatus() {
       throw new Error(data.error || "Unable to check walk-in availability.");
     renderWalkInState(data);
   } catch (error) {
-    if (joinQueueBtn) joinQueueBtn.disabled = true;
+    if (joinQueueBtn) {
+      joinQueueBtn.disabled = true;
+      joinQueueBtn.classList.add("faculty-unavailable");
+    }
     if (queueMessage) queueMessage.textContent = error.message;
   }
 }
@@ -198,34 +213,6 @@ const facultySchedule = {
   name: selectedFacultyName?.textContent || "Faculty Schedule",
   schedule: [],
 };
-
-const weekdayIndexes = {
-  sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
-  thursday: 4, friday: 5, saturday: 6,
-};
-
-function localDateKey(value) {
-  return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
-}
-
-function monthIsIncluded(month, startMonth, endMonth) {
-  if (!startMonth || !endMonth) return true;
-  if (startMonth <= endMonth) return month >= startMonth && month <= endMonth;
-  return month >= startMonth || month <= endMonth;
-}
-
-function recurringDateKeys(dayOfWeek, startMonth, endMonth) {
-  const today = new Date();
-  const first = new Date(today.getFullYear(), today.getMonth(), 1 - 7);
-  const last = new Date(today.getFullYear(), today.getMonth() + 1, 7);
-  const target = dayOfWeek ? weekdayIndexes[dayOfWeek] : null;
-  const dates = [];
-  for (let cursor = new Date(first); cursor <= last; cursor.setDate(cursor.getDate() + 1)) {
-    if (monthIsIncluded(cursor.getMonth() + 1, startMonth, endMonth)
-      && (target === null || cursor.getDay() === target)) dates.push(localDateKey(cursor));
-  }
-  return dates;
-}
 
 async function loadFacultySchedule() {
   if (!facultyId) {
@@ -236,38 +223,12 @@ async function loadFacultySchedule() {
   try {
     const response = await fetch(
       `/student/api/schedule-events/?faculty_id=${encodeURIComponent(facultyId)}`,
+      { cache: "no-store" },
     );
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Unable to load schedule.");
 
-    const byDate = {};
-    (data.events || []).forEach((event) => {
-      const eventData = {
-        id: event.id,
-        title: event.title,
-        description: event.description,
-        location: event.location || "",
-        status: event.status || event.event_type,
-        type: event.event_type,
-        isRecurring: Boolean(event.is_recurring),
-        dayOfWeek: event.day_of_week === "none" ? "" : (event.day_of_week || ""),
-        startMonth: event.start_month,
-        endMonth: event.end_month,
-        startTime: event.start_time ? event.start_time.slice(0, 5) : null,
-        endTime: event.end_time ? event.end_time.slice(0, 5) : null,
-      };
-      const dateKeys = event.is_recurring
-        ? recurringDateKeys(eventData.dayOfWeek, event.start_month, event.end_month)
-        : (event.date ? [event.date] : []);
-      dateKeys.forEach((dateKey) => {
-        if (!byDate[dateKey]) byDate[dateKey] = { date: dateKey, events: [] };
-        byDate[dateKey].events.push(eventData);
-      });
-    });
-
-    facultySchedule.schedule = Object.values(byDate).sort(
-      (a, b) => new Date(a.date) - new Date(b.date),
-    );
+    facultySchedule.schedule = window.FacSyncCalendar.buildSchedule(data.events || []);
     renderCalendar();
   } catch (error) {
     console.error("Failed to load faculty schedule", error);
@@ -432,6 +393,7 @@ function renderCalendar() {
       visibleEvents.forEach((event) => {
         const item = document.createElement("div");
         item.className = "slot-item";
+        item.classList.add(`slot-type-${event.type || "busy"}`);
         const eventTime =
           event.startTime && event.endTime
             ? `${event.startTime} - ${event.endTime}`
@@ -442,6 +404,9 @@ function renderCalendar() {
         if (!event.startTime || !event.endTime) {
           item.classList.add("all-day-item");
           dayContent.appendChild(item);
+          const legendItem = document.createElement("li");
+          legendItem.textContent = window.FacSyncCalendar.activityLabel(event, monthName, day);
+          legendList.appendChild(legendItem);
           return;
         }
 
@@ -473,7 +438,7 @@ function renderCalendar() {
         dayContent.appendChild(item);
 
         const legendItem = document.createElement("li");
-        legendItem.textContent = `${event.title} • ${monthName} ${day} • ${event.startTime} - ${event.endTime}`;
+        legendItem.textContent = window.FacSyncCalendar.activityLabel(event, monthName, day);
         legendList.appendChild(legendItem);
       });
 
@@ -519,12 +484,13 @@ function renderCalendar() {
         visibleEvents.forEach((event) => {
           const item = document.createElement("div");
           item.className = "slot-item";
+          item.classList.add(`slot-type-${event.type || "busy"}`);
           item.innerHTML = `<strong>${escapeHtml(event.title)}</strong>${formatEventTime(event)}`;
           item.addEventListener("click", () => openEventModal(event, dateKey));
           body.appendChild(item);
 
           const legendItem = document.createElement("li");
-          legendItem.textContent = `${event.title} • ${monthName} ${day} • ${event.startTime} - ${event.endTime}`;
+          legendItem.textContent = window.FacSyncCalendar.activityLabel(event, monthName, day);
           legendList.appendChild(legendItem);
         });
 
@@ -578,6 +544,7 @@ if (joinQueueBtn) {
   joinQueueBtn.addEventListener("click", async () => {
     joinQueueBtn.disabled = true;
     if (queueMessage) queueMessage.textContent = "Joining walk-in queue...";
+    studentFeedback?.showLoading("Joining walk-in queue...");
     try {
       const response = await fetch("/student/api/walk-ins/join/", {
         method: "POST",
@@ -591,9 +558,13 @@ if (joinQueueBtn) {
       if (!response.ok)
         throw new Error(data.error || "Unable to join the walk-in queue.");
       await loadWalkInStatus();
+      studentFeedback?.showToast("You joined the walk-in queue successfully.");
     } catch (error) {
       if (queueMessage) queueMessage.textContent = error.message;
       await loadWalkInStatus();
+      studentFeedback?.showToast(error.message, true);
+    } finally {
+      studentFeedback?.hideLoading();
     }
   });
 }
@@ -602,6 +573,7 @@ if (cancelQueueBtn) {
   cancelQueueBtn.addEventListener("click", async () => {
     if (!activeQueue) return;
     cancelQueueBtn.disabled = true;
+    studentFeedback?.showLoading("Leaving walk-in queue...");
     try {
       const response = await fetch(
         `/faculty/api/walk-ins/${encodeURIComponent(activeQueue.queue_id)}/`,
@@ -618,9 +590,12 @@ if (cancelQueueBtn) {
       if (!response.ok)
         throw new Error(data.error || "Unable to leave the queue.");
       await loadWalkInStatus();
+      studentFeedback?.showToast("You left the walk-in queue successfully.");
     } catch (error) {
       if (queueMessage) queueMessage.textContent = error.message;
+      studentFeedback?.showToast(error.message, true);
     } finally {
+      studentFeedback?.hideLoading();
       cancelQueueBtn.disabled = false;
     }
   });
@@ -675,6 +650,7 @@ if (consultationForm) {
       'button[type="submit"]',
     );
     if (submitButton) submitButton.disabled = true;
+    studentFeedback?.showLoading("Sending consultation request...");
 
     try {
       // Save the request before closing the modal so it appears in My Consultations.
@@ -696,10 +672,11 @@ if (consultationForm) {
         throw new Error(data.error || "Unable to book the consultation.");
       consultationModal.classList.add("hidden");
       consultationForm.reset();
-      alert("Consultation request sent.");
+      studentFeedback?.showToast("Consultation request sent successfully.");
     } catch (error) {
-      alert(error.message);
+      studentFeedback?.showToast(error.message, true);
     } finally {
+      studentFeedback?.hideLoading();
       if (submitButton) submitButton.disabled = false;
     }
   });
@@ -719,8 +696,11 @@ if (viewControls) {
 
 renderCalendar();
 loadFacultySchedule();
+if (facultyId) {
+  window.setInterval(loadFacultySchedule, 10000);
+}
 applyClosureLockdown();
-if (!isDeptClosed) {
+if (!isCollegeClosed) {
   loadWalkInStatus();
   window.setInterval(loadWalkInStatus, 10000);
 }
