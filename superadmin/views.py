@@ -60,6 +60,7 @@ def manage_admins(request):
         'depthead_accounts': depthead_accounts,
         'dept_head_form': DeptHeadInviteForm(),
         'role_choices': User.ROLE_CHOICES,
+        'title_choices': User.TITLE_CHOICES,
     })
 
 @login_required
@@ -133,6 +134,7 @@ def edit_depthead(request, user_id):
     if request.method == 'POST':
         new_role = request.POST.get('role')
         new_department = request.POST.get('department')
+        new_title = request.POST.get('title')
 
         if new_role not in dict(User.ROLE_CHOICES):
             messages.error(request, "Invalid role selected.")
@@ -140,6 +142,7 @@ def edit_depthead(request, user_id):
 
         depthead.role = new_role
         depthead.department = new_department
+        depthead.title = new_title
         depthead.save()
         messages.success(request, f"Updated {depthead.username}.")
     return redirect('superadmin:manage_admins')

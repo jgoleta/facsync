@@ -30,6 +30,12 @@ class User(AbstractUser):
         ('4', '4th Year'),
     ]
 
+    TITLE_CHOICES = [
+    ('chairperson', 'Chairperson'),
+    ('dean', 'Dean'),
+    ]
+
+    title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=True, null=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
     account_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     department = models.CharField(max_length=100, blank=True, null=True)  
@@ -55,6 +61,7 @@ class FacultyInvite(models.Model):
 class DeptHeadInvite(models.Model):
     email = models.EmailField(unique=True)
     department = models.CharField(max_length=100)
+    title = models.CharField(max_length=20, choices=User.TITLE_CHOICES, blank=True, null=True)
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='depthead_invites_sent')
     created_at = models.DateTimeField(auto_now_add=True)
     used = models.BooleanField(default=False)
