@@ -19,9 +19,9 @@
         <main class="main-content">
             <header class="main-header monitoring-header">
                 <div>
-                    <p class="page-kicker">Department operations ({{ request.user.department_name }})</p>
+                    <p class="page-kicker">College operations ({{ request.user.college_name }})</p>
                     <h1>Faculty Monitoring</h1>
-                    <p>Real-time status of all faculty in your department.</p>
+                    <p>Real-time status of all faculty in your college.</p>
                 </div>
                 <div class="monitoring-live-indicator">
                     <span class="live-dot"></span>
@@ -64,7 +64,7 @@
                     </div>
                 </div>
                 {% empty %}
-                <p class="empty-state">No active faculty in your department yet.</p>
+                <p class="empty-state">No active faculty in your college yet.</p>
                 {% endfor %}
             </div>
         </main>

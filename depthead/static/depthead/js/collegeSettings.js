@@ -1,5 +1,5 @@
 (function () {
-  const STORAGE_KEY = "dept_announcements";
+  const STORAGE_KEY = "college_announcements";
 
   function $(sel, ctx = document) {
     return ctx.querySelector(sel);

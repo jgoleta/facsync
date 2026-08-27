@@ -28,7 +28,7 @@ class FacultyViewTests(TestCase):
         faculty = FacultyProfile.objects.create(
             faculty_id=f'faculty-{suffix}',
             user=faculty_user,
-            department_id='CCS',
+            college_id='CCS',
         )
         return faculty_user, student, faculty
 
@@ -122,7 +122,7 @@ class FacultyViewTests(TestCase):
         FacultyProfile.objects.create(
             faculty_id='faculty-status-test',
             user=user,
-            department_id='CCS',
+            college_id='CCS',
         )
         self.client.force_login(user)
 
@@ -147,7 +147,7 @@ class FacultyViewTests(TestCase):
         faculty = FacultyProfile.objects.create(
             faculty_id='faculty-calendar-status-test',
             user=user,
-            department_id='CCS',
+            college_id='CCS',
         )
         local_now = timezone.localtime(
             timezone.now(),
@@ -185,7 +185,7 @@ class FacultyViewTests(TestCase):
         faculty = FacultyProfile.objects.create(
             faculty_id='faculty-status-mode-test',
             user=user,
-            department_id='CCS',
+            college_id='CCS',
         )
         local_now = timezone.localtime(
             timezone.now(),
@@ -229,7 +229,7 @@ class FacultyViewTests(TestCase):
         faculty = FacultyProfile.objects.create(
             faculty_id='faculty-local-event-test',
             user=user,
-            department_id='CCS',
+            college_id='CCS',
         )
         self.client.force_login(user)
         GoogleCalendarConnection.objects.create(
@@ -252,6 +252,85 @@ class FacultyViewTests(TestCase):
         create_google_event.assert_called_once()
 
     @patch('faculty.views.create_google_event')
+    def test_schedule_event_can_stay_local_when_google_sync_is_declined(self, create_google_event):
+        user = get_user_model().objects.create_user(
+            username='faculty-local-only-event-test',
+            password='test-password',
+            role='faculty',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-local-only-event-test',
+            user=user,
+            college_id='CCS',
+        )
+        self.client.force_login(user)
+        GoogleCalendarConnection.objects.create(
+            user=user,
+            google_user_id='google-user-local-only',
+            access_token='access-token',
+            refresh_token='refresh-token',
+        )
+
+        response = self.client.post(
+            reverse('faculty:api_schedule_events'),
+            data='{"title":"Private planning","event_type":"busy","date":"2026-08-20","start_time":"09:00","end_time":"10:00","sync_to_google":false}',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        event = faculty.schedule_events.get(title='Private planning')
+        self.assertIsNone(event.google_event_id)
+        self.assertEqual(event.sync_state, 'local')
+        create_google_event.assert_not_called()
+
+    @patch('faculty.views.delete_google_event')
+    def test_editing_event_with_google_sync_declined_removes_google_event(self, delete_google_event):
+        user = get_user_model().objects.create_user(
+            username='faculty-edit-local-only-event-test',
+            password='test-password',
+            role='faculty',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-edit-local-only-event-test',
+            user=user,
+            college_id='CCS',
+        )
+        connection = GoogleCalendarConnection.objects.create(
+            user=user,
+            google_user_id='google-user-edit-local-only',
+            access_token='access-token',
+            refresh_token='refresh-token',
+        )
+        event = ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Old class title',
+            event_type='busy',
+            date='2026-08-20',
+            start_time='09:00',
+            end_time='10:00',
+            google_event_id='google-event-to-remove',
+            google_calendar_id=connection.calendar_id,
+            managed_by_facsync=True,
+            sync_state='synced',
+        )
+        self.client.force_login(user)
+
+        response = self.client.put(
+            reverse('faculty:api_schedule_event_detail', args=[event.pk]),
+            data='{"title":"Updated class title","sync_to_google":false}',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        delete_google_event.assert_called_once()
+        event.refresh_from_db()
+        self.assertEqual(event.title, 'Updated class title')
+        self.assertIsNone(event.google_event_id)
+        self.assertIsNone(event.google_calendar_id)
+        self.assertFalse(event.managed_by_facsync)
+        self.assertEqual(event.sync_state, 'local')
+
+    @patch('faculty.views.create_google_event')
     def test_recurring_event_stays_local_when_google_is_connected(self, create_google_event):
         user = get_user_model().objects.create_user(
             username='faculty-recurring-event-test',
@@ -261,7 +340,7 @@ class FacultyViewTests(TestCase):
         faculty = FacultyProfile.objects.create(
             faculty_id='faculty-recurring-event-test',
             user=user,
-            department_id='CCS',
+            college_id='CCS',
         )
         self.client.force_login(user)
         GoogleCalendarConnection.objects.create(
@@ -295,7 +374,7 @@ class FacultyViewTests(TestCase):
         faculty = FacultyProfile.objects.create(
             faculty_id='faculty-google-import-test',
             user=user,
-            department_id='CCS',
+            college_id='CCS',
         )
         connection = GoogleCalendarConnection.objects.create(
             user=user,
@@ -305,7 +384,7 @@ class FacultyViewTests(TestCase):
         )
         list_google_events.return_value = [{
             'id': 'google-event-2',
-            'summary': 'Department Meeting',
+            'summary': 'College Meeting',
             'description': 'Monthly meeting',
             'start': {'dateTime': '2026-08-20T09:00:00+08:00'},
             'end': {'dateTime': '2026-08-20T10:00:00+08:00'},
@@ -314,7 +393,7 @@ class FacultyViewTests(TestCase):
         sync_google_calendar(user)
 
         event = ScheduleEvent.objects.get(faculty=faculty, google_event_id='google-event-2')
-        self.assertEqual(event.title, 'Department Meeting')
+        self.assertEqual(event.title, 'College Meeting')
         self.assertEqual(event.date.isoformat(), '2026-08-20')
         self.assertEqual(event.start_time.isoformat(), '09:00:00')
         self.assertEqual(event.google_calendar_id, connection.calendar_id)
@@ -348,7 +427,7 @@ class FacultyViewTests(TestCase):
         FacultyProfile.objects.create(
             faculty_id='faculty-profile-save-test',
             user=user,
-            department_id='CCS',
+            college_id='CCS',
         )
         self.client.force_login(user)
 
@@ -384,7 +463,7 @@ class FacultyViewTests(TestCase):
         faculty = FacultyProfile.objects.create(
             faculty_id=f'faculty-csv-{suffix}',
             user=user,
-            department_id='CCS',
+            college_id='CCS',
         )
         self.client.force_login(user)
         return faculty
@@ -535,7 +614,7 @@ class FacultyViewTests(TestCase):
         faculty = FacultyProfile.objects.create(
             faculty_id='faculty-approved-calendar-test',
             user=faculty_user,
-            department_id='CCS',
+            college_id='CCS',
         )
         ConsultationRequest.objects.create(
             request_id='approved-calendar-consultation-test',
@@ -599,7 +678,7 @@ class FacultyViewTests(TestCase):
         FacultyProfile.objects.create(
             faculty_id='faculty-calendar-toggle-test',
             user=user,
-            department_id='CCS',
+            college_id='CCS',
         )
         self.client.force_login(user)
 
@@ -640,7 +719,7 @@ class FacultyViewTests(TestCase):
         faculty = FacultyProfile.objects.create(
             faculty_id='faculty-consultation-approval-test',
             user=faculty_user,
-            department_id='CCS',
+            college_id='CCS',
             sync_enabled=True,
         )
         GoogleCalendarConnection.objects.create(
@@ -688,7 +767,7 @@ class FacultyViewTests(TestCase):
         faculty = FacultyProfile.objects.create(
             faculty_id='faculty-consultation-edit-test',
             user=faculty_user,
-            department_id='CCS',
+            college_id='CCS',
             sync_enabled=True,
         )
         GoogleCalendarConnection.objects.create(

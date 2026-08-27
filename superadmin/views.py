@@ -4,10 +4,10 @@ from django.contrib.auth import get_user_model
 from core.decorators import role_required
 from django.contrib import messages
 from django.http import JsonResponse
-from core.departments import get_department_choices
+from core.colleges import get_college_choices
 from .forms import DeptHeadInviteForm, FacultySuperInviteForm
-from core.models import User, Department 
-from core.forms import DepartmentForm
+from core.models import User, College
+from core.forms import CollegeForm
 
 
 @login_required
@@ -19,7 +19,7 @@ def invite_depthead(request):
             invite = form.save(commit=False)
             invite.invited_by = request.user
             invite.save()
-            messages.success(request, f"Dept Head invitation created for {invite.email}.")
+            messages.success(request, f"College Head invitation created for {invite.email}.")
         else:
             for error_list in form.errors.values():
                 for error in error_list:
@@ -33,23 +33,23 @@ def superadmin_dashboard(request):
 
 @login_required
 @role_required('superadmin')
-def manage_departments(request):
-    departments = Department.objects.all().order_by('name')
+def manage_colleges(request):
+    colleges = College.objects.all().order_by('name')
 
-    # Create a dictionary mapping department codes to their respective department heads
-    # This allows us to easily find the department head for each department when rendering the template.
-    # We use upper() to ensure that the department codes match regardless of case.
-    heads_by_dept = {}
-    depthead_qs = User.objects.filter(role='depthead').exclude(department='').exclude(department__isnull=True)
+    # Create a dictionary mapping college codes to their respective college heads
+    # This allows us to easily find the college head for each college when rendering the template.
+    # We use upper() to ensure that the college codes match regardless of case.
+    heads_by_college = {}
+    depthead_qs = User.objects.filter(role='depthead').exclude(college='').exclude(college__isnull=True)
     for u in depthead_qs:
-        key = u.department.upper()
-        heads_by_dept.setdefault(key, []).append(u)
+        key = u.college.upper()
+        heads_by_college.setdefault(key, []).append(u)
 
-    for dept in departments:
-        dept.head_users = heads_by_dept.get(dept.code.upper(), [])
+    for college in colleges:
+        college.head_users = heads_by_college.get(college.code.upper(), [])
 
-    return render(request, 'superadmin/manageDepartments.html', {
-        'departments': departments,
+    return render(request, 'superadmin/manageColleges.html', {
+        'colleges': colleges,
     })
 
 @login_required
@@ -68,7 +68,7 @@ def manage_faculty(request):
     faculty_accounts = User.objects.filter(role='faculty')
     return render(request, 'superadmin/manageFaculty.html', {
         'faculty_accounts': faculty_accounts,
-        'department_choices': get_department_choices(),
+        'college_choices': get_college_choices(),
     })
 
 @login_required
@@ -90,42 +90,42 @@ def remove_student_superadmin(request, user_id):
 
 @login_required
 @role_required('superadmin')
-def create_department(request):
+def create_college(request):
     if request.method == 'POST':
-        form = DepartmentForm(request.POST)
+        form = CollegeForm(request.POST)
         if form.is_valid():
-            dept = form.save()
-            messages.success(request, f"Department '{dept.name}' created with code {dept.code}.")
+            college = form.save()
+            messages.success(request, f"College '{college.name}' created with code {college.code}.")
         else:
             for error_list in form.errors.values():
                 for error in error_list:
                     messages.error(request, error)
-    return redirect('superadmin:manage_departments')
+    return redirect('superadmin:manage_colleges')
 
 @login_required
 @role_required('superadmin')
-def edit_department(request, department_id):
-    department = get_object_or_404(Department, id=department_id)
+def edit_college(request, college_id):
+    college = get_object_or_404(College, id=college_id)
     if request.method == 'POST':
-        form = DepartmentForm(request.POST, instance=department)
+        form = CollegeForm(request.POST, instance=college)
         if form.is_valid():
             form.save()
-            messages.success(request, f"Department '{department.name}' updated.")
+            messages.success(request, f"College '{college.name}' updated.")
         else:
             for error_list in form.errors.values():
                 for error in error_list:
                     messages.error(request, error)
-    return redirect('superadmin:manage_departments')
+    return redirect('superadmin:manage_colleges')
 
 @login_required
 @role_required('superadmin')
-def delete_department(request, department_id):
-    department = get_object_or_404(Department, id=department_id)
+def delete_college(request, college_id):
+    college = get_object_or_404(College, id=college_id)
     if request.method == 'POST':
-        name = department.name
-        department.delete()
-        messages.success(request, f"Department '{name}' removed.")
-    return redirect('superadmin:manage_departments')
+        name = college.name
+        college.delete()
+        messages.success(request, f"College '{name}' removed.")
+    return redirect('superadmin:manage_colleges')
 
 @login_required
 @role_required('superadmin')
@@ -133,7 +133,7 @@ def edit_depthead(request, user_id):
     depthead = get_object_or_404(User, id=user_id, role='depthead')
     if request.method == 'POST':
         new_role = request.POST.get('role')
-        new_department = request.POST.get('department')
+        new_college = request.POST.get('college')
         new_title = request.POST.get('title')
 
         if new_role not in dict(User.ROLE_CHOICES):
@@ -141,7 +141,7 @@ def edit_depthead(request, user_id):
             return redirect('superadmin:manage_admins')
 
         depthead.role = new_role
-        depthead.department = new_department
+        depthead.college = new_college
         depthead.title = new_title
         depthead.save()
         messages.success(request, f"Updated {depthead.username}.")

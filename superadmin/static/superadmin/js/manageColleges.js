@@ -1,10 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const addModal = document.getElementById("addDepartmentModal");
-  const editModal = document.getElementById("editDepartmentModal");
+  const addModal = document.getElementById("addCollegeModal");
+  const editModal = document.getElementById("editCollegeModal");
 
   // Add modal open/close
-  const openAddBtn = document.getElementById("openAddDepartmentModal");
-  const closeAddBtn = document.getElementById("closeAddDepartmentModal");
+  const openAddBtn = document.getElementById("openAddCollegeModal");
+  const closeAddBtn = document.getElementById("closeAddCollegeModal");
   if (openAddBtn)
     openAddBtn.addEventListener("click", () =>
       addModal.classList.remove("hidden"),
@@ -15,21 +15,21 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
   // Edit modal open/close + prefill
-  const closeEditBtn = document.getElementById("closeEditDepartmentModal");
+  const closeEditBtn = document.getElementById("closeEditCollegeModal");
   if (closeEditBtn)
     closeEditBtn.addEventListener("click", () =>
       editModal.classList.add("hidden"),
     );
 
-  document.querySelectorAll(".edit-department-btn").forEach((btn) => {
+  document.querySelectorAll(".edit-college-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.id;
-      document.getElementById("edit-dept-name").value = btn.dataset.name;
-      document.getElementById("edit-dept-description").value =
+      document.getElementById("edit-college-name").value = btn.dataset.name;
+      document.getElementById("edit-college-description").value =
         btn.dataset.description;
 
-      const form = document.getElementById("editDepartmentForm");
-      form.action = `/superadmin/departments/${id}/edit/`;
+      const form = document.getElementById("editCollegeForm");
+      form.action = `/superadmin/colleges/${id}/edit/`;
 
       editModal.classList.remove("hidden");
     });

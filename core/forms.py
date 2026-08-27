@@ -1,31 +1,31 @@
 from django import forms
-from .models import Department, User
-from .departments import DEPARTMENT_CHOICES, get_department_choices
+from .models import College, User
+from .colleges import COLLEGE_CHOICES, get_college_choices
 from django.utils import timezone
-from core.models import DepartmentAnnouncement
+from core.models import CollegeAnnouncement
 
 class StudentProfileForm(forms.ModelForm):
-    department = forms.ChoiceField(choices=get_department_choices())
+    college = forms.ChoiceField(choices=get_college_choices)
 
     class Meta:
         model = User
-        fields = ['student_id', 'department', 'year_level']
+        fields = ['student_id', 'college', 'year_level']
 
 class FacultyProfileSetupForm(forms.Form):
     faculty_id = forms.CharField(max_length=64, label="Faculty ID")
     office_location = forms.CharField(max_length=128, label="Office / Room")
 
 class FacultyRegistrationForm(forms.ModelForm):
-    department = forms.ChoiceField(choices=get_department_choices())
+    college = forms.ChoiceField(choices=get_college_choices)
     office_location = forms.CharField(max_length=128, label="Office / Room")
     faculty_id = forms.CharField(max_length=64, label="Faculty ID")
 
     class Meta:
         model = User
-        fields = ['department']  #office_location, faculty_id go to FacultyProfile
+        fields = ['college']  #office_location, faculty_id go to FacultyProfile
 
 
-class DepartmentAnnouncementForm(forms.ModelForm):
+class CollegeAnnouncementForm(forms.ModelForm):
     expiry_date = forms.DateField(
         required=False,
         widget=forms.DateInput(attrs={'type': 'date'}),
@@ -33,7 +33,7 @@ class DepartmentAnnouncementForm(forms.ModelForm):
     )
 
     class Meta:
-        model = DepartmentAnnouncement
+        model = CollegeAnnouncement
         fields = ['message']
 
     def save(self, commit=True):
@@ -47,12 +47,12 @@ class DepartmentAnnouncementForm(forms.ModelForm):
             instance.save()
         return instance
 
-class DepartmentForm(forms.ModelForm):
+class CollegeForm(forms.ModelForm):
     class Meta:
-        model = Department
+        model = College
         fields = ['name', 'description']
 
-class DepartmentDescriptionForm(forms.ModelForm):
+class CollegeDescriptionForm(forms.ModelForm):
     class Meta:
-        model = Department
+        model = College
         fields = ['description']

@@ -332,14 +332,14 @@ body {
 }
 
 .student-meta,
-.student-department,
+.student-college,
 .student-note {
   margin: 0;
   color: var(--queue-muted);
   font-size: 0.86rem;
 }
 
-.student-department {
+.student-college {
   margin-top: 3px;
 }
 

@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const facultyFeedback = window.facultyFeedback;
     // --- Status Controls ---
 
     const statusButtons = document.querySelectorAll('.status-btn');
@@ -67,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (updateStatusButton) {
         updateStatusButton.addEventListener('click', async () => {
             updateStatusButton.disabled = true;
+            facultyFeedback?.showLoading('Updating your status...');
             if (updateStatusLabel) updateStatusLabel.textContent = 'Saving...';
             statusFeedback.className = 'status-feedback';
             statusFeedback.textContent = '';
@@ -89,14 +91,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatusPresentation(data);
                 statusFeedback.className = 'status-feedback success';
                 statusFeedback.textContent = 'Status updated successfully.';
+                facultyFeedback?.showToast('Status updated successfully.');
                 if (updateStatusLabel) updateStatusLabel.textContent = 'Updated';
                 window.setTimeout(() => { if (updateStatusLabel) updateStatusLabel.textContent = 'Update'; }, 1500);
             } catch (error) {
                 statusFeedback.className = 'status-feedback error';
                 statusFeedback.textContent = error.message;
+                facultyFeedback?.showToast(error.message, true);
                 if (updateStatusLabel) updateStatusLabel.textContent = 'Update';
             } finally {
                 updateStatusButton.disabled = false;
+                facultyFeedback?.hideLoading();
             }
         });
     }
@@ -105,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (useCalendarStatusBtn) {
         useCalendarStatusBtn.addEventListener('click', async () => {
             useCalendarStatusBtn.disabled = true;
+            facultyFeedback?.showLoading('Restoring calendar status...');
             try {
                 const response = await fetch('/faculty/api/status/', {
                     method: 'POST',
@@ -122,11 +128,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateStatusPresentation(data);
                 statusFeedback.className = 'status-feedback success';
                 statusFeedback.textContent = 'Calendar-driven status restored.';
+                facultyFeedback?.showToast('Calendar-driven status restored.');
             } catch (error) {
                 statusFeedback.className = 'status-feedback error';
                 statusFeedback.textContent = error.message;
+                facultyFeedback?.showToast(error.message, true);
             } finally {
                 useCalendarStatusBtn.disabled = false;
+                facultyFeedback?.hideLoading();
             }
         });
     }
@@ -169,6 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!requestId) return;
 
                 button.disabled = true;
+                facultyFeedback?.showLoading('Updating consultation request...');
                 try {
                     // Persist the faculty decision, then reload the real request list.
                     const response = await fetch(`/faculty/api/consultations/${encodeURIComponent(requestId)}/`, {
@@ -180,11 +190,17 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ status: button.dataset.action, faculty_note: note }),
                     });
                     const data = await response.json().catch(() => ({}));
-                    if (!response.ok) throw new Error(data.error || 'Unable to update the consultation request.');
-                    window.location.reload();
+                if (!response.ok) throw new Error(data.error || 'Unable to update the consultation request.');
+                    if (['completed', 'declined'].includes(data.status)) {
+                        item.remove();
+                    }
+                    facultyFeedback?.showToast('Consultation request updated successfully.');
+                    window.setTimeout(() => window.location.reload(), 800);
                 } catch (error) {
                     button.disabled = false;
-                    window.alert(error.message);
+                    facultyFeedback?.showToast(error.message, true);
+                } finally {
+                    facultyFeedback?.hideLoading();
                 }
             });
         });

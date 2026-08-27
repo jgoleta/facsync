@@ -18,7 +18,7 @@ from core.services import create_notification, get_active_announcements
 from django.http import JsonResponse
 from django.utils import timezone
 
-from core.models import DepartmentAnnouncement
+from core.models import CollegeAnnouncement
 
 from .facultyServices.googleCalendarService import (
     GoogleCalendarError,
@@ -34,6 +34,11 @@ from .facultyServices.googleCalendarService import (
     sync_google_calendar,
     refresh_faculty_status,
     update_google_event,
+)
+from .facultyServices.calendarEvents import (
+    get_schedule_status_label,
+    serialize_consultation_event,
+    serialize_schedule_event,
 )
 from .models import (
     ConsultationRequest,
@@ -69,13 +74,6 @@ SCHEDULE_STATUS_TYPES = {
     'on leave': ('On Leave', 'on-leave'),
 }
 SCHEDULE_TIME_RE = re.compile(r'^([01]\d|2[0-3]):([0-5]\d)$')
-
-
-def _schedule_status_label(event):
-    """Return the human-readable status preserved by CSV or manual editing."""
-    if event.schedule_status:
-        return event.schedule_status
-    return dict(ScheduleEvent.EVENT_TYPES).get(event.event_type, event.event_type)
 
 
 def _faculty_for_request(request):
@@ -210,48 +208,11 @@ def _event_values(payload, existing=None):
 
 
 def _event_json(event):
-    """Serialize a schedule event for the faculty calendar API."""
-    return {
-        'id': event.pk,
-        'title': event.title,
-        'description': event.description,
-        'location': event.location,
-        'status': _schedule_status_label(event),
-        'event_type': event.event_type,
-        'date': event.date.isoformat() if event.date else None,
-        'is_recurring': event.date is None,
-        'day_of_week': '' if event.day_of_week == 'none' else event.day_of_week,
-        'start_month': event.start_month,
-        'end_month': event.end_month,
-        'start_time': event.start_time.isoformat() if event.start_time else None,
-        'end_time': event.end_time.isoformat() if event.end_time else None,
-        'google_event_id': event.google_event_id,
-        'sync_state': event.sync_state,
-        'sync_error': event.sync_error,
-    }
+    return serialize_schedule_event(event, include_sync_metadata=True, human_status=True)
 
 
 def _consultation_event_json(consultation):
-    """Serialize an approved consultation as a read-only faculty calendar event."""
-    student_name = consultation.user.get_full_name() or consultation.user.username
-    return {
-        'id': f'consultation:{consultation.request_id}',
-        'request_id': consultation.request_id,
-        'title': f'Consultation with {student_name}',
-        'description': consultation.student_message or 'Approved student consultation.',
-        'location': consultation.faculty.office_location,
-        'status': 'Consultation',
-        'event_type': 'busy',
-        'date': consultation.date.isoformat(),
-        'is_recurring': False,
-        'is_consultation': True,
-        'day_of_week': '',
-        'start_month': None,
-        'end_month': None,
-        'start_time': consultation.start_time.isoformat() if consultation.start_time else None,
-        'end_time': consultation.end_time.isoformat() if consultation.end_time else None,
-        'google_event_id': consultation.google_event_id,
-    }
+    return serialize_consultation_event(consultation, viewer='faculty')
 
 
 def _csv_error(row_number, message):
@@ -396,7 +357,7 @@ def _schedule_csv_row(event):
         'end_month': event.end_month or '',
         'start_time': event.start_time.strftime('%H:%M') if event.start_time else '',
         'end_time': event.end_time.strftime('%H:%M') if event.end_time else '',
-        'status_type': _schedule_status_label(event),
+        'status_type': get_schedule_status_label(event),
     }
 
 
@@ -409,7 +370,7 @@ def dashboard(request):
         refresh_faculty_status(faculty_profile)
     consultation_requests = ConsultationRequest.objects.filter(
         faculty=faculty_profile,
-    ).select_related('user').order_by('-date', '-start_time') if faculty_profile else []
+    ).exclude(status__in={'completed', 'declined'}).select_related('user').order_by('-date', '-start_time') if faculty_profile else []
     current_status = faculty_profile.current_status if faculty_profile else 'available'
     status_css_class = {
         'available': 'available',
@@ -426,21 +387,21 @@ def dashboard(request):
         'status_css_class': status_css_class,
         'status_label': status_label,
         'consultation_requests': consultation_requests,
-        'announcements': get_active_announcements(request.user.department),
+        'announcements': get_active_announcements(request.user.college),
     })
 
 
 @login_required
 @role_required('faculty')
 def active_announcements(request):
-    qs = DepartmentAnnouncement.objects.filter(
-        department=request.user.department,
+    qs = CollegeAnnouncement.objects.filter(
+        college=request.user.college,
         expiry__gt=timezone.now()
     )
     return JsonResponse({
         'announcements': [
             {
-                'department': a.get_department_display(),
+                'college': a.get_college_display(),
                 'message': a.message,
                 'posted_at': a.posted_at.strftime('%b %d, %Y'),
             }
@@ -663,8 +624,8 @@ def _walk_in_json(queue):
         'faculty_id': queue.faculty.faculty_id,
         'student_name': queue.user.get_full_name() or queue.user.username,
         'student_email': queue.user.email,
-        # Send the readable department name instead of an internal code.
-        'student_department': queue.user.department_name,
+        # Send the readable college name instead of an internal code.
+        'student_college': queue.user.college_name,
         'status': queue.status,
         'position': queue.position,
         'student_message': queue.student_message,
@@ -968,15 +929,30 @@ def api_schedule_events(request):
 
     if request.method == 'POST':
         try:
-            values = _event_values(_json_body(request))
+            payload = _json_body(request)
+            values = _event_values(payload)
         except ValueError as exc:
             return HttpResponseBadRequest(str(exc))
 
         event = ScheduleEvent(faculty=faculty, **values)
         connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+        sync_requested = payload.get('sync_to_google')
+        if sync_requested is not None and not isinstance(sync_requested, bool):
+            return HttpResponseBadRequest('sync_to_google must be true or false')
+        if sync_requested is True and connection is None:
+            return JsonResponse(
+                {'error': 'Connect Google Calendar before adding this event to it.'},
+                status=409,
+            )
         # Google Calendar requires a concrete date; recurring weekday events
         # are maintained locally until a dated occurrence is created.
-        sync_enabled = bool(connection and faculty.sync_enabled and event.date)
+        sync_enabled = (
+            bool(connection and event.date)
+            if sync_requested is True
+            else bool(connection and faculty.sync_enabled and event.date)
+            if sync_requested is None
+            else False
+        )
         try:
             if sync_enabled:
                 google_event = create_google_event(connection, event)
@@ -1013,18 +989,45 @@ def api_schedule_event_detail(request, pk):
 
     if request.method in ('PUT', 'PATCH'):
         try:
-            values = _event_values(_json_body(request), existing=event)
+            payload = _json_body(request)
+            values = _event_values(payload, existing=event)
         except ValueError as exc:
             return HttpResponseBadRequest(str(exc))
+        sync_requested = payload.get('sync_to_google')
+        if sync_requested is not None and not isinstance(sync_requested, bool):
+            return HttpResponseBadRequest('sync_to_google must be true or false')
+        if sync_requested is True and connection is None:
+            return JsonResponse(
+                {'error': 'Connect Google Calendar before adding this event to it.'},
+                status=409,
+            )
+        if sync_requested is False and event.google_event_id and connection is None:
+            return JsonResponse(
+                {'error': 'Reconnect Google Calendar before removing this event from it.'},
+                status=409,
+            )
         for field, value in values.items():
             setattr(event, field, value)
 
         # A recurring event has no concrete date and cannot be represented by
         # the one-off Google Calendar event API.
-        sync_enabled = bool(connection and faculty.sync_enabled and event.date)
+        sync_enabled = (
+            bool(connection and event.date)
+            if sync_requested is True
+            else bool(connection and faculty.sync_enabled and event.date)
+            if sync_requested is None
+            else False
+        )
 
         try:
-            if sync_enabled:
+            if sync_requested is False and event.google_event_id:
+                delete_google_event(connection, event)
+                event.google_event_id = None
+                event.google_calendar_id = None
+                event.managed_by_facsync = False
+                event.sync_state = 'local'
+                event.sync_error = ''
+            elif sync_enabled:
                 if event.google_event_id:
                     try:
                         update_google_event(connection, event)

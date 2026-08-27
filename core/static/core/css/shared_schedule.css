@@ -1,4 +1,4 @@
-#departmentClosureNotice {
+#collegeClosureNotice {
   background: var(--danger-soft);
   color: var(--danger);
   border: 1px solid var(--danger);
@@ -368,6 +368,20 @@ a.btn-danger {
 .primary-button:disabled {
   background-color: var(--muted);
   cursor: not-allowed;
+}
+
+#join-queue-btn.faculty-unavailable,
+#join-queue-btn.faculty-unavailable:disabled {
+  background: #dc3545;
+  border-color: #dc3545;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+#join-queue-btn.faculty-unavailable:hover,
+#join-queue-btn.faculty-unavailable:focus-visible {
+  background: #b02a37;
+  border-color: #b02a37;
 }
 
 .actions {

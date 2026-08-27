@@ -1,31 +1,31 @@
 from django import forms
-from core.departments import get_department_choices
+from core.colleges import get_college_choices
 from core.models import DeptHeadInvite, FacultyInvite, User
 
 class DeptHeadInviteForm(forms.ModelForm):
-    department = forms.ChoiceField(choices=get_department_choices)
+    college = forms.ChoiceField(choices=get_college_choices)
     title = forms.ChoiceField(choices=User.TITLE_CHOICES, required=True)
 
     class Meta:
         model = DeptHeadInvite
-        fields = ['email', 'department']
+        fields = ['email', 'college']
 
     def clean_email(self):
         email = self.cleaned_data['email']
         if DeptHeadInvite.objects.filter(email__iexact=email, used=False).exists():
-            raise forms.ValidationError("This email already has a pending Dept Head invite.")
+            raise forms.ValidationError("This email already has a pending College Head invite.")
         return email
 
 class FacultySuperInviteForm(forms.ModelForm):
-    department = forms.ChoiceField(choices=[])
+    college = forms.ChoiceField(choices=[])
 
     class Meta:
         model = FacultyInvite
-        fields = ['email', 'department']
+        fields = ['email', 'college']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['department'].choices = get_department_choices()
+        self.fields['college'].choices = get_college_choices()
 
     def clean_email(self):
         email = self.cleaned_data['email']

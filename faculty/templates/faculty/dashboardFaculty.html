@@ -3,11 +3,11 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260820-sticky-nav">
+    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260827-faculty-feedback">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260816-status-buttons">
+    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260827-highlight-consultation-time">
     <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
 
@@ -65,20 +65,19 @@
                             <button class="filter-btn active" data-filter="all">All</button>
                             <button class="filter-btn" data-filter="pending">Pending</button>
                             <button class="filter-btn" data-filter="approved">Approved</button>
-                            <button class="filter-btn" data-filter="completed">Completed</button>
                         </div>
                     </div>
                     <ul class="consultation-request-list">
                         {% for consultation in consultation_requests %}
                         <li class="request-item" data-status="{{ consultation.status }}" data-request-id="{{ consultation.request_id }}">
                             <div class="request-info">
-                                <p class="student-name">{{ consultation.user.get_full_name|default:consultation.user.username }}</p>
                                 <p class="request-time">
-                                    Date: {{ consultation.date|date:"F j, Y" }}
+                                    <strong>Date:</strong> {{ consultation.date|date:"F j, Y" }}
                                     {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
                                     {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
                                 </p>
-                                {% if consultation.student_message %}<p class="request-message"><strong>Message:</strong> {{ consultation.student_message }}</p>{% endif %}
+                                <p class="student-name"><strong>Name:</strong> {{ consultation.user.get_full_name|default:consultation.user.username }}</p>
+                                <p class="request-message"><strong>Message:</strong> {{ consultation.student_message|default:"No message provided." }}</p>
                             </div>
                             <div class="request-actions">
                                 {% if consultation.faculty_note %}<p class="faculty-note"><strong>Your Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
@@ -128,7 +127,8 @@
         </main>
     </div>
 
-    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260816-consultation-actions"></script>
+    <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
+    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260827-consultation-remove"></script>
     <script src="{% static 'core/js/notifications.js' %}"></script>
 </body>
 

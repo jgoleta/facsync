@@ -21,7 +21,7 @@ async function showAnnouncementsOnce() {
     .map(
       (a) => `
         <div class="announcement-item">
-            <strong>${a.department}</strong>
+            <strong>${a.college}</strong>
             <p>${a.message}</p>
             <small>${a.posted_at}</small>
         </div>

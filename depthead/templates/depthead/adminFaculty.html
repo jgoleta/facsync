@@ -25,11 +25,11 @@
       <main class="main-content">
         <header class="main-header with-action">
           <div>
-            <p class="page-kicker">Department administration ({{ request.user.department_name }})</p> 
+            <p class="page-kicker">College administration ({{ request.user.college_name }})</p>
             <h1>Manage Faculty Accounts</h1>
             <p>
               Invite faculty, manage access, and maintain schedules for your
-              department.
+              college.
             </p>
           </div>
         </header>
@@ -48,7 +48,7 @@
               <tr>
                 <th>Name</th>
                 <th>Email</th>
-                <th>Department</th>
+                <th>College</th>
                 <th>Faculty ID</th>
                 <th>Office/Room</th>
                 <th>Actions</th>
@@ -59,7 +59,7 @@
               <tr>
                 <td>{{ user.get_full_name|default:user.username }}</td>
                 <td>{{ user.email }}</td>
-                <td>{{ user.department_name }}</td>
+                <td>{{ user.college_name }}</td>
                 <td>{{ user.faculty_profile.faculty_id }}</td>
                 <td>{{ user.faculty_profile.office_location }}</td>
                 <td>
@@ -94,7 +94,7 @@
         <section class="management-table-wrapper">
           <div class="management-table-header">
             <div>
-              <p class="section-kicker">Department directory</p>
+              <p class="section-kicker">College directory</p>
               <h2>Active Faculty</h2>
             </div>
             <div class="management-table-header-actions">

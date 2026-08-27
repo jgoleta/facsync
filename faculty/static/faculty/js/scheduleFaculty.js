@@ -1,4 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
+  const facultyFeedback = window.facultyFeedback;
   const calendarGrid = document.getElementById("calendarGrid");
   const legendList = document.getElementById("legendList");
   const dayLabels = document.querySelector(".day-labels");
@@ -19,7 +20,28 @@ document.addEventListener("DOMContentLoaded", () => {
   const schedulePreviewBody = document.getElementById("schedule-preview-body");
   const schedulePreviewEmpty = document.getElementById("schedule-preview-empty");
   const schedulePreviewCount = document.getElementById("schedule-preview-count");
+  const scheduleCrudLoadingOverlay = document.getElementById("facultyLoadingOverlay");
+  const scheduleCrudLoadingMessage = document.getElementById("facultyLoadingMessage");
   let schedulePreviewEventIds = [];
+  let scheduleUploadInProgress = false;
+  let scheduleCrudLoadingCount = 0;
+
+  function showScheduleCrudLoading(message) {
+    scheduleCrudLoadingCount += 1;
+    if (scheduleCrudLoadingMessage) scheduleCrudLoadingMessage.textContent = message;
+    if (scheduleCrudLoadingOverlay) {
+      scheduleCrudLoadingOverlay.classList.add("show");
+      scheduleCrudLoadingOverlay.setAttribute("aria-busy", "true");
+    }
+  }
+
+  function hideScheduleCrudLoading() {
+    scheduleCrudLoadingCount = Math.max(0, scheduleCrudLoadingCount - 1);
+    if (scheduleCrudLoadingCount === 0 && scheduleCrudLoadingOverlay) {
+      scheduleCrudLoadingOverlay.classList.remove("show");
+      scheduleCrudLoadingOverlay.setAttribute("aria-busy", "false");
+    }
+  }
 
   let currentView = "monthly"; // Default view
   let isEditing = false; // To track if the modal is for editing
@@ -67,9 +89,11 @@ document.addEventListener("DOMContentLoaded", () => {
         showWalkInFeedback(data.walk_ins_enabled
           ? 'Students can now join your walk-in queue.'
           : 'Walk-in queue is closed to new students.');
+        facultyFeedback?.showToast('Walk-in availability updated successfully.');
       } catch (error) {
         walkInToggle.checked = !enabled;
         showWalkInFeedback(error.message, true);
+        facultyFeedback?.showToast(error.message, true);
       } finally {
         walkInToggle.disabled = false;
       }
@@ -80,39 +104,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Store the schedule returned by the server for calendar rendering.
   const facultySchedule = { name: null, schedule: [] };
-  const weekdayIndexes = {
-    sunday: 0, monday: 1, tuesday: 2, wednesday: 3,
-    thursday: 4, friday: 5, saturday: 6,
-  };
-
-  // Convert a Date object into the YYYY-MM-DD key used by the calendar.
-  function localDateKey(value) {
-    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
-  }
-
-  // Determine whether a month falls inside an event's recurring month range.
-  function monthIsIncluded(month, startMonth, endMonth) {
-    if (!startMonth || !endMonth) return true;
-    if (startMonth <= endMonth) return month >= startMonth && month <= endMonth;
-    return month >= startMonth || month <= endMonth;
-  }
-
-  // Expand a recurring weekday event into the date keys shown by the calendar.
-  function recurringDateKeys(dayOfWeek, startMonth, endMonth) {
-    const today = new Date();
-    const first = new Date(today.getFullYear(), today.getMonth(), 1 - 7);
-    const last = new Date(today.getFullYear(), today.getMonth() + 1, 7);
-    const target = dayOfWeek ? weekdayIndexes[dayOfWeek] : null;
-    const dates = [];
-    for (let cursor = new Date(first); cursor <= last; cursor.setDate(cursor.getDate() + 1)) {
-      if (monthIsIncluded(cursor.getMonth() + 1, startMonth, endMonth)
-        && (target === null || cursor.getDay() === target)) dates.push(localDateKey(cursor));
-    }
-    return dates;
-  }
 
   // Fetch schedule events, normalize them, and refresh the calendar display.
   async function fetchEventsFromApi(sync = false) {
+    showScheduleCrudLoading(sync ? "Syncing Google Calendar..." : "Loading schedule...");
     try {
       const res = await fetch(`/faculty/api/events/${sync ? '?sync=1' : ''}`);
       if (!res.ok) {
@@ -125,35 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       const events = data.events || [];
 
-      // Group one-off events by date and expand recurring weekday events into
-      // the dates visible around the current month.
-      const map = {};
-      events.forEach((ev) => {
-        const eventData = {
-          id: ev.id,
-          title: ev.title,
-          description: ev.description,
-          location: ev.location || "",
-          status: ev.status || ev.event_type,
-          type: ev.event_type,
-          isRecurring: Boolean(ev.is_recurring),
-          dayOfWeek: ev.day_of_week === "none" ? "" : (ev.day_of_week || ""),
-          startMonth: ev.start_month,
-          endMonth: ev.end_month,
-          startTime: ev.start_time ? ev.start_time.split('T').pop().slice(0,5) : ev.start_time,
-          endTime: ev.end_time ? ev.end_time.split('T').pop().slice(0,5) : ev.end_time,
-          isConsultation: Boolean(ev.is_consultation),
-        };
-        const dateKeys = ev.is_recurring
-          ? recurringDateKeys(eventData.dayOfWeek, ev.start_month, ev.end_month)
-          : (ev.date ? [ev.date.split('T')[0]] : []);
-        dateKeys.forEach((dateKey) => {
-          if (!map[dateKey]) map[dateKey] = { date: dateKey, events: [] };
-          map[dateKey].events.push(eventData);
-        });
-      });
-
-      facultySchedule.schedule = Object.values(map).sort((a,b) => new Date(a.date) - new Date(b.date));
+      facultySchedule.schedule = window.FacSyncCalendar.buildSchedule(events);
       if (calendarSyncStatus) {
         calendarSyncStatus.textContent = data.sync_error
           ? `Google sync failed: ${data.sync_error}`
@@ -165,6 +132,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error('Failed to fetch events', err);
       return null;
+    } finally {
+      hideScheduleCrudLoading();
     }
   }
 
@@ -224,6 +193,18 @@ document.addEventListener("DOMContentLoaded", () => {
       setScheduleUploadStatus("Please choose a .csv file.", true);
       return;
     }
+    if (scheduleUploadInProgress) return;
+    scheduleUploadInProgress = true;
+
+    // Do not send the CSV to the server until the user makes an explicit choice.
+    const syncToGoogle = await askGoogleCalendarSync();
+    if (syncToGoogle === null) {
+      setScheduleUploadStatus("Schedule upload cancelled.");
+      if (scheduleCsvInput) scheduleCsvInput.value = "";
+      scheduleUploadInProgress = false;
+      return;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
     if (uploadScheduleBtn) {
@@ -231,6 +212,7 @@ document.addEventListener("DOMContentLoaded", () => {
       uploadScheduleBtn.textContent = "Uploading...";
     }
     setScheduleUploadStatus("Validating and saving schedule...");
+    showScheduleCrudLoading("Uploading schedule...");
     try {
       const response = await fetch("/faculty/api/schedule/upload/", {
         method: "POST",
@@ -247,15 +229,19 @@ document.addEventListener("DOMContentLoaded", () => {
         .map((event) => event.id)
         .filter((id) => id !== undefined && id !== null);
       setScheduleUploadStatus(data.message || "Schedule uploaded successfully.");
+      facultyFeedback?.showToast(data.message || "Schedule uploaded successfully.");
       await fetchEventsFromApi();
     } catch (error) {
       setScheduleUploadStatus(error.message, true);
+      facultyFeedback?.showToast(error.message, true);
     } finally {
       if (uploadScheduleBtn) {
         uploadScheduleBtn.disabled = false;
         uploadScheduleBtn.textContent = "Upload Schedule";
       }
       if (scheduleCsvInput) scheduleCsvInput.value = "";
+      scheduleUploadInProgress = false;
+      hideScheduleCrudLoading();
     }
   }
 
@@ -269,6 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!window.confirm("Delete the uploaded schedule shown in this preview? This cannot be undone.")) return;
       clearScheduleBtn.disabled = true;
       setScheduleUploadStatus("Deleting schedule...");
+      showScheduleCrudLoading("Deleting schedule...");
       try {
         const response = await fetch("/faculty/api/schedule/clear/", {
           method: "POST",
@@ -282,11 +269,14 @@ document.addEventListener("DOMContentLoaded", () => {
         schedulePreviewEventIds = [];
         closeSchedulePreview();
         setScheduleUploadStatus("Schedule deleted. You can upload a new CSV now.");
+        facultyFeedback?.showToast("Schedule deleted successfully.");
         await fetchEventsFromApi();
       } catch (error) {
         setScheduleUploadStatus(error.message, true);
+        facultyFeedback?.showToast(error.message, true);
       } finally {
         clearScheduleBtn.disabled = false;
+        hideScheduleCrudLoading();
       }
     });
   }
@@ -294,7 +284,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Event CRUD and Display Helpers ---
 
   // Create a new schedule event through the faculty API.
-  async function addEvent(eventData) {
+  async function addEvent(eventData, syncToGoogle) {
+    showScheduleCrudLoading("Saving schedule...");
     try {
       const payload = {
         title: eventData.title,
@@ -309,6 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
         end_date: eventData.endDate || null,
         start_time: timeValue(eventData.startTime),
         end_time: timeValue(eventData.endTime),
+        sync_to_google: syncToGoogle,
       };
       const res = await fetch('/faculty/api/events/', {
         method: 'POST',
@@ -326,6 +318,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (err) {
       console.error('Error creating event', err);
       throw err;
+    } finally {
+      hideScheduleCrudLoading();
     }
   }
 
@@ -420,31 +414,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Delete a schedule event from the API or remove it from local state.
   async function deleteEvent(dateKey, eventToDelete) {
-    if (eventToDelete.id) {
-      try {
-        const res = await fetch(`/faculty/api/events/${eventToDelete.id}/`, {
-          method: 'DELETE',
-          headers: requestHeaders(),
-        });
-        if (!res.ok) {
-          console.error('Failed to delete event');
+    showScheduleCrudLoading("Deleting schedule...");
+    try {
+      if (eventToDelete.id) {
+        try {
+          const res = await fetch(`/faculty/api/events/${eventToDelete.id}/`, {
+            method: 'DELETE',
+            headers: requestHeaders(),
+          });
+          if (!res.ok) {
+            console.error('Failed to delete event');
+            facultyFeedback?.showToast('Failed to delete event.', true);
+            return;
+          }
+          await fetchEventsFromApi();
+          facultyFeedback?.showToast('Schedule event deleted successfully.');
           return;
+        } catch (err) {
+          console.error('Error deleting event', err);
+          facultyFeedback?.showToast(err.message || 'Failed to delete event.', true);
         }
-        await fetchEventsFromApi();
-        return;
-      } catch (err) {
-        console.error('Error deleting event', err);
       }
-    }
 
-    // Fallback to client-side removal for events without id
-    const dayEntry = facultySchedule.schedule.find((entry) => entry.date === dateKey);
-    if (dayEntry) {
-      dayEntry.events = dayEntry.events.filter((event) => event !== eventToDelete);
-      if (dayEntry.events.length === 0) {
-        facultySchedule.schedule = facultySchedule.schedule.filter((entry) => entry.date !== dateKey);
+      // Fallback to client-side removal for events without id
+      const dayEntry = facultySchedule.schedule.find((entry) => entry.date === dateKey);
+      if (dayEntry) {
+        dayEntry.events = dayEntry.events.filter((event) => event !== eventToDelete);
+        if (dayEntry.events.length === 0) {
+          facultySchedule.schedule = facultySchedule.schedule.filter((entry) => entry.date !== dateKey);
+        }
+        renderCalendar();
+        facultyFeedback?.showToast('Schedule event deleted successfully.');
       }
-      renderCalendar();
+    } finally {
+      hideScheduleCrudLoading();
     }
   }
 
@@ -539,7 +542,7 @@ document.addEventListener("DOMContentLoaded", () => {
             item.classList.add("all-day-item");
             dayContent.appendChild(item);
             const legendItem = document.createElement("li");
-            legendItem.textContent = `${event.title} • All day`;
+            legendItem.textContent = window.FacSyncCalendar.activityLabel(event, monthName, day);
             legendList.appendChild(legendItem);
             return;
           }
@@ -571,9 +574,7 @@ document.addEventListener("DOMContentLoaded", () => {
           dayContent.appendChild(item);
 
           const legendItem = document.createElement("li");
-          legendItem.textContent = `${event.title} • ${monthName} ${day} • ${
-            formatTime12(event.startTime)
-          }${event.endTime ? ` - ${formatTime12(event.endTime)}` : ""}`;
+          legendItem.textContent = window.FacSyncCalendar.activityLabel(event, monthName, day);
           legendList.appendChild(legendItem);
         });
 
@@ -622,9 +623,7 @@ document.addEventListener("DOMContentLoaded", () => {
             body.appendChild(item);
 
             const legendItem = document.createElement("li");
-            legendItem.textContent = `${event.title} • ${monthName} ${day} • ${
-              formatTime12(event.startTime)
-              }${event.endTime ? ` - ${formatTime12(event.endTime)}` : ""}`;
+            legendItem.textContent = window.FacSyncCalendar.activityLabel(event, monthName, day);
             legendList.appendChild(legendItem);
           });
 
@@ -677,6 +676,43 @@ document.addEventListener("DOMContentLoaded", () => {
   const eventDateInput = document.getElementById("eventDate");
   const eventDayGroup = document.getElementById("event-day-group");
   const eventDayInput = document.getElementById("eventDay");
+  const googleCalendarConfirmModal = document.getElementById("googleCalendarConfirmModal");
+  const googleCalendarConfirmYes = document.getElementById("googleCalendarConfirmYes");
+  const googleCalendarConfirmNo = document.getElementById("googleCalendarConfirmNo");
+  const googleCalendarConfirmClose = document.getElementById("googleCalendarConfirmClose");
+  let googleCalendarConfirmResolver = null;
+  let eventSaveInProgress = false;
+
+  function closeEventEditor() {
+    if (addEventModal) addEventModal.classList.add("hidden");
+    isEditing = false;
+    activeEventContext = null;
+  }
+
+  function closeEventDetailModal() {
+    if (eventDetailModal) eventDetailModal.classList.add("hidden");
+    activeEventContext = null;
+  }
+
+  function askGoogleCalendarSync() {
+    return new Promise((resolve) => {
+      googleCalendarConfirmResolver = resolve;
+      googleCalendarConfirmModal.classList.remove("hidden");
+      googleCalendarConfirmYes.focus();
+    });
+  }
+
+  function finishGoogleCalendarConfirmation(syncToGoogle) {
+    if (googleCalendarConfirmModal) googleCalendarConfirmModal.classList.add("hidden");
+    if (googleCalendarConfirmResolver) {
+      googleCalendarConfirmResolver(syncToGoogle);
+      googleCalendarConfirmResolver = null;
+    }
+  }
+
+  googleCalendarConfirmYes?.addEventListener("click", () => finishGoogleCalendarConfirmation(true));
+  googleCalendarConfirmNo?.addEventListener("click", () => finishGoogleCalendarConfirmation(false));
+  googleCalendarConfirmClose?.addEventListener("click", () => finishGoogleCalendarConfirmation(null));
 
   // Extract the month number from an HTML date or datetime value.
   function monthFromDate(value) {
@@ -755,16 +791,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Close the add-event modal from its close button.
   if (closeModalBtn && addEventModal) {
-    closeModalBtn.addEventListener("click", () => {
-      addEventModal.classList.add("hidden");
-    });
+    closeModalBtn.addEventListener("click", closeEventEditor);
   }
 
   // Close the add-event modal when the backdrop is clicked.
   if (addEventModal) {
     addEventModal.addEventListener("click", (e) => {
       if (e.target === addEventModal) {
-        addEventModal.classList.add("hidden");
+        closeEventEditor();
       }
     });
   }
@@ -773,10 +807,14 @@ document.addEventListener("DOMContentLoaded", () => {
   if (eventDetailModal) {
     eventDetailModal.addEventListener("click", (e) => {
       if (e.target === eventDetailModal) {
-        eventDetailModal.classList.add("hidden");
+        closeEventDetailModal();
       }
     });
   }
+
+  detailCloseBtns.forEach((btn) => {
+    btn.addEventListener("click", closeEventDetailModal);
+  });
 
   // Close the day-schedule modal when its backdrop is clicked.
   if (dayScheduleModal) {
@@ -797,11 +835,19 @@ document.addEventListener("DOMContentLoaded", () => {
   if (addEventForm) {
     addEventForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (eventSaveInProgress) return;
+      eventSaveInProgress = true;
+      try {
+        const syncToGoogle = await askGoogleCalendarSync();
+        if (syncToGoogle === null) {
+          closeEventEditor();
+          return;
+        }
       const recurringDay = selectedRecurringDay();
       const isRecurring = Boolean(recurringDay);
       const startInputValue = document.getElementById("eventStartTime").value;
       const endInputValue = document.getElementById("eventEndTime").value;
-      const eventDetails = {
+        const eventDetails = {
         title: document.getElementById("eventTitle").value,
         type: document.getElementById("eventType").value,
         description: document.getElementById("eventDescription").value,
@@ -817,9 +863,11 @@ document.addEventListener("DOMContentLoaded", () => {
         startTime: startInputValue,
         endTime: endInputValue,
       };
+      const wasEditing = isEditing;
 
       if (isEditing && activeEventContext && activeEventContext.eventData && activeEventContext.eventData.id) {
         // update via API
+        showScheduleCrudLoading("Updating schedule...");
         try {
           const payload = {
             title: eventDetails.title,
@@ -834,6 +882,7 @@ document.addEventListener("DOMContentLoaded", () => {
             end_date: eventDetails.endDate || null,
             start_time: timeValue(eventDetails.startTime),
             end_time: timeValue(eventDetails.endTime),
+            sync_to_google: syncToGoogle,
           };
           const res = await fetch(`/faculty/api/events/${activeEventContext.eventData.id}/`, {
             method: 'PUT',
@@ -850,17 +899,21 @@ document.addEventListener("DOMContentLoaded", () => {
             calendarSyncStatus.textContent = err.message;
             calendarSyncStatus.className = 'calendar-sync-status error';
           }
+          facultyFeedback?.showToast(err.message, true);
           return;
+        } finally {
+          hideScheduleCrudLoading();
         }
       } else {
         // create new event
         try {
-          await addEvent(eventDetails);
+          await addEvent(eventDetails, syncToGoogle);
         } catch (err) {
           if (calendarSyncStatus) {
             calendarSyncStatus.textContent = err.message;
             calendarSyncStatus.className = 'calendar-sync-status error';
           }
+          facultyFeedback?.showToast(err.message, true);
           return;
         }
       }
@@ -872,7 +925,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       isEditing = false;
       activeEventContext = null;
+      facultyFeedback?.showToast(wasEditing
+        ? 'Schedule event updated successfully.'
+        : 'Schedule event added successfully.');
       await fetchEventsFromApi();
+      } finally {
+        eventSaveInProgress = false;
+      }
     });
   }
 
