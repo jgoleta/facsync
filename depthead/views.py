@@ -163,13 +163,19 @@ def admin_dashboard(request):
 @login_required
 @role_required('depthead')
 def admin_faculty(request):
-    faculty_users = User.objects.filter(
+    inactivity_threshold = timezone.now() - timedelta(days=30)
+
+    faculty_users = list(User.objects.filter(
         role='faculty',
         department__iexact=request.user.department,
-    ).select_related('faculty_profile').order_by('first_name', 'last_name', 'username')
+    ).select_related('faculty_profile').order_by('first_name', 'last_name', 'username'))
+
+    for user in faculty_users:
+        user.is_inactive = user.last_login is None or user.last_login < inactivity_threshold
+
     return render(request, 'depthead/adminFaculty.html', {
-        'pending_faculty': faculty_users.filter(account_status='pending'),
-        'active_faculty': faculty_users.filter(account_status='active'),
+        'pending_faculty': [u for u in faculty_users if u.account_status == 'pending'],
+        'active_faculty': [u for u in faculty_users if u.account_status == 'active'],
     })
 
 
@@ -396,6 +402,7 @@ STATUS_LABELS = {
 @login_required
 @role_required('depthead')
 def faculty_monitoring(request):
+    inactivity_threshold = timezone.now() - timedelta(days=30)
     profiles = FacultyProfile.objects.select_related('user').filter(
         user__role='faculty',
         user__account_status='active',
@@ -404,11 +411,15 @@ def faculty_monitoring(request):
     faculty_list = []
     for profile in profiles:
         label, css_class = STATUS_LABELS.get(profile.current_status, ('Unknown', 'status-unavailable'))
+        last_login = profile.user.last_login
+        is_inactive = last_login is None or last_login < inactivity_threshold
         faculty_list.append({
             'name': profile.user.get_full_name() or profile.user.username,
             'status_label': label,
             'status_class': css_class,
             'updated_at': profile.status_updated_at,
+            'is_inactive': is_inactive,
+            'last_login': last_login,
         })
     return render(request, 'depthead/facultyMonitoring.html', {'faculty_list': faculty_list})
 
@@ -786,6 +797,7 @@ def edit_department_description(request):
 @login_required
 @role_required('depthead')
 def faculty_monitoring_data(request):
+    inactivity_threshold = timezone.now() - timedelta(days=30)
     profiles = FacultyProfile.objects.select_related('user').filter(
         user__role='faculty',
         user__account_status='active',
@@ -794,11 +806,14 @@ def faculty_monitoring_data(request):
     faculty_list = []
     for profile in profiles:
         label, css_class = STATUS_LABELS.get(profile.current_status, ('Unknown', 'status-unavailable'))
+        last_login = profile.user.last_login
+        is_inactive = last_login is None or last_login < inactivity_threshold
         faculty_list.append({
             'id': profile.faculty_id,
             'name': profile.user.get_full_name() or profile.user.username,
             'status_label': label,
             'status_class': css_class,
             'updated_at_iso': profile.status_updated_at.isoformat() if profile.status_updated_at else None,
+            'is_inactive': is_inactive,
         })
     return JsonResponse({'faculty_list': faculty_list})

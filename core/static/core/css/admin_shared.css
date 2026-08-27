@@ -33,3 +33,23 @@
 .actions button.danger:hover {
   background-color: #f1b0b7;
 }
+
+.inactive-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.inactive-badge::before {
+  content: "⚠";
+  color: #d97706;
+  font-size: 0.85rem;
+  line-height: 1;
+}

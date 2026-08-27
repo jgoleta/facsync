@@ -130,7 +130,12 @@
               {% for user in active_faculty %}
               <tr>
                 <td>{{ user.faculty_profile.faculty_id|default:'—' }}</td>
-                <td>{{ user.get_full_name|default:user.username }}</td>
+                <td>
+                  {{ user.get_full_name|default:user.username }}
+                  {% if user.is_inactive %}
+                  <span class="inactive-badge" title="No login in 30+ days">Inactive</span>
+                  {% endif %}
+                </td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.faculty_profile.office_location|default:'—' }}</td>
                 <td class="actions">
