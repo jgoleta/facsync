@@ -35,8 +35,12 @@ function escapeHtml(value) {
 }
 
 function renderFacultyCard(item) {
+  const inactiveClass = item.is_inactive ? " inactive" : "";
+  const inactiveBadge = item.is_inactive
+    ? '<span class="inactive-badge">⚠ Inactive — no login in 30+ days</span>'
+    : "";
   return `
-    <div class="faculty-card ${escapeHtml(item.status_class)}">
+    <div class="faculty-card ${escapeHtml(item.status_class)}${inactiveClass}">
       <div class="faculty-avatar">${escapeHtml((item.name || "?").charAt(0).toUpperCase())}</div>
       <div class="card-header">
         <div>
@@ -45,6 +49,7 @@ function renderFacultyCard(item) {
         </div>
         <span class="status-badge">${escapeHtml(item.status_label)}</span>
       </div>
+      ${inactiveBadge}
       <div class="faculty-card-footer">
         <span class="status-line"><i></i>Currently ${escapeHtml((item.status_label || "").toLowerCase())}</span>
         <span class="updated-time">${timeAgo(item.updated_at_iso)}</span>

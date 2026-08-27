@@ -55,6 +55,9 @@
                         </div>
                         <span class="status-badge">{{ item.status_label }}</span>
                     </div>
+                    {% if item.is_inactive %}
+                    <span class="inactive-badge">Inactive — no login in 30+ days</span>
+                    {% endif %}
                     <div class="faculty-card-footer">
                         <span class="status-line"><i></i>Currently {{ item.status_label|lower }}</span>
                         <span class="updated-time">{% if item.updated_at %}{{ item.updated_at|timesince }} ago{% else %}No update yet{% endif %}</span>
