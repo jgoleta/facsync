@@ -1,0 +1,15 @@
+{% extends "emails/base_email.html" %}
+{% block heading %}You've been invited to FacSync{% endblock %}
+{% block body %}
+<p>You've been pre-registered as {{ title_label }} for <strong>{{ college }}</strong>.</p>
+<p>Sign in with Google using this email address to activate your account and access your College Head dashboard.</p>
+{% endblock %}
+{% block button %}
+<tr>
+    <td align="center" style="padding:8px 40px 24px 40px;">
+        <a href="{{ site_url }}/login/"
+            style="display:inline-block; background:linear-gradient(45deg,#3b82f6,#0b74de); color:#ffffff; text-decoration:none; font-weight:600; padding:12px 28px; border-radius:999px;">Activate
+            Account</a>
+    </td>
+</tr>
+{% endblock %}
