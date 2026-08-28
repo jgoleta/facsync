@@ -5,27 +5,6 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 
-def send_faculty_invite_email(email, college):
-    send_mail(
-        "You've been invited to FacSync",
-        f"You've been pre-registered as faculty for {college}. Sign in with Google using this email to activate your account.",
-        settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
-    )
-
-def send_faculty_approved_email(user):
-    send_mail(
-        "Your FacSync faculty account is approved",
-        "Your faculty account request has been approved. You can now log in.",
-        settings.DEFAULT_FROM_EMAIL, [user.email], fail_silently=False,
-    )
-
-def send_faculty_removed_email(email, name):
-    send_mail(
-        "Your FacSync faculty account was removed",
-        f"Hi {name}, your faculty account has been removed by your College Head.",
-        settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False,
-    )
-
 
 def create_notification(recipient, notification_type, title, message, url=''):
     return Notification.objects.create(
@@ -159,4 +138,22 @@ def send_faculty_status_email(student, faculty_name, status_label, url):
         },
         [student.email],
         fail_silently=True,
+    )
+
+def send_depthead_invite_email(email, college, title):
+    title_label = dict(User.TITLE_CHOICES).get(title, 'College Head')
+    _send_html_email(
+        "You've been invited to FacSync",
+        'depthead_invite.html',
+        {'college': college, 'title_label': title_label},
+        [email],
+    )
+
+
+def send_depthead_deactivated_email(user):
+    _send_html_email(
+        "Your FacSync College Head account was deactivated",
+        'depthead_deactivated.html',
+        {'name': user.get_full_name() or user.username},
+        [user.email],
     )

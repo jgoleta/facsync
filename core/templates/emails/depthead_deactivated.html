@@ -1,0 +1,7 @@
+{% extends "emails/base_email.html" %}
+{% block heading %}Your FacSync College Head account was deactivated{% endblock %}
+{% block body %}
+<p>Hi {{ name }},</p>
+<p>Your College Head account has been deactivated by a Super Admin. You will not be able to log in until it is
+    reactivated. If you believe this was a mistake, please contact your Super Admin.</p>
+{% endblock %}

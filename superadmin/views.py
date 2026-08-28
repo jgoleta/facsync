@@ -8,6 +8,7 @@ from core.colleges import get_college_choices
 from .forms import DeptHeadInviteForm, FacultySuperInviteForm
 from core.models import User, College
 from core.forms import CollegeForm
+from core.services import send_depthead_invite_email, send_depthead_deactivated_email
 
 
 @login_required
@@ -19,12 +20,26 @@ def invite_depthead(request):
             invite = form.save(commit=False)
             invite.invited_by = request.user
             invite.save()
+            send_depthead_invite_email(invite.email, invite.college, invite.title)
             messages.success(request, f"College Head invitation created for {invite.email}.")
         else:
             for error_list in form.errors.values():
                 for error in error_list:
                     messages.error(request, error)
     return redirect('superadmin:manage_admins')
+
+
+@login_required
+@role_required('superadmin')
+def remove_depthead(request, user_id):
+    depthead = get_object_or_404(User, id=user_id, role='depthead')
+    if request.method == 'POST':
+        depthead.account_status = 'deactivated'
+        depthead.save()
+        send_depthead_deactivated_email(depthead)
+        messages.success(request, f"{depthead.username} has been deactivated.")
+    return redirect('superadmin:manage_admins')
+
 
 @login_required
 @role_required('superadmin')
@@ -36,9 +51,8 @@ def superadmin_dashboard(request):
 def manage_colleges(request):
     colleges = College.objects.all().order_by('name')
 
-    # Create a dictionary mapping college codes to their respective college heads
-    # This allows us to easily find the college head for each college when rendering the template.
-    # We use upper() to ensure that the college codes match regardless of case.
+    #dictionary mapping college codes to their respective college heads
+    #use upper() to ensure that the college codes match regardless
     heads_by_college = {}
     depthead_qs = User.objects.filter(role='depthead').exclude(college='').exclude(college__isnull=True)
     for u in depthead_qs:
@@ -149,16 +163,6 @@ def edit_depthead(request, user_id):
 
 
 @login_required
-@role_required('superadmin')
-def remove_depthead(request, user_id):
-    depthead = get_object_or_404(User, id=user_id, role='depthead')
-    if request.method == 'POST':
-        depthead.account_status = 'deactivated'
-        depthead.save()
-        messages.success(request, f"{depthead.username} has been deactivated.")
-    return redirect('superadmin:manage_admins')
-
-@login_required
 def invite_faculty_superadmin(request):
     if request.method == 'POST':
         form = FacultySuperInviteForm(request.POST)
@@ -182,3 +186,4 @@ def remove_faculty_superadmin(request, user_id):
         faculty_user.delete()
         return JsonResponse({'success': True, 'message': f"{name} removed."})
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
