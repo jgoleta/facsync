@@ -9,6 +9,7 @@ from .forms import DeptHeadInviteForm, FacultySuperInviteForm
 from core.models import User, College
 from core.forms import CollegeForm
 from core.services import send_depthead_invite_email, send_depthead_deactivated_email
+from faculty.models import FacultyProfile, ConsultationRequest
 
 @login_required
 @role_required('superadmin')
@@ -71,7 +72,33 @@ def edit_depthead(request, user_id):
 @login_required
 @role_required('superadmin')
 def superadmin_dashboard(request):
-    return render(request, 'superadmin/superadminDashboard.html')
+    colleges = College.objects.all().order_by('name')
+    total_colleges = colleges.count()
+    total_faculty = User.objects.filter(role='faculty', account_status='active').count()
+    total_consultations = ConsultationRequest.objects.count()
+
+    college_data = []
+    for college in colleges:
+        faculty_qs = FacultyProfile.objects.filter(college_id__iexact=college.code)
+        faculty_ids = list(faculty_qs.values_list('faculty_id', flat=True))
+        consultations = ConsultationRequest.objects.filter(faculty_id__in=faculty_ids)
+        available_count = faculty_qs.filter(current_status='available').count()
+        faculty_count = faculty_qs.count()
+        college_data.append({
+            'code': college.code,
+            'name': college.name,
+            'total_consultations': consultations.count(),
+            'active_faculty': faculty_count,
+            'availability_rate': round((available_count / faculty_count * 100), 0) if faculty_count else 0,
+        })
+
+    return render(request, 'superadmin/superadminDashboard.html', {
+        'total_colleges': total_colleges,
+        'total_faculty': total_faculty,
+        'total_consultations': total_consultations,
+        'colleges': colleges,
+        'college_data_json': college_data,
+    })
 
 @login_required
 @role_required('superadmin')
