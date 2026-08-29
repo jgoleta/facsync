@@ -10,7 +10,6 @@ from core.models import User, College
 from core.forms import CollegeForm
 from core.services import send_depthead_invite_email, send_depthead_deactivated_email
 
-
 @login_required
 @role_required('superadmin')
 def invite_depthead(request):
@@ -21,24 +20,52 @@ def invite_depthead(request):
             invite.invited_by = request.user
             invite.save()
             send_depthead_invite_email(invite.email, invite.college, invite.title)
-            messages.success(request, f"College Head invitation created for {invite.email}.")
-        else:
-            for error_list in form.errors.values():
-                for error in error_list:
-                    messages.error(request, error)
-    return redirect('superadmin:manage_admins')
-
+            return JsonResponse({'success': True, 'message': f"College Head invitation created for {invite.email}."})
+        errors = ' '.join(
+            error for error_list in form.errors.values() for error in error_list
+        )
+        return JsonResponse({'success': False, 'error': errors or 'Unable to create invitation.'}, status=400)
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 @login_required
 @role_required('superadmin')
-def remove_depthead(request, user_id):
+def edit_depthead(request, user_id):
     depthead = get_object_or_404(User, id=user_id, role='depthead')
     if request.method == 'POST':
-        depthead.account_status = 'deactivated'
+        new_role = request.POST.get('role')
+        new_college = request.POST.get('college')
+        new_title = request.POST.get('title')
+        new_status = request.POST.get('account_status')
+
+        if new_role not in dict(User.ROLE_CHOICES):
+            return JsonResponse({'success': False, 'error': 'Invalid role selected.'}, status=400)
+        if new_status not in ('active', 'deactivated'):
+            return JsonResponse({'success': False, 'error': 'Invalid account status selected.'}, status=400)
+
+        was_active = depthead.account_status == 'active'
+        depthead.role = new_role
+        depthead.college = new_college
+        depthead.title = new_title
+        depthead.account_status = new_status
         depthead.save()
-        send_depthead_deactivated_email(depthead)
-        messages.success(request, f"{depthead.username} has been deactivated.")
-    return redirect('superadmin:manage_admins')
+
+        if was_active and new_status == 'deactivated':
+            send_depthead_deactivated_email(depthead)
+
+        return JsonResponse({
+            'success': True,
+            'message': f"Updated {depthead.username}.",
+            'depthead': {
+                'id': depthead.id,
+                'name': depthead.get_full_name() or depthead.username,
+                'email': depthead.email,
+                'college': depthead.college,
+                'title_display': depthead.get_title_display() or '—',
+                'status': depthead.account_status,
+                'status_display': depthead.get_account_status_display(),
+            }
+        })
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 
 @login_required
@@ -141,25 +168,6 @@ def delete_college(request, college_id):
         messages.success(request, f"College '{name}' removed.")
     return redirect('superadmin:manage_colleges')
 
-@login_required
-@role_required('superadmin')
-def edit_depthead(request, user_id):
-    depthead = get_object_or_404(User, id=user_id, role='depthead')
-    if request.method == 'POST':
-        new_role = request.POST.get('role')
-        new_college = request.POST.get('college')
-        new_title = request.POST.get('title')
-
-        if new_role not in dict(User.ROLE_CHOICES):
-            messages.error(request, "Invalid role selected.")
-            return redirect('superadmin:manage_admins')
-
-        depthead.role = new_role
-        depthead.college = new_college
-        depthead.title = new_title
-        depthead.save()
-        messages.success(request, f"Updated {depthead.username}.")
-    return redirect('superadmin:manage_admins')
 
 
 @login_required

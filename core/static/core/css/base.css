@@ -344,7 +344,7 @@ input:checked + .slider:before {
   }
 }
 
-/* Toast notification */
+
 .toast {
   position: fixed;
   bottom: 24px;
