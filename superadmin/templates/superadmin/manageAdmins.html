@@ -79,30 +79,30 @@
                             <th>Role</th>
                             <th>College</th>
                             <th>Title</th>
+                            <th>Account Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for admin in depthead_accounts %}
-                        <tr>
-                            <td>{{ admin.get_full_name|default:admin.username }}</td>
-                            <td>{{ admin.email }}</td>
+                        <tr data-depthead-id="{{ admin.id }}">
+                            <td class="depthead-name">{{ admin.get_full_name|default:admin.username }}</td>
+                            <td class="depthead-email">{{ admin.email }}</td>
                             <td>College Head</td>
-                            <td>{{ admin.college }}</td>
-                            <td>{{ admin.get_title_display|default:"—" }}</td>
+                            <td class="depthead-college">{{ admin.college }}</td>
+                            <td class="depthead-title">{{ admin.get_title_display|default:"—" }}</td>
+                            <td class="depthead-status">
+                                <span class="status-pill status-{{ admin.account_status }}">{{ admin.get_account_status_display }}</span>
+                            </td>
                             <td class="actions">
                                 <button type="button" class="edit-depthead-btn" data-id="{{ admin.id }}" data-role="{{ admin.role }}"
-                                    data-college="{{ admin.college }}">Edit</button>
-                                <form method="post" action="{% url 'superadmin:remove_depthead' admin.id %}" class="inline-form"
-                                    onsubmit="return confirm('Deactivate {{ admin.username }}?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="danger">Remove</button>
-                                </form>
+                                    data-college="{{ admin.college }}" data-title="{{ admin.title }}"
+                                    data-status="{{ admin.account_status }}">Edit</button>
                             </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="empty-state">No College Head accounts yet.</td>
+                            <td colspan="6" class="empty-state">No College Head accounts yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -150,7 +150,7 @@
     </div>
     <div id="editDeptheadModal" class="modal-overlay hidden">
         <div class="modal">
-                <h2>Edit College Head</h2>
+            <h2>Edit College Head</h2>
             <form method="post" id="editDeptheadForm" class="settings-form">
                 {% csrf_token %}
                 <div class="modal-form-group">
@@ -169,12 +169,30 @@
                         {% endfor %}
                     </select>
                 </div>
+                <div class="modal-form-group">
+                    <label for="edit-depthead-title">Title</label>
+                    <select id="edit-depthead-title" name="title" required>
+                        {% for value, label in title_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label for="edit-depthead-status">Account Status</label>
+                    <select id="edit-depthead-status" name="account_status" required>
+                        <option value="active">Active</option>
+                        <option value="deactivated">Deactivated</option>
+                    </select>
+                </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" id="closeEditDeptheadModal">Cancel</button>
                     <button type="submit" class="primary-button">Save Changes</button>
                 </div>
             </form>
         </div>
+    </div>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
     </div>
     
     <script src="{% static 'superadmin/js/manageAdmins.js' %}"></script>
