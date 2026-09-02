@@ -359,12 +359,6 @@ a.btn-danger {
   color: var(--accent);
 }
 
-.queue-wait-time {
-  text-align: center;
-  margin-bottom: 16px;
-  color: var(--muted);
-}
-
 .primary-button:disabled {
   background-color: var(--muted);
   cursor: not-allowed;
@@ -413,6 +407,200 @@ a.btn-danger {
   overflow: visible;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+/* Shared schedule sidebar for student and faculty views. */
+.schedule-shell > .legend-card {
+  position: sticky;
+  top: 94px;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  border-color: #d8e4f2;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-shadow: 0 18px 42px rgba(20, 50, 88, 0.1);
+}
+
+.legend-header {
+  position: relative;
+  overflow: hidden;
+  padding: 24px 22px 19px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #eef6ff 0%, #ffffff 72%);
+}
+
+.legend-header::after {
+  content: "";
+  position: absolute;
+  top: -50px;
+  right: -45px;
+  width: 125px;
+  height: 125px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.legend-kicker {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin-bottom: 7px;
+  color: var(--accent);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.legend-card .legend-header h2 {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.legend-description {
+  position: relative;
+  z-index: 1;
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.schedule-shell > .legend-card .legend-list {
+  max-height: min(330px, 36vh);
+  margin: 0;
+  padding: 16px 18px;
+  overflow-y: auto;
+  gap: 9px;
+  scrollbar-width: thin;
+  scrollbar-color: #bfd3eb transparent;
+}
+
+.schedule-shell > .legend-card .legend-list:empty::after {
+  content: "No activities in this view.";
+  display: block;
+  padding: 20px 12px;
+  border: 1px dashed #cad8e9;
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 0.84rem;
+  text-align: center;
+}
+
+.schedule-shell > .legend-card .legend-list li {
+  position: relative;
+  padding: 11px 12px 11px 30px;
+  border: 1px solid #e4ebf4;
+  border-radius: 11px;
+  background: #fff;
+  color: #46566d;
+  font-size: 0.83rem;
+  box-shadow: 0 3px 10px rgba(20, 50, 88, 0.035);
+}
+
+.schedule-shell > .legend-card .legend-list li::before {
+  content: "";
+  position: absolute;
+  top: 16px;
+  left: 13px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.schedule-shell > .legend-card .card-section {
+  margin: 0;
+  padding: 20px 18px;
+  border-top: 1px solid var(--border);
+  background: #fff;
+}
+
+.legend-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin-bottom: 16px;
+}
+
+.legend-section-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.legend-card .legend-section-heading h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.legend-section-heading p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.schedule-shell > .legend-card .actions {
+  gap: 9px;
+  padding: 18px;
+  border-top: 1px solid var(--border);
+  background: #f8fbff;
+}
+
+.schedule-shell > .legend-card .primary-button,
+.schedule-shell > .legend-card .secondary-button,
+.schedule-shell > .legend-card .danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100% !important;
+  min-height: 43px;
+  padding: 10px 15px;
+  border-radius: 11px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.schedule-shell > .legend-card .primary-button {
+  background: linear-gradient(135deg, #3b82f6, #0b74de);
+  box-shadow: 0 7px 16px rgba(11, 116, 222, 0.2);
+}
+
+.schedule-shell > .legend-card .primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(11, 116, 222, 0.26);
+}
+
+.schedule-shell > .legend-card .secondary-button {
+  border: 1px solid #cbdcf0;
+  background: #fff;
+  color: #175da8;
+}
+
+.schedule-shell > .legend-card .secondary-button:hover {
+  border-color: #9dbce2;
+  background: var(--accent-soft);
+}
+
+.schedule-shell > .legend-card .secondary-link {
+  display: inline-flex;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
 }
 
 .details-list {
@@ -798,6 +986,9 @@ a.btn-danger {
     max-width: 100%;
     padding: 0 16px 24px;
   }
+  .schedule-shell > .legend-card {
+    position: static;
+  }
   .day-labels {
     display: none;
   }
@@ -818,10 +1009,6 @@ a.btn-danger {
   }
 
   .schedule-card {
-    padding: 16px;
-  }
-
-  .legend-card {
     padding: 16px;
   }
 

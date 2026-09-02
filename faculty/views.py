@@ -140,6 +140,9 @@ def _event_values(payload, existing=None):
             raise ValueError('Allocation start date must be on or before the end date')
         start_month = allocation_start_date.month
         end_month = allocation_end_date.month
+    elif existing:
+        allocation_start_date = existing.recurrence_start_date
+        allocation_end_date = existing.recurrence_end_date
     recurring = (
         (
             'day_of_week' in payload
@@ -202,6 +205,8 @@ def _event_values(payload, existing=None):
         'day_of_week': day_of_week,
         'start_month': start_month if recurring else None,
         'end_month': end_month if recurring else None,
+        'recurrence_start_date': allocation_start_date if recurring else None,
+        'recurrence_end_date': allocation_end_date if recurring else None,
         'start_time': start_value or None,
         'end_time': end_value or None,
     }
@@ -368,9 +373,14 @@ def dashboard(request):
     faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
     if faculty_profile:
         refresh_faculty_status(faculty_profile)
-    consultation_requests = ConsultationRequest.objects.filter(
-        faculty=faculty_profile,
-    ).exclude(status__in={'completed', 'declined'}).select_related('user').order_by('-date', '-start_time') if faculty_profile else []
+    faculty_consultations = ConsultationRequest.objects.filter(faculty=faculty_profile) if faculty_profile else ConsultationRequest.objects.none()
+    consultation_requests = faculty_consultations.exclude(
+        status__in={'completed', 'declined'},
+    ).select_related('user').order_by('-date', '-start_time')
+    completed_consultations = faculty_consultations.filter(
+        status='completed',
+    ).select_related('user').order_by('-date', '-start_time')
+    today = timezone.localdate()
     current_status = faculty_profile.current_status if faculty_profile else 'available'
     status_css_class = {
         'available': 'available',
@@ -387,6 +397,12 @@ def dashboard(request):
         'status_css_class': status_css_class,
         'status_label': status_label,
         'consultation_requests': consultation_requests,
+        'completed_consultations': completed_consultations,
+        'pending_consultation_count': faculty_consultations.filter(status='pending').count(),
+        'approved_consultation_count': faculty_consultations.filter(status='approved').count(),
+        'consultations_today_count': faculty_consultations.filter(date=today).exclude(
+            status__in={'declined', 'cancelled'},
+        ).count(),
         'announcements': get_active_announcements(request.user.college),
     })
 
@@ -944,12 +960,11 @@ def api_schedule_events(request):
                 {'error': 'Connect Google Calendar before adding this event to it.'},
                 status=409,
             )
-        # Google Calendar requires a concrete date; recurring weekday events
-        # are maintained locally until a dated occurrence is created.
+        can_sync = bool(event.date or (event.day_of_week and event.start_month and event.end_month))
         sync_enabled = (
-            bool(connection and event.date)
+            bool(connection and can_sync)
             if sync_requested is True
-            else bool(connection and faculty.sync_enabled and event.date)
+            else bool(connection and faculty.sync_enabled and can_sync)
             if sync_requested is None
             else False
         )
@@ -1009,12 +1024,11 @@ def api_schedule_event_detail(request, pk):
         for field, value in values.items():
             setattr(event, field, value)
 
-        # A recurring event has no concrete date and cannot be represented by
-        # the one-off Google Calendar event API.
+        can_sync = bool(event.date or (event.day_of_week and event.start_month and event.end_month))
         sync_enabled = (
-            bool(connection and event.date)
+            bool(connection and can_sync)
             if sync_requested is True
-            else bool(connection and faculty.sync_enabled and event.date)
+            else bool(connection and faculty.sync_enabled and can_sync)
             if sync_requested is None
             else False
         )

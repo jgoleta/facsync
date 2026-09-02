@@ -173,7 +173,7 @@ def consultation_requests(request):
     """Show only the signed-in student's consultation requests."""
     consultations = ConsultationRequest.objects.filter(
         user=request.user,
-    ).exclude(status__in={'completed', 'declined'}).select_related('faculty__user')
+    ).exclude(status='declined').select_related('faculty__user')
     return render(request, 'students/consultationRequests.html', {
         'consultations': consultations,
     })
@@ -189,6 +189,8 @@ def _consultation_json(consultation):
         'date': consultation.date.isoformat(),
         'start_time': consultation.start_time.isoformat() if consultation.start_time else None,
         'end_time': consultation.end_time.isoformat() if consultation.end_time else None,
+        'agenda': consultation.agenda,
+        'agenda_label': consultation.get_agenda_display(),
         'student_message': consultation.student_message,
         'faculty_note': consultation.faculty_note,
     }
@@ -201,7 +203,7 @@ def api_consultation_requests(request):
     """List or create consultation requests owned by the signed-in student."""
     consultations = ConsultationRequest.objects.filter(
         user=request.user,
-    ).exclude(status__in={'completed', 'declined'}).select_related('faculty__user')
+    ).exclude(status='declined').select_related('faculty__user')
 
     if request.method == 'GET':
         return JsonResponse({'consultations': [_consultation_json(item) for item in consultations]})
@@ -217,6 +219,15 @@ def api_consultation_requests(request):
         return JsonResponse({'error': 'A valid faculty, date, and start time are required.'}, status=400)
 
     faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id)
+    refresh_faculty_status(faculty)
+    if faculty.current_status == 'on_leave':
+        return JsonResponse(
+            {'error': 'This faculty member is currently on leave and is not accepting consultation requests.'},
+            status=409,
+        )
+    agenda = str(payload.get('agenda') or '').strip()
+    if agenda not in dict(ConsultationRequest.AGENDA_CHOICES):
+        return JsonResponse({'error': 'Please select a valid consultation agenda.'}, status=400)
     if OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).exists():
         return JsonResponse({'error': 'This college is currently closed and not accepting consultation requests.'}, status=409)
     requested_end_time = payload.get('end_time')
@@ -237,6 +248,7 @@ def api_consultation_requests(request):
         date=date_value,
         start_time=start_time,
         end_time=end_time,
+        agenda=agenda,
         student_message=str(payload.get('message') or '').strip(),
     )
     create_notification(
@@ -375,10 +387,14 @@ def api_join_walk_in_queue(request):
             FacultyProfile.objects.select_for_update().select_related('user'),
             faculty_id=faculty_id,
         )
+        refresh_faculty_status(faculty)
         if OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).exists():
             return JsonResponse({'error': 'This college is currently closed and not accepting walk-ins.'}, status=409)
-        if not faculty.walk_ins_enabled:
-            return JsonResponse({'error': 'This faculty member is not accepting walk-ins.'}, status=409)
+        if faculty.current_status == 'on_leave':
+            return JsonResponse(
+                {'error': 'This faculty member is currently on leave and is not accepting walk-ins.'},
+                status=409,
+            )
         if not faculty.walk_ins_enabled:
             return JsonResponse({'error': 'This faculty member is not accepting walk-ins.'}, status=409)
 

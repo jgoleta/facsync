@@ -1,5 +1,5 @@
 import json
-from datetime import timedelta
+from datetime import date, timedelta
 from zoneinfo import ZoneInfo
 
 from django.test import TestCase
@@ -12,7 +12,7 @@ from unittest.mock import patch
 
 from .models import ConsultationRequest, FacultyProfile, GoogleCalendarConnection, WalkInQueue
 from .models import ScheduleEvent
-from .facultyServices.googleCalendarService import refresh_faculty_status, sync_google_calendar
+from .facultyServices.googleCalendarService import google_event_payload, refresh_faculty_status, sync_google_calendar
 
 
 class FacultyViewTests(TestCase):
@@ -575,6 +575,56 @@ class FacultyViewTests(TestCase):
         event = faculty.schedule_events.get()
         self.assertIsNone(event.date)
         self.assertEqual((event.start_month, event.end_month), (8, 5))
+
+    @patch('faculty.views.create_google_event', return_value={'id': 'google-recurring-event'})
+    def test_recurring_event_syncs_when_user_chooses_google(self, create_event):
+        faculty = self._make_csv_faculty('recurring-google')
+        GoogleCalendarConnection.objects.create(
+            user=faculty.user,
+            google_user_id='google-recurring-user',
+            access_token='access-token',
+        )
+
+        response = self.client.post(
+            reverse('faculty:api_schedule_events'),
+            data=json.dumps({
+                'title': 'Recurring class',
+                'event_type': 'busy',
+                'day_of_week': 'monday',
+                'start_date': '2026-08-01',
+                'end_date': '2027-05-31',
+                'start_time': '10:30',
+                'end_time': '12:00',
+                'sync_to_google': True,
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        event = faculty.schedule_events.get()
+        self.assertEqual(event.google_event_id, 'google-recurring-event')
+        self.assertEqual(event.sync_state, 'synced')
+        create_event.assert_called_once()
+
+    @patch('faculty.facultyServices.googleCalendarService.timezone.localdate', return_value=date(2026, 9, 2))
+    def test_recurring_google_payload_contains_weekly_rule(self, _localdate):
+        faculty = self._make_csv_faculty('recurring-payload')
+        event = ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Monday class',
+            event_type='busy',
+            day_of_week='monday',
+            start_month=8,
+            end_month=5,
+            start_time='10:30',
+            end_time='12:00',
+        )
+        event.refresh_from_db()
+
+        payload = google_event_payload(event)
+
+        self.assertEqual(payload['start']['dateTime'][:10], '2026-08-03')
+        self.assertEqual(payload['recurrence'], ['RRULE:FREQ=WEEKLY;BYDAY=MO;UNTIL=20270531T235959Z'])
 
     def test_add_event_with_empty_recurring_day_remains_date_based(self):
         faculty = self._make_csv_faculty('date-event')

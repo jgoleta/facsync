@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Consultations</title>
-    <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}?v=20260819-responsive">
+    <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}?v=20260902-ui-refresh">
     <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
 
@@ -26,31 +26,50 @@
         </header>
 
         <main class="container">
+            <section class="page-intro">
+                <div>
+                    <span class="eyebrow">Consultation center</span>
+                    <h1>My Consultation Requests</h1>
+                    <p>Track your requests, appointment times, and notes from faculty members.</p>
+                </div>
+                <a href="{% url 'students:dashboard' %}" class="btn return-btn" aria-label="Return to student dashboard">Return to Dashboard</a>
+            </section>
             <div class="consultation-card">
                 <div class="consultation-header">
-                    <h2>My Consultation Requests</h2>   
+                    <div>
+                        <h2>Requests</h2>
+                        <p id="requestResultCount">{{ consultations|length }} request{{ consultations|length|pluralize }}</p>
+                    </div>
                     <div class="filter-control">
-                        <select id="statusFilter" class="filter-dropdown">
+                        <label for="statusFilter">Filter by status</label>
+                        <select id="statusFilter" class="filter-dropdown" aria-controls="consultationRequestList">
                             <option value="all">All</option>
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
-                            <option value="cancelled">Cancelled</option>
+                            <option value="declined">Declined</option>
+                            <option value="completed">Completed</option>
                         </select>
                     </div>
-                    <a href="{% url 'students:dashboard' %}" class="btn return-btn" aria-label="Return to student dashboard">Return to Dashboard</a>
                 </div>
-                <ul class="consultation-request-list">
+                <ul id="consultationRequestList" class="consultation-request-list">
                     {% for consultation in consultations %}
                     <li class="request-item" data-request-id="{{ consultation.request_id }}" data-status="{{ consultation.status }}">
                         <div class="request-info">
-                            <p class="faculty-name">{{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}</p>
+                            <div class="request-card-heading">
+                                <div class="faculty-avatar" aria-hidden="true">{{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username|slice:":1" }}</div>
+                                <div>
+                                    <span class="faculty-label">Faculty member</span>
+                                    <p class="faculty-name">{{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}</p>
+                                </div>
+                            </div>
                             <p class="request-time">
-                                Date: {{ consultation.date|date:"F j, Y" }}
+                                <span class="detail-label">Appointment</span>
+                                <strong>{{ consultation.date|date:"F j, Y" }}</strong>
                                 {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
                                 {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
                             </p>
                             {% if consultation.student_message %}<p class="request-message"><strong>Your Message:</strong> {{ consultation.student_message }}</p>{% endif %}
-                            <p class="request-id">Request ID: {{ consultation.request_id }}</p>
+                            <p class="request-id"><span>Request ID</span> {{ consultation.request_id }}</p>
                             {% if consultation.faculty_note %}<p class="faculty-note"><strong>Faculty Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
                         </div>
                         <div class="request-status">
@@ -65,7 +84,7 @@
         </main>
     </div>
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
-    <script src="{% static 'students/js/consultationRequests.js' %}?v=20260827-consultation-filter-refresh"></script>
+    <script src="{% static 'students/js/consultationRequests.js' %}?v=20260902-ui-refresh"></script>
     <script src="{% static 'core/js/notifications.js' %}"></script>
 </body>
 </html>

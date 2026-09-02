@@ -13,7 +13,6 @@ const queueActiveState = document.getElementById("queue-active-state");
 const queueFacultyName = document.getElementById("queue-faculty-name");
 const queueFacultyStatus = document.getElementById("queue-faculty-status");
 const queuePosition = document.getElementById("queue-position");
-const waitTime = document.getElementById("wait-time");
 const walkInNote = document.getElementById("walk-in-note");
 const queueMessage = document.getElementById("queue-message");
 const studentFeedback = window.studentFeedback;
@@ -21,6 +20,17 @@ const isCollegeClosed = document.body.dataset.collegeClosed === "true";
 const closureReason =
   document.body.dataset.closureReason || "This college is currently closed.";
 const closureNotice = document.getElementById("collegeClosureNotice");
+let facultyStatus = document.body.dataset.facultyStatus || "";
+
+function updateConsultationBookingAvailability() {
+  if (!openModalBtn || isCollegeClosed) return;
+  const isOnLeave = facultyStatus === "on_leave";
+  openModalBtn.disabled = isOnLeave;
+  openModalBtn.textContent = isOnLeave ? "Faculty On Leave" : "Book Consultation";
+  openModalBtn.title = isOnLeave
+    ? "This faculty member is currently on leave."
+    : "";
+}
 
 function applyClosureLockdown() {
   if (!isCollegeClosed) return;
@@ -110,6 +120,8 @@ function ordinal(value) {
 
 function renderWalkInState(data) {
   activeQueue = data.queue;
+  facultyStatus = data.faculty_status || "";
+  updateConsultationBookingAvailability();
   if (queueFacultyName) queueFacultyName.textContent = data.faculty_name;
   if (queueFacultyStatus) {
     const statusLabels = {
@@ -159,19 +171,25 @@ function renderWalkInState(data) {
   queueActiveState?.classList.remove("is-called");
   if (joinQueueBtn) {
     const facultyUnavailable = data.faculty_status === "unavailable";
-    const walkInsUnavailable = facultyUnavailable || !data.walk_ins_enabled;
+    const facultyOnLeave = data.faculty_status === "on_leave";
+    const walkInsUnavailable =
+      facultyUnavailable || facultyOnLeave || !data.walk_ins_enabled;
     joinQueueBtn.classList.toggle("faculty-unavailable", walkInsUnavailable);
     joinQueueBtn.disabled = walkInsUnavailable;
-    joinQueueBtn.textContent = facultyUnavailable
-      ? "Faculty Unavailable"
-      : data.walk_ins_enabled
-        ? "Join Walk-in Queue"
-        : "Walk-ins Unavailable";
+    joinQueueBtn.textContent = facultyOnLeave
+      ? "Faculty On Leave"
+      : facultyUnavailable
+        ? "Faculty Unavailable"
+        : data.walk_ins_enabled
+          ? "Join Walk-in Queue"
+          : "Walk-ins Unavailable";
   }
   if (walkInNote) {
-    walkInNote.textContent = data.walk_ins_enabled
-      ? "This faculty is currently accepting walk-ins."
-      : "The faculty member is not accepting new walk-in students.";
+    walkInNote.textContent = data.faculty_status === "on_leave"
+      ? "This faculty member is currently on leave and is not accepting walk-ins."
+      : data.walk_ins_enabled
+        ? "This faculty is currently accepting walk-ins."
+        : "The faculty member is not accepting new walk-in students.";
     walkInNote.classList.remove("hidden");
   }
   if (queueMessage) {
@@ -601,9 +619,12 @@ if (cancelQueueBtn) {
   });
 }
 
-openModalBtn.addEventListener("click", () => {
-  consultationModal.classList.remove("hidden");
-});
+if (openModalBtn) {
+  openModalBtn.addEventListener("click", () => {
+    if (facultyStatus === "on_leave" || isCollegeClosed) return;
+    consultationModal.classList.remove("hidden");
+  });
+}
 
 closeModalBtn.addEventListener("click", () => {
   consultationModal.classList.add("hidden");
@@ -664,6 +685,7 @@ if (consultationForm) {
           faculty_id: facultyId,
           date: document.getElementById("dateSelect").value,
           start_time: document.getElementById("timeSelect").value,
+          agenda: document.getElementById("agendaSelect").value,
           message: document.getElementById("message").value,
         }),
       });
@@ -700,6 +722,7 @@ if (facultyId) {
   window.setInterval(loadFacultySchedule, 10000);
 }
 applyClosureLockdown();
+updateConsultationBookingAvailability();
 if (!isCollegeClosed) {
   loadWalkInStatus();
   window.setInterval(loadWalkInStatus, 10000);

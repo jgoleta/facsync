@@ -21,6 +21,8 @@ def serialize_schedule_event(event, include_sync_metadata=False, human_status=Fa
         'day_of_week': '' if event.day_of_week == 'none' else event.day_of_week,
         'start_month': event.start_month,
         'end_month': event.end_month,
+        'recurrence_start_date': event.recurrence_start_date.isoformat() if event.recurrence_start_date else None,
+        'recurrence_end_date': event.recurrence_end_date.isoformat() if event.recurrence_end_date else None,
         'start_time': event.start_time.isoformat() if event.start_time else None,
         'end_time': event.end_time.isoformat() if event.end_time else None,
     }

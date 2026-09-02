@@ -126,6 +126,8 @@ class ScheduleEvent(models.Model):
     day_of_week = models.CharField(max_length=9, choices=WEEKDAY_CHOICES, blank=True)
     start_month = models.PositiveSmallIntegerField(null=True, blank=True)
     end_month = models.PositiveSmallIntegerField(null=True, blank=True)
+    recurrence_start_date = models.DateField(null=True, blank=True)
+    recurrence_end_date = models.DateField(null=True, blank=True)
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)
@@ -147,6 +149,13 @@ class ScheduleEvent(models.Model):
 
 
 class ConsultationRequest(models.Model):
+    AGENDA_CHOICES = [
+        ('grade_consultation', 'Grade Consultation'),
+        ('project_consultation', 'Project Consultation'),
+        ('general_concern', 'General Concern / Talk'),
+        ('academic_advising', 'Academic Advising'),
+    ]
+
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('approved', 'Approved'),
@@ -171,6 +180,7 @@ class ConsultationRequest(models.Model):
     date = models.DateField()
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
+    agenda = models.CharField(max_length=32, choices=AGENDA_CHOICES, default='general_concern')
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='pending')
     student_message = models.TextField(blank=True, default='')
     faculty_note = models.TextField(blank=True)

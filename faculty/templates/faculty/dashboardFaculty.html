@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260827-highlight-consultation-time">
+    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260902-secondary-dashboard-actions">
     <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
 
@@ -29,12 +29,18 @@
         <main class="dashboard-grid">
             <div class="dashboard-card">
                 <div class="welcome-header">
+                    <span class="eyebrow">Faculty workspace</span>
                     <h1>Welcome, {{ request.user.get_full_name|default:request.user.username }}!</h1>
                     <p>Manage your availability and student consultations.</p>
                 </div>
 
                 <div class="card-section">
-                    <h2>Update Your Status</h2>
+                    <div class="section-heading">
+                        <div>
+                            <h2>Update Your Status</h2>
+                            <p>Choose what students should see on the live dashboard.</p>
+                        </div>
+                    </div>
                     <div class="status-buttons">
                         <button class="status-btn available {% if current_status == 'available' %}active{% endif %}" data-status="available" aria-pressed="{% if current_status == 'available' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">✓</span><span>Available</span></button>
                         <button class="status-btn busy {% if current_status == 'busy' %}active{% endif %}" data-status="busy" aria-pressed="{% if current_status == 'busy' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">◷</span><span>Busy</span></button>
@@ -60,7 +66,16 @@
 
                 <div class="card-section">
                     <div class="consultation-header">
-                        <h2>Consultation Requests</h2>
+                        <div>
+                            <h2>Consultation Requests</h2>
+                            <p>Review and respond to upcoming student requests.</p>
+                        </div>
+                        <div class="consultation-header-actions">
+                            <span class="request-count">{{ consultation_requests|length }} active</span>
+                            <button type="button" id="openCompletedConsultations" class="completed-history-btn">
+                                Completed ({{ completed_consultations|length }})
+                            </button>
+                        </div>
                         <div class="filter-buttons">
                             <button class="filter-btn active" data-filter="all">All</button>
                             <button class="filter-btn" data-filter="pending">Pending</button>
@@ -71,12 +86,14 @@
                         {% for consultation in consultation_requests %}
                         <li class="request-item" data-status="{{ consultation.status }}" data-request-id="{{ consultation.request_id }}">
                             <div class="request-info">
+                                <span class="consultation-status status-{{ consultation.status }}">{{ consultation.get_status_display }}</span>
                                 <p class="request-time">
                                     <strong>Date:</strong> {{ consultation.date|date:"F j, Y" }}
                                     {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
                                     {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
                                 </p>
                                 <p class="student-name"><strong>Name:</strong> {{ consultation.user.get_full_name|default:consultation.user.username }}</p>
+                                <p class="request-agenda"><strong>Agenda:</strong> {{ consultation.get_agenda_display }}</p>
                                 <p class="request-message"><strong>Message:</strong> {{ consultation.student_message|default:"No message provided." }}</p>
                             </div>
                             <div class="request-actions">
@@ -101,6 +118,7 @@
 
             <div class="legend-card">
                 <div class="card-section">
+                    <span class="eyebrow">Visible to students</span>
                     <h2>Your Live Status</h2>
                     <div id="liveStatusIndicator" class="status-indicator {{ status_css_class }}">
                         <span id="liveStatusIcon" class="status-icon" aria-hidden="true"></span>
@@ -112,14 +130,22 @@
                     <h2>Today's Activity</h2>
                     <div class="stats-card">
                         <div class="stat-item">
-                            <span class="stat-value">2</span>
+                            <span class="stat-value">{{ consultations_today_count }}</span>
                             <span class="stat-label">Consultations Today</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ pending_consultation_count }}</span>
+                            <span class="stat-label">Awaiting Review</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ approved_consultation_count }}</span>
+                            <span class="stat-label">Approved</span>
                         </div>
                     </div>
                 </div>
                 <div class="card-section">
                     <div class="card-header dashboard-actions">
-                        <a href="{% url 'faculty:schedule' %}" class="primary-button">View Schedule</a>
+                        <a href="{% url 'faculty:schedule' %}" class="secondary-button">View Schedule</a>
                         <a href="{% url 'faculty:booking_management' %}" class="secondary-button">View Walk-ins</a>
                     </div>
                 </div>
@@ -127,8 +153,47 @@
         </main>
     </div>
 
+    <div id="completedConsultationsModal" class="modal-overlay hidden" role="dialog" aria-modal="true"
+        aria-labelledby="completedConsultationsTitle">
+        <div class="modal completed-consultations-modal">
+            <div class="completed-modal-header">
+                <div>
+                    <span class="eyebrow">Consultation history</span>
+                    <h2 id="completedConsultationsTitle">Completed Consultations</h2>
+                    <p>All consultations you have marked as completed.</p>
+                </div>
+                <button type="button" id="closeCompletedConsultations" class="modal-close-btn"
+                    aria-label="Close completed consultations">&times;</button>
+            </div>
+            <ul class="completed-consultation-list">
+                {% for consultation in completed_consultations %}
+                <li class="completed-consultation-item">
+                    <div class="completed-consultation-topline">
+                        <strong>{{ consultation.user.get_full_name|default:consultation.user.username }}</strong>
+                        <span class="consultation-status status-completed">Completed</span>
+                    </div>
+                    <p>
+                        {{ consultation.date|date:"F j, Y" }}
+                        {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
+                        {% if consultation.end_time %} – {{ consultation.end_time|time:"g:i A" }}{% endif %}
+                    </p>
+                    <p><strong>Agenda:</strong> {{ consultation.get_agenda_display }}</p>
+                    {% if consultation.student_message %}
+                    <p class="completed-message"><strong>Message:</strong> {{ consultation.student_message }}</p>
+                    {% endif %}
+                    {% if consultation.faculty_note %}
+                    <p class="completed-note"><strong>Your note:</strong> {{ consultation.faculty_note }}</p>
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li class="completed-empty-state">No completed consultations yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260827-consultation-remove"></script>
+    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260902-completed-modal"></script>
     <script src="{% static 'core/js/notifications.js' %}"></script>
 </body>
 

@@ -122,29 +122,6 @@
   transform: translateY(-1px);
 }
 
-#view-walkins-btn {
-  display: inline-flex;
-  width: calc(100% - 32px);
-  margin-left: 16px;
-  margin-right: 16px;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  text-decoration: none;
-}
-
-#view-walkins-btn::before {
-  content: "▣";
-  display: inline-grid;
-  width: 21px;
-  height: 21px;
-  place-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 7px;
-  font-size: 0.72rem;
-}
-
-#view-walkins-btn:focus-visible,
 .secondary-button:focus-visible,
 .modal-close-btn:focus-visible {
   outline: 3px solid rgba(11, 116, 222, 0.25);

@@ -30,6 +30,8 @@
       dayOfWeek: event.day_of_week === "none" ? "" : (event.day_of_week || ""),
       startMonth: event.start_month,
       endMonth: event.end_month,
+      startDate: event.recurrence_start_date || null,
+      endDate: event.recurrence_end_date || null,
       startTime: timeValue(event.start_time),
       endTime: timeValue(event.end_time),
     };

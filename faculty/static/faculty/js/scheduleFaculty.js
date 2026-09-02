@@ -840,7 +840,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         const syncToGoogle = await askGoogleCalendarSync();
         if (syncToGoogle === null) {
-          closeEventEditor();
+          document.getElementById("eventTitle")?.focus();
           return;
         }
       const recurringDay = selectedRecurringDay();
@@ -980,12 +980,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (eventDayInput) eventDayInput.value = eventData.dayOfWeek || '';
       const allocationYear = new Date().getFullYear();
       const endYear = eventData.endMonth < eventData.startMonth ? allocationYear + 1 : allocationYear;
-      recurringStartDate = eventData.startMonth
+      recurringStartDate = eventData.startDate || (eventData.startMonth
         ? `${allocationYear}-${String(eventData.startMonth).padStart(2, '0')}-01`
-        : dateKey;
-      recurringEndDate = eventData.endMonth
+        : dateKey);
+      recurringEndDate = eventData.endDate || (eventData.endMonth
         ? `${endYear}-${String(eventData.endMonth).padStart(2, '0')}-01`
-        : dateKey;
+        : dateKey);
     } else if (eventDayInput) {
       eventDayInput.value = '';
       if (eventDateGroup) eventDateGroup.classList.remove('hidden');

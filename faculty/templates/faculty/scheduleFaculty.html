@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Schedule</title>
-    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}?v=20260822-activity-text-fix">
+    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}?v=20260902-legend-card-refresh">
     <link rel="stylesheet" href="{% static 'faculty/css/scheduleFaculty.css' %}?v=20260827-student-activity-list">
     <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
@@ -60,11 +60,14 @@
             </section>
 
             <aside class="legend-card">
-                <h2>List of Activities</h2>
+                <div class="legend-header">
+                    <span class="legend-kicker">Schedule overview</span>
+                    <h2>List of Activities</h2>
+                    <p class="legend-description">Activities shown in the current calendar view.</p>
+                </div>
                 <ul id="legendList" class="legend-list"></ul>
                 <div class="actions">
-                    <a id="view-walkins-btn" class="primary-button" href="{% url 'faculty:booking_management' %}">View Walk-ins</a>
-                    <button type="button" id="add-event-btn" class="secondary-button">Add Event</button>
+                    <button type="button" id="add-event-btn" class="secondary-button legend-action-button">Add Event</button>
                     <button type="button" id="upload-schedule-btn" class="secondary-button">Upload Schedule</button>
                     <button type="button" id="view-upload-preview-btn" class="secondary-button">View Upload Preview</button>
                     <a href="{% url 'faculty:schedule_template' %}" class="secondary-link" download>Download CSV Template</a>
@@ -234,8 +237,8 @@
     </div>
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'core/js/calendarEvents.js' %}?v=20260827-calendar-shared"></script>
-    <script src="{% static 'faculty/js/scheduleFaculty.js' %}?v=20260827-feedback"></script>
+    <script src="{% static 'core/js/calendarEvents.js' %}?v=20260902-recurrence-dates"></script>
+    <script src="{% static 'faculty/js/scheduleFaculty.js' %}?v=20260902-confirm-close-keeps-editor"></script>
     <script src="{% static 'core/js/notifications.js' %}"></script>
 </body>
 
