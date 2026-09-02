@@ -1,4 +1,5 @@
 import secrets
+import calendar
 from datetime import date, datetime, time, timedelta
 from hmac import compare_digest
 from urllib.parse import urlencode
@@ -286,6 +287,8 @@ def google_event_payload(event):
         'summary': event.title,
         'description': event.description or '',
     }
+    if event.location:
+        payload['location'] = event.location
     if event.pk:
         payload['extendedProperties'] = {
             'private': {
@@ -294,14 +297,38 @@ def google_event_payload(event):
             }
         }
     tz_name = getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)
+    event_date = event.date
+    if not event_date and event.day_of_week and event.start_month and event.end_month:
+        range_start = event.recurrence_start_date
+        range_end = event.recurrence_end_date
+        if not range_start or not range_end:
+            today = timezone.localdate()
+            start_year = today.year
+            end_year = start_year + (1 if event.end_month < event.start_month else 0)
+            range_start = date(start_year, event.start_month, 1)
+            range_end = date(end_year, event.end_month, calendar.monthrange(end_year, event.end_month)[1])
+            if range_end < today:
+                range_start = range_start.replace(year=range_start.year + 1)
+                range_end = range_end.replace(year=range_end.year + 1)
+        weekday_index = dict(ScheduleEvent.WEEKDAY_CHOICES).keys()
+        weekday_index = list(weekday_index).index(event.day_of_week)
+        event_date = range_start + timedelta(days=(weekday_index - range_start.weekday()) % 7)
+        if event_date > range_end:
+            raise GoogleCalendarError('The recurring weekday does not occur in the selected month range.')
+        google_weekday = ('MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU')[weekday_index]
+        payload['recurrence'] = [
+            f'RRULE:FREQ=WEEKLY;BYDAY={google_weekday};UNTIL={range_end.strftime("%Y%m%d")}T235959Z'
+        ]
+    if not event_date:
+        raise GoogleCalendarError('Google Calendar sync requires a date or recurring weekday with a month range.')
     if event.event_type == 'on-leave' or not event.start_time:
-        payload['start'] = {'date': event.date.isoformat()}
-        payload['end'] = {'date': (event.date + timedelta(days=1)).isoformat()}
+        payload['start'] = {'date': event_date.isoformat()}
+        payload['end'] = {'date': (event_date + timedelta(days=1)).isoformat()}
         return payload
 
-    start = datetime.combine(event.date, event.start_time)
+    start = datetime.combine(event_date, event.start_time)
     end_time = event.end_time or (event.start_time + timedelta(hours=1))
-    end = datetime.combine(event.date, end_time)
+    end = datetime.combine(event_date, end_time)
     if end <= start:
         end += timedelta(days=1)
     current_timezone = ZoneInfo(tz_name)

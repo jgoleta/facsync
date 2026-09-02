@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateStatusLabel = document.getElementById('updateStatusLabel');
     const statusModeLabel = document.getElementById('statusModeLabel');
     const useCalendarStatusBtn = document.getElementById('useCalendarStatusBtn');
+    const completedModal = document.getElementById('completedConsultationsModal');
+    const openCompletedModalButton = document.getElementById('openCompletedConsultations');
+    const closeCompletedModalButton = document.getElementById('closeCompletedConsultations');
     const statusIcons = {
         available: '✓',
         busy: '◷',
@@ -141,6 +144,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (liveStatusIcon) liveStatusIcon.textContent = statusIcons[selectedStatus];
+
+    // Show completed consultation history without leaving the dashboard.
+    function setCompletedModalOpen(isOpen) {
+        if (!completedModal) return;
+        completedModal.classList.toggle('hidden', !isOpen);
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+        if (isOpen) closeCompletedModalButton?.focus();
+        else openCompletedModalButton?.focus();
+    }
+
+    openCompletedModalButton?.addEventListener('click', () => setCompletedModalOpen(true));
+    closeCompletedModalButton?.addEventListener('click', () => setCompletedModalOpen(false));
+    completedModal?.addEventListener('click', (event) => {
+        if (event.target === completedModal) setCompletedModalOpen(false);
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !completedModal?.classList.contains('hidden')) {
+            setCompletedModalOpen(false);
+        }
+    });
 
     // --- Consultation Request Filtering and Actions ---
 

@@ -71,6 +71,34 @@
   box-sizing: border-box;
 }
 
+.dashboard-actions .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 43px;
+  padding: 10px 15px;
+  border: 1px solid #cbdcf0;
+  border-radius: 11px;
+  background: #fff;
+  color: #175da8;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  box-shadow: none;
+}
+
+.dashboard-actions .secondary-button:hover {
+  border-color: #9dbce2;
+  background: var(--accent-soft);
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.dashboard-actions .secondary-button:focus-visible {
+  outline: 3px solid rgba(11, 116, 222, 0.25);
+  outline-offset: 2px;
+}
+
 h1,
 h2 {
   margin-top: 0;
@@ -423,6 +451,27 @@ h2 {
     font-style: italic;
 }
 
+.consultation-status {
+    display: inline-block;
+    margin-bottom: 8px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: #e5e7eb;
+    color: #374151;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.consultation-status.status-approved {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.consultation-status.status-declined {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
 .request-actions textarea {
     width: 100%;
     padding: 10px;
@@ -573,5 +622,467 @@ h2 {
 @media (max-width: 576px) {
   .status-buttons {
     grid-template-columns: repeat(2, minmax(100px, 1fr)) !important;
+  }
+}
+
+/* Dashboard presentation */
+.dashboard-grid {
+  width: min(1280px, calc(100% - 40px));
+  max-width: none;
+  margin: 32px auto 48px;
+  padding: 0;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+}
+
+.dashboard-card {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  gap: 20px;
+}
+
+.welcome-header,
+.dashboard-card > .card-section,
+.legend-card {
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card-bg);
+  box-shadow: 0 12px 32px rgba(15, 38, 71, 0.07);
+}
+
+.welcome-header {
+  position: relative;
+  overflow: hidden;
+  padding: 30px 32px;
+  background: linear-gradient(125deg, #eef6ff 0%, #ffffff 62%);
+}
+
+.welcome-header::after {
+  content: "";
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  top: -105px;
+  right: -55px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.welcome-header h1 {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 7px;
+  font-size: clamp(1.65rem, 3vw, 2.25rem);
+  letter-spacing: -0.035em;
+}
+
+.welcome-header p {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 0;
+  font-size: 1rem;
+}
+
+.dashboard-card > .card-section {
+  padding: 26px;
+}
+
+.dashboard-card > .card-section:not(:last-child) {
+  padding-bottom: 26px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section-heading,
+.consultation-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.section-heading h2,
+.consultation-header h2 {
+  margin-bottom: 5px;
+  font-size: 1.25rem;
+}
+
+.section-heading p,
+.consultation-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.status-buttons {
+  margin-bottom: 18px;
+}
+
+.status-btn {
+  min-height: 92px !important;
+  aspect-ratio: auto;
+  border-width: 1px;
+  border-color: rgba(15, 23, 42, 0.06);
+}
+
+.status-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.status-note input {
+  min-height: 46px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.status-mode-row {
+  margin-top: 12px;
+  border-style: dashed;
+  background: #f8fbff;
+}
+
+.status-update-action .btn-primary {
+  min-width: 120px;
+  box-shadow: 0 7px 16px rgba(11, 116, 222, 0.2);
+}
+
+.consultation-header {
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.request-count {
+  flex: 0 0 auto;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.filter-buttons {
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: #f8fafc;
+}
+
+.filter-btn {
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: transparent;
+}
+
+.filter-btn.active {
+  background: #fff;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.09);
+}
+
+.consultation-request-list {
+  margin-top: 20px;
+}
+
+.request-item {
+  padding: 18px;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.045);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.request-item:not(.empty-request):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.request-info .request-time {
+  width: 100%;
+}
+
+.request-actions textarea {
+  min-height: 72px;
+  background: #fbfdff;
+}
+
+.legend-card {
+  position: sticky;
+  top: 94px;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+.legend-card .card-section {
+  padding: 24px;
+}
+
+.legend-card .card-section:not(:last-child) {
+  padding-bottom: 24px;
+}
+
+.legend-card h2 {
+  margin-bottom: 14px;
+  font-size: 1.1rem;
+}
+
+.legend-card .status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 15px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 750;
+}
+
+.legend-card .status-indicator.available { background: var(--status-available); }
+.legend-card .status-indicator.busy { background: var(--status-busy); }
+.legend-card .status-indicator.virtual { background: var(--status-virtual); }
+.legend-card .status-indicator.on-leave { background: var(--status-leave); }
+.legend-card .status-indicator.unavailable { background: var(--status-unavailable); }
+
+.legend-card .status-note-display {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.stats-card {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.stat-item {
+  min-width: 0;
+  padding: 12px 5px;
+  border-radius: 12px;
+  background: #f7faff;
+}
+
+.stat-value {
+  font-size: 1.65rem;
+  line-height: 1;
+}
+
+.stat-label {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  line-height: 1.25;
+}
+
+@media (max-width: 1050px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .legend-card {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .legend-card .card-section:not(:last-child) {
+    border-right: 1px solid var(--border);
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-grid {
+    width: min(100% - 24px, 680px);
+    margin-top: 18px;
+  }
+
+  .welcome-header,
+  .dashboard-card > .card-section {
+    padding: 20px;
+  }
+
+  .consultation-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .filter-buttons {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .filter-btn {
+    flex: 1 0 auto;
+  }
+
+  .legend-card {
+    grid-template-columns: 1fr;
+  }
+
+  .legend-card .card-section:not(:last-child) {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+.consultation-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.completed-history-btn {
+  padding: 7px 12px;
+  border: 1px solid #bfd7fb;
+  border-radius: 9px;
+  background: #eef5ff;
+  color: #1d4ed8;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.completed-history-btn:hover,
+.completed-history-btn:focus-visible {
+  background: #dbeafe;
+  transform: translateY(-1px);
+}
+
+.completed-consultations-modal {
+  width: min(720px, calc(100vw - 32px));
+  max-width: 720px;
+  max-height: min(780px, calc(100vh - 32px));
+  padding: 0;
+  overflow: hidden;
+}
+
+.completed-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 26px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.completed-modal-header h2 {
+  margin: 0 0 5px;
+}
+
+.completed-modal-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.completed-modal-header .modal-close-btn {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: #f8fafc;
+  color: var(--muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.completed-consultation-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 18px 26px 26px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.completed-consultation-item {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: #fbfdff;
+}
+
+.completed-consultation-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.completed-consultation-item p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.completed-consultation-item .completed-message,
+.completed-consultation-item .completed-note {
+  overflow-wrap: anywhere;
+}
+
+.consultation-status.status-completed {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.completed-empty-state {
+  padding: 42px 20px;
+  border: 1px dashed var(--border);
+  border-radius: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .consultation-header-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .completed-history-btn {
+    margin-left: auto;
+  }
+
+  .completed-modal-header,
+  .completed-consultation-list {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .status-buttons {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .status-btn:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .stats-card {
+    gap: 6px;
   }
 }

@@ -1,12 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
     const statusFilter = document.getElementById('statusFilter');
     const requestList = document.querySelector('.consultation-request-list');
+    const requestResultCount = document.getElementById('requestResultCount');
 
     function applyFilter() {
         const filter = statusFilter?.value || 'all';
-        requestList?.querySelectorAll('.request-item').forEach(item => {
-            item.style.display = filter === 'all' || item.dataset.status === filter ? 'flex' : 'none';
+        let visibleCount = 0;
+        const requestItems = requestList?.querySelectorAll('.request-item') || [];
+        requestItems.forEach(item => {
+            const visible = filter === 'all' || item.dataset.status === filter;
+            item.style.display = visible ? 'flex' : 'none';
+            if (visible) visibleCount += 1;
         });
+        requestList?.querySelector('.filtered-empty-state')?.remove();
+        if (requestItems.length && visibleCount === 0 && requestList) {
+            const emptyState = document.createElement('li');
+            emptyState.className = 'filtered-empty-state';
+            emptyState.textContent = `No ${filter} consultation requests.`;
+            requestList.appendChild(emptyState);
+        }
+        if (requestResultCount) {
+            requestResultCount.textContent = `${visibleCount} request${visibleCount === 1 ? '' : 's'}`;
+        }
     }
 
     if (statusFilter) {

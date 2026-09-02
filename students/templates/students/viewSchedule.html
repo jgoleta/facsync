@@ -7,11 +7,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | View Faculty Schedule</title>
-    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}?v=20260827-walk-in-unavailable">
+    <link rel="stylesheet" href="{% static 'core/css/shared_schedule.css' %}?v=20260902-queue-without-estimate">
     <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
 
 <body data-faculty-id="{{ selected_faculty.faculty_id|default:'' }}"
+    data-faculty-status="{{ selected_faculty.current_status|default:'' }}"
     data-college-closed="{% if college_closure %}true{% else %}false{% endif %}"
     data-closure-reason="{{ college_closure.reason|default:'This college is currently closed.' }}">
     <div class="hidden">{% csrf_token %}</div>
@@ -64,11 +65,21 @@
             </section>
 
             <aside class="legend-card">
-                <h2>List of Activities</h2>
+                <div class="legend-header">
+                    <span class="legend-kicker">Schedule overview</span>
+                    <h2>List of Activities</h2>
+                    <p class="legend-description">Activities shown in the current calendar view.</p>
+                </div>
                 <ul id="legendList" class="legend-list"></ul>
                 <div id="collegeClosureNotice" class="hidden"></div>
                 <div class="card-section">
-                    <h2>Walk-in Queue</h2>
+                    <div class="legend-section-heading">
+                        <span class="legend-section-icon" aria-hidden="true">Q</span>
+                        <div>
+                            <h2>Walk-in Queue</h2>
+                            <p>Join when this faculty member is accepting walk-ins.</p>
+                        </div>
+                    </div>
                     <p id="queue-message" class="walk-in-note" role="status" aria-live="polite"></p>
                     <div id="queue-initial-state">
                         <div class="faculty-status">
@@ -82,12 +93,11 @@
                             <span>Your Position</span>
                             <span id="queue-position">3rd</span>
                         </div>
-                        <p class="queue-wait-time">Estimated wait time: <span id="wait-time">15 minutes</span></p>
                         <button type="button" id="cancel-queue-btn" class="danger-button">Cancel Queue</button>
                     </div>
                 </div>
                 <div class="actions">
-                    <button id="book-consultation-btn" class="secondary-button">Book Consultation</button>
+                    <button id="book-consultation-btn" class="secondary-button legend-action-button"{% if selected_faculty.current_status == 'on_leave' %} disabled title="This faculty member is currently on leave."{% endif %}>{% if selected_faculty.current_status == 'on_leave' %}Faculty On Leave{% else %}Book Consultation{% endif %}</button>
                     <a href="{% url 'students:dashboard' %}" class="secondary-link">Back to dashboard</a>
                 </div>
             </aside>
@@ -153,6 +163,17 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="agendaSelect">Agenda</label>
+                        <select id="agendaSelect" required>
+                            <option value="" selected disabled>Select a consultation agenda</option>
+                            <option value="grade_consultation">Grade Consultation</option>
+                            <option value="project_consultation">Project Consultation</option>
+                            <option value="general_concern">General Concern / Talk</option>
+                            <option value="academic_advising">Academic Advising</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
                         <label for="message">Optional message</label>
                         <textarea id="message" rows="4" placeholder="Add a short note for the faculty"></textarea>
                     </div>
@@ -165,9 +186,9 @@
         </div>
     </div>
 
-    <script src="{% static 'core/js/calendarEvents.js' %}?v=20260827-calendar-shared"></script>
+    <script src="{% static 'core/js/calendarEvents.js' %}?v=20260902-recurrence-dates"></script>
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
-    <script src="{% static 'students/js/viewSchedule.js' %}?v=20260827-unavailable-color"></script>
+    <script src="{% static 'students/js/viewSchedule.js' %}?v=20260902-on-leave-availability-lock"></script>
     <script src="{% static 'core/js/notifications.js' %}"></script>
 </body>
 

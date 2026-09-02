@@ -56,7 +56,7 @@
             <header class="main-header with-action">
                 <div>
                     <h1>Manage Colleges</h1>
-                    <p>Add, edit, or remove university colleges.</p>
+                    <p>Add or remove university colleges.</p>
                 </div>
                 <button type="button" class="btn-primary" id="openAddCollegeModal">Add New College</button>
             </header>
@@ -84,8 +84,6 @@
                                 {% endfor %}
                             </td>
                             <td class="actions">
-                                <button type="button" class="edit-college-btn" data-id="{{ college.id }}"
-                                    data-name="{{ college.name }}" data-description="{{ college.description }}">Edit</button>
                                 <form method="post" action="{% url 'superadmin:delete_college' college.id %}"
                                     class="inline-form"
                                     onsubmit="return confirm('Remove {{ college.name }}? This cannot be undone.');">
@@ -123,28 +121,6 @@
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" id="closeAddCollegeModal">Cancel</button>
                     <button type="submit" class="primary-button">Add College</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Edit College Modal -->
-    <div id="editCollegeModal" class="modal-overlay hidden">
-        <div class="modal">
-            <h2>Edit College</h2>
-            <form method="post" id="editCollegeForm" class="settings-form">
-                {% csrf_token %}
-                <div class="form-group">
-                    <label for="edit-college-name">College Name</label>
-                    <input type="text" id="edit-college-name" name="name" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-college-description">Description (optional)</label>
-                    <textarea id="edit-college-description" name="description"></textarea>
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="btn-secondary" id="closeEditCollegeModal">Cancel</button>
-                    <button type="submit" class="primary-button">Save Changes</button>
                 </div>
             </form>
         </div>

@@ -2,10 +2,11 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
-from datetime import timedelta
+from datetime import date, timedelta
+import json
 
 from core.models import CollegeAnnouncement
-from faculty.models import ConsultationRequest, FacultyProfile, ScheduleEvent
+from faculty.models import ConsultationRequest, FacultyProfile, ScheduleEvent, WalkInQueue
 
 
 class StudentScheduleTests(TestCase):
@@ -58,6 +59,8 @@ class StudentScheduleTests(TestCase):
             'day_of_week': '',
             'start_month': None,
             'end_month': None,
+            'recurrence_start_date': None,
+            'recurrence_end_date': None,
             'start_time': '09:00:00',
             'end_time': '10:30:00',
         }])
@@ -72,6 +75,101 @@ class StudentScheduleTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Schedule Faculty')
+
+    def test_consultation_booking_requires_and_saves_agenda(self):
+        self.client.force_login(self.student)
+        payload = {
+            'faculty_id': self.faculty.faculty_id,
+            'date': date.today().isoformat(),
+            'start_time': '10:00',
+            'agenda': 'project_consultation',
+            'message': 'Review our project plan.',
+        }
+
+        response = self.client.post(
+            reverse('students:api_consultation_requests'),
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        consultation = ConsultationRequest.objects.get()
+        self.assertEqual(consultation.agenda, 'project_consultation')
+        self.assertEqual(response.json()['agenda_label'], 'Project Consultation')
+
+    def test_consultation_booking_rejects_invalid_agenda(self):
+        self.client.force_login(self.student)
+
+        response = self.client.post(
+            reverse('students:api_consultation_requests'),
+            data=json.dumps({
+                'faculty_id': self.faculty.faculty_id,
+                'date': date.today().isoformat(),
+                'start_time': '10:00',
+                'agenda': 'not-a-valid-agenda',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('agenda', response.json()['error'].lower())
+
+    def test_consultation_booking_rejects_faculty_on_leave(self):
+        self.faculty.manual_status = 'on_leave'
+        self.faculty.manual_status_override = True
+        self.faculty.save(update_fields=['manual_status', 'manual_status_override'])
+        self.client.force_login(self.student)
+
+        response = self.client.post(
+            reverse('students:api_consultation_requests'),
+            data=json.dumps({
+                'faculty_id': self.faculty.faculty_id,
+                'date': date.today().isoformat(),
+                'start_time': '10:00',
+                'agenda': 'academic_advising',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn('on leave', response.json()['error'].lower())
+        self.assertFalse(ConsultationRequest.objects.exists())
+
+    def test_schedule_page_disables_booking_when_faculty_is_on_leave(self):
+        self.faculty.manual_status = 'on_leave'
+        self.faculty.manual_status_override = True
+        self.faculty.save(update_fields=['manual_status', 'manual_status_override'])
+        self.client.force_login(self.student)
+
+        response = self.client.get(
+            reverse('students:view_schedule'),
+            {'faculty_id': self.faculty.faculty_id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Faculty On Leave')
+        self.assertContains(response, 'data-faculty-status="on_leave"')
+
+    def test_walk_in_queue_rejects_faculty_on_leave(self):
+        self.faculty.manual_status = 'on_leave'
+        self.faculty.manual_status_override = True
+        self.faculty.walk_ins_enabled = True
+        self.faculty.save(update_fields=[
+            'manual_status',
+            'manual_status_override',
+            'walk_ins_enabled',
+        ])
+        self.client.force_login(self.student)
+
+        response = self.client.post(
+            reverse('students:api_join_walk_in_queue'),
+            data=json.dumps({'faculty_id': self.faculty.faculty_id}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertIn('on leave', response.json()['error'].lower())
+        self.assertFalse(WalkInQueue.objects.exists())
 
     def test_student_schedule_api_includes_approved_consultation(self):
         ConsultationRequest.objects.create(
@@ -110,7 +208,7 @@ class StudentScheduleTests(TestCase):
             'end_time': '14:00:00',
         }, response.json()['events'])
 
-    def test_student_consultation_list_excludes_completed_and_declined_requests(self):
+    def test_student_consultation_list_includes_completed_and_excludes_declined_requests(self):
         for request_id, status in (
             ('completed-consultation', 'completed'),
             ('declined-consultation', 'declined'),
@@ -129,7 +227,7 @@ class StudentScheduleTests(TestCase):
         response = self.client.get(reverse('students:consultation_requests'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertNotContains(response, 'completed-consultation')
+        self.assertContains(response, 'completed-consultation')
         self.assertNotContains(response, 'declined-consultation')
 
     def test_student_home_shows_latest_active_announcement_for_student_college(self):
