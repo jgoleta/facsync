@@ -1,20 +1,36 @@
 # FacSync
-An automated real-time faculty availability and consultation scheduling system with Google Calendar integration, built for Ateneo de Naga University (ADNU).
 
-FacSync replaces fragmented, informal communication (Messenger, Google Chat, email) with a centralized platform where students can check faculty availability, book consultations, join a digital walk-in queue, and receive real-time notifications — all without needing to log in just to view faculty status.
+FacSync is a real-time faculty availability and consultation scheduling system
+for Ateneo de Naga University. It provides public faculty availability,
+consultation booking, walk-in queues, notifications, schedule management, and
+Google Calendar integration.
 
-# Features
-+ Real-time availability status — 5 categories (Available, Busy, Virtual Only, On Leave, Unavailable), color-coded on a public, login-free dashboard
-+ Automatic status updates — via Google Calendar sync and/or an uploaded weekly class schedule
-Manual status updates — two-click toggle for faculty who don't use Google Calendar
-+ Consultation scheduling — in-person or virtual (with auto-generated Google Meet links), with approve/decline workflow
-+ Digital walk-in queue — join, track position, get notified when it's your turn
-+ Weekly schedule management — faculty self-manage, or College Heads upload on their behalf
-+ Office/college closure status — visible to students in real time
-+ Analytics dashboard — descriptive, pattern, and AI-generated prescriptive insights (Google Gemini API)
-+ -based account management — pre-assigned roles with an approval workflow for self-registration
+## Applications
 
-# Command
-+ python -m venv venv
-+ venv\Scripts\activate
-+ pip install -r requirements.txt
+- `core` - shared accounts, notifications, announcements, email, and UI code
+- `faculty` - faculty dashboards, schedules, consultations, and calendar sync
+- `students` - faculty discovery, read-only calendars, booking, and queues
+- `depthead` - college administration, monitoring, and analytics
+- `superadmin` - system-wide administration
+
+See [docs/project_structure.md](docs/project_structure.md) for detailed file
+placement and naming conventions.
+
+## Setup
+python -m venv venv
+.\venv\Scripts\Activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+
+
+Copy the required values into `.env` before starting the application. Never
+commit `.env` or production credentials.
+
+## Verification
+python manage.py check
+python manage.py test --settings=facsync_project.test_settings
+
+
+The test settings use an isolated in-memory SQLite database and never connect
+to the configured PostgreSQL database.

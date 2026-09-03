@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusButtons = document.querySelectorAll('.status-btn');
     const updateStatusButton = document.getElementById('updateStatusBtn');
     const statusMessage = document.getElementById('statusMessage');
+    const statusExpiresAt = document.getElementById('statusExpiresAt');
     const liveStatusIndicator = document.getElementById('liveStatusIndicator');
     const liveStatusIcon = document.getElementById('liveStatusIcon');
     const liveStatusLabel = document.getElementById('liveStatusLabel');
@@ -13,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateStatusLabel = document.getElementById('updateStatusLabel');
     const statusModeLabel = document.getElementById('statusModeLabel');
     const useCalendarStatusBtn = document.getElementById('useCalendarStatusBtn');
+    const refreshConsultationsButton = document.getElementById('refreshConsultations');
     const completedModal = document.getElementById('completedConsultationsModal');
     const openCompletedModalButton = document.getElementById('openCompletedConsultations');
     const closeCompletedModalButton = document.getElementById('closeCompletedConsultations');
@@ -24,6 +26,17 @@ document.addEventListener('DOMContentLoaded', () => {
         unavailable: '×',
     };
     let selectedStatus = document.querySelector('.status-btn.active')?.dataset.status || 'available';
+
+    if (statusExpiresAt?.dataset.currentExpiry) {
+        const expiry = new Date(statusExpiresAt.dataset.currentExpiry);
+        const localExpiry = new Date(expiry.getTime() - expiry.getTimezoneOffset() * 60000);
+        statusExpiresAt.value = localExpiry.toISOString().slice(0, 16);
+        if (statusModeLabel) {
+            statusModeLabel.textContent = `Manual override is active until ${expiry.toLocaleString([], {
+                dateStyle: 'medium', timeStyle: 'short',
+            })}`;
+        }
+    }
 
     // Retrieve the CSRF token required by dashboard API requests.
     function getCsrfToken() {
@@ -50,10 +63,14 @@ document.addEventListener('DOMContentLoaded', () => {
         liveStatusLabel.textContent = data.label;
         liveStatusNote.textContent = data.note || 'No status note set.';
         if (statusModeLabel) {
+            const expiryLabel = data.expires_at
+                ? ` until ${new Date(data.expires_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}`
+                : '';
             statusModeLabel.textContent = data.manual_override
-                ? 'Manual override is active'
+                ? `Manual override is active${expiryLabel}`
                 : 'Status follows your calendar';
         }
+        if (statusExpiresAt && !data.expires_at) statusExpiresAt.value = '';
         if (useCalendarStatusBtn) useCalendarStatusBtn.classList.toggle('hidden', !data.manual_override);
     }
 
@@ -71,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (updateStatusButton) {
         updateStatusButton.addEventListener('click', async () => {
             updateStatusButton.disabled = true;
+            updateStatusButton.classList.add('is-saving');
             facultyFeedback?.showLoading('Updating your status...');
             if (updateStatusLabel) updateStatusLabel.textContent = 'Saving...';
             statusFeedback.className = 'status-feedback';
@@ -86,24 +104,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         status: selectedStatus,
                         note: statusMessage?.value || '',
                         manual_override: true,
+                        expires_at: statusExpiresAt?.value
+                            ? new Date(statusExpiresAt.value).toISOString()
+                            : null,
                     }),
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Unable to update status.');
 
                 updateStatusPresentation(data);
-                statusFeedback.className = 'status-feedback success';
-                statusFeedback.textContent = 'Status updated successfully.';
-                facultyFeedback?.showToast('Status updated successfully.');
+                statusFeedback.className = 'status-feedback';
+                statusFeedback.textContent = '';
                 if (updateStatusLabel) updateStatusLabel.textContent = 'Updated';
-                window.setTimeout(() => { if (updateStatusLabel) updateStatusLabel.textContent = 'Update'; }, 1500);
+                window.setTimeout(() => { if (updateStatusLabel) updateStatusLabel.textContent = 'Update status'; }, 1500);
             } catch (error) {
                 statusFeedback.className = 'status-feedback error';
                 statusFeedback.textContent = error.message;
                 facultyFeedback?.showToast(error.message, true);
-                if (updateStatusLabel) updateStatusLabel.textContent = 'Update';
+                if (updateStatusLabel) updateStatusLabel.textContent = 'Update status';
             } finally {
                 updateStatusButton.disabled = false;
+                updateStatusButton.classList.remove('is-saving');
                 facultyFeedback?.hideLoading();
             }
         });
@@ -124,14 +145,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     body: JSON.stringify({
                         note: statusMessage?.value || '',
                         manual_override: false,
+                        expires_at: null,
                     }),
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Unable to restore calendar status.');
                 updateStatusPresentation(data);
-                statusFeedback.className = 'status-feedback success';
-                statusFeedback.textContent = 'Calendar-driven status restored.';
-                facultyFeedback?.showToast('Calendar-driven status restored.');
+                statusFeedback.className = 'status-feedback';
+                statusFeedback.textContent = '';
             } catch (error) {
                 statusFeedback.className = 'status-feedback error';
                 statusFeedback.textContent = error.message;
@@ -144,6 +165,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (liveStatusIcon) liveStatusIcon.textContent = statusIcons[selectedStatus];
+
+    refreshConsultationsButton?.addEventListener('click', () => {
+        refreshConsultationsButton.disabled = true;
+        refreshConsultationsButton.classList.add('is-refreshing');
+        facultyFeedback?.showLoading('Refreshing consultation requests...');
+        window.location.reload();
+    });
 
     // Show completed consultation history without leaving the dashboard.
     function setCompletedModalOpen(isOpen) {
@@ -165,29 +193,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.querySelectorAll('[data-delete-completed]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const item = button.closest('.completed-consultation-item');
+            const requestId = item?.dataset.requestId;
+            if (!requestId || !window.confirm('Delete this completed consultation permanently?')) return;
+
+            button.disabled = true;
+            facultyFeedback?.showLoading('Deleting completed consultation...');
+            try {
+                const response = await fetch(`/faculty/api/consultations/${encodeURIComponent(requestId)}/`, {
+                    method: 'DELETE',
+                    headers: { 'X-CSRFToken': getCsrfToken() },
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Unable to delete the consultation.');
+
+                item.remove();
+                const remaining = document.querySelectorAll('.completed-consultation-item').length;
+                if (openCompletedModalButton) openCompletedModalButton.textContent = `Completed (${remaining})`;
+                if (remaining === 0) {
+                    document.querySelector('.completed-consultation-list')?.insertAdjacentHTML(
+                        'beforeend',
+                        '<li class="completed-empty-state">No completed consultations yet.</li>',
+                    );
+                }
+                facultyFeedback?.showToast('Completed consultation deleted.');
+            } catch (error) {
+                button.disabled = false;
+                facultyFeedback?.showToast(error.message, true);
+            } finally {
+                facultyFeedback?.hideLoading();
+            }
+        });
+    });
+
     // --- Consultation Request Filtering and Actions ---
 
     // Filter visible consultation requests by their current status.
-    const filterButtons = document.querySelectorAll('.filter-btn');
+    const consultationStatusFilter = document.getElementById('consultationStatusFilter');
     const requestItems = document.querySelectorAll('.request-item');
 
-    if (filterButtons.length > 0 && requestItems.length > 0) {
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                // Update active button
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-
-                const filter = button.dataset.filter;
-
-                // Filter request items
-                requestItems.forEach(item => {
-                    if (filter === 'all' || item.dataset.status === filter) {
-                        item.style.display = 'flex';
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
+    if (consultationStatusFilter && requestItems.length > 0) {
+        consultationStatusFilter.addEventListener('change', () => {
+            const filter = consultationStatusFilter.value;
+            requestItems.forEach((item) => {
+                if (filter === 'all' || item.dataset.status === filter) {
+                    item.style.display = 'flex';
+                } else {
+                    item.style.display = 'none';
+                }
             });
         });
     }

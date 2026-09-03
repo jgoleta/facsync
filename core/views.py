@@ -72,6 +72,7 @@ def dashboard_public(request):
             'college_name': get_college_label(profile.college_id),
             'data_status': data_status,
             'status_class': status_class,
+            'status_label': profile.get_current_status_display(),
             'status_note': 'College closed' if is_college_closed else (profile.status_note or STATUS_NOTE_DEFAULTS.get(status_key, '')),
             'last_updated_iso': profile.status_updated_at.isoformat() if profile.status_updated_at else '',
             'last_updated_display': profile.status_updated_at.strftime('%Y-%m-%d %H:%M') if profile.status_updated_at else 'Not yet updated',

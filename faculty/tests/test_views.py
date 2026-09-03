@@ -10,9 +10,9 @@ from django.conf import settings
 from django.utils import timezone
 from unittest.mock import patch
 
-from .models import ConsultationRequest, FacultyProfile, GoogleCalendarConnection, WalkInQueue
-from .models import ScheduleEvent
-from .facultyServices.googleCalendarService import google_event_payload, refresh_faculty_status, sync_google_calendar
+from ..models import ConsultationRequest, FacultyProfile, GoogleCalendarConnection, WalkInQueue
+from ..models import ScheduleEvent
+from ..services.google_calendar import google_event_payload, refresh_faculty_status, sync_google_calendar
 
 
 class FacultyViewTests(TestCase):
@@ -138,6 +138,89 @@ class FacultyViewTests(TestCase):
         self.assertEqual(profile.current_status, 'on_leave')
         self.assertEqual(profile.status_note, 'Out of office today')
         self.assertEqual(profile.status_history.count(), 1)
+
+    def test_manual_status_can_be_given_a_future_expiry(self):
+        user = get_user_model().objects.create_user(
+            username='faculty-temporary-status-test',
+            password='test-password',
+            role='faculty',
+        )
+        profile = FacultyProfile.objects.create(
+            faculty_id='faculty-temporary-status-test',
+            user=user,
+            college_id='CCS',
+        )
+        self.client.force_login(user)
+        expiry = timezone.now() + timedelta(hours=2)
+
+        response = self.client.post(
+            reverse('faculty:update_status'),
+            data=json.dumps({'status': 'busy', 'expires_at': expiry.isoformat()}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'busy')
+        self.assertIsNotNone(response.json()['expires_at'])
+        profile.refresh_from_db()
+        self.assertEqual(profile.manual_status, 'busy')
+        self.assertEqual(profile.manual_status_expires_at, expiry)
+
+    def test_expired_manual_status_defaults_to_available(self):
+        user = get_user_model().objects.create_user(
+            username='faculty-expired-status-test',
+            password='test-password',
+        )
+        profile = FacultyProfile.objects.create(
+            faculty_id='faculty-expired-status-test',
+            user=user,
+            college_id='CCS',
+            current_status='busy',
+            manual_status='busy',
+            manual_status_override=True,
+            manual_status_expires_at=timezone.now() - timedelta(minutes=1),
+            status_note='In a meeting',
+        )
+
+        self.assertEqual(refresh_faculty_status(profile), 'available')
+        profile.refresh_from_db()
+        self.assertEqual(profile.current_status, 'available')
+        self.assertEqual(profile.manual_status, 'available')
+        self.assertTrue(profile.manual_status_override)
+        self.assertIsNone(profile.manual_status_expires_at)
+        self.assertEqual(profile.status_note, '')
+
+    def test_faculty_can_delete_own_completed_consultation(self):
+        faculty_user = get_user_model().objects.create_user(
+            username='faculty-delete-completed-test',
+            password='test-password',
+            role='faculty',
+        )
+        student = get_user_model().objects.create_user(
+            username='student-delete-completed-test',
+            password='test-password',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-delete-completed-test',
+            user=faculty_user,
+            college_id='CCS',
+        )
+        consultation = ConsultationRequest.objects.create(
+            request_id='delete-completed-test',
+            user=student,
+            faculty=faculty,
+            date=timezone.localdate(),
+            status='completed',
+        )
+        self.client.force_login(faculty_user)
+
+        response = self.client.delete(
+            reverse('faculty:api_consultation', args=[consultation.request_id]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'deleted')
+        self.assertFalse(ConsultationRequest.objects.filter(pk=consultation.pk).exists())
 
     def test_status_is_derived_from_an_active_system_calendar_event(self):
         user = get_user_model().objects.create_user(
@@ -364,8 +447,8 @@ class FacultyViewTests(TestCase):
         self.assertIsNone(event.google_event_id)
         create_google_event.assert_not_called()
 
-    @patch('faculty.facultyServices.googleCalendarService.create_google_event')
-    @patch('faculty.facultyServices.googleCalendarService.list_google_events')
+    @patch('faculty.services.google_calendar.create_google_event')
+    @patch('faculty.services.google_calendar.list_google_events')
     def test_google_events_sync_into_local_schedule(self, list_google_events, create_google_event):
         user = get_user_model().objects.create_user(
             username='faculty-google-import-test',
@@ -606,7 +689,7 @@ class FacultyViewTests(TestCase):
         self.assertEqual(event.sync_state, 'synced')
         create_event.assert_called_once()
 
-    @patch('faculty.facultyServices.googleCalendarService.timezone.localdate', return_value=date(2026, 9, 2))
+    @patch('faculty.services.google_calendar.timezone.localdate', return_value=date(2026, 9, 2))
     def test_recurring_google_payload_contains_weekly_rule(self, _localdate):
         faculty = self._make_csv_faculty('recurring-payload')
         event = ScheduleEvent.objects.create(

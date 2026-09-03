@@ -3,12 +3,12 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'core/css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260903-single-row-nav">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Public Dashboard</title>
     <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}?v=20260819-status-colors">
-    <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20260824-ui-refresh">
+    <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20260903-status-labels">
 </head>
 
 <body class="student-dashboard public-dashboard">
@@ -87,7 +87,8 @@
                     <div class="card-body">
                         <div class="card-title">{{ card.name }}</div>
                         <div class="card-sub">{{ card.college_name }}</div>
-                        <div class="status-row"><span class="status-badge {{ card.status_class }}"></span>
+                        <div class="status-row"><span class="status-badge {{ card.status_class }}" aria-hidden="true"></span>
+                            <span class="status-label">{{ card.status_label }}</span>
                             <div class="status-note">{{ card.status_note }}</div>
                         </div>
                         <div class="meta">Last updated: {{ card.last_updated_display }}</div>

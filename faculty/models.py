@@ -24,6 +24,7 @@ class FacultyProfile(models.Model):
     # fall back to the faculty member's last explicit status.
     manual_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='available')
     manual_status_override = models.BooleanField(default=False)
+    manual_status_expires_at = models.DateTimeField(null=True, blank=True)
     # Preserve the previous connected-calendar behavior for existing users;
     # disconnecting explicitly turns this off.
     sync_enabled = models.BooleanField(default=True)
