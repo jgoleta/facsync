@@ -3,11 +3,11 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260827-faculty-feedback">
+    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260903-single-row-nav">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260902-secondary-dashboard-actions">
+    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260903-queue-style-update">
     <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
 
@@ -52,6 +52,11 @@
                         <label for="statusMessage">Set a status note</label>
                         <input type="text" id="statusMessage" value="{{ faculty_profile.status_note|default:'' }}" placeholder="e.g., In a meeting until 3 PM">
                     </div>
+                    <div class="status-note status-expiry">
+                        <label for="statusExpiresAt">Keep this status until <span>(optional)</span></label>
+                        <input type="datetime-local" id="statusExpiresAt" data-current-expiry="{{ manual_status_expires_at }}">
+                        <small>After this time, your status automatically becomes Available.</small>
+                    </div>
                     <div class="status-mode-row">
                         <span id="statusModeLabel" class="status-mode-label">
                             {% if manual_status_override %}Manual override is active{% else %}Status follows your calendar{% endif %}
@@ -59,7 +64,12 @@
                         <button type="button" id="useCalendarStatusBtn" class="btn-secondary {% if not manual_status_override %}hidden{% endif %}">Use calendar status</button>
                     </div>
                     <div class="status-update-action">
-                        <button id="updateStatusBtn" class="btn-primary"><span aria-hidden="true">↻</span><span id="updateStatusLabel">Update</span></button>
+                        <button type="button" id="updateStatusBtn" class="btn-primary status-update-btn">
+                            <svg class="status-update-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20 11a8.1 8.1 0 0 0-14.9-3.8L3 10m0 0V5m0 5h5M4 13a8.1 8.1 0 0 0 14.9 3.8L21 14m0 0v5m0-5h-5" />
+                            </svg>
+                            <span id="updateStatusLabel">Update status</span>
+                        </button>
                         <p id="statusFeedback" class="status-feedback" role="status" aria-live="polite"></p>
                     </div>
                 </div>
@@ -72,14 +82,20 @@
                         </div>
                         <div class="consultation-header-actions">
                             <span class="request-count">{{ consultation_requests|length }} active</span>
+                            <button type="button" id="refreshConsultations" class="refresh-consultations-btn" aria-label="Refresh consultation requests">
+                                <span aria-hidden="true">&#8635;</span> Refresh
+                            </button>
                             <button type="button" id="openCompletedConsultations" class="completed-history-btn">
                                 Completed ({{ completed_consultations|length }})
                             </button>
                         </div>
-                        <div class="filter-buttons">
-                            <button class="filter-btn active" data-filter="all">All</button>
-                            <button class="filter-btn" data-filter="pending">Pending</button>
-                            <button class="filter-btn" data-filter="approved">Approved</button>
+                        <div class="consultation-filter">
+                            <label for="consultationStatusFilter">Filter requests</label>
+                            <select id="consultationStatusFilter">
+                                <option value="all">All requests</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                            </select>
                         </div>
                     </div>
                     <ul class="consultation-request-list">
@@ -167,10 +183,13 @@
             </div>
             <ul class="completed-consultation-list">
                 {% for consultation in completed_consultations %}
-                <li class="completed-consultation-item">
+                <li class="completed-consultation-item" data-request-id="{{ consultation.request_id }}">
                     <div class="completed-consultation-topline">
                         <strong>{{ consultation.user.get_full_name|default:consultation.user.username }}</strong>
-                        <span class="consultation-status status-completed">Completed</span>
+                        <div class="completed-consultation-actions">
+                            <span class="consultation-status status-completed">Completed</span>
+                            <button type="button" class="delete-completed-btn" data-delete-completed aria-label="Delete completed consultation with {{ consultation.user.get_full_name|default:consultation.user.username }}">Delete</button>
+                        </div>
                     </div>
                     <p>
                         {{ consultation.date|date:"F j, Y" }}
@@ -193,7 +212,7 @@
     </div>
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260902-completed-modal"></script>
+    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260903-status-feedback-cleanup"></script>
     <script src="{% static 'core/js/notifications.js' %}"></script>
 </body>
 

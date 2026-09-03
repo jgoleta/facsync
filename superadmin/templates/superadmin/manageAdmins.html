@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Manage Admins</title>
-    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}" />
+    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}?v=20260903-responsive-nav" />
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_management.css' %}" />
 </head>
 
@@ -76,7 +76,6 @@
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
-                            <th>Role</th>
                             <th>College</th>
                             <th>Title</th>
                             <th>Account Status</th>
@@ -88,7 +87,6 @@
                         <tr data-depthead-id="{{ admin.id }}">
                             <td class="depthead-name">{{ admin.get_full_name|default:admin.username }}</td>
                             <td class="depthead-email">{{ admin.email }}</td>
-                            <td>College Head</td>
                             <td class="depthead-college">{{ admin.college }}</td>
                             <td class="depthead-title">{{ admin.get_title_display|default:"—" }}</td>
                             <td class="depthead-status">

@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from faculty.facultyServices.googleCalendarService import (
+from faculty.services.google_calendar import (
     GoogleCalendarError,
     sync_google_calendar,
 )

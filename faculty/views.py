@@ -13,6 +13,7 @@ from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_protect
 from core.services import create_notification, get_active_announcements
 from django.http import JsonResponse
@@ -20,7 +21,7 @@ from django.utils import timezone
 
 from core.models import CollegeAnnouncement
 
-from .facultyServices.googleCalendarService import (
+from .services.google_calendar import (
     GoogleCalendarError,
     consultation_has_calendar_conflict,
     create_consultation_event,
@@ -35,7 +36,7 @@ from .facultyServices.googleCalendarService import (
     refresh_faculty_status,
     update_google_event,
 )
-from .facultyServices.calendarEvents import (
+from .services.calendar_events import (
     get_schedule_status_label,
     serialize_consultation_event,
     serialize_schedule_event,
@@ -394,6 +395,7 @@ def dashboard(request):
         'faculty_profile': faculty_profile,
         'current_status': current_status,
         'manual_status_override': faculty_profile.manual_status_override if faculty_profile else False,
+        'manual_status_expires_at': faculty_profile.manual_status_expires_at.isoformat() if faculty_profile and faculty_profile.manual_status_expires_at else '',
         'status_css_class': status_css_class,
         'status_label': status_label,
         'consultation_requests': consultation_requests,
@@ -461,8 +463,19 @@ def update_status(request):
     if not isinstance(manual_override, bool):
         return JsonResponse({'error': 'manual_override must be true or false.'}, status=400)
     faculty_profile.manual_status_override = manual_override
+    expires_at = None
+    submitted_expiry = payload.get('expires_at')
+    if manual_override and submitted_expiry:
+        expires_at = parse_datetime(str(submitted_expiry))
+        if expires_at is None or timezone.is_naive(expires_at):
+            return JsonResponse({'error': 'expires_at must be a valid date and time with a time zone.'}, status=400)
+        if expires_at <= timezone.now():
+            return JsonResponse({'error': 'The status end time must be in the future.'}, status=400)
+    faculty_profile.manual_status_expires_at = expires_at
     faculty_profile.status_note = str(payload.get('note') or '').strip()
-    faculty_profile.save(update_fields=['manual_status', 'manual_status_override', 'status_note'])
+    faculty_profile.save(update_fields=[
+        'manual_status', 'manual_status_override', 'manual_status_expires_at', 'status_note',
+    ])
     effective_status = refresh_faculty_status(faculty_profile)
     faculty_profile.refresh_from_db()
 
@@ -472,7 +485,8 @@ def update_status(request):
         'label': dict(FacultyProfile.STATUS_CHOICES)[effective_status],
         'note': faculty_profile.status_note,
         'manual_override': faculty_profile.manual_status_override,
-        'updated_at': faculty_profile.status_updated_at.isoformat(),
+        'expires_at': faculty_profile.manual_status_expires_at.isoformat() if faculty_profile.manual_status_expires_at else None,
+        'updated_at': faculty_profile.status_updated_at.isoformat() if faculty_profile.status_updated_at else None,
     })
 
 
@@ -1264,6 +1278,12 @@ def api_consultation(request, request_id):
         return JsonResponse(_consultation_json(consultation))
 
     if request.method == 'DELETE':
+        if consultation.status == 'completed':
+            if not is_faculty:
+                return JsonResponse({'error': 'Only the faculty member can delete completed consultations.'}, status=403)
+            consultation.delete()
+            return JsonResponse({'status': 'deleted', 'request_id': request_id})
+
         if consultation.status == 'approved' and sync_enabled and consultation.google_event_id:
             try:
                 delete_consultation_event(connection, consultation)
