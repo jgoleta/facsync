@@ -675,6 +675,21 @@ def sync_google_calendar(user):
 
 def refresh_faculty_status(faculty, google_events=None):
     """Derive status from local, synced, and approved consultation records."""
+    # A temporary manual status always falls back to Available when its
+    # deadline passes. Keeping the resulting Available status as a manual
+    # override prevents an active calendar event from immediately replacing it.
+    if (
+        faculty.manual_status_override
+        and faculty.manual_status_expires_at
+        and faculty.manual_status_expires_at <= timezone.now()
+    ):
+        faculty.manual_status = 'available'
+        faculty.status_note = ''
+        faculty.manual_status_expires_at = None
+        faculty.save(update_fields=[
+            'manual_status', 'status_note', 'manual_status_expires_at',
+        ])
+
     now = timezone.localtime(
         timezone.now(),
         ZoneInfo(getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)),

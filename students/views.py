@@ -15,9 +15,9 @@ from django.views.decorators.csrf import csrf_protect
 
 from core.colleges import get_college_label
 from faculty.models import ConsultationRequest, FacultyProfile, ScheduleEvent, WalkInQueue
-from faculty.facultyServices.calendarEvents import serialize_consultation_event, serialize_schedule_event
+from faculty.services.calendar_events import serialize_consultation_event, serialize_schedule_event
 from .models import FacultyStatusSubscription
-from faculty.facultyServices.googleCalendarService import refresh_faculty_status
+from faculty.services.google_calendar import refresh_faculty_status
 
 
 def _json_body(request):

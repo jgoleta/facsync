@@ -297,9 +297,163 @@ body {
   stroke-width: 2.2;
 }
 
+.student-home-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
+  grid-template-areas: "services actions";
+  align-items: start;
+  gap: 22px;
+}
+
+.student-home-content .student-home-grid {
+  grid-area: actions;
+}
+
+.student-services {
+  grid-area: services;
+  margin-top: 0;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.services-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.services-header .eyebrow {
+  margin: 0 0 7px;
+  color: var(--accent);
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.services-header h2,
+.service-card h3 {
+  margin: 0;
+}
+
+.services-header > p {
+  max-width: 48ch;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.service-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #fbfdff;
+}
+
+.service-card-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.service-icon {
+  display: grid;
+  flex: 0 0 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.service-card h3 {
+  color: var(--primary-dark);
+  font-size: 1rem;
+}
+
+.service-card-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.service-details {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.service-details div {
+  min-width: 0;
+}
+
+.service-details dt {
+  margin-bottom: 3px;
+  color: #8491a6;
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.service-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--text);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.service-details a,
+.service-link {
+  color: var(--accent);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.service-details a:hover,
+.service-details a:focus-visible,
+.service-link:hover,
+.service-link:focus-visible {
+  text-decoration: underline;
+}
+
+.service-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: auto;
+  font-size: 0.82rem;
+}
+
 @media (max-width: 1080px) {
-  .student-home-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .student-home-content {
+    grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .student-home-content {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "actions"
+      "services";
   }
 }
 
@@ -322,6 +476,16 @@ body {
   .student-home-grid {
     grid-template-columns: 1fr;
   }
+
+  .services-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 520px) {
@@ -339,5 +503,10 @@ body {
 
   .nav-card {
     padding: 22px;
+  }
+
+  .student-services {
+    padding: 20px;
+    border-radius: 20px;
   }
 }
