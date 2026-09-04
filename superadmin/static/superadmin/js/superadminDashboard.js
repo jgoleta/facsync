@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <p class="stat">${data.total_consultations}</p>
                 </div>
                 <div class="card">
-                    <h3>Active Faculty</h3>
+                    <h3>Registered Faculty</h3>
                     <p class="stat">${data.active_faculty}</p>
                 </div>
                 <div class="card">
