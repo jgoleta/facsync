@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_management.css' %}" />
 </head>
 
-<body>
+<body class="college-head-palette">
     <div class="admin-shell">
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -55,12 +55,12 @@
         <main class="main-content">
             <header class="main-header with-action">
                 <div>
+                    <p class="page-kicker">System administration</p>
                     <h1>Manage Admin Accounts</h1>
                     <p>
                         Manage accounts for College Heads and Support Office staff.
                     </p>
                 </div>
-                <button id="openInviteDeptheadBtn" class="btn-primary">Add New Admin</button>
             </header>
             {% if messages %}
             {% for message in messages %}
@@ -71,6 +71,19 @@
             {% endif %}
 
             <div class="management-table-wrapper">
+                <div class="management-table-header">
+                    <div>
+                        <p class="section-kicker">Administrative directory</p>
+                        <h2>College Head Accounts</h2>
+                    </div>
+                    <div class="management-table-header-actions">
+                        <button id="openInviteDeptheadBtn" class="btn-primary header-action" type="button">
+                            <span class="header-action-icon" aria-hidden="true">+</span>
+                            <span>Add New Admin</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-scroll">
                 <table>
                     <thead>
                         <tr>
@@ -105,6 +118,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
             </div>
         </main>
     </div>
@@ -148,8 +162,13 @@
     </div>
     <div id="editDeptheadModal" class="modal-overlay hidden">
         <div class="modal">
-            <h2>Edit College Head</h2>
-            <form method="post" id="editDeptheadForm" class="settings-form">
+            <div class="modal-header">
+                <div>
+                    <h2>Edit College Head</h2>
+                    <p>Update this administrator's assignment and account access.</p>
+                </div>
+            </div>
+            <form method="post" id="editDeptheadForm" class="settings-form modal-form">
                 {% csrf_token %}
                 <div class="modal-form-group">
                     <label for="edit-depthead-role">Role</label>
@@ -182,9 +201,9 @@
                         <option value="deactivated">Deactivated</option>
                     </select>
                 </div>
-                <div class="form-actions">
+                <div class="form-actions modal-actions">
                     <button type="button" class="btn-secondary" id="closeEditDeptheadModal">Cancel</button>
-                    <button type="submit" class="primary-button">Save Changes</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
                 </div>
             </form>
         </div>
