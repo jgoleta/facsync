@@ -36,9 +36,11 @@
                                 <line x1="80" y1="90" x2="500" y2="90" />
                             </g>
                             {% for bar in chart_bars %}
+                            {% if bar.has_data %}
                             <rect x="{{ bar.x }}" y="{{ bar.y }}" width="40" height="{{ bar.height }}" rx="6" fill="#2563eb">
                                 <title>{{ bar.label }}: {{ bar.rate }}% available</title>
                             </rect>
+                            {% endif %}
                             {% endfor %}
                             <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
                                 {% for bar in chart_bars %}

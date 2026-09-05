@@ -34,3 +34,5 @@ python manage.py test --settings=facsync_project.test_settings
 
 The test settings use an isolated in-memory SQLite database and never connect
 to the configured PostgreSQL database.
+
+## GEMINI_MODEL=gemini

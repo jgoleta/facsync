@@ -113,12 +113,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function setCalendarConnected(isConnected) {
         if (isConnected) {
             calendarStatus.textContent = 'Connected';
-            calendarStatus.className = 'status-connected';
+            calendarStatus.className = 'connection-status status-connected';
             connectBtn.classList.add('hidden');
             disconnectBtn.classList.remove('hidden');
         } else {
             calendarStatus.textContent = 'Not Connected';
-            calendarStatus.className = 'status-disconnected';
+            calendarStatus.className = 'connection-status status-disconnected';
             connectBtn.classList.remove('hidden');
             disconnectBtn.classList.add('hidden');
             if (syncToggle) {

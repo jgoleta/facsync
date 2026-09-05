@@ -3,11 +3,11 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260903-single-row-nav">
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FacSync | My Profile</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}?v=20260819-responsive">
+    <link rel="stylesheet" href="{% static 'core/css/base.css' %}?v=20260903-single-row-nav">
+    <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}?v=20260905-profile-refresh">
     <link rel="stylesheet" href="{% static 'core/css/notifications.css' %}?v=20260819-responsive">
 </head>
 
@@ -19,17 +19,22 @@
                 <span class="brand-mark">F</span>
                 <span>FacSync</span>
             </a>
-            <nav class="nav-links">
+            <nav class="nav-links" aria-label="Account navigation">
                 {% include 'core/_notification_nav.html' %}
+                <a href="{% url 'faculty:profile' %}" class="nav-btn active" aria-current="page">Profile</a>
                 <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
 
-        <main class="container">
-            <div class="profile-header">
-                <h1>My Profile</h1>
-                <p>Manage your personal information and application settings.</p>
-            </div>
+        <main class="profile-shell">
+            <header class="profile-header">
+                <div>
+                    <span class="eyebrow">Faculty workspace</span>
+                    <h1>Profile</h1>
+                    <p>Keep your faculty details and connected services up to date.</p>
+                </div>
+                <span class="account-badge">Faculty account</span>
+            </header>
 
             {% if messages %}
             <div class="page-alerts" aria-live="polite">
@@ -40,11 +45,7 @@
             {% endif %}
 
             <div class="profile-grid">
-                <!-- Personal Information Card -->
-                <div class="profile-card personal-info-card">
-                    <div class="card-header">
-                        <h2>Personal Information</h2>
-                    </div>
+                <section class="profile-card personal-info-card" aria-labelledby="personal-information-title">
                     <div class="profile-picture-section">
                         {% if faculty_profile and faculty_profile.photo_url %}
                         <img src="{{ faculty_profile.photo_url }}" alt="Profile picture for {{ request.user.get_full_name|default:request.user.username }}" class="profile-avatar">
@@ -52,10 +53,20 @@
                         <div class="profile-avatar profile-avatar-placeholder" aria-hidden="true">{{ request.user.first_name|first }}{{ request.user.last_name|first }}</div>
                         {% endif %}
                         <div class="profile-identity">
+                            <span class="identity-label">Signed in as</span>
                             <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
-                            <span>Faculty account</span>
+                            <span>{{ faculty_profile.college_name|default:"College not assigned" }}</span>
                         </div>
                     </div>
+
+                    <div class="card-heading">
+                        <div>
+                            <span class="section-label">Account details</span>
+                            <h2 id="personal-information-title">Personal information</h2>
+                        </div>
+                        <p>Your name and email are managed through your account.</p>
+                    </div>
+
                     <div class="info-grid">
                         <div class="info-group">
                             <label>Name</label>
@@ -63,69 +74,115 @@
                         </div>
                         <div class="info-group">
                             <label>Email</label>
-                            <p>{{ request.user.email|default:"No email provided" }}</p>
+                            <p class="breakable-text">{{ request.user.email|default:"No email provided" }}</p>
                         </div>
                         <div class="info-group">
                             <label>College</label>
                             <p>{{ faculty_profile.college_name|default:"Not assigned" }}</p>
                         </div>
-                        <div class="info-group" id="office-location-group">
-                            <label>Office Location</label>
+                        <div class="info-group editable-info-group" id="office-location-group">
+                            <label for="office-location-input">Office location</label>
                             <div class="editable-field">
                                 <p id="office-location-text">{{ faculty_profile.office_location|default:"Not assigned" }}</p>
-                                <input type="text" id="office-location-input" class="hidden" value="{{ faculty_profile.office_location|default:'' }}">
-                                <button id="edit-office-btn" class="edit-btn">Edit</button>
-                                <button id="save-office-btn" class="save-btn hidden">Save</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="info-group" id="biography-group">
-                        <label>Biography</label>
-                        <div class="editable-field-bio">
-                            <p id="biography-text">{{ faculty_profile.biography|default:"No biography added yet." }}</p>
-                            <textarea id="biography-input" class="hidden">{{ faculty_profile.biography|default:'' }}</textarea>
-                            <button id="edit-bio-btn" class="edit-btn">Edit</button>
-                            <button id="save-bio-btn" class="save-btn hidden">Save</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Side column -->
-                <div class="side-column">
-                    <div class="profile-card">
-                        <h2>Integrations</h2>
-                        <div class="integration-group">
-                            <div class="integration-info">
-                                <span class="integration-icon google-calendar-icon"></span>
-                                <div class="integration-details">
-                                    <strong>Google Calendar</strong>
-                                    <span id="calendar-status" class="{% if calendar_connected %}status-connected{% else %}status-disconnected{% endif %}">{% if calendar_connected %}Connected{% else %}Not Connected{% endif %}</span>
+                                <input type="text" id="office-location-input" class="hidden" maxlength="128" value="{{ faculty_profile.office_location|default:'' }}">
+                                <div class="field-actions">
+                                    <button type="button" id="edit-office-btn" class="edit-btn">Edit</button>
+                                    <button type="button" id="save-office-btn" class="save-btn hidden">Save</button>
                                 </div>
                             </div>
-                            <button id="calendar-connect-btn" class="btn-secondary {% if calendar_connected %}hidden{% endif %}">Connect</button>
-                            <button id="calendar-disconnect-btn" class="btn-danger {% if not calendar_connected %}hidden{% endif %}">Disconnect</button>
                         </div>
+                    </div>
+
+                    <div class="biography-section info-group" id="biography-group">
+                        <div class="biography-heading">
+                            <div>
+                                <label for="biography-input">Biography</label>
+                                <span>Help students understand your academic focus and consultation support.</span>
+                            </div>
+                            <div class="field-actions">
+                                <button type="button" id="edit-bio-btn" class="edit-btn">Edit</button>
+                                <button type="button" id="save-bio-btn" class="save-btn hidden">Save</button>
+                            </div>
+                        </div>
+                        <div class="editable-field-bio">
+                            <p id="biography-text">{{ faculty_profile.biography|default:"No biography added yet." }}</p>
+                            <textarea id="biography-input" class="hidden" rows="6">{{ faculty_profile.biography|default:'' }}</textarea>
+                        </div>
+                    </div>
+                </section>
+
+                <aside class="side-column">
+                    <section class="profile-card integration-card" aria-labelledby="integrations-title">
+                        <div class="card-heading compact-heading">
+                            <div>
+                                <span class="section-label">Connected services</span>
+                                <h2 id="integrations-title">Integrations</h2>
+                            </div>
+                        </div>
+
+                        <div class="integration-group">
+                            <div class="integration-info">
+                                <span class="integration-icon google-calendar-icon" aria-hidden="true"></span>
+                                <div class="integration-details">
+                                    <strong>Google Calendar</strong>
+                                    <span id="calendar-status" class="connection-status {% if calendar_connected %}status-connected{% else %}status-disconnected{% endif %}">
+                                        {% if calendar_connected %}Connected{% else %}Not connected{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="integration-actions">
+                                <button type="button" id="calendar-connect-btn" class="btn-secondary {% if calendar_connected %}hidden{% endif %}">Connect</button>
+                                <button type="button" id="calendar-disconnect-btn" class="btn-danger {% if not calendar_connected %}hidden{% endif %}">Disconnect</button>
+                            </div>
+                        </div>
+
                         <div class="calendar-sync-preference">
                             <label class="toggle-row" for="calendar-sync-toggle">
+                                <span>
+                                    <strong>Two-way sync</strong>
+                                    <small>Keep FacSync and Google Calendar aligned.</small>
+                                </span>
                                 <input id="calendar-sync-toggle" type="checkbox" {% if calendar_sync_enabled %}checked{% endif %} {% if not calendar_connected %}disabled{% endif %}>
-                                <span>Enable two-way sync</span>
                             </label>
                             <p id="calendar-last-sync" class="integration-meta">
                                 {% if calendar_last_synced_at %}Last synced {{ calendar_last_synced_at|date:'M j, Y g:i A' }}{% else %}Not synced yet{% endif %}
                             </p>
-                            {% if calendar_sync_error %}<p id="calendar-sync-error" class="integration-error">{{ calendar_sync_error }}</p>{% else %}<p id="calendar-sync-error" class="integration-error hidden"></p>{% endif %}
+                            {% if calendar_sync_error %}
+                            <p id="calendar-sync-error" class="integration-error">{{ calendar_sync_error }}</p>
+                            {% else %}
+                            <p id="calendar-sync-error" class="integration-error hidden"></p>
+                            {% endif %}
                         </div>
-                        <div class="card-actions-vertical">
-                            <a href="{% url 'faculty:dashboard' %}" class="btn-secondary full-width">Dashboard</a>
-                            <a href="{% url 'faculty:schedule' %}" class="btn-secondary full-width">Schedule</a>
+                    </section>
+
+                    <section class="profile-card quick-links-card" aria-labelledby="quick-links-title">
+                        <div class="card-heading compact-heading">
+                            <div>
+                                <span class="section-label">Shortcuts</span>
+                                <h2 id="quick-links-title">Faculty tools</h2>
+                            </div>
                         </div>
-                    </div>
-                </div>
+                        <nav class="card-actions-vertical" aria-label="Faculty tools">
+                            <a href="{% url 'faculty:dashboard' %}" class="profile-link">
+                                <span>Dashboard</span>
+                                <span aria-hidden="true">&rarr;</span>
+                            </a>
+                            <a href="{% url 'faculty:schedule' %}" class="profile-link">
+                                <span>Schedule</span>
+                                <span aria-hidden="true">&rarr;</span>
+                            </a>
+                            <a href="{% url 'faculty:booking_management' %}" class="profile-link">
+                                <span>Booking management</span>
+                                <span aria-hidden="true">&rarr;</span>
+                            </a>
+                        </nav>
+                    </section>
+                </aside>
             </div>
         </main>
     </div>
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'faculty/js/profile.js' %}?v=20260827-feedback"></script>
+    <script src="{% static 'faculty/js/profile.js' %}?v=20260905-profile-refresh"></script>
     <script src="{% static 'core/js/notifications.js' %}"></script>
 </body>
 </html>

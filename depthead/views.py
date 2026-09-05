@@ -7,19 +7,30 @@ from core.models import User, FacultyInvite, OfficeClosure, CollegeAnnouncement,
 from core.forms import CollegeAnnouncementForm, CollegeDescriptionForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm
-from faculty.models import FacultyProfile, ConsultationRequest, ScheduleEvent, StatusHistory
+from faculty.models import FacultyProfile, ScheduleEvent
 from faculty.views import SCHEDULE_CSV_HEADERS, _event_json, _parse_schedule_csv, _schedule_csv_row
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.db import transaction
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET
 from core.services import notify_college_users, send_faculty_invite_email, send_faculty_approved_email, send_faculty_removed_email
 from core.faculty import mark_inactive_faculty
-from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
-from django.db.models.functions import ExtractHour, ExtractWeekDay, TruncMonth
 from datetime import timedelta, date
+from django.utils.dateparse import parse_datetime
 from django.utils.timesince import timesince
+from .services import (
+    generate_ai_insights,
+    get_college_analytics,
+    get_stored_ai_insights,
+)
+from .services.analytics import (
+    get_base_consultation_queryset,
+    get_faculty_trends,
+    get_student_request_frequency_display,
+    normalize_period,
+)
 
 
 @login_required
@@ -108,57 +119,42 @@ def remove_faculty(request, user_id):
 @login_required
 @role_required('depthead')
 def admin_dashboard(request):
-    today = date.today()
-    month_start = today.replace(day=1)
-    last_month_end = month_start - timedelta(days=1)
-    last_month_start = last_month_end.replace(day=1)
-
     college_code = request.user.college
     college = College.objects.filter(code__iexact=college_code).first()
-
-    consultations_qs = ConsultationRequest.objects.filter(
-        faculty__college_id__iexact=college_code
-    )
-
-    total_this_month = consultations_qs.filter(date__gte=month_start).count()
-    total_last_month = consultations_qs.filter(
-        date__gte=last_month_start, date__lte=last_month_end
-    ).count()
-    total_change_pct = (
-        round(((total_this_month - total_last_month) / total_last_month) * 100)
-        if total_last_month > 0 else None
-    )
-
-    completed_this_month = consultations_qs.filter(
-        date__gte=month_start, status='completed'
-    ).count()
-    completed_last_month = consultations_qs.filter(
-        date__gte=last_month_start, date__lte=last_month_end, status='completed'
-    ).count()
-    completed_change_pct = (
-        round(((completed_this_month - completed_last_month) / completed_last_month) * 100)
-        if completed_last_month > 0 else None
-    )
-
-    faculty_qs = FacultyProfile.objects.filter(
-        user__role='faculty',
-        user__account_status='active',
-        college_id__iexact=college_code,
-    )
-    active_faculty_count = faculty_qs.count()
-    available_now_count = faculty_qs.filter(current_status='available').count()
-    available_now_pct = round((available_now_count / active_faculty_count) * 100) if active_faculty_count else 0
+    analytics = get_college_analytics(college_code)
+    summary = analytics['consultations']
+    trends = analytics['trends']
+    availability = analytics['faculty_availability']['current']
+    growth_comparable = trends['growth_comparable']
 
     return render(request, 'depthead/adminDashboard.html', {
         'college': college,
-        'total_this_month': total_this_month,
-        'total_change_pct': total_change_pct,
-        'completed_this_month': completed_this_month,
-        'completed_change_pct': completed_change_pct,
-        'active_faculty_count': active_faculty_count,
-        'available_now_count': available_now_count,
-        'available_now_pct': available_now_pct,
+        'total_this_month': summary['total_records'],
+        'total_change_pct': trends['growth_percent'] if growth_comparable else None,
+        'completed_this_month': summary['completion']['completed_count'],
+        'completed_change_pct': trends['completed_growth_percent'] if growth_comparable else None,
+        'active_faculty_count': availability['total_active_faculty'],
+        'available_now_count': availability['available_count'],
+        'available_now_pct': availability['availability_rate_percent'],
+        'analysis_period': analytics['period'],
+        'data_quality': analytics['data_quality'],
+        'analytics': analytics,
+        'ai_insights': {'available': None},
     })
+
+
+@login_required
+@role_required('depthead')
+@require_GET
+def ai_insights_api(request):
+    """Return AI interpretation for the authenticated College Head's scope."""
+
+    stored_insights = get_stored_ai_insights(request.user.college)
+    if stored_insights is not None:
+        return JsonResponse(stored_insights)
+
+    analytics = get_college_analytics(request.user.college)
+    return JsonResponse(generate_ai_insights(analytics))
 
 
 @login_required
@@ -305,13 +301,8 @@ def delete_faculty_schedule(request, faculty_id):
 @role_required('depthead')
 def student_behavior(request):
     college_code = request.user.college
-
-    consultations_qs = ConsultationRequest.objects.filter(
-        faculty__college_id__iexact=college_code
-    )
-
-    #consultation frequency over the last 6 months (line chart)
-    today = date.today()
+    current_period = normalize_period()
+    today = current_period.end_date
     month_starts = []
     cursor = today.replace(day=1)
     for _ in range(6):
@@ -319,20 +310,18 @@ def student_behavior(request):
         cursor = (cursor - timedelta(days=1)).replace(day=1)
     month_starts.reverse()  #oldest to newest
 
-    monthly_counts_qs = (
-        consultations_qs.filter(date__gte=month_starts[0])
-        .annotate(month=TruncMonth('date'))
-        .values('month')
-        .annotate(count=Count('request_id'))
-    )
-    monthly_lookup = {row['month']: row['count'] for row in monthly_counts_qs}
+    analytics = get_college_analytics(college_code, month_starts[0], today)
+    monthly_lookup = {
+        row['month']: row['count']
+        for row in analytics['trends']['scheduled_consultations_by_month']
+    }
 
     monthly_data = []
     for m_start in month_starts:
         monthly_data.append({
             'month': m_start,
             'label': m_start.strftime('%b'),
-            'count': monthly_lookup.get(m_start, 0),
+            'count': monthly_lookup.get(m_start.strftime('%Y-%m'), 0),
         })
 
     max_month_count = max((m['count'] for m in monthly_data), default=0) or 1
@@ -350,34 +339,25 @@ def student_behavior(request):
 
     polyline_str = " ".join(f"{p['x']},{p['y']}" for p in line_points)
 
-    #peak reqyuest periods (all months)
-    all_time_monthly = (
-        consultations_qs.annotate(month=TruncMonth('date'))
-        .values('month')
-        .annotate(count=Count('request_id'))
-        .order_by('-count')
-    )
-    if all_time_monthly:
-        top_month_row = all_time_monthly[0]
-        peak_period_label = top_month_row['month'].strftime('%B %Y')
-        peak_period_count = top_month_row['count']
+    # Request-submission periods use requested_at in the analytics timezone.
+    request_months = analytics['request_patterns']['monthly_trend']
+    if request_months:
+        peak_period_count = max(row['count'] for row in request_months)
+        peak_months = [
+            date.fromisoformat(f"{row['month']}-01").strftime('%B %Y')
+            for row in request_months
+            if row['count'] == peak_period_count
+        ]
+        peak_period_label = ', '.join(peak_months)
     else:
         peak_period_label = "No data"
         peak_period_count = 0
 
-    #student request freq (top 10 students by request count)
-    student_counts = (
-        consultations_qs.values('user__id', 'user__first_name', 'user__last_name', 'user__username')
-        .annotate(request_count=Count('request_id'))
-        .order_by('-request_count')[:10]
+    consultations_qs = get_base_consultation_queryset(
+        college_code,
+        normalize_period(month_starts[0], today),
     )
-    student_frequency = []
-    for row in student_counts:
-        full_name = f"{row['user__first_name']} {row['user__last_name']}".strip()
-        student_frequency.append({
-            'name': full_name or row['user__username'],
-            'count': row['request_count'],
-        })
+    student_frequency = get_student_request_frequency_display(consultations_qs)
 
     return render(request, 'depthead/studentBehavior.html', {
         'line_points': line_points,
@@ -468,63 +448,20 @@ WEEKDAY_LABELS = {
 @role_required('depthead')
 def peak_analytics(request):
     college_code = request.user.college
-
-    consultations_qs = ConsultationRequest.objects.filter(
-        faculty__college_id__iexact=college_code
-    )
-
-    #Peak consultation hour (by start_time, excludes null times)
-    hourly_counts = (
-        consultations_qs.exclude(start_time__isnull=True)
-        .annotate(hour=ExtractHour('start_time'))
-        .values('hour')
-        .annotate(count=Count('request_id'))
-        .order_by('hour')
-    )
-    hourly_data = {h: 0 for h in range(7, 20)}  #7am-7pm
-    for row in hourly_counts:
-        if row['hour'] in hourly_data:
-            hourly_data[row['hour']] = row['count']
-
-    max_count = max(hourly_data.values()) if any(hourly_data.values()) else 1
-    chart_bars = []
-    bar_width = 32
-    gap = 38
-    start_x = 95
-    max_bar_height = 160
-    baseline_y = 250
-
-    for i, (hour, count) in enumerate(hourly_data.items()):
-        bar_height = round((count / max_count) * max_bar_height) if max_count else 0
-        chart_bars.append({
-            'x': start_x + i * gap,
-            'y': baseline_y - bar_height,
-            'height': bar_height,
-            'label': f"{hour % 12 or 12}{'AM' if hour < 12 else 'PM'}",
-            'count': count,
-        })
-
-    peak_hour_row = max(hourly_data.items(), key=lambda x: x[1]) if any(hourly_data.values()) else (None, 0)
-    peak_hour_label = f"{peak_hour_row[0] % 12 or 12}{'AM' if peak_hour_row[0] < 12 else 'PM'}" if peak_hour_row[0] is not None else "No data"
-
-    #peak consultation day
-    weekday_counts = (
-        consultations_qs.annotate(weekday=ExtractWeekDay('date'))
-        .values('weekday')
-        .annotate(count=Count('request_id'))
-        .order_by('-count')
-    )
-    weekday_totals = {i: 0 for i in range(1, 8)}
-    for row in weekday_counts:
-        weekday_totals[row['weekday']] = row['count']
-
-    if any(weekday_totals.values()):
-        top_weekday_num = max(weekday_totals.items(), key=lambda x: x[1])[0]
-        peak_day_label = WEEKDAY_LABELS.get(top_weekday_num, 'Unknown')
-        peak_day_count = weekday_totals[top_weekday_num]
-    else:
-        peak_day_label = "No data"
-        peak_day_count = 0
+    analytics = get_college_analytics(college_code)
+    patterns = analytics['consultation_patterns']
+    hourly_data = {
+        row['hour']: row['count'] for row in patterns['hourly_distribution']
+    }
+    peak_hours = patterns['peak_hour']['hours']
+    peak_hour_label = ', '.join(
+        f"{hour % 12 or 12}{'AM' if hour < 12 else 'PM'}" for hour in peak_hours
+    ) or 'No data'
+    peak_hour_count = patterns['peak_hour']['count']
+    weekday_rows = patterns['weekday_distribution']
+    weekday_totals = {row['weekday']: row['count'] for row in weekday_rows}
+    peak_day_label = ', '.join(patterns['peak_weekday']['weekdays']) or 'No data'
+    peak_day_count = patterns['peak_weekday']['count']
 
     # Build pie chart slices
     total_weekday_requests = sum(weekday_totals.values())
@@ -533,8 +470,8 @@ def peak_analytics(request):
     if total_weekday_requests > 0:
         cx, cy, r = 110, 110, 90
         start_angle = -90  # start at top
-        for i in range(1, 8):
-            count = weekday_totals[i]
+        for i, weekday_name in enumerate(WEEKDAY_LABELS.values()):
+            count = weekday_totals.get(weekday_name, 0)
             if count == 0:
                 continue
             fraction = count / total_weekday_requests
@@ -553,40 +490,37 @@ def peak_analytics(request):
             path = f"M {cx},{cy} L {x1:.2f},{y1:.2f} A {r},{r} 0 {large_arc} 1 {x2:.2f},{y2:.2f} Z"
             pie_slices.append({
                 'path': path,
-                'color': pie_colors[(i - 1) % len(pie_colors)],
-                'label': WEEKDAY_LABELS[i],
+                'color': pie_colors[i % len(pie_colors)],
+                'label': weekday_name,
                 'count': count,
                 'pct': round(fraction * 100),
             })
             start_angle = end_angle
 
-    #supply-demand gap (today's requests / currently available faculty)
-    today_request_count = consultations_qs.filter(date=date.today()).count()
-    available_faculty_count = FacultyProfile.objects.filter(
-        user__role='faculty',
-        user__account_status='active',
-        college_id__iexact=college_code,
-        current_status='available',
-    ).count()
-
-    #faculty consultation load distribution (top 5 faculty by request count)
-    load_distribution = (
-        consultations_qs.values('faculty__faculty_id', 'faculty__user__first_name', 'faculty__user__last_name', 'faculty__user__username')
-        .annotate(request_count=Count('request_id'))
-        .order_by('-request_count')[:5]
-    )
+    # Names are presentation-only and are not present in the AI-ready payload.
+    workload_items = analytics['faculty_workload']['items'][:5]
+    faculty_ids = [item['faculty_key'].removeprefix('faculty:') for item in workload_items]
+    profiles_by_id = {
+        profile.faculty_id: profile
+        for profile in FacultyProfile.objects.filter(
+            faculty_id__in=faculty_ids
+        ).select_related('user')
+    }
     load_distribution_list = []
-    for row in load_distribution:
-        full_name = f"{row['faculty__user__first_name']} {row['faculty__user__last_name']}".strip()
+    for item in workload_items:
+        faculty_id = item['faculty_key'].removeprefix('faculty:')
+        profile = profiles_by_id.get(faculty_id)
+        if profile is None:
+            continue
         load_distribution_list.append({
-            'name': full_name or row['faculty__user__username'],
-            'count': row['request_count'],
+            'name': profile.user.get_full_name() or profile.user.username,
+            'count': item['total_requests'],
         })
 
     max_count = max(hourly_data.values()) if any(hourly_data.values()) else 1
     chart_bars = []
-    gap = 34
-    start_x = 50
+    gap = 20
+    start_x = 42
     max_bar_height = 110
     baseline_y = 160
 
@@ -604,67 +538,44 @@ def peak_analytics(request):
         'hourly_data': hourly_data,
         'chart_bars': chart_bars,
         'peak_hour_label': peak_hour_label,
-        'peak_hour_count': peak_hour_row[1],
+        'peak_hour_count': peak_hour_count,
         'peak_day_label': peak_day_label,
         'peak_day_count': peak_day_count,
         'pie_slices': pie_slices, 
-        'today_request_count': today_request_count,
-        'available_faculty_count': available_faculty_count,
+        'capacity': analytics['capacity'],
         'load_distribution': load_distribution_list,
+        'analysis_period': analytics['period'],
     })
 
 @login_required
 @role_required('depthead')
 def faculty_trends(request):
     college_code = request.user.college
-    window_start = timezone.now() - timedelta(days=7)
-
-    faculty_qs = FacultyProfile.objects.filter(
-        user__role='faculty',
-        user__account_status='active',
-        college_id__iexact=college_code,
-    ).select_related('user')
-
+    analytics = get_faculty_trends(college_code)
+    faculty_ids = [
+        item['faculty_key'].removeprefix('faculty:')
+        for item in analytics['items']
+    ]
+    profiles_by_id = {
+        profile.faculty_id: profile
+        for profile in FacultyProfile.objects.filter(
+            faculty_id__in=faculty_ids
+        ).select_related('user')
+    }
     trends = []
-
-    for profile in faculty_qs:
-        name = profile.user.get_full_name() or profile.user.username
-
-        #status update freq per day (rolling 7-day)
-        status_change_count = StatusHistory.objects.filter(
-            faculty=profile,
-            changed_at__gte=window_start,
-        ).count()
-        updates_per_day = round(status_change_count / 7, 1)
-
-        last_update_row = StatusHistory.objects.filter(faculty=profile).order_by('-changed_at').first()
-        last_update_display = f"{timesince(last_update_row.changed_at)} ago" if last_update_row else "No data"
-
-        #consultation completion rate
-        all_requests = ConsultationRequest.objects.filter(faculty=profile)
-        total_requests = all_requests.count()
-        completed_requests = all_requests.filter(status='completed').count()
-        completion_rate = round((completed_requests / total_requests) * 100) if total_requests else None
-
-        #average response time hrs
-        responded = all_requests.filter(approved_at__isnull=False).annotate(
-            response_time=ExpressionWrapper(
-                F('approved_at') - F('requested_at'), output_field=DurationField()
-            )
-        )
-        avg_response = responded.aggregate(avg=Avg('response_time'))['avg']
-        avg_response_hours = round(avg_response.total_seconds() / 3600, 1) if avg_response else None
-
-        #availability rate (rolling 7-day)
-        availability_rate = calculate_availability_rate(profile, window_start)
-
+    for item in analytics['items']:
+        faculty_id = item['faculty_key'].removeprefix('faculty:')
+        profile = profiles_by_id.get(faculty_id)
+        if profile is None:
+            continue
+        last_update_at = parse_datetime(item['last_update_at']) if item['last_update_at'] else None
         trends.append({
-            'name': name,
-            'updates_per_day': updates_per_day,
-            'last_update_display': last_update_display,
-            'completion_rate': completion_rate,
-            'avg_response_hours': avg_response_hours,
-            'availability_rate': availability_rate,
+            'name': profile.user.get_full_name() or profile.user.username,
+            'updates_per_day': item['updates_per_day'],
+            'last_update_display': f"{timesince(last_update_at)} ago" if last_update_at else "No data",
+            'completion_rate': item['completion_rate_percent'],
+            'avg_response_hours': item['average_approval_response_hours'],
+            'availability_rate': item['availability_rate_percent'],
         })
 
     
@@ -676,62 +587,21 @@ def faculty_trends(request):
     start_x = 100
     chart_bars = []
     for i, t in enumerate(trends):
-        rate = t['availability_rate'] or 0
-        height = round((rate / 100) * max_bar_height)
+        rate = t['availability_rate']
+        height = round((rate / 100) * max_bar_height) if rate is not None else 0
         chart_bars.append({
             'x': start_x + i * gap,
             'y': baseline_y - height,
             'height': height,
             'label': t['name'].split()[0] if t['name'] else '',
             'rate': rate,
+            'has_data': rate is not None,
         })
 
     return render(request, 'depthead/facultyTrends.html', {
         'trends': trends,
         'chart_bars': chart_bars,
     })
-
-
-def calculate_availability_rate(profile, window_start):
-    now = timezone.now()
-
-    carry_in = StatusHistory.objects.filter(
-        faculty=profile,
-        changed_at__lt=window_start,
-    ).order_by('-changed_at').first()
-
-    rows = list(StatusHistory.objects.filter(
-        faculty=profile,
-        changed_at__gte=window_start,
-    ).order_by('changed_at'))
-
-    if not rows and not carry_in:
-        return None
-
-    timeline = []
-    if carry_in:
-        timeline.append((window_start, carry_in.status))
-    for row in rows:
-        timeline.append((row.changed_at, row.status))
-
-    if not timeline:
-        return None
-
-    total_seconds = 0
-    available_seconds = 0
-    for i, (start, status) in enumerate(timeline):
-        end = timeline[i + 1][0] if i + 1 < len(timeline) else now
-        duration = (end - start).total_seconds()
-        if duration < 0:
-            continue
-        total_seconds += duration
-        if status == 'available':
-            available_seconds += duration
-
-    if total_seconds == 0:
-        return None
-
-    return round((available_seconds / total_seconds) * 100)
 
 
 @login_required

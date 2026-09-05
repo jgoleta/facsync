@@ -6,6 +6,7 @@ app_name = 'depthead'
 urlpatterns = [
     path('', views.admin_dashboard, name='admin_dashboard'),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('api/ai-insights/', views.ai_insights_api, name='ai_insights_api'),
     path('adminDashboard', views.admin_dashboard, name='admin_dashboard_legacy'),
     path('adminFaculty', views.admin_faculty, name='admin_faculty'),
     path('student-behavior/', views.student_behavior, name='student_behavior'),

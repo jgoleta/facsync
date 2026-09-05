@@ -6,6 +6,8 @@ configured development/production PostgreSQL database.
 
 from .settings import *  # noqa: F403
 
+GEMINI_API_KEY = ""
+
 
 DATABASES = {
     "default": {
@@ -19,4 +21,3 @@ PASSWORD_HASHERS = [
 ]
 
 EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
-
