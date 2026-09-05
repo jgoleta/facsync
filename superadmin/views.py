@@ -5,10 +5,17 @@ from core.decorators import role_required
 from django.contrib import messages
 from django.http import JsonResponse
 from core.colleges import get_college_choices
+from core.faculty import mark_inactive_faculty
 from .forms import DeptHeadInviteForm, FacultySuperInviteForm
-from core.models import User, College
+from core.models import User, College, FacultyInvite
 from core.forms import CollegeForm
-from core.services import send_depthead_invite_email, send_depthead_deactivated_email
+from core.services import (
+    send_depthead_invite_email,
+    send_depthead_deactivated_email,
+    send_faculty_approved_email,
+    send_faculty_invite_email,
+    send_faculty_removed_email,
+)
 from faculty.models import FacultyProfile, ConsultationRequest
 
 @login_required
@@ -132,10 +139,18 @@ def manage_admins(request):
     })
 
 @login_required
+@role_required('superadmin')
 def manage_faculty(request):
-    faculty_accounts = User.objects.filter(role='faculty')
+    faculty_users = list(User.objects.filter(
+        role='faculty',
+    ).select_related('faculty_profile').order_by(
+        'college', 'first_name', 'last_name', 'username'
+    ))
+    mark_inactive_faculty(faculty_users)
+
     return render(request, 'superadmin/manageFaculty.html', {
-        'faculty_accounts': faculty_accounts,
+        'pending_faculty': [u for u in faculty_users if u.account_status == 'pending'],
+        'active_faculty': [u for u in faculty_users if u.account_status == 'active'],
         'college_choices': get_college_choices(),
     })
 
@@ -198,15 +213,37 @@ def delete_college(request, college_id):
 
 
 @login_required
+@role_required('superadmin')
 def invite_faculty_superadmin(request):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
-        form = FacultySuperInviteForm(request.POST)
+        requested_email = request.POST.get('email', '').strip()
+        used_invite = FacultyInvite.objects.filter(
+            email__iexact=requested_email,
+            used=True,
+        ).first()
+        form = FacultySuperInviteForm(request.POST, instance=used_invite)
         if form.is_valid():
             invite = form.save(commit=False)
             invite.invited_by = request.user
+            invite.used = False
             invite.save()
+            send_faculty_invite_email(invite.email, invite.college)
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': f"Invitation created for {invite.email}.",
+                }, status=201)
             messages.success(request, f"Invitation created for {invite.email}.")
         else:
+            errors = ' '.join(
+                error for error_list in form.errors.values() for error in error_list
+            )
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'error': errors or 'Unable to create the faculty invitation.',
+                }, status=400)
             for error_list in form.errors.values():
                 for error in error_list:
                     messages.error(request, error)
@@ -214,11 +251,49 @@ def invite_faculty_superadmin(request):
 
 
 @login_required
+@role_required('superadmin')
+def approve_faculty_superadmin(request, user_id):
+    faculty_user = get_object_or_404(
+        User, id=user_id, role='faculty', account_status='pending'
+    )
+    if request.method == 'POST':
+        faculty_user.account_status = 'active'
+        faculty_user.save()
+        send_faculty_approved_email(faculty_user)
+        return JsonResponse({
+            'success': True,
+            'message': f"{faculty_user.get_full_name() or faculty_user.username} approved.",
+        })
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+
+@login_required
+@role_required('superadmin')
+def decline_faculty_superadmin(request, user_id):
+    faculty_user = get_object_or_404(
+        User, id=user_id, role='faculty', account_status='pending'
+    )
+    if request.method == 'POST':
+        faculty_user.account_status = 'declined'
+        faculty_user.save()
+        return JsonResponse({
+            'success': True,
+            'message': f"{faculty_user.get_full_name() or faculty_user.username} declined.",
+        })
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+
+@login_required
+@role_required('superadmin')
 def remove_faculty_superadmin(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty')
+    faculty_user = get_object_or_404(
+        User, id=user_id, role='faculty', account_status='active'
+    )
     if request.method == 'POST':
         name = faculty_user.get_full_name() or faculty_user.username
+        email = faculty_user.email
         faculty_user.delete()
+        send_faculty_removed_email(email, name)
         return JsonResponse({'success': True, 'message': f"{name} removed."})
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
