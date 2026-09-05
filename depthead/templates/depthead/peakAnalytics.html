@@ -24,7 +24,7 @@
 
             <div class="analytics-grid">
                 <div class="chart-card">
-                    <h3>Consultation Volume by Hour</h3>
+                    <h3>Completed Consultations by Scheduled Hour</h3>
                     <div class="chart-graphic" role="img" aria-label="Consultation volume by hour chart">
                         <svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg">
                             <g stroke="#eef2f7" stroke-width="1">
@@ -36,7 +36,7 @@
                             </g>
                             {% for bar in chart_bars %}
                             <rect x="{{ bar.x }}" y="{{ bar.y }}" width="24" height="{{ bar.height }}" rx="5" fill="#2563eb">
-                                <title>{{ bar.label }}: {{ bar.count }} requests</title>
+                                <title>{{ bar.label }}: {{ bar.count }} completed consultations</title>
                             </rect>
                             {% if bar.count > 0 %}
                             <text x="{{ bar.x|add:12 }}" y="{{ bar.y|add:-6 }}" font-family="Segoe UI, Arial, sans-serif" font-size="10"
@@ -52,11 +52,11 @@
                             </g>
                         </svg>
                     </div>
-                    <p class="chart-caption">Peak hour: {{ peak_hour_label }} ({{ peak_hour_count }} requests)</p>
+                    <p class="chart-caption">Peak scheduled hour: {{ peak_hour_label }} ({{ peak_hour_count }} completed)</p>
                 </div>
                 
                 <div class="chart-card">
-                    <h3>Consultation Distribution by Day</h3>
+                    <h3>Completed Consultations by Scheduled Day</h3>
                     <div class="pie-chart-wrapper">
                         <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" class="pie-svg">
                             {% for slice in pie_slices %}
@@ -75,16 +75,15 @@
                             {% endfor %}
                         </ul>
                     </div>
-                    <p class="chart-caption">Peak day: {{ peak_day_label }} ({{ peak_day_count }} requests)</p>
+                    <p class="chart-caption">Peak scheduled day: {{ peak_day_label }} ({{ peak_day_count }} completed)</p>
                 </div>
                 <div class="chart-card ratio-card">
-                    <h3>Supply-Demand Gap</h3>
+                    <h3>Capacity Analytics</h3>
                     <div class="ratio-display">
-                        <span class="ratio-value">{{ today_request_count }}:{{ available_faculty_count }}</span>
+                        <span class="ratio-value">Not available</span>
                     </div>
                     <div class="ratio-labels">
-                        <span>{{ today_request_count }} student requests today</span>
-                        <span>{{ available_faculty_count }} faculty available now</span>
+                        <span>True supply-demand gap and utilization require explicit consultation slots and operating hours.</span>
                     </div>
                 </div>
                 <div class="table-card">

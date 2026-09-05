@@ -5,3 +5,5 @@ python-dotenv
 django-allauth
 requests
 PyJWT
+google-genai
+pydantic
