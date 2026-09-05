@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_management.css' %}" />
 </head>
 
-<body>
+<body class="college-head-palette">
     <div class="admin-shell">
         <aside class="sidebar">
             <div class="sidebar-header">
@@ -55,13 +55,26 @@
         <main class="main-content">
             <header class="main-header with-action">
                 <div>
+                    <p class="page-kicker">System administration</p>
                     <h1>Manage Colleges</h1>
                     <p>Add or remove university colleges.</p>
                 </div>
-                <button type="button" class="btn-primary" id="openAddCollegeModal">Add New College</button>
             </header>
 
             <div class="management-table-wrapper">
+                <div class="management-table-header">
+                    <div>
+                        <p class="section-kicker">University directory</p>
+                        <h2>Colleges</h2>
+                    </div>
+                    <div class="management-table-header-actions">
+                        <button type="button" class="btn-primary header-action" id="openAddCollegeModal">
+                            <span class="header-action-icon" aria-hidden="true">+</span>
+                            <span>Add New College</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-scroll">
                 <table>
                     <thead>
                         <tr>
@@ -94,11 +107,12 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4">No colleges yet.</td>
+                            <td colspan="4" class="empty-state">No colleges yet.</td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
             </div>
         </main>
     </div>
@@ -106,21 +120,26 @@
     <!-- Add College Modal -->
     <div id="addCollegeModal" class="modal-overlay hidden">
         <div class="modal">
-            <h2>Add New College</h2>
-            <form method="post" action="{% url 'superadmin:create_college' %}" class="settings-form">
+            <div class="modal-header">
+                <div>
+                    <h2>Add New College</h2>
+                    <p>Register a college in the university directory.</p>
+                </div>
+            </div>
+            <form method="post" action="{% url 'superadmin:create_college' %}" class="settings-form modal-form">
                 {% csrf_token %}
-                <div class="form-group">
+                <div class="form-group modal-form-group">
                     <label for="add-college-name">College Name</label>
                     <input type="text" id="add-college-name" name="name" required
                         placeholder="e.g. College of Communication Studies">
                 </div>
-                <div class="form-group">
+                <div class="form-group modal-form-group">
                     <label for="add-college-description">Description (optional)</label>
                     <textarea id="add-college-description" name="description"></textarea>
                 </div>
-                <div class="form-actions">
+                <div class="form-actions modal-actions">
                     <button type="button" class="btn-secondary" id="closeAddCollegeModal">Cancel</button>
-                    <button type="submit" class="primary-button">Add College</button>
+                    <button type="submit" class="btn-primary">Add College</button>
                 </div>
             </form>
         </div>
