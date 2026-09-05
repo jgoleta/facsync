@@ -15,6 +15,7 @@ from django.db import transaction
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from core.services import notify_college_users, send_faculty_invite_email, send_faculty_approved_email, send_faculty_removed_email
+from core.faculty import mark_inactive_faculty
 from django.db.models import Count, Avg, F, ExpressionWrapper, DurationField
 from django.db.models.functions import ExtractHour, ExtractWeekDay, TruncMonth
 from datetime import timedelta, date
@@ -163,15 +164,12 @@ def admin_dashboard(request):
 @login_required
 @role_required('depthead')
 def admin_faculty(request):
-    inactivity_threshold = timezone.now() - timedelta(days=30)
-
     faculty_users = list(User.objects.filter(
         role='faculty',
         college__iexact=request.user.college,
     ).select_related('faculty_profile').order_by('first_name', 'last_name', 'username'))
 
-    for user in faculty_users:
-        user.is_inactive = user.last_login is None or user.last_login < inactivity_threshold
+    mark_inactive_faculty(faculty_users)
 
     return render(request, 'depthead/adminFaculty.html', {
         'pending_faculty': [u for u in faculty_users if u.account_status == 'pending'],
