@@ -1,0 +1,74 @@
+<!doctype html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Faculty Monitoring</title>
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_monitoring.css' %}?v=20260822-monitoring-ui-2">
+</head>
+
+<body>
+    <div class="admin-shell">
+        {% include 'depthead/partials/sidebar.html' %}
+
+        <main class="main-content">
+            <header class="main-header monitoring-header">
+                <div>
+                    <p class="page-kicker">College operations ({{ request.user.college_name }})</p>
+                    <h1>Faculty Monitoring</h1>
+                    <p>Real-time status of all faculty in your college.</p>
+                </div>
+                <div class="monitoring-live-indicator">
+                    <span class="live-dot"></span>
+                    <span>Live monitoring</span>
+                    <strong id="monitoringLiveCount">{{ faculty_list|length }}</strong>
+                </div>
+            </header>
+
+            <div class="monitoring-toolbar">
+                <div>
+                    <span class="toolbar-label">Current status</span>
+                    <span class="toolbar-description">Availability updates from faculty calendars and status settings.</span>
+                </div>
+                <div class="status-legend" aria-label="Status legend">
+                    <span><i class="legend-dot available"></i>Available</span>
+                    <span><i class="legend-dot busy"></i>Busy</span>
+                    <span><i class="legend-dot virtual"></i>Virtual Only</span>
+                    <span><i class="legend-dot on-leave"></i>On Leave</span>
+                    <span><i class="legend-dot unavailable"></i>Unavailable</span>
+                </div>
+            </div>
+
+            <div class="monitoring-grid" id="monitoringGrid" data-refresh-url="{% url 'depthead:faculty_monitoring_data' %}">
+                {% for item in faculty_list %}
+                <div class="faculty-card {{ item.status_class }}">
+                    <div class="faculty-avatar">{{ item.name|first|upper }}</div>
+                    <div class="card-header">
+                        <div>
+                            <p class="faculty-label">Faculty member</p>
+                            <h4>{{ item.name }}</h4>
+                        </div>
+                        <span class="status-badge">{{ item.status_label }}</span>
+                    </div>
+                    {% if item.is_inactive %}
+                    <span class="inactive-badge">Inactive — no login in 30+ days</span>
+                    {% endif %}
+                    <div class="faculty-card-footer">
+                        <span class="status-line"><i></i>Currently {{ item.status_label|lower }}</span>
+                        <span class="updated-time">{% if item.updated_at %}{{ item.updated_at|timesince }} ago{% else %}No update yet{% endif %}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="empty-state">No registered faculty in your college yet.</p>
+                {% endfor %}
+            </div>
+        </main>
+    </div>
+    <script src="{% static 'depthead/js/facultyMonitoring.js' %}"></script>
+</body>
+</html>

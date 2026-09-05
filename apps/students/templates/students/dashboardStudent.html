@@ -1,0 +1,81 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20260903-single-row-nav">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Student Dashboard - Faculty</title>
+    <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}?v=20260819-status-colors">
+    <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20260903-status-labels">
+    <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+</head>
+
+<body class="student-dashboard">
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="{% url 'core:landing' %}" class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">
+                {% include 'components/_notification_nav.html' %}
+                <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
+                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+            </nav>
+        </header>
+
+        <main class="container dashboard-container">
+            <section class="dashboard-hero">
+                <div class="hero-copy">
+                    <p class="eyebrow">Student dashboard</p>
+                    <p>Check live availability, browse schedules, and get notified when a faculty member's status changes.</p>
+                </div>
+            </section>
+
+            <section class="availability-panel" aria-labelledby="availability-title">
+                <header class="toolbar">
+                    <div class="section-heading">
+                        <h2 id="availability-title">Faculty availability</h2>
+                        <p>Use the filters to find the right person and view their schedule.</p>
+                    </div>
+
+                    <div class="controls" aria-label="Filter faculty">
+                        <label class="control">
+                            <span class="control-label">College</span>
+                            <select id="collegeFilter">
+                                <option value="all">All Colleges</option>
+                            </select>
+                        </label>
+
+                        <label class="control toggle">
+                            <input type="checkbox" id="availableToggle" />
+                            <span class="toggle-track" aria-hidden="true"><span></span></span>
+                            <span>Available now</span>
+                        </label>
+
+                        <label class="control search">
+                            <span class="control-label">Search</span>
+                            <input id="searchInput" type="search" placeholder="Search faculty by name" />
+                        </label>
+                    </div>
+                </header>
+
+            <div id="collegeStatusBanner" class="hidden"></div>
+
+            <section id="facultyGrid" class="grid" aria-live="polite" aria-label="Faculty availability cards">
+            </section>
+            </section>
+        </main>
+    </div>
+
+    {{ faculty_directory|json_script:"faculty-directory" }}
+    {{ closed_colleges|json_script:"closed-colleges" }}
+
+    <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
+    <script src="{% static 'students/js/dashboardStudent.js' %}?v=20260903-status-labels"></script>
+    <script src="{% static 'js/notifications.js' %}"></script>
+</body>
+
+</html>

@@ -1,0 +1,219 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20260903-single-row-nav">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Faculty Dashboard</title>
+    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260903-queue-style-update">
+    <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+</head>
+
+<body>
+    <div class="hidden">{% csrf_token %}</div>
+    <div class="page-shell">
+        <header class="topbar">
+            <a class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">
+                {% include 'components/_notification_nav.html' %}
+                <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
+                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+            </nav>
+        </header>
+
+        <main class="dashboard-grid">
+            <div class="dashboard-card">
+                <div class="welcome-header">
+                    <span class="eyebrow">Faculty workspace</span>
+                    <h1>Welcome, {{ request.user.get_full_name|default:request.user.username }}!</h1>
+                    <p>Manage your availability and student consultations.</p>
+                </div>
+
+                <div class="card-section">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Update Your Status</h2>
+                            <p>Choose what students should see on the live dashboard.</p>
+                        </div>
+                    </div>
+                    <div class="status-buttons">
+                        <button class="status-btn available {% if current_status == 'available' %}active{% endif %}" data-status="available" aria-pressed="{% if current_status == 'available' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">✓</span><span>Available</span></button>
+                        <button class="status-btn busy {% if current_status == 'busy' %}active{% endif %}" data-status="busy" aria-pressed="{% if current_status == 'busy' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">◷</span><span>Busy</span></button>
+                        <button class="status-btn virtual {% if current_status == 'virtual_only' %}active{% endif %}" data-status="virtual" aria-pressed="{% if current_status == 'virtual_only' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">⌁</span><span>Virtual Only</span></button>
+                        <button class="status-btn on-leave {% if current_status == 'on_leave' %}active{% endif %}" data-status="on-leave" aria-pressed="{% if current_status == 'on_leave' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">☕</span><span>On Leave</span></button>
+                        <button class="status-btn unavailable {% if current_status == 'unavailable' %}active{% endif %}" data-status="unavailable" aria-pressed="{% if current_status == 'unavailable' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">×</span><span>Unavailable</span></button>
+                    </div>
+                    <div class="status-note">
+                        <label for="statusMessage">Set a status note</label>
+                        <input type="text" id="statusMessage" value="{{ faculty_profile.status_note|default:'' }}" placeholder="e.g., In a meeting until 3 PM">
+                    </div>
+                    <div class="status-note status-expiry">
+                        <label for="statusExpiresAt">Keep this status until <span>(optional)</span></label>
+                        <input type="datetime-local" id="statusExpiresAt" data-current-expiry="{{ manual_status_expires_at }}">
+                        <small>After this time, your status automatically becomes Available.</small>
+                    </div>
+                    <div class="status-mode-row">
+                        <span id="statusModeLabel" class="status-mode-label">
+                            {% if manual_status_override %}Manual override is active{% else %}Status follows your calendar{% endif %}
+                        </span>
+                        <button type="button" id="useCalendarStatusBtn" class="btn-secondary {% if not manual_status_override %}hidden{% endif %}">Use calendar status</button>
+                    </div>
+                    <div class="status-update-action">
+                        <button type="button" id="updateStatusBtn" class="btn-primary status-update-btn">
+                            <svg class="status-update-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M20 11a8.1 8.1 0 0 0-14.9-3.8L3 10m0 0V5m0 5h5M4 13a8.1 8.1 0 0 0 14.9 3.8L21 14m0 0v5m0-5h-5" />
+                            </svg>
+                            <span id="updateStatusLabel">Update status</span>
+                        </button>
+                        <p id="statusFeedback" class="status-feedback" role="status" aria-live="polite"></p>
+                    </div>
+                </div>
+
+                <div class="card-section">
+                    <div class="consultation-header">
+                        <div>
+                            <h2>Consultation Requests</h2>
+                            <p>Review and respond to upcoming student requests.</p>
+                        </div>
+                        <div class="consultation-header-actions">
+                            <span class="request-count">{{ consultation_requests|length }} active</span>
+                            <button type="button" id="refreshConsultations" class="refresh-consultations-btn" aria-label="Refresh consultation requests">
+                                <span aria-hidden="true">&#8635;</span> Refresh
+                            </button>
+                            <button type="button" id="openCompletedConsultations" class="completed-history-btn">
+                                Completed ({{ completed_consultations|length }})
+                            </button>
+                        </div>
+                        <div class="consultation-filter">
+                            <label for="consultationStatusFilter">Filter requests</label>
+                            <select id="consultationStatusFilter">
+                                <option value="all">All requests</option>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                            </select>
+                        </div>
+                    </div>
+                    <ul class="consultation-request-list">
+                        {% for consultation in consultation_requests %}
+                        <li class="request-item" data-status="{{ consultation.status }}" data-request-id="{{ consultation.request_id }}">
+                            <div class="request-info">
+                                <span class="consultation-status status-{{ consultation.status }}">{{ consultation.get_status_display }}</span>
+                                <p class="request-time">
+                                    <strong>Date:</strong> {{ consultation.date|date:"F j, Y" }}
+                                    {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
+                                    {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
+                                </p>
+                                <p class="student-name"><strong>Name:</strong> {{ consultation.user.get_full_name|default:consultation.user.username }}</p>
+                                <p class="request-agenda"><strong>Agenda:</strong> {{ consultation.get_agenda_display }}</p>
+                                <p class="request-message"><strong>Message:</strong> {{ consultation.student_message|default:"No message provided." }}</p>
+                            </div>
+                            <div class="request-actions">
+                                {% if consultation.faculty_note %}<p class="faculty-note"><strong>Your Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
+                                {% if consultation.status == 'pending' %}<textarea placeholder="Add an optional note..."></textarea>{% endif %}
+                                <div class="action-buttons">
+                                    {% if consultation.status == 'pending' %}
+                                    <button type="button" class="btn-approve" data-action="approved">Approve</button>
+                                    <button type="button" class="btn-decline" data-action="declined">Decline</button>
+                                    {% elif consultation.status == 'approved' %}
+                                    <button type="button" class="btn-approve" data-action="completed">Mark as Completed</button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </li>
+                        {% empty %}
+                        <li class="request-item empty-request">No consultation requests yet.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="legend-card">
+                <div class="card-section">
+                    <span class="eyebrow">Visible to students</span>
+                    <h2>Your Live Status</h2>
+                    <div id="liveStatusIndicator" class="status-indicator {{ status_css_class }}">
+                        <span id="liveStatusIcon" class="status-icon" aria-hidden="true"></span>
+                        <span id="liveStatusLabel">{{ status_label }}</span>
+                    </div>
+                    <p id="liveStatusNote" class="status-note-display">{{ faculty_profile.status_note|default:'No status note set.' }}</p>
+                </div>
+                <div class="card-section">
+                    <h2>Today's Activity</h2>
+                    <div class="stats-card">
+                        <div class="stat-item">
+                            <span class="stat-value">{{ consultations_today_count }}</span>
+                            <span class="stat-label">Consultations Today</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ pending_consultation_count }}</span>
+                            <span class="stat-label">Awaiting Review</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">{{ approved_consultation_count }}</span>
+                            <span class="stat-label">Approved</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-section">
+                    <div class="card-header dashboard-actions">
+                        <a href="{% url 'faculty:schedule' %}" class="secondary-button">View Schedule</a>
+                        <a href="{% url 'faculty:booking_management' %}" class="secondary-button">View Walk-ins</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="completedConsultationsModal" class="modal-overlay hidden" role="dialog" aria-modal="true"
+        aria-labelledby="completedConsultationsTitle">
+        <div class="modal completed-consultations-modal">
+            <div class="completed-modal-header">
+                <div>
+                    <span class="eyebrow">Consultation history</span>
+                    <h2 id="completedConsultationsTitle">Completed Consultations</h2>
+                    <p>All consultations you have marked as completed.</p>
+                </div>
+                <button type="button" id="closeCompletedConsultations" class="modal-close-btn"
+                    aria-label="Close completed consultations">&times;</button>
+            </div>
+            <ul class="completed-consultation-list">
+                {% for consultation in completed_consultations %}
+                <li class="completed-consultation-item" data-request-id="{{ consultation.request_id }}">
+                    <div class="completed-consultation-topline">
+                        <strong>{{ consultation.user.get_full_name|default:consultation.user.username }}</strong>
+                        <div class="completed-consultation-actions">
+                            <span class="consultation-status status-completed">Completed</span>
+                            <button type="button" class="delete-completed-btn" data-delete-completed aria-label="Delete completed consultation with {{ consultation.user.get_full_name|default:consultation.user.username }}">Delete</button>
+                        </div>
+                    </div>
+                    <p>
+                        {{ consultation.date|date:"F j, Y" }}
+                        {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
+                        {% if consultation.end_time %} – {{ consultation.end_time|time:"g:i A" }}{% endif %}
+                    </p>
+                    <p><strong>Agenda:</strong> {{ consultation.get_agenda_display }}</p>
+                    {% if consultation.student_message %}
+                    <p class="completed-message"><strong>Message:</strong> {{ consultation.student_message }}</p>
+                    {% endif %}
+                    {% if consultation.faculty_note %}
+                    <p class="completed-note"><strong>Your note:</strong> {{ consultation.faculty_note }}</p>
+                    {% endif %}
+                </li>
+                {% empty %}
+                <li class="completed-empty-state">No completed consultations yet.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
+    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260903-status-feedback-cleanup"></script>
+    <script src="{% static 'js/notifications.js' %}"></script>
+</body>
+
+</html>

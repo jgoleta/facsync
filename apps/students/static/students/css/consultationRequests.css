@@ -1,0 +1,641 @@
+/* Consultation-specific status colors; shared theme variables live in css/base.css. */
+:root {
+  --status-approved: #28a745;
+  --status-pending: #ffc107;
+  --status-declined: #dc3545;
+  --status-completed: #6c757d;
+}
+
+.container {
+  width: min(1200px, calc(100% - 32px));
+  max-width: 1200px;
+  margin: 24px auto;
+  padding: 0 0 32px;
+}
+
+.consultation-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(20, 33, 61, 0.06);
+  padding: 24px;
+}
+
+.consultation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.consultation-header h2 {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.filter-control {
+  position: relative;
+}
+
+.filter-control::after {
+  content: '▾';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: var(--muted);
+}
+
+.filter-dropdown {
+  appearance: none;
+  background-color: #fff;
+  border: 1px solid var(--border);
+  padding: 10px 36px 10px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  min-width: 150px;
+}
+
+.consultation-request-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.request-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fbfdff;
+  min-width: 0;
+}
+
+.request-info {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.request-info p {
+  margin: 0 0 8px;
+  color: var(--muted);
+}
+
+.request-info p:last-child {
+  margin-bottom: 0;
+}
+
+.request-info .request-id {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.request-info .faculty-name {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+.request-info .request-message,
+.request-info .faculty-note {
+  font-size: 0.9rem;
+  padding-left: 12px;
+  border-left: 3px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.request-info .request-id {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.request-info .faculty-note strong,
+.request-info .request-message strong {
+  color: var(--text);
+}
+
+.request-status .status-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+  color: #fff;
+}
+
+.status-badge.status-approved {
+  background-color: var(--status-approved);
+}
+.status-badge.status-pending {
+  background-color: var(--status-pending);
+  color: var(--text);
+}
+.status-badge.status-declined {
+  background-color: var(--status-declined);
+}
+.status-badge.status-cancelled {
+  background-color: var(--status-declined);
+}
+.status-badge.status-completed {
+  background-color: var(--status-completed);
+}
+
+.empty-state {
+  padding: 32px 20px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.consultation-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.btn {
+  display: inline-block;
+  text-decoration: none;
+  font-weight: 600;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+  text-align: center;
+}
+
+.return-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  min-width: 150px;
+  background-color: #3b82f6;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: 10px;
+}
+
+.return-btn:hover {
+  background-color: #0b74de;
+}
+
+.consultation-request-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .consultation-request-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1200px) {
+  .consultation-request-list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .consultation-header {
+    flex-direction: row;
+    align-items: center;
+  }
+  .consultation-header h2 {
+    margin-right: auto;
+  }
+}
+
+@media (max-width: 767px) {
+  .container {
+    width: min(100% - 24px, 560px);
+    margin-top: 16px;
+  }
+
+  .consultation-card {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .consultation-header {
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .consultation-header h2 {
+    font-size: 1.35rem;
+  }
+
+  .filter-control,
+  .filter-dropdown,
+  .return-btn {
+    width: 100% !important;
+  }
+
+  .filter-dropdown {
+    min-width: 0;
+  }
+
+  .request-item {
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .request-status {
+    align-self: stretch;
+    display: flex;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 420px) {
+  .topbar {
+    padding: 12px;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .brand {
+    font-size: 1rem;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .nav-links {
+    gap: 4px;
+  }
+
+  .nav-btn {
+    padding: 8px 9px;
+    font-size: 0.85rem;
+  }
+
+  .consultation-card {
+    padding: 12px;
+  }
+
+  .request-item {
+    padding: 13px;
+  }
+}
+
+/* Consultation request page refresh */
+body {
+  background: #f5f8fc;
+}
+
+.container {
+  width: min(1280px, calc(100% - 40px));
+  max-width: none;
+  margin: 32px auto;
+  padding-bottom: 48px;
+}
+
+.page-intro {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  overflow: hidden;
+  margin-bottom: 20px;
+  padding: 30px 32px;
+  border: 1px solid #dce8f6;
+  border-radius: 22px;
+  background: linear-gradient(125deg, #eaf4ff 0%, #ffffff 68%);
+  box-shadow: 0 14px 36px rgba(20, 50, 88, 0.07);
+}
+
+.page-intro::after {
+  content: "";
+  position: absolute;
+  top: -95px;
+  right: 150px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.09);
+}
+
+.page-intro > * {
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--accent);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.page-intro h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  letter-spacing: -0.035em;
+}
+
+.page-intro p {
+  margin: 9px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.return-btn {
+  flex: 0 0 auto;
+  min-width: 170px;
+  min-height: 44px;
+  border-radius: 11px;
+  box-shadow: 0 7px 16px rgba(11, 116, 222, 0.2);
+}
+
+.consultation-card {
+  padding: 26px;
+  border-radius: 22px;
+  box-shadow: 0 16px 40px rgba(20, 50, 88, 0.07);
+}
+
+.consultation-header {
+  flex-direction: row;
+  align-items: flex-end;
+  margin-bottom: 22px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.consultation-header h2 {
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+}
+
+.consultation-header p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.filter-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.filter-control label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.filter-control::after {
+  content: "";
+}
+
+.filter-dropdown {
+  min-width: 165px;
+  min-height: 42px;
+  padding: 9px 12px;
+  border-color: #d4e0ee;
+  border-radius: 10px;
+  background: #fbfdff;
+  outline: none;
+}
+
+.filter-dropdown:focus {
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+}
+
+.consultation-request-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.request-item {
+  position: relative;
+  overflow: hidden;
+  min-height: 270px;
+  padding: 19px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 7px 20px rgba(15, 38, 71, 0.05);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.request-item::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: #94a3b8;
+}
+
+.request-item[data-status="approved"]::before { background: var(--status-approved); }
+.request-item[data-status="pending"]::before { background: var(--status-pending); }
+.request-item[data-status="declined"]::before,
+.request-item[data-status="cancelled"]::before { background: var(--status-declined); }
+.request-item[data-status="completed"]::before { background: var(--status-completed); }
+
+.request-item:hover {
+  border-color: #c8daef;
+  box-shadow: 0 12px 28px rgba(15, 38, 71, 0.09);
+  transform: translateY(-2px);
+}
+
+.request-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 16px;
+  padding-right: 76px;
+}
+
+.faculty-avatar {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #dcecff, #bcd8fa);
+  color: #174f8e;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.faculty-label {
+  display: block;
+  margin-bottom: 2px;
+  color: #8491a6;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.request-info .faculty-name {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+.request-info .request-time {
+  margin-bottom: 14px;
+  padding: 11px 12px;
+  border: 1px solid #dce8f6;
+  border-radius: 11px;
+  background: #f3f8ff;
+  color: #38506d;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.detail-label {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--accent);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.request-info .request-message,
+.request-info .faculty-note {
+  margin-top: 12px;
+  padding: 10px 11px;
+  border: 0;
+  border-radius: 10px;
+  background: #f8fafc;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.request-info .faculty-note {
+  background: #eef6ff;
+}
+
+.request-info .request-id {
+  margin-top: 15px;
+  padding-top: 12px;
+  border-top: 1px dashed #d8e2ef;
+  font-size: 0.7rem;
+}
+
+.request-id span {
+  margin-right: 5px;
+  color: #8491a6;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.request-status {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+}
+
+.request-status .status-badge {
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.empty-state,
+.filtered-empty-state {
+  grid-column: 1 / -1;
+  padding: 48px 20px;
+  border: 1px dashed #c7d6e8;
+  border-radius: 15px;
+  background: #fbfdff;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 1050px) {
+  .consultation-request-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .container {
+    width: min(100% - 24px, 580px);
+    margin-top: 18px;
+  }
+
+  .page-intro {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 22px 20px;
+  }
+
+  .return-btn {
+    width: 100% !important;
+  }
+
+  .consultation-card {
+    padding: 18px;
+  }
+
+  .consultation-header,
+  .filter-control {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .filter-control,
+  .filter-dropdown {
+    width: 100%;
+  }
+
+  .consultation-request-list {
+    grid-template-columns: 1fr;
+  }
+
+  .request-item {
+    min-height: 0;
+  }
+}
+.delete-request-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-top: 12px;
+  padding: 8px;
+  border: 1px solid #b42318;
+  border-radius: 8px;
+  background: #fff;
+  color: #b42318;
+  font: inherit;
+  cursor: pointer;
+}
+
+.delete-request-btn:hover { background: #fff1f0; }
+.delete-request-btn:disabled { opacity: 0.6; cursor: wait; }

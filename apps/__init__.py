@@ -1,0 +1,1 @@
+"""FacSync Django applications."""

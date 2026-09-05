@@ -1,0 +1,168 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20260903-single-row-nav">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Student Home</title>
+    <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}">
+    <link rel="stylesheet" href="{% static 'students/css/homeStudent.css' %}?v=20260903-right-quick-actions">
+    <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="{% url 'core:landing' %}" class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">
+                {% include 'components/_notification_nav.html' %}
+                <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
+                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+            </nav>
+        </header>
+
+        <main class="container">
+            <section class="page-intro">
+                <div class="intro-copy">
+                    <p class="eyebrow">Student Portal</p>
+                    <h1>Welcome, {{ request.user.get_full_name|default:request.user.username }}!</h1>
+                    <p class="intro-text">Access your faculty status, consultation requests, and schedule in one polished hub designed to keep your academic coordination smooth.</p>
+                </div>
+                <div class="intro-visual">
+                    <div class="visual-card">
+                        <span class="visual-chip">Quick summary</span>
+                        <div class="visual-stat">
+                            <span>{{ upcoming_booking_count }}</span>
+                            <small>Upcoming bookings</small>
+                        </div>
+                        <div class="visual-stat">
+                            <span>{{ available_faculty_count }}</span>
+                            <small>Faculty available now</small>
+                        </div>
+                        {% if student_college %}<small class="summary-college">{{ student_college }}</small>{% endif %}
+                    </div>
+                </div>
+            </section>
+
+            <section class="announcement-banner">
+                <div class="announcement-icon">!</div>
+                <div>
+                    <p class="announcement-title">Today's Announcement</p>
+                    {% if college_announcement %}
+                    <p class="announcement-text">{{ college_announcement.message }}</p>
+                    {% else %}
+                    <p class="announcement-text">There are no announcements for your college today.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <div class="student-home-content">
+            <section class="student-home-grid">
+                <div class="grid-header">
+                    <h2>Quick actions</h2>
+                    <p class="grid-description">Jump to the tools you use most to manage your student consultations and schedule.</p>
+                </div>
+                <a href="{% url 'students:dashboard' %}" class="nav-card">
+                    <div class="nav-card-top">
+                        <span class="nav-card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                        <h2>Dashboard</h2>
+                    </div>
+                    <p>See current faculty status, availability, and recent activity in one place.</p>
+                    <div class="nav-card-footer">
+                        Continue
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                </a>
+                <a href="{% url 'students:consultation_requests' %}" class="nav-card">
+                    <div class="nav-card-top">
+                        <span class="nav-card-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                                <path d="M8 6h8M8 10h8M8 14h4" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M5 4h14a1 1 0 011 1v14a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1z" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </span>
+                        <h2>Consultation Requests</h2>
+                    </div>
+                    <p>Review the status of your pending and approved consultation requests.</p>
+                    <div class="nav-card-footer">
+                        View requests
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                            <path d="M9 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                </a>
+            </section>
+
+            <section class="student-services" aria-labelledby="studentServicesTitle">
+                <div class="services-header">
+                    <div>
+                        <h2 id="studentServicesTitle">Student services</h2>
+                    </div>
+                    <p>Quick contact details for common academic and student-support concerns.</p>
+                </div>
+                <div class="services-grid">
+                    <article class="service-card">
+                        <div class="service-card-heading">
+                            <span class="service-icon" aria-hidden="true">R</span>
+                            <div><h3>College Registrar</h3><p>Records, enrollment, and academic documents</p></div>
+                        </div>
+                        <dl class="service-details">
+                            <div><dt>Email</dt><dd><a href="mailto:cro@gbox.adnu.edu.ph">cro@gbox.adnu.edu.ph</a></dd></div>
+                            <div><dt>Location</dt><dd>Main Campus · Trunkline local 2058</dd></div>
+                        </dl>
+                        <a class="service-link" href="https://www.adnu.edu.ph/contact-us-2/" target="_blank" rel="noopener noreferrer">View contact directory <span aria-hidden="true">→</span></a>
+                    </article>
+                    <article class="service-card">
+                        <div class="service-card-heading">
+                            <span class="service-icon" aria-hidden="true">A</span>
+                            <div><h3>Admissions and Aid</h3><p>Admissions, scholarships, and student aid</p></div>
+                        </div>
+                        <dl class="service-details">
+                            <div><dt>Email</dt><dd><a href="mailto:caao@gbox.adnu.edu.ph">caao@gbox.adnu.edu.ph</a></dd></div>
+                            <div><dt>Location</dt><dd>Ateneo Avenue, Bagumbayan Sur · Local 2312</dd></div>
+                        </dl>
+                        <a class="service-link" href="https://www.adnu.edu.ph/admissions/" target="_blank" rel="noopener noreferrer">Open admissions page <span aria-hidden="true">→</span></a>
+                    </article>
+                    <article class="service-card">
+                        <div class="service-card-heading">
+                            <span class="service-icon" aria-hidden="true">G</span>
+                            <div><h3>College Guidance Center</h3><p>Counseling, well-being, and career support</p></div>
+                        </div>
+                        <dl class="service-details">
+                            <div><dt>Email</dt><dd><a href="mailto:info@gbox.adnu.edu.ph">info@gbox.adnu.edu.ph</a></dd></div>
+                            <div><dt>Location</dt><dd>Ateneo Avenue, Naga City · (054) 881-2368</dd></div>
+                        </dl>
+                        <a class="service-link" href="https://www.adnu.edu.ph/college-guidance-center/" target="_blank" rel="noopener noreferrer">View guidance services <span aria-hidden="true">→</span></a>
+                    </article>
+                    <article class="service-card">
+                        <div class="service-card-heading">
+                            <span class="service-icon" aria-hidden="true">L</span>
+                            <div><h3>University Library</h3><p>Research help, borrowing, and online resources</p></div>
+                        </div>
+                        <dl class="service-details">
+                            <div><dt>Email</dt><dd><a href="mailto:referencelib@gbox.adnu.edu.ph">referencelib@gbox.adnu.edu.ph</a></dd></div>
+                            <div><dt>Location</dt><dd>James J. O'Brien, S.J. Library · Ateneo Avenue</dd></div>
+                        </dl>
+                        <a class="service-link" href="https://adnulib.adnu.edu.ph/" target="_blank" rel="noopener noreferrer">Open library services <span aria-hidden="true">→</span></a>
+                    </article>
+                </div>
+            </section>
+            </div>
+        </main>
+    </div>
+    <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
+    <script src="{% static 'js/notifications.js' %}"></script>
+</body>
+
+</html>

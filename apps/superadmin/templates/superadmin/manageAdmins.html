@@ -1,0 +1,218 @@
+<!doctype html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Manage Admins</title>
+    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}?v=20260903-responsive-nav" />
+    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_management.css' %}" />
+</head>
+
+<body class="college-head-palette">
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <a href="{% url 'superadmin:superadmin_dashboard' %}" class="brand">
+                    <span class="brand-mark">S</span>
+                    <span>FacSync Super Admin</span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{% url 'superadmin:superadmin_dashboard' %}" class="nav-item">
+                    <span class="nav-icon">👑</span>
+                    <span>System Overview</span>
+                </a>
+                <a href="{% url 'superadmin:manage_colleges' %}" class="nav-item">
+                    <span class="nav-icon">🏢</span>
+                    <span>Manage Colleges</span>
+                </a>
+                <a href="{% url 'superadmin:manage_admins' %}" class="nav-item active">
+                    <span class="nav-icon">👤</span>
+                    <span>Manage Admins</span>
+                </a>
+                <a href="{% url 'superadmin:manage_faculty' %}" class="nav-item">
+                    <span class="nav-icon">👩‍🏫</span>
+                    <span>Manage Faculty</span>
+                </a>
+                <a href="{% url 'superadmin:manage_students' %}" class="nav-item">
+                    <span class="nav-icon">🎓</span>
+                    <span>Manage Students</span>
+                </a>
+            </nav>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-footer">
+                <a href="{% url 'account_logout' %}" class="nav-item">
+                    <span class="nav-icon">↩️</span>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="main-header with-action">
+                <div>
+                    <p class="page-kicker">System administration</p>
+                    <h1>Manage Admin Accounts</h1>
+                    <p>
+                        Manage accounts for College Heads and Support Office staff.
+                    </p>
+                </div>
+            </header>
+            {% if messages %}
+            {% for message in messages %}
+            {% if forloop.last %}
+            <p class="message-{{ message.tags }}">{{ message }}</p>
+            {% endif %}
+            {% endfor %}
+            {% endif %}
+
+            <div class="management-table-wrapper">
+                <div class="management-table-header">
+                    <div>
+                        <p class="section-kicker">Administrative directory</p>
+                        <h2>College Head Accounts</h2>
+                    </div>
+                    <div class="management-table-header-actions">
+                        <button id="openInviteDeptheadBtn" class="btn-primary header-action" type="button">
+                            <span class="header-action-icon" aria-hidden="true">+</span>
+                            <span>Add New Admin</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>College</th>
+                            <th>Title</th>
+                            <th>Account Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for admin in depthead_accounts %}
+                        <tr data-depthead-id="{{ admin.id }}">
+                            <td class="depthead-name">{{ admin.get_full_name|default:admin.username }}</td>
+                            <td class="depthead-email">{{ admin.email }}</td>
+                            <td class="depthead-college">{{ admin.college }}</td>
+                            <td class="depthead-title">{{ admin.get_title_display|default:"—" }}</td>
+                            <td class="depthead-status">
+                                <span class="status-pill status-{{ admin.account_status }}">{{ admin.get_account_status_display }}</span>
+                            </td>
+                            <td class="actions">
+                                <button type="button" class="edit-depthead-btn" data-id="{{ admin.id }}" data-role="{{ admin.role }}"
+                                    data-college="{{ admin.college }}" data-title="{{ admin.title }}"
+                                    data-status="{{ admin.account_status }}">Edit</button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="empty-state">No College Head accounts yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div class="modal-overlay hidden" id="inviteDeptheadModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inviteDeptheadModalTitle">
+            <div class="modal-header">
+                <div>
+                    <h2 id="inviteDeptheadModalTitle">Add College Head</h2>
+                    <p>Pre-register a College Head email for instant activation on first login.</p>
+                </div>
+                <button type="button" class="modal-close" id="closeInviteDeptheadModal">×</button>
+            </div>
+            <form method="post" action="{% url 'superadmin:invite_depthead' %}" class="modal-form">
+                {% csrf_token %}
+                <div class="modal-form-group">
+                    <label for="deptheadEmail">Email</label>
+                    <input id="deptheadEmail" name="email" type="email" placeholder="depthead@adnu.edu.ph" required>
+                </div>
+                <div class="modal-form-group">
+                    <label for="deptheadCollege">College</label>
+                    <select id="deptheadCollege" name="college" required>
+                        {% for value, label in dept_head_form.college.field.choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label for="deptheadTitle">Title</label>
+                    <select id="deptheadTitle" name="title" required>
+                        {% for value, label in title_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="cancelInviteDeptheadModal">Cancel</button>
+                    <button type="submit" class="btn-primary">Send Invite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="editDeptheadModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <h2>Edit College Head</h2>
+                    <p>Update this administrator's assignment and account access.</p>
+                </div>
+            </div>
+            <form method="post" id="editDeptheadForm" class="settings-form modal-form">
+                {% csrf_token %}
+                <div class="modal-form-group">
+                    <label for="edit-depthead-role">Role</label>
+                    <select id="edit-depthead-role" name="role" required>
+                        {% for value, label in role_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label for="edit-depthead-college">College</label>
+                    <select id="edit-depthead-college" name="college" required>
+                        {% for value, label in dept_head_form.college.field.choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label for="edit-depthead-title">Title</label>
+                    <select id="edit-depthead-title" name="title" required>
+                        {% for value, label in title_choices %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-form-group">
+                    <label for="edit-depthead-status">Account Status</label>
+                    <select id="edit-depthead-status" name="account_status" required>
+                        <option value="active">Active</option>
+                        <option value="deactivated">Deactivated</option>
+                    </select>
+                </div>
+                <div class="form-actions modal-actions">
+                    <button type="button" class="btn-secondary" id="closeEditDeptheadModal">Cancel</button>
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+    
+    <script src="{% static 'superadmin/js/manageAdmins.js' %}"></script>
+</body>
+
+</html>
