@@ -1,0 +1,150 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20260903-single-row-nav">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FacSync | Landing Page</title>
+    <link rel="stylesheet" href="{% static 'core/css/landingPage.css' %}?v=20260820-sticky-nav">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="#" class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">
+                <a href="{% url 'core:login' %}" class="nav-btn">Get Started</a>
+            </nav>
+        </header>
+
+        <main>
+            <section class="hero">
+                <div class="hero-copy">
+                    <h1>Keep every class, meeting, and update in sync.</h1>
+                    <p>FacSync brings your college into one polished workspace with clear schedules, shared
+                        communication, and quick access to insights.</p>
+                    <div class="hero-actions">
+                        <a href="{% url 'core:dashboard_public' %}" class="btn btn-primary">View Dashboard</a>
+                        <a href="#features" class="btn btn-secondary">Explore Features</a>
+                    </div>
+                </div>
+
+                <div class="hero-card">
+                    <div class="card-panel">
+                        <div class="mini-stat">
+                            <span>What can a student do with FacSync?</span>
+                        </div>
+                        <div class="mini-grid">
+                            <div>View Faculty Schedule</div>
+                            <div>Live Status Update</div>
+                            <div>Book Consultation</div>
+                            <div>Receive Consultation Alerts</div>
+                        </div>
+                    </div>
+                    <div class="card-panel">
+                        <div class="mini-stat">
+                            <span>What can a faculty member do with FacSync?</span>
+                        </div>
+                        <div class="mini-grid">
+                            <div>Manage Schedule</div>
+                            <div>Auto Status Update</div>
+                            <div>Manage Consultation Requests</div>
+                            <div>Receive Consultation Alerts</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="status-showcase">
+                <div class="section-heading">
+                    <p class="eyebrow">Live Status</p>
+                    <h2>Know Faculty Availability Instantly</h2>
+                </div>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="status-dot available"></span>
+                        <h3>Available</h3>
+                        <p>In the office and open for consultations or questions.</p>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-dot busy"></span>
+                        <h3>Busy</h3>
+                        <p>Currently in a meeting, class, or otherwise occupied.</p>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-dot virtual"></span>
+                        <h3>Virtual Only</h3>
+                        <p>Available for online meetings via video call or chat.</p>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-dot on-leave"></span>
+                        <h3>On Leave</h3>
+                        <p>Away from the office for an extended period.</p>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-dot unavailable"></span>
+                        <h3>Unavailable</h3>
+                        <p>Not on campus or otherwise unavailable for contact.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="features" id="features">
+                <div class="section-heading">
+                    <p class="eyebrow">Why choose FacSync</p>
+                    <h2>Everything you need to manage faculty workflow with confidence.</h2>
+                </div>
+
+                <div class="feature-grid">
+                    <article class="feature-card">
+                        <h3>Status updates happen instantly</h3>
+                        <p>When a faculty member updates their status, students see it right away.</p>
+                    </article>
+                    <article class="feature-card">
+                        <h3>See when they last updated</h3>
+                        <p>A timestamp shows exactly when the status was last updated, no guessing.</p>
+                    </article>
+                    <article class="feature-card">
+                        <h3>Get alerted when they become available</h3>
+                        <p>Push notifications tell you the moment a professor's status changes to available.</p>
+                    </article>
+                    <article class="feature-card">
+                        <h3>Filter by college</h3>
+                        <p>Find the right professor without scrolling through everyone on campus.</p>
+                    </article>
+                    <article class="feature-card">
+                        <h3>Professors can add a quick note</h3>
+                        <p>A brief message explains why they are busy or what they are doing.</p>
+                    </article>
+                    <article class="feature-card">
+                        <h3>Students can add a quick note</h3>
+                        <p>Tell them why you want to meet using a quick note.</p>
+                    </article>
+                </div>
+            </section>
+
+            <section class="cta">
+                <h2>Ready to simplify your faculty management?</h2>
+                <p>Launch your workspace in minutes and keep your team aligned.</p>
+                <a href="{% url 'core:register' %}" class="btn btn-primary btn-large">Sign Up Now</a>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div>
+                <p>© 2026 FacSync. Built for modern faculty coordination.</p>
+            </div>
+            <div>
+                <a href="#">Privacy Policy</a>
+                <a href="#">Terms of Service</a>
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>

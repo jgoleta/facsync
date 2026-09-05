@@ -1,0 +1,165 @@
+<!doctype html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | College Settings</title>
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_settings.css' %}">
+    <style>
+        .settings-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+            gap: 24px;
+            align-items: start;
+        }
+    
+        .settings-card h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+    
+        .announcements-card .card-header {
+            padding-bottom: 0;
+        }
+    
+        .form-group input[type="date"] {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font: inherit;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    
+        .closure-date-pair {
+            display: flex;
+            gap: 16px;
+        }
+    
+        .closure-date-pair .form-group {
+            flex: 1;
+        }
+    
+        @media (max-width: 1024px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="admin-shell">
+        {% include 'depthead/partials/sidebar.html' %}
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1>College Settings ({{ request.user.college_name }})</h1>
+                <p>Manage general settings and announcements for your college.</p>
+            </header>
+
+            <div class="settings-grid">
+                <div class="settings-card">
+                    <h2>General Settings</h2>
+                    
+                    {% if college %}
+                    <form method="post" action="{% url 'depthead:edit_college_description' %}" class="settings-form">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="college-name">College Name</label>
+                            <input type="text" id="college-name" value="{{ college.name }}" disabled>
+                        </div>
+                        <div class="form-group">
+                            <label for="college-desc">Description</label>
+                            <textarea id="college-desc" name="description">{{ college.description }}</textarea>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="primary-button">Save Changes</button>
+                        </div>
+                    </form>
+                    {% else %}
+                    <p class="empty-state">Your college could not be found. Contact a Super Admin.</p>
+                    {% endif %}
+                
+                    <h2 style="margin-top: 32px;">Office Closure</h2>
+                    {% if messages %}
+                    {% for message in messages %}
+                    {% if forloop.last %}
+                    <p class="message-{{ message.tags }}">{{ message }}</p>
+                    {% endif %}
+                    {% endfor %}
+                    {% endif %}
+                    <form method="post" id="closure-form" class="settings-form">
+                        {% csrf_token %}
+                        <div class="form-group form-group-toggle">
+                            <label for="{{ closure_form.is_closed.id_for_label }}">Office Closure</label>
+                            <p>Activate to prevent new bookings and notify users of office closure.</p>
+                            {{ closure_form.is_closed }}
+                        </div>
+                        <div class="form-group">
+                            <label for="{{ closure_form.reason.id_for_label }}">Reason (optional)</label>
+                            {{ closure_form.reason }}
+                        </div>
+                        <div class="closure-date-pair">
+                            <div class="form-group">
+                                <label for="{{ closure_form.closure_start.id_for_label }}">Closure Start</label>
+                                {{ closure_form.closure_start }}
+                            </div>
+                            <div class="form-group">
+                                <label for="{{ closure_form.closure_end.id_for_label }}">Closure End</label>
+                                {{ closure_form.closure_end }}
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="primary-button">Save Closure Settings</button>
+                        </div>
+                    </form>
+                </div>
+                <div class="settings-card announcements-card">
+                    <header class="card-header">
+                        <h2>Announcements</h2>
+                        <p>Create and manage college announcements.</p>
+                    </header>
+                
+                    <form id="announcement-form" class="settings-form" method="post" action="{% url 'depthead:create_announcement' %}">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label for="ann-message">Message</label>
+                            <textarea id="ann-message" name="message" required placeholder="Write your announcement here..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="ann-expiry">Expires on (optional)</label>
+                            <input type="date" id="ann-expiry" name="expiry_date" min="{% now 'Y-m-d' %}">
+                            <small class="form-hint">Leave blank to auto-expire 7 days after posting.</small>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="primary-button">Post Announcement</button>
+                        </div>
+                    </form>
+                
+                    <div id="announcements-list" class="announcements-list">
+                        {% for a in college_announcements %}
+                        <div class="announcement-item">
+                            <p>{{ a.message }}</p>
+                            <small>Posted {{ a.posted_at|date:"M d, Y" }} · Expires {{ a.expiry|date:"M d, Y" }}</small>
+                        </div>
+                        {% empty %}
+                        <p class="empty-state">No active announcements.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
+    <script src="{% static 'depthead/js/collegeSettings.js' %}"></script>
+    <script src="{% static 'js/announcements.js' %}"></script>
+</body>
+</html>

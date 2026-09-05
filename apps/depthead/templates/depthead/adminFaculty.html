@@ -1,0 +1,376 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}" />
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Manage Faculty</title>
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav" />
+    <link
+      rel="stylesheet"
+      href="{% static 'depthead/css/admin_management.css' %}?v=20260823-management-ui-8"
+    />
+    <link
+      rel="stylesheet"
+      href="{% static 'depthead/css/pendingFacultyRequests.css' %}"
+    />
+  </head>
+
+  <body>
+    <div class="admin-shell">
+      {% include 'depthead/partials/sidebar.html' %}
+
+      <main class="main-content">
+        <header class="main-header with-action">
+          <div>
+            <p class="page-kicker">College administration ({{ request.user.college_name }})</p>
+            <h1>Manage Faculty Accounts</h1>
+            <p>
+              Invite faculty, manage access, and maintain schedules for your
+              college.
+            </p>
+          </div>
+        </header>
+
+        <section class="pending-section">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Needs review</p>
+              <h2>Pending Faculty Requests</h2>
+            </div>
+            <span class="section-count">{{ pending_faculty|length }}</span>
+          </div>
+          {% if pending_faculty %}
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>College</th>
+                <th>Faculty ID</th>
+                <th>Office/Room</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in pending_faculty %}
+              <tr>
+                <td>{{ user.get_full_name|default:user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.college_name }}</td>
+                <td>{{ user.faculty_profile.faculty_id }}</td>
+                <td>{{ user.faculty_profile.office_location }}</td>
+                <td>
+                  <form
+                    method="post"
+                    class="crud-action-form"
+                    action="{% url 'depthead:approve_faculty' user.id %}"
+                    style="display: inline"
+                  >
+                    {% csrf_token %}
+                    <button type="submit" class="btn-primary">Approve</button>
+                  </form>
+                  <form
+                    method="post"
+                    class="crud-action-form"
+                    action="{% url 'depthead:decline_faculty' user.id %}"
+                    style="display: inline"
+                  >
+                    {% csrf_token %}
+                    <button type="submit" class="btn-secondary">Decline</button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          {% else %}
+          <p class="empty-state">No pending faculty requests.</p>
+          {% endif %}
+        </section>
+
+        <section class="management-table-wrapper">
+          <div class="management-table-header">
+            <div>
+              <p class="section-kicker">College directory</p>
+              <h2>Registered Faculty</h2>
+            </div>
+            <div class="management-table-header-actions">
+              <a
+                class="btn-secondary header-action"
+                href="{% url 'depthead:faculty_schedule_template' %}"
+                download
+              >
+                <span class="header-action-icon" aria-hidden="true">↓</span>
+                <span>Download CSV Format</span>
+              </a>
+              <button
+                id="addFacultyBtn"
+                class="btn-primary header-action"
+                type="button"
+              >
+                <span class="header-action-icon" aria-hidden="true">+</span>
+                <span>Invite Faculty</span>
+              </button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Faculty ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Office/Room</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for user in active_faculty %}
+              <tr>
+                <td>{{ user.faculty_profile.faculty_id|default:'—' }}</td>
+                <td>
+                  {{ user.get_full_name|default:user.username }}
+                  {% if user.is_inactive %}
+                  <span class="inactive-badge" title="No login in 30+ days">Inactive</span>
+                  {% endif %}
+                </td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.faculty_profile.office_location|default:'—' }}</td>
+                <td class="actions">
+                  {% if user.faculty_profile %}
+                  <div class="faculty-schedule-actions">
+                    <button
+                      type="button"
+                      id="upload-schedule-btn-{{ user.faculty_profile.faculty_id }}"
+                      class="upload-faculty-schedule-btn"
+                      data-faculty-id="{{ user.faculty_profile.faculty_id }}"
+                      data-upload-url="{% url 'depthead:upload_faculty_schedule' user.faculty_profile.faculty_id %}"
+                      data-preview-url="{% url 'depthead:view_faculty_schedule_preview' user.faculty_profile.faculty_id %}"
+                      data-delete-url="{% url 'depthead:delete_faculty_schedule' user.faculty_profile.faculty_id %}"
+                      data-faculty-name="{{ user.get_full_name|default:user.username }}"
+                    >
+                      Upload Schedule
+                    </button>
+                    <button
+                      type="button"
+                      class="view-faculty-schedule-preview-btn"
+                      data-faculty-id="{{ user.faculty_profile.faculty_id }}"
+                      data-preview-url="{% url 'depthead:view_faculty_schedule_preview' user.faculty_profile.faculty_id %}"
+                      data-delete-url="{% url 'depthead:delete_faculty_schedule' user.faculty_profile.faculty_id %}"
+                      data-faculty-name="{{ user.get_full_name|default:user.username }}"
+                    >
+                      View Upload Preview
+                    </button>
+                  </div>
+                  {% else %}
+                  <button
+                    type="button"
+                    class="upload-faculty-schedule-btn schedule-unavailable"
+                    disabled
+                    title="This faculty account does not have a faculty profile yet"
+                  >
+                    Schedule Unavailable
+                  </button>
+                  {% endif %}
+                  <form
+                    method="post"
+                    class="crud-action-form remove-faculty-form"
+                    action="{% url 'depthead:remove_faculty' user.id %}"
+                    style="display: inline"
+                  >
+                    {% csrf_token %}
+                    <button
+                      type="submit"
+                      class="danger remove-faculty-trigger"
+                      data-faculty-name="{{ user.get_full_name|default:user.username }}"
+                    >
+                      Remove
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="5" class="empty-state">
+                  No registered faculty accounts.
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-overlay hidden" id="facultyModal">
+      <div
+        class="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="facultyModalTitle"
+      >
+        <div class="modal-header">
+          <div>
+            <h2 id="facultyModalTitle">Invite Faculty</h2>
+            <p>Enter the faculty member's details to send an invitation.</p>
+          </div>
+          <button type="button" class="modal-close" id="closeFacultyModal">
+            ×
+          </button>
+        </div>
+        <form
+          id="facultyForm"
+          class="modal-form"
+          method="post"
+          action="{% url 'depthead:invite_faculty' %}"
+        >
+          {% csrf_token %}
+          <div class="modal-form-group">
+            <label for="facultyName">Name</label>
+            <input
+              id="facultyName"
+              type="text"
+              placeholder="Dr. Maria Santos"
+              required
+            />
+          </div>
+          <div class="modal-form-group">
+            <label for="facultyEmail">Email</label>
+            <input
+              id="facultyEmail"
+              name="email"
+              type="email"
+              placeholder="maria.santos@university.edu"
+              required
+            />
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn-primary">Send Invite</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <input type="file" id="facultyScheduleFile" accept=".csv,text/csv" hidden />
+    <div id="deptheadCsrfToken" class="hidden">{% csrf_token %}</div>
+
+    <div class="modal-overlay hidden" id="facultySchedulePreviewModal">
+      <div
+        class="modal schedule-upload-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="facultySchedulePreviewTitle"
+      >
+        <div class="modal-header">
+          <div>
+            <h2 id="facultySchedulePreviewTitle">Schedule Upload Preview</h2>
+            <p id="facultySchedulePreviewFaculty">Selected faculty</p>
+          </div>
+          <button
+            type="button"
+            class="modal-close"
+            id="closeFacultySchedulePreview"
+          >
+            &times;
+          </button>
+        </div>
+        <p
+          id="facultyScheduleUploadStatus"
+          class="faculty-schedule-upload-status"
+          role="status"
+          aria-live="polite"
+        ></p>
+        <div class="faculty-schedule-preview-wrap">
+          <p
+            id="facultySchedulePreviewEmpty"
+            class="faculty-schedule-preview-empty"
+          >
+            Choose a CSV file from the selected faculty row to preview it here.
+          </p>
+          <table
+            id="facultySchedulePreviewTable"
+            class="faculty-schedule-preview-table hidden"
+          >
+            <thead>
+              <tr>
+                <th>Event Title</th>
+                <th>Short Description</th>
+                <th>Room / Location</th>
+                <th>Recurring Day</th>
+                <th>Allocation Months</th>
+                <th>Start</th>
+                <th>End</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="facultySchedulePreviewBody"></tbody>
+          </table>
+        </div>
+        <div class="modal-actions schedule-preview-actions">
+          <button
+            type="button"
+            id="deleteFacultyUploadedSchedule"
+            class="btn-danger"
+            disabled
+          >
+            Delete Uploaded Schedule
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="removeFacultyConfirmModal">
+      <div
+        class="modal remove-confirm-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="removeFacultyConfirmTitle"
+      >
+        <div class="modal-header">
+          <div>
+            <p class="section-kicker">Confirm action</p>
+            <h2 id="removeFacultyConfirmTitle">Remove Faculty</h2>
+            <p>
+              Are you sure you want to remove
+              <strong id="removeFacultyName">this faculty member</strong>?
+            </p>
+          </div>
+          <button
+            type="button"
+            class="modal-close"
+            id="closeRemoveFacultyConfirm"
+            aria-label="Close confirmation"
+          >
+            &times;
+          </button>
+        </div>
+        <p class="remove-confirm-warning">
+          This will remove the faculty account and its associated schedule data.
+          This action cannot be undone.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn-danger" id="confirmRemoveFaculty">
+            Remove Faculty
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="crudLoadingModal"
+      class="loading-overlay"
+      role="status"
+      aria-live="polite"
+      aria-label="Processing request"
+    >
+      <div class="crud-loading-card">
+        <div class="loading-spinner"></div>
+        <p id="crudLoadingMessage">Processing request...</p>
+      </div>
+    </div>
+
+    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20260823-remove-confirmation-2"></script>
+  </body>
+</html>

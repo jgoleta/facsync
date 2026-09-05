@@ -7,11 +7,11 @@ Google Calendar integration.
 
 ## Applications
 
-- `core` - shared accounts, notifications, announcements, email, and UI code
-- `faculty` - faculty dashboards, schedules, consultations, and calendar sync
-- `students` - faculty discovery, read-only calendars, booking, and queues
-- `depthead` - college administration, monitoring, and analytics
-- `superadmin` - system-wide administration
+- `apps/core` - shared accounts, notifications, announcements, email, and UI code
+- `apps/faculty` - faculty dashboards, schedules, consultations, and calendar sync
+- `apps/students` - faculty discovery, read-only calendars, booking, and queues
+- `apps/depthead` - college administration, monitoring, and analytics
+- `apps/superadmin` - system-wide administration
 
 See [docs/project_structure.md](docs/project_structure.md) for detailed file
 placement and naming conventions.
@@ -29,10 +29,19 @@ commit `.env` or production credentials.
 
 ## Verification
 python manage.py check
-python manage.py test --settings=facsync_project.test_settings
+python manage.py test --settings=config.settings.test
 
 
 The test settings use an isolated in-memory SQLite database and never connect
 to the configured PostgreSQL database.
+
+Entry points default to `config.settings.development`. Select another settings
+module with `DJANGO_SETTINGS_MODULE` or Django's `--settings` option.
+The server entry points are `config.wsgi:application` and
+`config.asgi:application`. The production settings module currently preserves
+the same values as development; this reorganization adds no deployment overrides.
+
+Run the standalone email utility from the repository root with
+`python -m scripts.test_email` so the project packages are importable.
 
 ## GEMINI_MODEL=gemini

@@ -1,0 +1,95 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20260903-single-row-nav">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | My Consultations</title>
+    <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}?v=20260905-delete-icon">
+    <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="{% url 'core:landing' %}" class="brand">
+                <span class="brand-mark">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links">
+                {% include 'components/_notification_nav.html' %}
+                <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
+                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+            </nav>
+        </header>
+
+        <main class="container">
+            <section class="page-intro">
+                <div>
+                    <span class="eyebrow">Consultation center</span>
+                    <h1>My Consultation Requests</h1>
+                    <p>Track your requests, appointment times, and notes from faculty members.</p>
+                </div>
+                <a href="{% url 'students:dashboard' %}" class="btn return-btn" aria-label="Return to student dashboard">Return to Dashboard</a>
+            </section>
+            <div class="consultation-card">
+                <div class="consultation-header">
+                    <div>
+                        <h2>Requests</h2>
+                        <p id="requestResultCount">{{ consultations|length }} request{{ consultations|length|pluralize }}</p>
+                    </div>
+                    <div class="filter-control">
+                        <label for="statusFilter">Filter by status</label>
+                        <select id="statusFilter" class="filter-dropdown" aria-controls="consultationRequestList">
+                            <option value="all">All</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="declined">Declined</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <ul id="consultationRequestList" class="consultation-request-list">
+                    {% for consultation in consultations %}
+                    <li class="request-item" data-request-id="{{ consultation.request_id }}" data-status="{{ consultation.status }}">
+                        <div class="request-info">
+                            <div class="request-card-heading">
+                                <div class="faculty-avatar" aria-hidden="true">{{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username|slice:":1" }}</div>
+                                <div>
+                                    <span class="faculty-label">Faculty member</span>
+                                    <p class="faculty-name">{{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}</p>
+                                </div>
+                            </div>
+                            <p class="request-time">
+                                <span class="detail-label">Appointment</span>
+                                <strong>{{ consultation.date|date:"F j, Y" }}</strong>
+                                {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
+                                {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
+                            </p>
+                            {% if consultation.student_message %}<p class="request-message"><strong>Your Message:</strong> {{ consultation.student_message }}</p>{% endif %}
+                            <p class="request-id"><span>Request ID</span> {{ consultation.request_id }}</p>
+                            {% if consultation.faculty_note %}<p class="faculty-note"><strong>Faculty Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
+                        </div>
+                        <div class="request-status">
+                            <span class="status-badge status-{{ consultation.status }}">{{ consultation.get_status_display }}</span>
+                            <button type="button" class="delete-request-btn" aria-label="Delete request" title="Delete request" data-delete-url="{% url 'students:api_delete_consultation' consultation.request_id %}">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                    <path d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M5 6l1 14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-14M10 10v7M14 10v7" />
+                                </svg>
+                            </button>
+                        </div>
+                    </li>
+                    {% empty %}
+                    <li class="empty-state">You have no active consultation requests.</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </main>
+    </div>
+    <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
+    <script src="{% static 'students/js/consultationRequests.js' %}?v=20260905-delete-request"></script>
+    <script src="{% static 'js/notifications.js' %}"></script>
+</body>
+</html>

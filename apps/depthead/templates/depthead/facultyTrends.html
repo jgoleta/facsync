@@ -1,0 +1,110 @@
+<!doctype html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FacSync | Faculty Trends</title>
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}">
+</head>
+
+<body>
+    <div class="admin-shell">
+        {% include 'depthead/partials/sidebar.html' %}
+
+        <main class="main-content">
+            <header class="main-header">
+                <h1>Faculty Availability Trends ({{ request.user.college_name }})</h1>
+                <p>Track faculty activity and response metrics.</p>
+            </header>
+
+            <div class="analytics-grid">
+                <div class="chart-card">
+                    <h3>Faculty Availability Rate (Last 7 Days)</h3>
+                    <div class="chart-graphic" role="img" aria-label="Faculty availability rate chart">
+                        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="40" y="30" width="520" height="240" rx="16" fill="#ffffff" />
+                            <g stroke="#cbd5e1" stroke-width="1">
+                                <line x1="80" y1="250" x2="500" y2="250" />
+                                <line x1="80" y1="210" x2="500" y2="210" />
+                                <line x1="80" y1="170" x2="500" y2="170" />
+                                <line x1="80" y1="130" x2="500" y2="130" />
+                                <line x1="80" y1="90" x2="500" y2="90" />
+                            </g>
+                            {% for bar in chart_bars %}
+                            {% if bar.has_data %}
+                            <rect x="{{ bar.x }}" y="{{ bar.y }}" width="40" height="{{ bar.height }}" rx="6" fill="#2563eb">
+                                <title>{{ bar.label }}: {{ bar.rate }}% available</title>
+                            </rect>
+                            {% endif %}
+                            {% endfor %}
+                            <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
+                                {% for bar in chart_bars %}
+                                <text x="{{ bar.x }}" y="270">{{ bar.label }}</text>
+                                {% endfor %}
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+                
+                <div class="table-card">
+                    <h3>Status Update Frequency</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Faculty Name</th>
+                                <th>Last Update</th>
+                                <th>Frequency (updates/day)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in trends %}
+                            <tr>
+                                <td>{{ t.name }}</td>
+                                <td>{{ t.last_update_display }}</td>
+                                <td>{{ t.updates_per_day }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="empty-state">No faculty data yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="table-card">
+                    <h3>Request & Response Rates</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Faculty Name</th>
+                                <th>Completion Rate</th>
+                                <th>Avg. Response Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for t in trends %}
+                            <tr>
+                                <td>{{ t.name }}</td>
+                                <td>{% if t.completion_rate is not None %}{{ t.completion_rate }}%{% else %}No data{% endif %}</td>
+                                <td>{% if t.avg_response_hours is not None %}{{ t.avg_response_hours }}h{% else %}No data{% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="empty-state">No faculty data yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,0 +1,455 @@
+import json
+import json
+import uuid
+from datetime import date, datetime, time, timedelta
+from apps.core.models import OfficeClosure, CollegeAnnouncement
+from apps.core.services import create_notification, get_active_announcements
+
+from django.contrib.auth.decorators import login_required
+from apps.core.decorators import role_required
+from django.db import transaction
+from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.utils import timezone
+from django.views.decorators.csrf import csrf_protect
+
+from apps.core.colleges import get_college_label
+from apps.faculty.models import ConsultationRequest, FacultyProfile, ScheduleEvent, WalkInQueue
+from apps.faculty.services.calendar_events import serialize_consultation_event, serialize_schedule_event
+from .models import FacultyStatusSubscription
+from apps.faculty.services.google_calendar import refresh_faculty_status
+from apps.faculty.services.google_calendar import GoogleCalendarError, delete_consultation_event
+from apps.faculty.models import GoogleCalendarConnection
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import ensure_csrf_cookie
+
+
+def _json_body(request):
+    try:
+        payload = json.loads(request.body.decode('utf-8'))
+    except (TypeError, ValueError, UnicodeDecodeError):
+        raise ValueError('Invalid JSON')
+    if not isinstance(payload, dict):
+        raise ValueError('Invalid JSON')
+    return payload
+
+
+def _walk_in_json(queue):
+    return {
+        'queue_id': queue.queue_id,
+        'faculty_id': queue.faculty.faculty_id,
+        'status': queue.status,
+        'position': queue.position,
+        'joined_at': queue.joined_at.isoformat(),
+        'notified_at': queue.notified_at.isoformat() if queue.notified_at else None,
+        'served_at': queue.served_at.isoformat() if queue.served_at else None,
+        'faculty_note': queue.faculty_note,
+    }
+
+def _closed_college_map():
+    closures = OfficeClosure.objects.filter(is_closed=True)
+    result = {}
+    for c in closures:
+        label = get_college_label(c.college) or c.college
+        result[label] = c.reason or f"{label} is currently closed."
+    return result
+
+def _faculty_for_schedule(request):
+    faculty_id = request.GET.get('faculty_id')
+    faculty_name = (request.GET.get('faculty') or '').strip()
+    faculty = FacultyProfile.objects.select_related('user').filter(faculty_id=faculty_id).first() if faculty_id else None
+    if faculty is None and faculty_name:
+        faculty = FacultyProfile.objects.select_related('user').filter(
+            user__first_name__iexact=faculty_name,
+        ).first()
+        if faculty is None:
+            faculty = FacultyProfile.objects.select_related('user').filter(
+                user__username__iexact=faculty_name,
+            ).first()
+    return faculty
+
+
+def _faculty_directory(closed_college_codes=None, student=None):
+    closed_college_codes = closed_college_codes or set()
+    subscribed_faculty_ids = set()
+    if student:
+        subscribed_faculty_ids = set(
+            FacultyStatusSubscription.objects.filter(student=student)
+            .values_list('faculty_id', flat=True)
+        )
+    directory = []
+    for faculty in FacultyProfile.objects.select_related('user').all():
+        refresh_faculty_status(faculty)
+        directory.append({
+            'faculty_id': faculty.faculty_id,
+            'name': faculty.user.get_full_name() or faculty.user.username,
+            'college': faculty.college_name,
+            'status': faculty.current_status,
+            'note': 'College closed' if faculty.college_id in closed_college_codes else faculty.status_note,
+            'walk_ins_enabled': faculty.walk_ins_enabled,
+            'updated_at': faculty.status_updated_at.isoformat() if faculty.status_updated_at else None,
+            'is_college_closed': faculty.college_id in closed_college_codes,
+            'is_subscribed': faculty.faculty_id in subscribed_faculty_ids,
+        })
+    return directory
+
+def _closed_college_codes():
+    return set(OfficeClosure.objects.filter(is_closed=True).values_list('college', flat=True))
+
+@login_required
+@role_required('student')
+def dashboard(request):
+    faculty_directory = _faculty_directory(_closed_college_codes(), request.user)
+    closed_colleges = _closed_college_map()
+    return render(request, 'students/dashboardStudent.html', {
+        'faculty_directory': faculty_directory,
+        'closed_colleges': closed_colleges,
+        'announcements': get_active_announcements(request.user.college),
+    })
+
+@login_required
+@role_required('student')
+def view_schedule(request):
+    faculty = _faculty_for_schedule(request)
+    if faculty:
+        refresh_faculty_status(faculty)
+    closure = None
+    if faculty:
+        closure = OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).first()
+    return render(request, 'students/viewSchedule.html', {
+        'selected_faculty': faculty,
+        'college_closure': closure,
+        'is_subscribed': bool(
+            faculty and FacultyStatusSubscription.objects.filter(
+                student=request.user,
+                faculty=faculty,
+            ).exists()
+        ),
+    })
+
+
+@login_required
+@role_required('student')
+def api_schedule_events(request):
+    """Return the selected faculty member's published schedule events."""
+    if request.method != 'GET':
+        return HttpResponse(status=405)
+
+    faculty = get_object_or_404(FacultyProfile, faculty_id=request.GET.get('faculty_id'))
+    events = ScheduleEvent.objects.filter(faculty=faculty).order_by('date', 'start_time')
+    calendar_events = [serialize_schedule_event(event) for event in events]
+    approved_consultations = ConsultationRequest.objects.filter(
+        faculty=faculty,
+        user=request.user,
+        status='approved',
+    ).select_related('faculty__user').order_by('date', 'start_time')
+    calendar_events.extend(
+        serialize_consultation_event(consultation, viewer='student')
+        for consultation in approved_consultations
+    )
+    calendar_events.sort(key=lambda event: (event['date'] or '', event['start_time'] or ''))
+    return JsonResponse({
+        'faculty_id': faculty.faculty_id,
+        'events': calendar_events,
+    })
+
+@login_required
+@role_required('student')
+def active_announcements(request):
+    qs = CollegeAnnouncement.objects.filter(
+        college=request.user.college,
+        expiry__gt=timezone.now()
+    )
+    return JsonResponse({
+        'announcements': [
+            {
+                'college': a.get_college_display(),
+                'message': a.message,
+                'posted_at': a.posted_at.strftime('%b %d, %Y'),
+            }
+            for a in qs
+        ]
+    })
+
+@login_required
+@role_required('student')
+@ensure_csrf_cookie
+def consultation_requests(request):
+    """Show only the signed-in student's consultation requests."""
+    consultations = ConsultationRequest.objects.filter(
+        user=request.user,
+    ).exclude(status='declined').select_related('faculty__user')
+    return render(request, 'students/consultationRequests.html', {
+        'consultations': consultations,
+    })
+
+
+@login_required
+@role_required('student')
+@require_http_methods(['DELETE'])
+@csrf_protect
+def api_delete_consultation(request, request_id):
+    """Delete an owned request after removing any linked calendar event."""
+    with transaction.atomic():
+        consultation = get_object_or_404(
+            ConsultationRequest.objects.select_for_update(),
+            request_id=request_id, user=request.user,
+        )
+        if consultation.google_event_id:
+            connection = GoogleCalendarConnection.objects.filter(
+                user_id=consultation.faculty.user_id,
+            ).first()
+            if not connection or (
+                consultation.google_calendar_id
+                and consultation.google_calendar_id != connection.calendar_id
+            ):
+                return JsonResponse({'error': 'The faculty calendar must be reconnected before this request can be deleted.'}, status=409)
+            try:
+                delete_consultation_event(connection, consultation)
+            except GoogleCalendarError:
+                return JsonResponse({'error': 'Unable to remove the calendar event. Please try again later.'}, status=502)
+        consultation.delete()
+    return HttpResponse(status=204)
+
+
+def _consultation_json(consultation):
+    """Serialize a student's consultation for the booking and listing APIs."""
+    return {
+        'request_id': consultation.request_id,
+        'faculty_name': consultation.faculty.user.get_full_name() or consultation.faculty.user.username,
+        'status': consultation.status,
+        'status_label': consultation.get_status_display(),
+        'date': consultation.date.isoformat(),
+        'start_time': consultation.start_time.isoformat() if consultation.start_time else None,
+        'end_time': consultation.end_time.isoformat() if consultation.end_time else None,
+        'agenda': consultation.agenda,
+        'agenda_label': consultation.get_agenda_display(),
+        'student_message': consultation.student_message,
+        'faculty_note': consultation.faculty_note,
+    }
+
+
+@login_required
+@role_required('student')
+@csrf_protect
+def api_consultation_requests(request):
+    """List or create consultation requests owned by the signed-in student."""
+    consultations = ConsultationRequest.objects.filter(
+        user=request.user,
+    ).exclude(status='declined').select_related('faculty__user')
+
+    if request.method == 'GET':
+        return JsonResponse({'consultations': [_consultation_json(item) for item in consultations]})
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        payload = _json_body(request)
+        faculty_id = str(payload.get('faculty_id') or '').strip()
+        date_value = date.fromisoformat(str(payload.get('date') or ''))
+        start_time = time.fromisoformat(str(payload.get('start_time') or ''))
+    except (TypeError, ValueError, KeyError) as exc:
+        return JsonResponse({'error': 'A valid faculty, date, and start time are required.'}, status=400)
+
+    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id)
+    refresh_faculty_status(faculty)
+    if faculty.current_status == 'on_leave':
+        return JsonResponse(
+            {'error': 'This faculty member is currently on leave and is not accepting consultation requests.'},
+            status=409,
+        )
+    agenda = str(payload.get('agenda') or '').strip()
+    if agenda not in dict(ConsultationRequest.AGENDA_CHOICES):
+        return JsonResponse({'error': 'Please select a valid consultation agenda.'}, status=400)
+    if OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).exists():
+        return JsonResponse({'error': 'This college is currently closed and not accepting consultation requests.'}, status=409)
+    requested_end_time = payload.get('end_time')
+    try:
+        end_time = time.fromisoformat(str(requested_end_time)) if requested_end_time else (
+            datetime.combine(date_value, start_time) + timedelta(hours=1)
+        ).time()
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'Invalid consultation end time.'}, status=400)
+
+    if end_time <= start_time:
+        return JsonResponse({'error': 'The consultation must end after it starts.'}, status=400)
+
+    consultation = ConsultationRequest.objects.create(
+        request_id=uuid.uuid4().hex,
+        user=request.user,
+        faculty=faculty,
+        date=date_value,
+        start_time=start_time,
+        end_time=end_time,
+        agenda=agenda,
+        student_message=str(payload.get('message') or '').strip(),
+    )
+    create_notification(
+        recipient=faculty.user,
+        notification_type='consultation_request',
+        title='New consultation request',
+        message=(
+            f'{request.user.get_full_name() or request.user.username} requested a consultation '
+            f'on {consultation.date.strftime("%B %d, %Y")}.'
+        ),
+        url='/faculty/dashboard/',
+    )
+    return JsonResponse(_consultation_json(consultation), status=201)
+
+@login_required
+@role_required('student')
+def home(request):
+    """Render student summary counts and the student's college announcement."""
+    today = timezone.localdate()
+    current_time = timezone.localtime().time()
+    upcoming_bookings = ConsultationRequest.objects.filter(
+        user=request.user,
+        status='approved',
+    ).select_related('faculty').order_by('date', 'start_time')
+    upcoming_booking_count = sum(
+        1 for booking in upcoming_bookings
+        if booking.date > today
+        or (booking.date == today and (booking.start_time is None or booking.start_time >= current_time))
+    )
+
+    student_college = get_college_label(request.user.college)
+    college_announcement = CollegeAnnouncement.objects.filter(
+        college__iexact=request.user.college or '',
+        expiry__gt=timezone.now(),
+    ).first()
+    available_faculty_count = 0
+    if student_college:
+        for faculty in FacultyProfile.objects.select_related('user').all():
+            # Match canonical college names so CCS and ccs records remain compatible.
+            if get_college_label(faculty.college_id) != student_college:
+                continue
+            refresh_faculty_status(faculty)
+            if faculty.current_status == 'available':
+                available_faculty_count += 1
+
+    return render(request, 'students/homeStudent.html', {
+        'upcoming_booking_count': upcoming_booking_count,
+        'available_faculty_count': available_faculty_count,
+        'student_college': student_college,
+        'college_announcement': college_announcement,
+    })
+
+
+@login_required
+@role_required('student')
+def api_faculty_statuses(request):
+    if request.method != 'GET':
+        return HttpResponse(status=405)
+    return JsonResponse({
+        'faculty': _faculty_directory(_closed_college_codes(), request.user),
+        'closed_colleges': _closed_college_map(),
+    })
+
+
+@login_required
+@role_required('student')
+@csrf_protect
+def api_faculty_status_subscription(request, faculty_id):
+    if request.method not in {'GET', 'POST', 'DELETE'}:
+        return HttpResponse(status=405)
+
+    faculty = get_object_or_404(FacultyProfile, faculty_id=faculty_id)
+    subscription = FacultyStatusSubscription.objects.filter(
+        student=request.user,
+        faculty=faculty,
+    ).first()
+
+    if request.method == 'GET':
+        return JsonResponse({'subscribed': subscription is not None})
+
+    if request.method == 'POST':
+        FacultyStatusSubscription.objects.get_or_create(
+            student=request.user,
+            faculty=faculty,
+        )
+        return JsonResponse({'subscribed': True})
+
+    if subscription:
+        subscription.delete()
+    return JsonResponse({'subscribed': False})
+
+
+@login_required
+@role_required('student')
+def api_walk_in_status(request):
+    """Return walk-in availability and the signed-in student's queue state."""
+    if request.method != 'GET':
+        return HttpResponse(status=405)
+
+    faculty_id = request.GET.get('faculty_id')
+    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id)
+    refresh_faculty_status(faculty)
+    queue = WalkInQueue.objects.filter(
+        faculty=faculty,
+        user=request.user,
+        status__in=['waiting', 'called'],
+    ).first()
+    return JsonResponse({
+        'faculty_id': faculty.faculty_id,
+        'faculty_name': faculty.user.get_full_name() or faculty.user.username,
+        'faculty_status': faculty.current_status,
+        'walk_ins_enabled': faculty.walk_ins_enabled,
+        'queue': _walk_in_json(queue) if queue else None,
+    })
+
+
+@login_required
+@role_required('student')
+@csrf_protect
+def api_join_walk_in_queue(request):
+    """Join a faculty member's walk-in queue only while walk-ins are enabled."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    try:
+        payload = _json_body(request)
+    except ValueError as exc:
+        return HttpResponseBadRequest(str(exc))
+
+    faculty_id = payload.get('faculty_id')
+    if not faculty_id:
+        return JsonResponse({'error': 'faculty_id is required.'}, status=400)
+
+    with transaction.atomic():
+        faculty = get_object_or_404(
+            FacultyProfile.objects.select_for_update().select_related('user'),
+            faculty_id=faculty_id,
+        )
+        refresh_faculty_status(faculty)
+        if OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).exists():
+            return JsonResponse({'error': 'This college is currently closed and not accepting walk-ins.'}, status=409)
+        if faculty.current_status == 'on_leave':
+            return JsonResponse(
+                {'error': 'This faculty member is currently on leave and is not accepting walk-ins.'},
+                status=409,
+            )
+        if not faculty.walk_ins_enabled:
+            return JsonResponse({'error': 'This faculty member is not accepting walk-ins.'}, status=409)
+
+        existing = WalkInQueue.objects.filter(
+            faculty=faculty,
+            user=request.user,
+            status__in=['waiting', 'called'],
+        ).first()
+        if existing:
+            return JsonResponse(_walk_in_json(existing), status=200)
+
+        last_position = WalkInQueue.objects.filter(
+            faculty=faculty,
+            status__in=['waiting', 'called'],
+        ).order_by('-position').values_list('position', flat=True).first() or 0
+        queue = WalkInQueue.objects.create(
+            queue_id=uuid.uuid4().hex,
+            faculty=faculty,
+            user=request.user,
+            position=last_position + 1,
+            joined_at=timezone.now(),
+            student_message=str(payload.get('message') or '').strip(),
+        )
+
+    return JsonResponse(_walk_in_json(queue), status=201)
