@@ -119,6 +119,7 @@ class ScheduleEvent(models.Model):
 
     faculty = models.ForeignKey(FacultyProfile, on_delete=models.CASCADE, related_name='schedule_events')
     title = models.CharField(max_length=128)
+    uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='uploaded_schedule_events')
     description = models.TextField(blank=True)
     location = models.CharField(max_length=128, blank=True)
     schedule_status = models.CharField(max_length=32, blank=True)

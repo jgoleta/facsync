@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const scheduleCrudLoadingOverlay = document.getElementById("facultyLoadingOverlay");
   const scheduleCrudLoadingMessage = document.getElementById("facultyLoadingMessage");
   let schedulePreviewEventIds = [];
+  let schedulePreviewHasOtherUploader = false;
   let scheduleUploadInProgress = false;
   let scheduleCrudLoadingCount = 0;
 
@@ -146,14 +147,14 @@ document.addEventListener("DOMContentLoaded", () => {
     scheduleUploadStatus.className = `calendar-sync-status${isError ? " error" : ""}`;
   }
 
-  // Render the rows returned by a schedule CSV upload in the preview modal.
+  // Render the unified uploaded schedule in the preview modal.
   function renderSchedulePreview(rows) {
     if (!schedulePreviewCard || !schedulePreviewBody) return;
     schedulePreviewBody.innerHTML = "";
     rows.forEach((row) => {
       const tr = document.createElement("tr");
       [row.event_title, row.short_description || "—", row.room_location || "—", row.recurring_day || "None",
-        `${row.start_month || "—"}-${row.end_month || "—"}`, row.start_time, row.end_time, row.status_type || "Busy"]
+        `${row.start_month || "—"}-${row.end_month || "—"}`, row.start_time, row.end_time, row.status_type || "Busy", row.uploader_label]
         .forEach((value) => {
           const td = document.createElement("td");
           td.textContent = value;
@@ -180,9 +181,30 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  async function loadSchedulePreview() {
+    schedulePreviewEventIds = [];
+    schedulePreviewHasOtherUploader = false;
+    if (clearScheduleBtn) clearScheduleBtn.disabled = true;
+    const response = await fetch(viewUploadPreviewBtn.dataset.previewUrl, { headers: requestHeaders() });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Unable to load schedule preview.");
+    const rows = data.preview || [];
+    schedulePreviewEventIds = rows.map((row) => row.id);
+    schedulePreviewHasOtherUploader = rows.some((row) => row.uploaded_by_other);
+    renderSchedulePreview(rows);
+    if (clearScheduleBtn) clearScheduleBtn.disabled = rows.length === 0;
+  }
+
   if (viewUploadPreviewBtn) {
-    viewUploadPreviewBtn.addEventListener("click", () => {
-      if (schedulePreviewModal) schedulePreviewModal.classList.remove("hidden");
+    viewUploadPreviewBtn.addEventListener("click", async () => {
+      viewUploadPreviewBtn.disabled = true;
+      try {
+        await loadSchedulePreview();
+      } catch (error) {
+        facultyFeedback?.showToast(error.message, true);
+      } finally {
+        viewUploadPreviewBtn.disabled = false;
+      }
     });
   }
 
@@ -224,13 +246,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const details = (data.errors || [data.error || "Unable to upload schedule."]).join(" ");
         throw new Error(details);
       }
-      renderSchedulePreview(data.preview || []);
-      schedulePreviewEventIds = (data.events || [])
-        .map((event) => event.id)
-        .filter((id) => id !== undefined && id !== null);
       setScheduleUploadStatus(data.message || "Schedule uploaded successfully.");
       facultyFeedback?.showToast(data.message || "Schedule uploaded successfully.");
       await fetchEventsFromApi();
+      await loadSchedulePreview();
     } catch (error) {
       setScheduleUploadStatus(error.message, true);
       facultyFeedback?.showToast(error.message, true);
@@ -252,7 +271,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (clearScheduleBtn) {
     clearScheduleBtn.addEventListener("click", async () => {
-      if (!window.confirm("Delete the uploaded schedule shown in this preview? This cannot be undone.")) return;
+      if (!schedulePreviewEventIds.length) return;
+      const warning = schedulePreviewHasOtherUploader
+        ? "This will delete all previewed schedule entries, including entries uploaded by someone else, such as your College Head. This cannot be undone. Continue?"
+        : "This will delete all previewed schedule entries. This cannot be undone. Continue?";
+      if (!window.confirm(warning)) return;
       clearScheduleBtn.disabled = true;
       setScheduleUploadStatus("Deleting schedule...");
       showScheduleCrudLoading("Deleting schedule...");
@@ -267,6 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (schedulePreviewBody) schedulePreviewBody.innerHTML = "";
         if (schedulePreviewEmpty) schedulePreviewEmpty.classList.remove("hidden");
         schedulePreviewEventIds = [];
+        schedulePreviewHasOtherUploader = false;
         closeSchedulePreview();
         setScheduleUploadStatus("Schedule deleted. You can upload a new CSV now.");
         facultyFeedback?.showToast("Schedule deleted successfully.");
@@ -275,7 +299,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setScheduleUploadStatus(error.message, true);
         facultyFeedback?.showToast(error.message, true);
       } finally {
-        clearScheduleBtn.disabled = false;
+        clearScheduleBtn.disabled = schedulePreviewEventIds.length === 0;
         hideScheduleCrudLoading();
       }
     });

@@ -15,6 +15,7 @@ urlpatterns = [
     path('schedule/', views.schedule, name='schedule'),
     path('schedule/template/', views.schedule_template, name='schedule_template'),
     path('api/schedule/upload/', views.upload_schedule, name='upload_schedule'),
+    path('api/schedule/preview/', views.view_schedule_preview, name='view_schedule_preview'),
     path('api/schedule/clear/', views.clear_schedule, name='clear_schedule'),
     path('calendar/connect/', views.calendar_connect, name='calendar_connect'),
     path('calendar/callback/', views.calendar_callback, name='calendar_callback'),

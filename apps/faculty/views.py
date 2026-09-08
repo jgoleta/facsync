@@ -586,6 +586,7 @@ def upload_schedule(request):
             ScheduleEvent(
                 faculty=faculty,
                 title=row['title'],
+                uploaded_by=request.user,
                 description=row['description'],
                 location=row['room'],
                 schedule_status=row['status'],
@@ -611,6 +612,34 @@ def upload_schedule(request):
         'preview': [_schedule_csv_row(event) for event in events],
         'events': [_event_json(event) for event in events],
     }, status=201)
+
+
+@login_required
+@role_required('faculty')
+def view_schedule_preview(request):
+    """Return the signed-in faculty member's unified uploaded schedule."""
+    if request.method != 'GET':
+        return HttpResponse(status=405)
+    faculty = _faculty_for_request(request)
+    if faculty is None:
+        return JsonResponse({'error': 'No faculty profile'}, status=400)
+    events = ScheduleEvent.objects.filter(
+        faculty=faculty, managed_by_facsync=True,
+    ).select_related('uploaded_by').order_by('id')
+    rows = []
+    for event in events:
+        uploader = event.uploaded_by
+        label = 'Uploader unknown'
+        if uploader is not None:
+            label = ('Uploaded by you' if uploader.pk == request.user.pk
+                     else f'Uploaded by {uploader.get_full_name() or uploader.username}')
+        rows.append({
+            **_schedule_csv_row(event),
+            'id': event.pk,
+            'uploader_label': label,
+            'uploaded_by_other': uploader is not None and uploader.pk != request.user.pk,
+        })
+    return JsonResponse({'preview': rows})
 
 
 @login_required
