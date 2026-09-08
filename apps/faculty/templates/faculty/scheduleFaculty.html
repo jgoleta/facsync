@@ -69,7 +69,7 @@
                 <div class="actions">
                     <button type="button" id="add-event-btn" class="secondary-button legend-action-button">Add Event</button>
                     <button type="button" id="upload-schedule-btn" class="secondary-button">Upload Schedule</button>
-                    <button type="button" id="view-upload-preview-btn" class="secondary-button">View Upload Preview</button>
+                    <button type="button" id="view-upload-preview-btn" class="secondary-button" data-preview-url="{% url 'faculty:view_schedule_preview' %}">View Upload Preview</button>
                     <button type="button" id="delete-selected-events-btn" class="secondary-button legend-action-button bulk-delete-action">Delete Selected Events</button>
                     <a href="{% url 'faculty:schedule_template' %}" class="secondary-link" download>Download CSV Template</a>
                     <input type="file" id="schedule-csv-input" accept=".csv,text/csv" hidden>
@@ -89,10 +89,10 @@
                     <span id="schedule-preview-count" class="date-pill"></span>
                 </div>
                 <div class="schedule-preview-table-wrap">
-                    <p id="schedule-preview-empty" class="schedule-preview-empty">Upload a CSV schedule to generate a preview.</p>
+                    <p id="schedule-preview-empty" class="schedule-preview-empty">No uploaded schedule entries.</p>
                     <table class="schedule-preview-table">
                         <thead>
-                            <tr><th>Event Title</th><th>Short Description</th><th>Room / Location</th><th>Recurring Day</th><th>Allocation Months</th><th>Start Time</th><th>End Time</th><th>Status Type</th></tr>
+                            <tr><th>Event Title</th><th>Short Description</th><th>Room / Location</th><th>Recurring Day</th><th>Allocation Months</th><th>Start Time</th><th>End Time</th><th>Status Type</th><th>Uploader</th></tr>
                         </thead>
                         <tbody id="schedule-preview-body"></tbody>
                     </table>
@@ -104,7 +104,7 @@
                     {% endif %}
                 </div>
                 <div class="schedule-preview-actions">
-                    <button type="button" id="clear-schedule-btn" class="btn-danger">Delete Uploaded Schedule</button>
+                    <button type="button" id="clear-schedule-btn" class="btn-danger" disabled>Delete All Previewed Entries</button>
                 </div>
             </section>
         </div>
@@ -272,7 +272,7 @@
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
     <script src="{% static 'js/calendar/calendar-core.js' %}?v=20260902-recurrence-dates"></script>
-    <script src="{% static 'faculty/js/calendar/calendar-editor.js' %}?v=20260908-delete-confirmation"></script>
+    <script src="{% static 'faculty/js/calendar/calendar-editor.js' %}?v=20260908-unified-preview-bulk-delete"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 

@@ -232,6 +232,7 @@ def upload_faculty_schedule(request, faculty_id):
             ScheduleEvent(
                 faculty=faculty,
                 title=row['title'],
+                uploaded_by=request.user,
                 description=row['description'],
                 location=row['room'],
                 schedule_status=row['status'],
