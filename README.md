@@ -1,7 +1,7 @@
 # FacSync
 
 FacSync is a real-time faculty availability and consultation scheduling system
-for Ateneo de Naga University. It provides public faculty availability,
+Pilot-tested at Ateneo de Naga University. It provides public faculty availability,
 consultation booking, walk-in queues, notifications, schedule management, and
 Google Calendar integration.
 
