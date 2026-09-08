@@ -32,6 +32,7 @@
       endMonth: event.end_month,
       startDate: event.recurrence_start_date || null,
       endDate: event.recurrence_end_date || null,
+      excludedDates: Array.isArray(event.recurrence_excluded_dates) ? event.recurrence_excluded_dates : [],
       startTime: timeValue(event.start_time),
       endTime: timeValue(event.end_time),
     };
@@ -47,7 +48,7 @@
     return month >= startMonth || month <= endMonth;
   }
 
-  function recurringDateKeys(dayOfWeek, startMonth, endMonth) {
+  function recurringDateKeys(dayOfWeek, startMonth, endMonth, excludedDates = []) {
     const today = new Date();
     const first = new Date(today.getFullYear(), today.getMonth(), 1 - 7);
     const last = new Date(today.getFullYear(), today.getMonth() + 1, 7);
@@ -55,6 +56,7 @@
     const dates = [];
     for (let cursor = new Date(first); cursor <= last; cursor.setDate(cursor.getDate() + 1)) {
       if (monthIsIncluded(cursor.getMonth() + 1, startMonth, endMonth)
+        && !excludedDates.includes(localDateKey(cursor))
         && (target === null || cursor.getDay() === target)) {
         dates.push(localDateKey(cursor));
       }
@@ -64,7 +66,7 @@
 
   function eventDateKeys(event) {
     if (event.isRecurring) {
-      return recurringDateKeys(event.dayOfWeek, event.startMonth, event.endMonth);
+      return recurringDateKeys(event.dayOfWeek, event.startMonth, event.endMonth, event.excludedDates);
     }
     return event.date ? [String(event.date).split("T")[0]] : [];
   }

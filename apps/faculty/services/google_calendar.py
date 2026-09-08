@@ -316,9 +316,25 @@ def google_event_payload(event):
         if event_date > range_end:
             raise GoogleCalendarError('The recurring weekday does not occur in the selected month range.')
         google_weekday = ('MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU')[weekday_index]
+        occurrence_count = ((range_end - event_date).days // 7) + 1
         payload['recurrence'] = [
-            f'RRULE:FREQ=WEEKLY;BYDAY={google_weekday};UNTIL={range_end.strftime("%Y%m%d")}T235959Z'
+            f'RRULE:FREQ=WEEKLY;BYDAY={google_weekday};COUNT={occurrence_count}'
         ]
+        excluded_dates = event.recurrence_excluded_dates or []
+        if excluded_dates:
+            if event.event_type == 'on-leave' or not event.start_time:
+                payload['recurrence'].append(
+                    'EXDATE;VALUE=DATE:' + ','.join(
+                        value.replace('-', '') for value in excluded_dates
+                    )
+                )
+            else:
+                payload['recurrence'].append(
+                    f'EXDATE;TZID={tz_name}:' + ','.join(
+                        f'{value.replace("-", "")}T{event.start_time.strftime("%H%M%S")}'
+                        for value in excluded_dates
+                    )
+                )
     if not event_date:
         raise GoogleCalendarError('Google Calendar sync requires a date or recurring weekday with a month range.')
     if event.event_type == 'on-leave' or not event.start_time:
@@ -512,6 +528,43 @@ def delete_google_event(connection, event):
             raise
 
 
+def delete_google_event_instance(connection, recurring_event_id, occurrence_date):
+    """Delete one occurrence of a recurring Google Calendar event."""
+    tz_name = getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)
+    calendar_timezone = ZoneInfo(tz_name)
+    start = timezone.make_aware(datetime.combine(occurrence_date, time.min), calendar_timezone)
+    end = start + timedelta(days=1)
+    response = google_request(
+        connection,
+        'GET',
+        f'/calendars/{connection.calendar_id}/events',
+        params={
+            'singleEvents': 'true',
+            'showDeleted': 'false',
+            'maxResults': 100,
+            'timeMin': start.isoformat(),
+            'timeMax': end.isoformat(),
+            'timeZone': tz_name,
+        },
+    )
+    for item in response.json().get('items', []):
+        if item.get('recurringEventId') != recurring_event_id:
+            continue
+        item_start = item.get('start') or {}
+        item_date = item_start.get('date')
+        if not item_date and item_start.get('dateTime'):
+            item_date = _parse_google_datetime(item_start['dateTime']).date().isoformat()
+        if item_date != occurrence_date.isoformat():
+            continue
+        google_request(
+            connection,
+            'DELETE',
+            f'/calendars/{connection.calendar_id}/events/{item["id"]}',
+        )
+        return True
+    return False
+
+
 def sync_google_calendar(user):
     """Pull calendar data, reconcile local records, update status, and record sync time."""
     connection = GoogleCalendarConnection.objects.get(user=user)
@@ -526,6 +579,26 @@ def sync_google_calendar(user):
             if item.get('status') == 'cancelled' or not item.get('id'):
                 continue
             event_id = item['id']
+            recurring_event_id = item.get('recurringEventId')
+            if recurring_event_id:
+                # list_google_events() expands recurring Google events into
+                # individual instances. FacSync already renders the local
+                # recurring master, so importing each instance would show a
+                # duplicate event on every matching day.
+                recurring_master = ScheduleEvent.objects.filter(
+                    faculty=faculty,
+                    google_calendar_id=connection.calendar_id,
+                    google_event_id=recurring_event_id,
+                    date__isnull=True,
+                    managed_by_facsync=True,
+                ).first()
+                if recurring_master:
+                    ScheduleEvent.objects.filter(
+                        faculty=faculty,
+                        google_calendar_id=connection.calendar_id,
+                        google_event_id=event_id,
+                    ).exclude(pk=recurring_master.pk).delete()
+                    continue
             private = (item.get('extendedProperties') or {}).get('private') or {}
             event_kind = private.get('facsync_type')
             event = ScheduleEvent.objects.filter(
