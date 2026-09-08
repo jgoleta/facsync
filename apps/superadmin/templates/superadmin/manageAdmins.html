@@ -61,6 +61,15 @@
                         Manage accounts for College Heads and Support Office staff.
                     </p>
                 </div>
+            <label class="college-filter" for="collegeFilter">
+                <span>College</span>
+                <select id="collegeFilter">
+                    <option value="all">All Colleges</option>
+                    {% for code, name in college_choices %}
+                    <option value="{{ code }}">{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </label>
             </header>
             {% if messages %}
             {% for message in messages %}
@@ -97,7 +106,7 @@
                     </thead>
                     <tbody>
                         {% for admin in depthead_accounts %}
-                        <tr data-depthead-id="{{ admin.id }}">
+                        <tr data-depthead-id="{{ admin.id }}" data-college="{{ admin.college }}">
                             <td class="depthead-name">{{ admin.get_full_name|default:admin.username }}</td>
                             <td class="depthead-email">{{ admin.email }}</td>
                             <td class="depthead-college">{{ admin.college }}</td>
@@ -111,11 +120,10 @@
                                     data-status="{{ admin.account_status }}">Edit</button>
                             </td>
                         </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="empty-state">No College Head accounts yet.</td>
-                        </tr>
                         {% endfor %}
+                        <tr id="adminFilterEmpty" class="{% if depthead_accounts %}hidden{% endif %}">
+                            <td colspan="6" class="empty-state">No College Head accounts match the selected college.</td>
+                        </tr>
                     </tbody>
                 </table>
                 </div>
@@ -212,7 +220,7 @@
         <div class="loading-spinner"></div>
     </div>
     
-    <script src="{% static 'superadmin/js/manageAdmins.js' %}"></script>
+    <script src="{% static 'superadmin/js/manageAdmins.js' %}?v=20260908-college-filter"></script>
 </body>
 
 </html>
