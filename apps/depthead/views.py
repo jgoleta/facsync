@@ -1,4 +1,5 @@
 import csv
+import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -33,6 +34,9 @@ from .services.analytics import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 @login_required
 @role_required('depthead')
 def approve_faculty(request, user_id):
@@ -40,8 +44,13 @@ def approve_faculty(request, user_id):
     if request.method == 'POST':
         faculty_user.account_status = 'active'
         faculty_user.save()
-        send_faculty_approved_email(faculty_user)
-        return JsonResponse({'success': True, 'message': f"{faculty_user.get_full_name() or faculty_user.username} approved."})
+        email_sent = True
+        try:
+            send_faculty_approved_email(faculty_user)
+        except Exception:
+            email_sent = False
+            logger.exception("Failed to send faculty approval email to %s", faculty_user.email)
+        return JsonResponse({'success': True, 'message': f"{faculty_user.get_full_name() or faculty_user.username} approved.", 'email_sent': email_sent})
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 
@@ -111,8 +120,13 @@ def remove_faculty(request, user_id):
         name = faculty_user.get_full_name() or faculty_user.username
         email = faculty_user.email
         faculty_user.delete()
-        send_faculty_removed_email(email, name)
-        return JsonResponse({'success': True, 'message': f"{name} removed."})
+        email_sent = True
+        try:
+            send_faculty_removed_email(email, name)
+        except Exception:
+            email_sent = False
+            logger.exception("Failed to send faculty removal email to %s", email)
+        return JsonResponse({'success': True, 'message': f"{name} removed.", 'email_sent': email_sent})
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 

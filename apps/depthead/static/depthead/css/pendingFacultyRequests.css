@@ -1,3 +1,25 @@
+.pending-section .crud-action-form .btn-primary,
+.management-table-header-actions .btn-primary.header-action {
+    background: var(--primary);
+    color: var(--text-light);
+}
+
+.pending-section .crud-action-form .btn-primary:hover,
+.management-table-header-actions .btn-primary.header-action:hover {
+    background: var(--primary-dark);
+}
+
+.email-failure-note {
+    display: block;
+    margin-top: 6px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--warning);
+    color: var(--text);
+    font-size: 0.75rem;
+    font-weight: 400;
+}
+
 .btn-primary.danger {
     background: #dc3545;
 }
