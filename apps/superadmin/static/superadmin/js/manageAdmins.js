@@ -1,3 +1,19 @@
+function applyAdminCollegeFilter() {
+  const selected = (document.getElementById("collegeFilter")?.value || "all").toLowerCase();
+  let visibleCount = 0;
+  document.querySelectorAll("tr[data-depthead-id]").forEach((row) => {
+    const visible = selected === "all" || (row.dataset.college || "").toLowerCase() === selected;
+    row.classList.toggle("hidden", !visible);
+    if (visible) visibleCount += 1;
+  });
+  document.getElementById("adminFilterEmpty")?.classList.toggle("hidden", visibleCount > 0);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("collegeFilter")?.addEventListener("change", applyAdminCollegeFilter);
+  applyAdminCollegeFilter();
+});
+
 function showToast(message, isError = false) {
   const existing = document.querySelector(".toast");
   if (existing) existing.remove();
@@ -125,6 +141,7 @@ function updateDeptheadRow(depthead) {
   if (!row) return;
 
   row.querySelector(".depthead-college").textContent = depthead.college;
+  row.dataset.college = depthead.college;
   row.querySelector(".depthead-title").textContent = depthead.title_display;
 
   const statusCell = row.querySelector(".depthead-status");
@@ -133,4 +150,5 @@ function updateDeptheadRow(depthead) {
   const editBtn = row.querySelector(".edit-depthead-btn");
   editBtn.dataset.status = depthead.status;
   editBtn.dataset.college = depthead.college;
+  applyAdminCollegeFilter();
 }

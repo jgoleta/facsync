@@ -133,6 +133,7 @@ def manage_admins(request):
     depthead_accounts = User.objects.filter(role='depthead')
     return render(request, 'superadmin/manageAdmins.html', {
         'depthead_accounts': depthead_accounts,
+        'college_choices': get_college_choices(),
         'dept_head_form': DeptHeadInviteForm(),
         'role_choices': User.ROLE_CHOICES,
         'title_choices': User.TITLE_CHOICES,
