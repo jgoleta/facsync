@@ -42,6 +42,18 @@
   margin-right: auto;
 }
 
+.schedule-shell > .legend-card .bulk-delete-action {
+  border: 1px solid #dc2626;
+  background: #dc26261f;
+  color: #dc2626;
+}
+
+.schedule-shell > .legend-card .bulk-delete-action:hover:not(:disabled) {
+  border-color: #b91c1c;
+  background: rgba(185, 28, 28, 0.5);
+  color: #b91c1c;
+}
+
 .slot-item {
   position: relative;
   display: flex;
@@ -83,6 +95,50 @@
 .delete-event-btn:hover {
   background: #f7b2b7;
   color: #6a040f;
+}
+
+.bulk-delete-events-card {
+  max-width: 620px;
+}
+
+.bulk-delete-events-list {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  margin: 18px 0;
+  overflow-y: auto;
+}
+
+.bulk-delete-event-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fbff;
+  cursor: pointer;
+}
+
+.bulk-delete-event-option:hover {
+  border-color: var(--accent);
+  background: #eef6ff;
+}
+
+.bulk-delete-event-option input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  flex-shrink: 0;
+}
+
+.bulk-delete-event-option span {
+  display: grid;
+  gap: 3px;
+}
+
+.bulk-delete-event-option small {
+  color: var(--muted);
 }
 
 /* Improve the action and overflow controls used by the faculty calendar. */
@@ -212,6 +268,22 @@
 .google-calendar-confirm-modal {
   width: min(92vw, 480px);
   text-align: center;
+}
+
+.delete-confirmation-modal {
+  width: min(92vw, 480px);
+  text-align: center;
+}
+
+.delete-confirmation-modal h2 {
+  margin: 0 0 12px;
+  color: var(--text);
+}
+
+.delete-confirmation-modal p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .google-calendar-confirm-modal h2 {

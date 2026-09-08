@@ -28,6 +28,7 @@ from .services.google_calendar import (
     create_google_event,
     delete_consultation_event,
     delete_google_event,
+    delete_google_event_instance,
     disconnect_google_calendar,
     finish_oauth,
     update_consultation_event,
@@ -969,14 +970,14 @@ def api_schedule_events(request):
         sync_requested = payload.get('sync_to_google')
         if sync_requested is not None and not isinstance(sync_requested, bool):
             return HttpResponseBadRequest('sync_to_google must be true or false')
-        if sync_requested is True and connection is None:
+        if sync_requested is True and faculty.sync_enabled and connection is None:
             return JsonResponse(
                 {'error': 'Connect Google Calendar before adding this event to it.'},
                 status=409,
             )
         can_sync = bool(event.date or (event.day_of_week and event.start_month and event.end_month))
         sync_enabled = (
-            bool(connection and can_sync)
+            bool(connection and faculty.sync_enabled and can_sync)
             if sync_requested is True
             else bool(connection and faculty.sync_enabled and can_sync)
             if sync_requested is None
@@ -998,6 +999,58 @@ def api_schedule_events(request):
         return JsonResponse(_event_json(event), status=201)
 
     return HttpResponse(status=405)
+
+
+@login_required
+@role_required('faculty')
+@csrf_protect
+def api_schedule_events_bulk_delete(request):
+    """Delete several faculty schedule events and their managed Google events."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    faculty = _faculty_for_request(request)
+    if faculty is None:
+        return JsonResponse({'error': 'No faculty profile'}, status=400)
+    try:
+        payload = _json_body(request)
+    except ValueError as exc:
+        return HttpResponseBadRequest(str(exc))
+
+    event_ids = payload.get('event_ids')
+    if not isinstance(event_ids, list) or not event_ids:
+        return JsonResponse({'error': 'Select at least one schedule event to delete.'}, status=400)
+    try:
+        event_ids = list(dict.fromkeys(int(event_id) for event_id in event_ids))
+    except (TypeError, ValueError):
+        return JsonResponse({'error': 'event_ids must contain valid event IDs.'}, status=400)
+
+    events = list(ScheduleEvent.objects.filter(faculty=faculty, pk__in=event_ids))
+    if len(events) != len(event_ids):
+        return JsonResponse({'error': 'One or more selected events could not be found.'}, status=404)
+
+    connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+    sync_enabled = bool(connection and faculty.sync_enabled)
+    deleted_ids = []
+    try:
+        for event in events:
+            if sync_enabled and event.google_event_id:
+                delete_google_event(connection, event)
+            deleted_ids.append(event.pk)
+            event.delete()
+    except GoogleCalendarError as exc:
+        return JsonResponse({
+            'error': str(exc),
+            'deleted_ids': deleted_ids,
+            'deleted_count': len(deleted_ids),
+        }, status=502)
+
+    refresh_faculty_status(faculty)
+    return JsonResponse({
+        'status': 'deleted',
+        'deleted_ids': deleted_ids,
+        'deleted_count': len(deleted_ids),
+    })
 
 
 @login_required
@@ -1025,7 +1078,7 @@ def api_schedule_event_detail(request, pk):
         sync_requested = payload.get('sync_to_google')
         if sync_requested is not None and not isinstance(sync_requested, bool):
             return HttpResponseBadRequest('sync_to_google must be true or false')
-        if sync_requested is True and connection is None:
+        if sync_requested is True and faculty.sync_enabled and connection is None:
             return JsonResponse(
                 {'error': 'Connect Google Calendar before adding this event to it.'},
                 status=409,
@@ -1040,7 +1093,7 @@ def api_schedule_event_detail(request, pk):
 
         can_sync = bool(event.date or (event.day_of_week and event.start_month and event.end_month))
         sync_enabled = (
-            bool(connection and can_sync)
+            bool(connection and faculty.sync_enabled and can_sync)
             if sync_requested is True
             else bool(connection and faculty.sync_enabled and can_sync)
             if sync_requested is None
@@ -1083,9 +1136,34 @@ def api_schedule_event_detail(request, pk):
 
     if request.method == 'DELETE':
         try:
+            occurrence_date_value = request.GET.get('occurrence_date')
+            if event.date is None and occurrence_date_value:
+                try:
+                    occurrence_date = date.fromisoformat(occurrence_date_value)
+                except ValueError as exc:
+                    raise ValueError('Invalid occurrence date.') from exc
+                if sync_enabled and event.google_event_id:
+                    delete_google_event_instance(
+                        connection,
+                        event.google_event_id,
+                        occurrence_date,
+                    )
+                excluded_dates = list(event.recurrence_excluded_dates or [])
+                occurrence_key = occurrence_date.isoformat()
+                if occurrence_key not in excluded_dates:
+                    excluded_dates.append(occurrence_key)
+                    event.recurrence_excluded_dates = excluded_dates
+                    event.save(update_fields=['recurrence_excluded_dates', 'updated_at'])
+                refresh_faculty_status(faculty)
+                return JsonResponse({
+                    'status': 'occurrence_deleted',
+                    'occurrence_date': occurrence_key,
+                })
             if sync_enabled and event.google_event_id:
                 delete_google_event(connection, event)
             event.delete()
+        except ValueError as exc:
+            return HttpResponseBadRequest(str(exc))
         except GoogleCalendarError as exc:
             return JsonResponse({'error': str(exc)}, status=502)
         refresh_faculty_status(faculty)

@@ -20,11 +20,49 @@ document.addEventListener("DOMContentLoaded", () => {
   const schedulePreviewBody = document.getElementById("schedule-preview-body");
   const schedulePreviewEmpty = document.getElementById("schedule-preview-empty");
   const schedulePreviewCount = document.getElementById("schedule-preview-count");
+  const bulkDeleteEventsBtn = document.getElementById("delete-selected-events-btn");
+  const bulkDeleteEventsModal = document.getElementById("bulk-delete-events-modal");
+  const bulkDeleteEventsClose = document.getElementById("bulk-delete-events-close");
+  const bulkDeleteEventsCancel = document.getElementById("bulk-delete-events-cancel");
+  const bulkDeleteEventsList = document.getElementById("bulk-delete-events-list");
+  const bulkDeleteEventsEmpty = document.getElementById("bulk-delete-events-empty");
+  const bulkDeleteEventsConfirm = document.getElementById("bulk-delete-events-confirm");
+  const deleteEventConfirmModal = document.getElementById("deleteEventConfirmModal");
+  const deleteEventConfirmMessage = document.getElementById("deleteEventConfirmMessage");
+  const deleteEventConfirmClose = document.getElementById("deleteEventConfirmClose");
+  const deleteEventConfirmCancel = document.getElementById("deleteEventConfirmCancel");
+  const deleteEventConfirmYes = document.getElementById("deleteEventConfirmYes");
   const scheduleCrudLoadingOverlay = document.getElementById("facultyLoadingOverlay");
   const scheduleCrudLoadingMessage = document.getElementById("facultyLoadingMessage");
   let schedulePreviewEventIds = [];
+  let bulkDeleteEventIds = new Set();
   let scheduleUploadInProgress = false;
   let scheduleCrudLoadingCount = 0;
+  let deleteEventConfirmResolver = null;
+
+  function askDeleteConfirmation(message) {
+    return new Promise((resolve) => {
+      deleteEventConfirmResolver = resolve;
+      if (deleteEventConfirmMessage) deleteEventConfirmMessage.textContent = message;
+      deleteEventConfirmModal?.classList.remove("hidden");
+      deleteEventConfirmYes?.focus();
+    });
+  }
+
+  function finishDeleteConfirmation(confirmed) {
+    deleteEventConfirmModal?.classList.add("hidden");
+    if (deleteEventConfirmResolver) {
+      deleteEventConfirmResolver(confirmed);
+      deleteEventConfirmResolver = null;
+    }
+  }
+
+  deleteEventConfirmYes?.addEventListener("click", () => finishDeleteConfirmation(true));
+  deleteEventConfirmCancel?.addEventListener("click", () => finishDeleteConfirmation(false));
+  deleteEventConfirmClose?.addEventListener("click", () => finishDeleteConfirmation(false));
+  deleteEventConfirmModal?.addEventListener("click", (event) => {
+    if (event.target === deleteEventConfirmModal) finishDeleteConfirmation(false);
+  });
 
   function showScheduleCrudLoading(message) {
     scheduleCrudLoadingCount += 1;
@@ -104,6 +142,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Store the schedule returned by the server for calendar rendering.
   const facultySchedule = { name: null, schedule: [] };
+  // Keep the profile preference separate from whether Google is connected.
+  // Local-only mode must never ask the user about Google Calendar.
+  let calendarSyncEnabled = false;
 
   // Fetch schedule events, normalize them, and refresh the calendar display.
   async function fetchEventsFromApi(sync = false) {
@@ -119,6 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       const data = await res.json();
       const events = data.events || [];
+      calendarSyncEnabled = Boolean(data.sync_enabled);
 
       facultySchedule.schedule = window.FacSyncCalendar.buildSchedule(events);
       if (calendarSyncStatus) {
@@ -172,6 +214,111 @@ document.addEventListener("DOMContentLoaded", () => {
   function closeSchedulePreview() {
     if (schedulePreviewModal) schedulePreviewModal.classList.add("hidden");
   }
+
+  function closeBulkDeleteEventsModal() {
+    if (bulkDeleteEventsModal) bulkDeleteEventsModal.classList.add("hidden");
+    bulkDeleteEventIds = new Set();
+  }
+
+  function updateBulkDeleteButton() {
+    if (bulkDeleteEventsConfirm) {
+      bulkDeleteEventsConfirm.disabled = bulkDeleteEventIds.size === 0;
+      bulkDeleteEventsConfirm.textContent = bulkDeleteEventIds.size
+        ? `Delete Selected (${bulkDeleteEventIds.size})`
+        : "Delete Selected";
+    }
+  }
+
+  function getDeletableScheduleEvents() {
+    const eventsById = new Map();
+    facultySchedule.schedule.forEach((dayEntry) => {
+      dayEntry.events.forEach((event) => {
+        if (event.id === undefined || event.id === null || event.isConsultation) return;
+        const key = String(event.id);
+        if (!eventsById.has(key)) {
+          eventsById.set(key, { ...event, firstDate: dayEntry.date });
+        }
+      });
+    });
+    return [...eventsById.values()].sort((a, b) => {
+      const titleOrder = String(a.title || "").localeCompare(String(b.title || ""));
+      return titleOrder || String(a.firstDate || "").localeCompare(String(b.firstDate || ""));
+    });
+  }
+
+  function renderBulkDeleteEvents() {
+    if (!bulkDeleteEventsList) return;
+    bulkDeleteEventsList.innerHTML = "";
+    bulkDeleteEventIds = new Set();
+    const events = getDeletableScheduleEvents();
+    if (bulkDeleteEventsEmpty) bulkDeleteEventsEmpty.classList.toggle("hidden", events.length > 0);
+
+    events.forEach((event) => {
+      const label = document.createElement("label");
+      label.className = "bulk-delete-event-option";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = String(event.id);
+      checkbox.addEventListener("change", () => {
+        if (checkbox.checked) bulkDeleteEventIds.add(String(event.id));
+        else bulkDeleteEventIds.delete(String(event.id));
+        updateBulkDeleteButton();
+      });
+
+      const details = document.createElement("span");
+      const title = document.createElement("strong");
+      title.textContent = event.title || "Untitled event";
+      const meta = document.createElement("small");
+      meta.textContent = `${event.isRecurring ? "Recurring" : event.firstDate || "Date not set"} · ${formatEventTime(event)}`;
+      details.appendChild(title);
+      details.appendChild(meta);
+      label.appendChild(checkbox);
+      label.appendChild(details);
+      bulkDeleteEventsList.appendChild(label);
+    });
+    updateBulkDeleteButton();
+  }
+
+  async function deleteSelectedEvents() {
+    const eventIds = [...bulkDeleteEventIds].map(Number);
+    if (!eventIds.length) return;
+    const confirmed = await askDeleteConfirmation(
+      `Delete ${eventIds.length} selected event${eventIds.length === 1 ? "" : "s"}?`,
+    );
+    if (!confirmed) return;
+
+    showScheduleCrudLoading("Deleting selected events...");
+    try {
+      const response = await fetch("/faculty/api/events/bulk-delete/", {
+        method: "POST",
+        headers: requestHeaders(true),
+        body: JSON.stringify({ event_ids: eventIds }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Unable to delete selected events.");
+      closeBulkDeleteEventsModal();
+      facultyFeedback?.showToast(`${data.deleted_count} event${data.deleted_count === 1 ? "" : "s"} deleted successfully.`);
+      await fetchEventsFromApi();
+    } catch (error) {
+      facultyFeedback?.showToast(error.message, true);
+    } finally {
+      hideScheduleCrudLoading();
+    }
+  }
+
+  if (bulkDeleteEventsBtn) {
+    bulkDeleteEventsBtn.addEventListener("click", () => {
+      renderBulkDeleteEvents();
+      if (bulkDeleteEventsModal) bulkDeleteEventsModal.classList.remove("hidden");
+    });
+  }
+  bulkDeleteEventsClose?.addEventListener("click", closeBulkDeleteEventsModal);
+  bulkDeleteEventsCancel?.addEventListener("click", closeBulkDeleteEventsModal);
+  bulkDeleteEventsConfirm?.addEventListener("click", deleteSelectedEvents);
+  bulkDeleteEventsModal?.addEventListener("click", (event) => {
+    if (event.target === bulkDeleteEventsModal) closeBulkDeleteEventsModal();
+  });
 
   if (schedulePreviewClose) schedulePreviewClose.addEventListener("click", closeSchedulePreview);
   if (schedulePreviewModal) {
@@ -399,10 +546,12 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.classList.remove("hidden");
 
     removeBtn.onclick = () => {
-      if (confirm(`Are you sure you want to delete "${eventData.title}"?`)) {
-        deleteEvent(dateKey, eventData);
-        modal.classList.add("hidden");
-      }
+      askDeleteConfirmation(`Are you sure you want to delete "${eventData.title}"?`).then((confirmed) => {
+        if (confirmed) {
+          deleteEvent(dateKey, eventData);
+          modal.classList.add("hidden");
+        }
+      });
     };
 
     if (editBtn) {
@@ -418,7 +567,10 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       if (eventToDelete.id) {
         try {
-          const res = await fetch(`/faculty/api/events/${eventToDelete.id}/`, {
+          const occurrenceQuery = eventToDelete.isRecurring && dateKey
+            ? `?occurrence_date=${encodeURIComponent(dateKey)}`
+            : '';
+          const res = await fetch(`/faculty/api/events/${eventToDelete.id}/${occurrenceQuery}`, {
             method: 'DELETE',
             headers: requestHeaders(),
           });
@@ -695,6 +847,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function askGoogleCalendarSync() {
+    if (!calendarSyncEnabled) return Promise.resolve(false);
     return new Promise((resolve) => {
       googleCalendarConfirmResolver = resolve;
       googleCalendarConfirmModal.classList.remove("hidden");
