@@ -230,6 +230,16 @@ table td:first-child { color: var(--text-primary); font-weight: 750; }
   font-weight: 600;
 }
 
+.pending-section .actions .crud-action-form .btn-primary {
+  border-color: transparent;
+  background: var(--primary);
+  color: var(--text-light);
+}
+
+.pending-section .actions .crud-action-form .btn-primary:hover {
+  background: var(--primary-dark);
+}
+
 .actions button.danger {
   border-color: #fecdd3;
   background: #fff1f2;

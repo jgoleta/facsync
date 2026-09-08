@@ -1,4 +1,5 @@
 from datetime import timedelta
+from smtplib import SMTPAuthenticationError
 
 from django.test import TestCase
 from django.urls import reverse
@@ -26,6 +27,61 @@ class DeptheadViewTests(TestCase):
         response = self.client.get(reverse('depthead:admin_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'depthead/adminDashboard.html')
+
+    @patch('apps.depthead.views.send_faculty_approved_email')
+    def test_approve_faculty_succeeds_when_email_fails(self, send_email):
+        faculty = get_user_model().objects.create_user(
+            username='approval-email-failure', email='approval@example.com',
+            role='faculty', account_status='pending', college='CCS',
+        )
+        send_email.side_effect = SMTPAuthenticationError(535, b'Authentication failed')
+
+        with self.assertLogs('apps.depthead.views', level='ERROR') as logs:
+            response = self.client.post(reverse('depthead:approve_faculty', args=[faculty.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        faculty.refresh_from_db()
+        self.assertFalse(response.json()['email_sent'])
+        self.assertEqual(faculty.account_status, 'active')
+        send_email.assert_called_once_with(faculty)
+        self.assertIn('Failed to send faculty approval email to approval@example.com', logs.output[0])
+        self.assertIsInstance(logs.records[0].exc_info[1], SMTPAuthenticationError)
+
+    @patch('apps.depthead.views.send_faculty_removed_email')
+    def test_remove_faculty_succeeds_when_email_fails(self, send_email):
+        faculty = get_user_model().objects.create_user(
+            username='removal-email-failure', email='removal@example.com',
+            role='faculty', account_status='active', college='CCS',
+        )
+        faculty_id = faculty.pk
+        send_email.side_effect = SMTPAuthenticationError(535, b'Authentication failed')
+
+        with self.assertLogs('apps.depthead.views', level='ERROR') as logs:
+            response = self.client.post(reverse('depthead:remove_faculty', args=[faculty_id]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['success'])
+        self.assertFalse(get_user_model().objects.filter(pk=faculty_id).exists())
+        self.assertFalse(response.json()['email_sent'])
+        send_email.assert_called_once_with('removal@example.com', 'removal-email-failure')
+        self.assertIn('Failed to send faculty removal email to removal@example.com', logs.output[0])
+        self.assertIsInstance(logs.records[0].exc_info[1], SMTPAuthenticationError)
+
+    def test_faculty_actions_report_email_success(self):
+        for action, status, verb in [('approve', 'pending', 'approved'), ('remove', 'active', 'removed')]:
+            with self.subTest(action=action):
+                faculty = get_user_model().objects.create_user(
+                    username=f'{action}-email-success', email='faculty@example.com',
+                    role='faculty', account_status=status, college='CCS',
+                )
+                with patch(f'apps.depthead.views.send_faculty_{verb}_email') as send_email:
+                    response = self.client.post(reverse(f'depthead:{action}_faculty', args=[faculty.pk]))
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json(), {
+                    'success': True, 'message': f'{faculty.username} {verb}.', 'email_sent': True,
+                })
+                send_email.assert_called_once()
 
     def test_admin_dashboard_exposes_ai_loading_context(self):
         response = self.client.get(reverse('depthead:admin_dashboard'))

@@ -133,6 +133,16 @@ function showCrudToast(message, isError = false) {
     }, 3200);
 }
 
+function showEmailFailureNote() {
+    const toast = document.querySelector('.toast:not(.error)');
+    if (!toast) return;
+
+    const note = document.createElement('small');
+    note.className = 'email-failure-note';
+    note.textContent = 'Note: confirmation email could not be sent.';
+    toast.appendChild(note);
+}
+
 document.querySelectorAll('.crud-action-form').forEach((form) => {
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -160,7 +170,11 @@ document.querySelectorAll('.crud-action-form').forEach((form) => {
             }
 
             showCrudToast(data.message || 'Request completed successfully.');
-            window.setTimeout(() => window.location.reload(), 1100);
+            const emailFailed = data.email_sent === false;
+            if (emailFailed) {
+                showEmailFailureNote();
+            }
+            window.setTimeout(() => window.location.reload(), emailFailed ? 3000 : 1100);
         } catch (error) {
             setCrudLoading(false);
             showCrudToast(error.message || 'Unable to complete the request.', true);
