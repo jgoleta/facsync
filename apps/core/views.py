@@ -25,6 +25,7 @@ def register_page(request):
     return render(request, 'core/registerPage.html')
 
 STATUS_DISPLAY_MAP = {
+    'not_set': ('not-set', 'status-not-set'),
     'available': ('available', 'status-available'),
     'busy': ('busy', 'status-busy'),
     'virtual_only': ('virtual', 'status-virtual'),
@@ -33,6 +34,7 @@ STATUS_DISPLAY_MAP = {
 }
 
 STATUS_NOTE_DEFAULTS = {
+    'not_set': 'Not set (default status)',
     'available': 'Available now',
     'busy': 'Currently busy',
     'virtual_only': 'Virtual consultation available',

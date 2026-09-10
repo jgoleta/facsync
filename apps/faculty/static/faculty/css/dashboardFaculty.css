@@ -4,6 +4,7 @@
   --status-virtual: #17a2b8; /* light blue */
   --status-leave: #6c757d; /* gray */
   --status-unavailable: #dc3545; /* red */
+  --status-not-set: #6c757d;
 }
 
 .primary-button {
@@ -317,6 +318,9 @@ h2 {
 }
 .live-status-card .status-indicator.available {
   background-color: var(--status-available);
+}
+.live-status-card .status-indicator.not-set {
+  background-color: var(--status-not-set);
 }
 .live-status-card .status-indicator.busy {
   background-color: var(--status-busy);
@@ -923,6 +927,7 @@ h2 {
 }
 
 .legend-card .status-indicator.available { background: var(--status-available); }
+.legend-card .status-indicator.not-set { background: var(--status-not-set); }
 .legend-card .status-indicator.busy { background: var(--status-busy); }
 .legend-card .status-indicator.virtual { background: var(--status-virtual); }
 .legend-card .status-indicator.on-leave { background: var(--status-leave); }

@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Schedule</title>
     <link rel="stylesheet" href="{% static 'css/shared_schedule.css' %}?v=20260902-legend-card-refresh">
-    <link rel="stylesheet" href="{% static 'faculty/css/scheduleFaculty.css' %}?v=20260827-student-activity-list">
+    <link rel="stylesheet" href="{% static 'faculty/css/scheduleFaculty.css' %}?v=20260910-header-meta-row">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
 </head>
 
@@ -44,7 +44,10 @@
                     </div>
                     <div class="header-meta">
                         <button id="syncCalendarBtn" class="sync-button" type="button">↻ Sync</button>
-                        <span class="date-pill">June 2026</span>
+                        <div class="month-navigation" aria-label="Change calendar month">
+                            <select id="calendar-month-select" class="month-select" aria-label="Select month"></select>
+                            <select id="calendar-year-select" class="month-select" aria-label="Select year"></select>
+                        </div>
                     </div>
                 </div>
 
@@ -271,8 +274,8 @@
     </div>
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'js/calendar/calendar-core.js' %}?v=20260902-recurrence-dates"></script>
-    <script src="{% static 'faculty/js/calendar/calendar-editor.js' %}?v=20260908-unified-preview-bulk-delete"></script>
+    <script src="{% static 'js/calendar/calendar-core.js' %}?v=20260910-month-navigation"></script>
+    <script src="{% static 'faculty/js/calendar/calendar-editor.js' %}?v=20260910-month-dropdown"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 

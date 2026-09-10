@@ -384,6 +384,7 @@ def student_behavior(request):
 
 
 STATUS_LABELS = {
+    'not_set': ('Not Set (Default Status)', 'status-not-set'),
     'available': ('Available', 'status-available'),
     'busy': ('Busy', 'status-busy'),
     'virtual_only': ('Virtual Only', 'status-virtual'),

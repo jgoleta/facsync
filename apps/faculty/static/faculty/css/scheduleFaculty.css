@@ -54,6 +54,67 @@
   color: #b91c1c;
 }
 
+.month-navigation {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.schedule-card .header-meta {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+
+.schedule-card .header-meta .sync-button {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.month-select {
+  min-width: 155px;
+  min-height: 34px;
+  padding: 7px 30px 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.month-select:hover,
+.month-select:focus-visible {
+  border-color: var(--accent);
+  background: #d8ebff;
+}
+
+.month-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+@media (max-width: 420px) {
+  .schedule-card .header-meta {
+    flex-direction: row;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .schedule-card .month-navigation {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .schedule-card .month-select {
+    min-width: 0;
+    flex: 1 1 0;
+    width: 0;
+  }
+}
+
 .slot-item {
   position: relative;
   display: flex;

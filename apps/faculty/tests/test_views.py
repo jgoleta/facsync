@@ -924,6 +924,27 @@ class FacultyViewTests(TestCase):
         self.assertEqual(payload['start']['dateTime'][:10], '2026-09-04')
         self.assertEqual(payload['recurrence'], ['RRULE:FREQ=WEEKLY;BYDAY=FR;COUNT=4'])
 
+    def test_recurring_google_payload_honors_exact_start_and_end_dates(self):
+        faculty = self._make_csv_faculty('bounded-recurring-payload')
+        event = ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Bounded Monday class',
+            event_type='busy',
+            day_of_week='monday',
+            start_month=9,
+            end_month=9,
+            recurrence_start_date=date(2026, 9, 1),
+            recurrence_end_date=date(2026, 9, 15),
+            start_time='10:30',
+            end_time='12:00',
+        )
+        event.refresh_from_db()
+
+        payload = google_event_payload(event)
+
+        self.assertEqual(payload['start']['dateTime'][:10], '2026-09-07')
+        self.assertEqual(payload['recurrence'], ['RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=2'])
+
     def test_add_event_with_empty_recurring_day_remains_date_based(self):
         faculty = self._make_csv_faculty('date-event')
 

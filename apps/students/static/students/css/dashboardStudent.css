@@ -233,6 +233,11 @@
   box-shadow: inset 5px 0 0 0 #28a745;
 }
 
+.student-dashboard .card[data-status="not_set"],
+.student-dashboard .card[data-status="not-set"] {
+  box-shadow: inset 5px 0 0 0 #fff;
+}
+
 .student-dashboard .card[data-status="busy"] {
   box-shadow: inset 5px 0 0 0 #ffc107;
 }

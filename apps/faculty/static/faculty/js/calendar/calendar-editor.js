@@ -4,9 +4,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const legendList = document.getElementById("legendList");
   const dayLabels = document.querySelector(".day-labels");
   const viewControls = document.querySelector(".view-controls");
-  const datePill = document.querySelector(".date-pill");
   const calendarSyncStatus = document.getElementById("calendar-sync-status");
   const syncCalendarBtn = document.getElementById("syncCalendarBtn");
+  const monthSelect = document.getElementById("calendar-month-select");
+  const yearSelect = document.getElementById("calendar-year-select");
   const walkInToggle = document.getElementById("walkInToggle");
   const walkInFeedback = document.getElementById("walkInFeedback");
   const uploadScheduleBtn = document.getElementById("upload-schedule-btn");
@@ -83,6 +84,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   let currentView = "monthly"; // Default view
+  let displayedDate = new Date();
+  let rawScheduleEvents = [];
   let isEditing = false; // To track if the modal is for editing
 
   let activeEventContext = null;
@@ -162,8 +165,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       const events = data.events || [];
       calendarSyncEnabled = Boolean(data.sync_enabled);
+      rawScheduleEvents = events;
 
-      facultySchedule.schedule = window.FacSyncCalendar.buildSchedule(events);
+      facultySchedule.schedule = window.FacSyncCalendar.buildSchedule(events, displayedDate);
       if (calendarSyncStatus) {
         calendarSyncStatus.textContent = data.sync_error
           ? `Google sync failed: ${data.sync_error}`
@@ -637,22 +641,29 @@ document.addEventListener("DOMContentLoaded", () => {
     legendList.innerHTML = "";
 
     let daysToRender;
-    const today = new Date();
+    const today = displayedDate;
     const year = today.getFullYear();
     const monthIndex = today.getMonth();
     const monthNumber = String(monthIndex + 1).padStart(2, "0");
     const monthName = today.toLocaleDateString("en-US", { month: "short" });
     const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-    if (datePill) datePill.textContent = today.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+    const firstDayOfMonth = new Date(year, monthIndex, 1).getDay();
+    if (monthSelect) {
+      monthSelect.value = String(monthIndex);
+    }
+    if (yearSelect) yearSelect.value = String(year);
 
     if (currentView === "monthly") {
-      daysToRender = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+      daysToRender = [
+        ...Array.from({ length: firstDayOfMonth }, () => 0),
+        ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+      ];
       calendarGrid.classList.remove("daily-view-grid");
       calendarGrid.style.gridTemplateColumns = "";
       if (dayLabels) dayLabels.style.display = "";
     } else if (currentView === "weekly") {
       const dayOfMonth = today.getDate();
-      const dayOfWeek = (today.getDay() + 6) % 7; // Mon=0
+      const dayOfWeek = today.getDay(); // Sun=0
       const weekStart = dayOfMonth - dayOfWeek;
       daysToRender = Array.from({ length: 7 }, (_, i) => weekStart + i);
       calendarGrid.classList.remove("daily-view-grid");
@@ -831,10 +842,60 @@ document.addEventListener("DOMContentLoaded", () => {
         viewControls.querySelector(".active").classList.remove("active");
         button.classList.add("active");
         currentView = button.dataset.view;
+        updateMonthSelector();
         renderCalendar();
       });
     });
   }
+
+  function updateMonthSelector() {
+    if (!monthSelect && !yearSelect) return;
+    const monthSelectionEnabled = currentView === "monthly";
+    [monthSelect, yearSelect].forEach((select) => {
+      if (!select) return;
+      select.disabled = !monthSelectionEnabled;
+      select.setAttribute("aria-disabled", String(!monthSelectionEnabled));
+    });
+  }
+
+  function populateMonthSelector() {
+    if (!monthSelect) return;
+    const currentYear = new Date().getFullYear();
+    monthSelect.innerHTML = "";
+    for (let month = 0; month < 12; month += 1) {
+      const option = document.createElement("option");
+      option.value = String(month);
+      option.textContent = new Date(2000, month, 1).toLocaleDateString("en-US", {
+        month: "long",
+      });
+      monthSelect.appendChild(option);
+    }
+    if (yearSelect) {
+      yearSelect.innerHTML = "";
+      for (let year = currentYear - 1; year <= currentYear + 2; year += 1) {
+        const option = document.createElement("option");
+        option.value = String(year);
+        option.textContent = String(year);
+        yearSelect.appendChild(option);
+      }
+    }
+    monthSelect.value = String(displayedDate.getMonth());
+    if (yearSelect) yearSelect.value = String(displayedDate.getFullYear());
+  }
+
+  function changeDisplayedMonth() {
+    const month = Number(monthSelect?.value);
+    const year = Number(yearSelect?.value);
+    if (!Number.isInteger(year) || !Number.isInteger(month)) return;
+    displayedDate = new Date(year, month, 1);
+    facultySchedule.schedule = window.FacSyncCalendar.buildSchedule(rawScheduleEvents, displayedDate);
+    renderCalendar();
+  }
+
+  monthSelect?.addEventListener("change", changeDisplayedMonth);
+  yearSelect?.addEventListener("change", changeDisplayedMonth);
+  populateMonthSelector();
+  updateMonthSelector();
 
   // --- Add and Edit Event Modal ---
 
