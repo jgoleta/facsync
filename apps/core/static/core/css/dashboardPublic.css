@@ -104,6 +104,9 @@
 .card[data-status="unavailable"] {
   box-shadow: inset 5px 0 0 0 #F63B3B, 0 6px 18px rgba(108, 117, 125, 0.1);
 }
+.card[data-status="not-set"] {
+  box-shadow: inset 5px 0 0 0 #fff, 0 6px 18px rgba(16, 24, 40, 0.04);
+}
 .card .card-notify:hover,
 .card .card-notify:focus {
   background: rgba(11, 116, 222, 0.18);
@@ -157,6 +160,9 @@
 }
 .status-available {
   background: #28a745;
+}
+.status-not-set {
+    background-color: #6c757d;
 }
 .status-busy {
   background: #ffc107;

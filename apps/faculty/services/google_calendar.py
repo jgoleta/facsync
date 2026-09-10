@@ -748,15 +748,15 @@ def sync_google_calendar(user):
 
 def refresh_faculty_status(faculty, google_events=None):
     """Derive status from local, synced, and approved consultation records."""
-    # A temporary manual status always falls back to Available when its
-    # deadline passes. Keeping the resulting Available status as a manual
+    # A temporary manual status always falls back to Not Set when its
+    # deadline passes. Keeping the resulting Not Set status as a manual
     # override prevents an active calendar event from immediately replacing it.
     if (
         faculty.manual_status_override
         and faculty.manual_status_expires_at
         and faculty.manual_status_expires_at <= timezone.now()
     ):
-        faculty.manual_status = 'available'
+        faculty.manual_status = 'not_set'
         faculty.status_note = ''
         faculty.manual_status_expires_at = None
         faculty.save(update_fields=[
@@ -792,6 +792,8 @@ def refresh_faculty_status(faculty, google_events=None):
         recurring_day=None,
         start_month=None,
         end_month=None,
+        recurrence_start_date=None,
+        recurrence_end_date=None,
     ):
         nonlocal active_status
         if event_date is None or start_month is not None:
@@ -803,6 +805,10 @@ def refresh_faculty_status(faculty, google_events=None):
                 else now.month >= start_month or now.month <= end_month
             )
             if not month_is_active:
+                return
+            if recurrence_start_date and now.date() < recurrence_start_date:
+                return
+            if recurrence_end_date and now.date() > recurrence_end_date:
                 return
             if recurring_day and recurring_day != now.strftime('%A').casefold():
                 return
@@ -832,6 +838,8 @@ def refresh_faculty_status(faculty, google_events=None):
             event.day_of_week,
             event.start_month,
             event.end_month,
+            event.recurrence_start_date,
+            event.recurrence_end_date,
         )
 
     # Approved system consultations occupy the calendar even when their
@@ -855,7 +863,10 @@ def refresh_faculty_status(faculty, google_events=None):
             )
             consider_event(values['date'], values['start_time'], values['end_time'], candidate)
 
-    next_status = faculty.manual_status if faculty.manual_status_override else (active_status or faculty.manual_status)
+    # Auto-update mode has no status when there is no active calendar event.
+    # Do not reuse the previous manual status as that makes an expired event
+    # appear to remain active indefinitely.
+    next_status = faculty.manual_status if faculty.manual_status_override else (active_status or 'not_set')
     if faculty.current_status != next_status:
         changed_at = timezone.now()
         faculty.current_status = next_status

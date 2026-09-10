@@ -125,6 +125,7 @@ function renderWalkInState(data) {
   if (queueFacultyName) queueFacultyName.textContent = data.faculty_name;
   if (queueFacultyStatus) {
     const statusLabels = {
+      not_set: "not set (default status)",
       available: "available",
       busy: "busy",
       virtual_only: "virtual only",
@@ -136,6 +137,7 @@ function renderWalkInState(data) {
       data.faculty_status ||
       "status unavailable";
     const statusClasses = {
+      not_set: "not-set",
       available: "available",
       busy: "busy",
       virtual_only: "virtual",
@@ -338,16 +340,20 @@ function renderCalendar() {
   const monthIndex = today.getMonth();
   const monthName = today.toLocaleDateString("en-US", { month: "short" });
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, monthIndex, 1).getDay();
   const monthNumber = String(monthIndex + 1).padStart(2, "0");
 
   if (currentView === "monthly") {
-    daysToRender = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+    daysToRender = [
+      ...Array.from({ length: firstDayOfMonth }, () => 0),
+      ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+    ];
     calendarGrid.classList.remove("daily-view-grid");
     calendarGrid.style.gridTemplateColumns = "";
     if (dayLabels) dayLabels.style.display = "";
   } else if (currentView === "weekly") {
     const dayOfMonth = today.getDate();
-    const dayOfWeek = (today.getDay() + 6) % 7; // Mon=0
+    const dayOfWeek = today.getDay(); // Sun=0
     const weekStart = dayOfMonth - dayOfWeek;
     daysToRender = Array.from({ length: 7 }, (_, i) => weekStart + i);
     calendarGrid.classList.remove("daily-view-grid");

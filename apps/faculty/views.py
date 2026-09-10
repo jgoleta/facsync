@@ -383,15 +383,16 @@ def dashboard(request):
         status='completed',
     ).select_related('user').order_by('-date', '-start_time')
     today = timezone.localdate()
-    current_status = faculty_profile.current_status if faculty_profile else 'available'
+    current_status = faculty_profile.current_status if faculty_profile else 'not_set'
     status_css_class = {
+        'not_set': 'not-set',
         'available': 'available',
         'busy': 'busy',
         'virtual_only': 'virtual',
         'on_leave': 'on-leave',
         'unavailable': 'unavailable',
-    }.get(current_status, 'available')
-    status_label = dict(FacultyProfile.STATUS_CHOICES).get(current_status, 'Available')
+    }.get(current_status, 'not-set')
+    status_label = dict(FacultyProfile.STATUS_CHOICES).get(current_status, 'Not Set (Default Status)')
     return render(request, 'faculty/dashboardFaculty.html', {
         'faculty_profile': faculty_profile,
         'current_status': current_status,
@@ -448,6 +449,7 @@ def update_status(request):
     submitted_status = payload.get('status', faculty_profile.manual_status)
     status_aliases = {'virtual': 'virtual_only', 'on-leave': 'on_leave'}
     status_css_classes = {
+        'not_set': 'not-set',
         'available': 'available',
         'busy': 'busy',
         'virtual_only': 'virtual',

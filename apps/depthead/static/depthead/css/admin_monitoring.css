@@ -213,6 +213,9 @@
 .faculty-card.status-available {
   --status-color: #22c55e;
 }
+.faculty-card.status-not-set {
+  border-left-color: #fff;
+}
 .status-available .status-badge {
   background-color: #22c55e;
 }

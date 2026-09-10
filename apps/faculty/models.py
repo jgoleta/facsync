@@ -5,6 +5,7 @@ from apps.core.colleges import get_college_label
 
 class FacultyProfile(models.Model):
     STATUS_CHOICES = [
+        ('not_set', 'Not Set (Default Status)'),
         ('available', 'Available'),
         ('busy', 'Busy'),
         ('virtual_only', 'Virtual Only'),
@@ -17,12 +18,12 @@ class FacultyProfile(models.Model):
     college_id = models.CharField(max_length=64, db_column='college_id')
     office_location = models.CharField(max_length=128, blank=True)
     biography = models.TextField(blank=True)
-    current_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='available')
+    current_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='not_set')
     status_note = models.TextField(blank=True)
     status_updated_at = models.DateTimeField(null=True, blank=True)
     # Manual status is retained so a failed/revoked calendar sync can safely
     # fall back to the faculty member's last explicit status.
-    manual_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='available')
+    manual_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='not_set')
     manual_status_override = models.BooleanField(default=False)
     manual_status_expires_at = models.DateTimeField(null=True, blank=True)
     # Preserve the previous connected-calendar behavior for existing users;
@@ -73,6 +74,7 @@ class GoogleCalendarConnection(models.Model):
 
 class StatusHistory(models.Model):
     STATUS_CHOICES = [
+        ('not_set', 'Not Set (Default Status)'),
         ('available', 'Available'),
         ('busy', 'Busy'),
         ('virtual_only', 'Virtual Only'),

@@ -48,34 +48,52 @@
     return month >= startMonth || month <= endMonth;
   }
 
-  function recurringDateKeys(dayOfWeek, startMonth, endMonth, excludedDates = []) {
-    const today = new Date();
-    const first = new Date(today.getFullYear(), today.getMonth(), 1 - 7);
-    const last = new Date(today.getFullYear(), today.getMonth() + 1, 7);
+  function recurringDateKeys(
+    dayOfWeek,
+    startMonth,
+    endMonth,
+    startDate = null,
+    endDate = null,
+    excludedDates = [],
+    referenceDate = new Date(),
+  ) {
+    const first = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1 - 7);
+    const last = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 7);
     const target = dayOfWeek ? weekdayIndexes[dayOfWeek] : null;
     const dates = [];
     for (let cursor = new Date(first); cursor <= last; cursor.setDate(cursor.getDate() + 1)) {
+      const dateKey = localDateKey(cursor);
       if (monthIsIncluded(cursor.getMonth() + 1, startMonth, endMonth)
-        && !excludedDates.includes(localDateKey(cursor))
+        && (!startDate || dateKey >= startDate)
+        && (!endDate || dateKey <= endDate)
+        && !excludedDates.includes(dateKey)
         && (target === null || cursor.getDay() === target)) {
-        dates.push(localDateKey(cursor));
+        dates.push(dateKey);
       }
     }
     return dates;
   }
 
-  function eventDateKeys(event) {
+  function eventDateKeys(event, referenceDate) {
     if (event.isRecurring) {
-      return recurringDateKeys(event.dayOfWeek, event.startMonth, event.endMonth, event.excludedDates);
+      return recurringDateKeys(
+        event.dayOfWeek,
+        event.startMonth,
+        event.endMonth,
+        event.startDate,
+        event.endDate,
+        event.excludedDates,
+        referenceDate,
+      );
     }
     return event.date ? [String(event.date).split("T")[0]] : [];
   }
 
-  function buildSchedule(events) {
+  function buildSchedule(events, referenceDate = new Date()) {
     const byDate = {};
     (events || []).forEach((rawEvent) => {
       const event = normalizeEvent(rawEvent);
-      eventDateKeys({ ...event, date: rawEvent.date }).forEach((dateKey) => {
+      eventDateKeys({ ...event, date: rawEvent.date }, referenceDate).forEach((dateKey) => {
         if (!byDate[dateKey]) byDate[dateKey] = { date: dateKey, events: [] };
         byDate[dateKey].events.push(event);
       });

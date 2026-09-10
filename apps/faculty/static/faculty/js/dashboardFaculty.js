@@ -19,13 +19,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const openCompletedModalButton = document.getElementById('openCompletedConsultations');
     const closeCompletedModalButton = document.getElementById('closeCompletedConsultations');
     const statusIcons = {
+        'not_set': '—',
         available: '✓',
         busy: '◷',
         virtual: '⌁',
         'on-leave': '☕',
         unavailable: '×',
     };
-    let selectedStatus = document.querySelector('.status-btn.active')?.dataset.status || 'available';
+    let selectedStatus = document.querySelector('.status-btn.active')?.dataset.status || 'not_set';
 
     if (statusExpiresAt?.dataset.currentExpiry) {
         const expiry = new Date(statusExpiresAt.dataset.currentExpiry);
