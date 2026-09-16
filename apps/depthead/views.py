@@ -16,7 +16,7 @@ from django.db import transaction
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_GET
-from apps.core.services import notify_college_users, send_faculty_invite_email, send_faculty_approved_email, send_faculty_removed_email
+from apps.core.services import notify_college_users, send_faculty_invite_email, send_faculty_removed_email
 from apps.core.faculty import mark_inactive_faculty
 from datetime import timedelta, date
 from django.utils.dateparse import parse_datetime
@@ -35,34 +35,6 @@ from .services.analytics import (
 
 
 logger = logging.getLogger(__name__)
-
-
-@login_required
-@role_required('depthead')
-def approve_faculty(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', college__iexact=request.user.college)
-    if request.method == 'POST':
-        faculty_user.account_status = 'active'
-        faculty_user.save()
-        email_sent = True
-        try:
-            send_faculty_approved_email(faculty_user)
-        except Exception:
-            email_sent = False
-            logger.exception("Failed to send faculty approval email to %s", faculty_user.email)
-        return JsonResponse({'success': True, 'message': f"{faculty_user.get_full_name() or faculty_user.username} approved.", 'email_sent': email_sent})
-    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
-
-
-@login_required
-@role_required('depthead')
-def decline_faculty(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='pending', college__iexact=request.user.college)
-    if request.method == 'POST':
-        faculty_user.account_status = 'declined'
-        faculty_user.save()
-        return JsonResponse({'success': True, 'message': f"{faculty_user.get_full_name() or faculty_user.username} declined."})
-    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 
 @login_required
@@ -182,7 +154,6 @@ def admin_faculty(request):
     mark_inactive_faculty(faculty_users)
 
     return render(request, 'depthead/adminFaculty.html', {
-        'pending_faculty': [u for u in faculty_users if u.account_status == 'pending'],
         'active_faculty': [u for u in faculty_users if u.account_status == 'active'],
     })
 

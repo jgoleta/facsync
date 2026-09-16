@@ -16,7 +16,8 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
         if user_exists:
             existing_user = sociallogin.user
             if existing_user.account_status == 'pending':
-                raise ImmediateHttpResponse(redirect('core:pending_approval_notice'))
+                messages.error(request, "Your registration is pending review. Please contact your College Head.")
+                raise ImmediateHttpResponse(redirect('core:login'))
             elif existing_user.account_status == 'declined':
                 messages.error(request, "Your registration was declined. Please contact your College Head.")
                 raise ImmediateHttpResponse(redirect('core:login'))
@@ -57,19 +58,19 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
         #No invite matched — fall back to session-role-based registration flow
         role = request.session.get('registration_role')
 
-        if not role:
+        if role == 'faculty':
+            for key in ('registration_role', 'pending_faculty_email', 'pending_faculty_name', 'pending_faculty_uid'):
+                request.session.pop(key, None)
+            messages.error(request, "Faculty self-registration is no longer available. If you were invited by a College Head or Super Admin, please check your email for an activation link, or contact them for an invite.")
+            raise ImmediateHttpResponse(redirect('core:register'))
+
+        if role != 'student':
             messages.error(request, "No account found. Please register first.")
             raise ImmediateHttpResponse(redirect('core:register'))
 
         if role == 'student':
             sociallogin.user.role = 'student'
             sociallogin.user.account_status = 'active'
-
-        elif role == 'faculty':
-            request.session['pending_faculty_email'] = email
-            request.session['pending_faculty_name'] = sociallogin.account.extra_data.get('name', '')
-            request.session['pending_faculty_uid'] = sociallogin.account.uid
-            raise ImmediateHttpResponse(redirect('core:faculty_pending_registration'))
 
         if 'registration_role' in request.session:
             del request.session['registration_role']

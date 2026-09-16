@@ -108,7 +108,6 @@
   font: inherit;
 }
 
-.pending-section,
 .management-table-wrapper {
   border: 1px solid #dce7f3;
   border-radius: 18px;
@@ -116,8 +115,6 @@
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 12px 30px rgba(30, 64, 175, 0.06);
 }
-
-.pending-section { margin-bottom: 22px; }
 
 .section-heading,
 .management-table-header {
@@ -228,16 +225,6 @@ table td:first-child { color: var(--text-primary); font-weight: 750; }
   cursor: pointer;
   font-size: 0.78rem;
   font-weight: 600;
-}
-
-.pending-section .actions .crud-action-form .btn-primary {
-  border-color: transparent;
-  background: var(--primary);
-  color: var(--text-light);
-}
-
-.pending-section .actions .crud-action-form .btn-primary:hover {
-  background: var(--primary-dark);
 }
 
 .actions button.danger {
@@ -410,7 +397,6 @@ table td:first-child { color: var(--text-primary); font-weight: 750; }
 
 @media (max-width: 520px) {
   .main-content { padding: 22px 16px; }
-  .pending-section,
   .management-table-wrapper { padding: 18px; }
   .management-table-header-actions,
   .management-table-header-actions .header-action { width: 100%; }

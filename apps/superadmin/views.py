@@ -12,7 +12,6 @@ from apps.core.forms import CollegeForm
 from apps.core.services import (
     send_depthead_invite_email,
     send_depthead_deactivated_email,
-    send_faculty_approved_email,
     send_faculty_invite_email,
     send_faculty_removed_email,
 )
@@ -150,7 +149,6 @@ def manage_faculty(request):
     mark_inactive_faculty(faculty_users)
 
     return render(request, 'superadmin/manageFaculty.html', {
-        'pending_faculty': [u for u in faculty_users if u.account_status == 'pending'],
         'active_faculty': [u for u in faculty_users if u.account_status == 'active'],
         'college_choices': get_college_choices(),
     })
@@ -249,39 +247,6 @@ def invite_faculty_superadmin(request):
                 for error in error_list:
                     messages.error(request, error)
     return redirect('superadmin:manage_faculty')
-
-
-@login_required
-@role_required('superadmin')
-def approve_faculty_superadmin(request, user_id):
-    faculty_user = get_object_or_404(
-        User, id=user_id, role='faculty', account_status='pending'
-    )
-    if request.method == 'POST':
-        faculty_user.account_status = 'active'
-        faculty_user.save()
-        send_faculty_approved_email(faculty_user)
-        return JsonResponse({
-            'success': True,
-            'message': f"{faculty_user.get_full_name() or faculty_user.username} approved.",
-        })
-    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
-
-
-@login_required
-@role_required('superadmin')
-def decline_faculty_superadmin(request, user_id):
-    faculty_user = get_object_or_404(
-        User, id=user_id, role='faculty', account_status='pending'
-    )
-    if request.method == 'POST':
-        faculty_user.account_status = 'declined'
-        faculty_user.save()
-        return JsonResponse({
-            'success': True,
-            'message': f"{faculty_user.get_full_name() or faculty_user.username} declined.",
-        })
-    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 
 @login_required

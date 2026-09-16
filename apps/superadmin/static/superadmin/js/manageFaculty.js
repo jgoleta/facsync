@@ -55,11 +55,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function applyCollegeFilter() {
     const college = collegeFilter?.value || "all";
     document.querySelectorAll("[data-faculty-section]").forEach((section) => {
-      const count = filterSection(section, college);
-      if (section.dataset.facultySection === "pending") {
-        const countElement = document.getElementById("pendingFacultyCount");
-        if (countElement) countElement.textContent = count;
-      }
+      filterSection(section, college);
     });
   }
 

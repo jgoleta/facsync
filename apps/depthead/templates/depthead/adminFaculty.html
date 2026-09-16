@@ -34,63 +34,6 @@
           </div>
         </header>
 
-        <section class="pending-section">
-          <div class="section-heading">
-            <div>
-              <p class="section-kicker">Needs review</p>
-              <h2>Pending Faculty Requests</h2>
-            </div>
-            <span class="section-count">{{ pending_faculty|length }}</span>
-          </div>
-          {% if pending_faculty %}
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-                <th>College</th>
-                <th>Faculty ID</th>
-                <th>Office/Room</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for user in pending_faculty %}
-              <tr>
-                <td>{{ user.get_full_name|default:user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.college_name }}</td>
-                <td>{{ user.faculty_profile.faculty_id }}</td>
-                <td>{{ user.faculty_profile.office_location }}</td>
-                <td>
-                  <form
-                    method="post"
-                    class="crud-action-form"
-                    action="{% url 'depthead:approve_faculty' user.id %}"
-                    style="display: inline"
-                  >
-                    {% csrf_token %}
-                    <button type="submit" class="btn-primary">Approve</button>
-                  </form>
-                  <form
-                    method="post"
-                    class="crud-action-form"
-                    action="{% url 'depthead:decline_faculty' user.id %}"
-                    style="display: inline"
-                  >
-                    {% csrf_token %}
-                    <button type="submit" class="btn-secondary">Decline</button>
-                  </form>
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-          {% else %}
-          <p class="empty-state">No pending faculty requests.</p>
-          {% endif %}
-        </section>
-
         <section class="management-table-wrapper">
           <div class="management-table-header">
             <div>

@@ -15,16 +15,6 @@ class FacultyProfileSetupForm(forms.Form):
     faculty_id = forms.CharField(max_length=64, label="Faculty ID")
     office_location = forms.CharField(max_length=128, label="Office / Room")
 
-class FacultyRegistrationForm(forms.ModelForm):
-    college = forms.ChoiceField(choices=get_college_choices)
-    office_location = forms.CharField(max_length=128, label="Office / Room")
-    faculty_id = forms.CharField(max_length=64, label="Faculty ID")
-
-    class Meta:
-        model = User
-        fields = ['college']  #office_location, faculty_id go to FacultyProfile
-
-
 class CollegeAnnouncementForm(forms.ModelForm):
     expiry_date = forms.DateField(
         required=False,

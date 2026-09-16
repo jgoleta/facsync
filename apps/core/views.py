@@ -6,10 +6,9 @@ from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from apps.faculty.models import FacultyProfile
-from .forms import StudentProfileForm, FacultyRegistrationForm, FacultyProfileSetupForm, COLLEGE_CHOICES
+from .forms import StudentProfileForm, FacultyProfileSetupForm, COLLEGE_CHOICES
 from django.contrib.auth import login as auth_login
 from django.http import Http404
-from allauth.socialaccount.models import SocialAccount
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from .models import Notification
@@ -142,10 +141,6 @@ def register_student(request):
     request.session['registration_role'] = 'student'
     return redirect('google_login')
 
-def register_faculty(request):
-    request.session['registration_role'] = 'faculty'
-    return redirect('google_login')
-
 @login_required
 def post_login_redirect(request):
     user = request.user
@@ -199,65 +194,6 @@ def faculty_profile_setup(request):
         form = FacultyProfileSetupForm()
 
     return render(request, 'core/facultyProfileSetup.html', {'form': form})
-
-def faculty_pending_registration(request):
-    email = request.session.get('pending_faculty_email', '')
-    name = request.session.get('pending_faculty_name', '')
-
-    if not email:
-        return redirect('core:register')
-
-    if request.method == 'POST':
-        form = FacultyRegistrationForm(request.POST)
-        if form.is_valid():
-            name_parts = name.split(' ', 1)
-            first_name = name_parts[0] if name_parts else ''
-            last_name = name_parts[1] if len(name_parts) > 1 else ''
-
-            user = User.objects.create(
-                username=email,
-                email=email,
-                first_name=first_name,
-                last_name=last_name,
-                role='faculty',
-                account_status='pending',
-                college=form.cleaned_data['college'],
-                profile_completed=True,
-            )
-
-            pending_uid = request.session.pop('pending_faculty_uid', None)
-            if pending_uid:
-                SocialAccount.objects.create(
-                    user=user,
-                    provider='google',
-                    uid=pending_uid,
-                    extra_data={'email': email, 'name': name},
-                )
-
-            FacultyProfile.objects.create(
-                faculty_id=form.cleaned_data['faculty_id'],
-                user=user,
-                college_id=form.cleaned_data['college'],
-                office_location=form.cleaned_data['office_location'],
-            )
-
-            del request.session['pending_faculty_email']
-            del request.session['pending_faculty_name']
-
-            return redirect('core:pending_approval_notice')
-    else:
-        form = FacultyRegistrationForm(initial={'email': email, 'name': name})
-
-    return render(request, 'core/facultyPendingRegistration.html', {
-        'form': form,
-        'email': email,
-        'name': name,
-    })
-
-
-def pending_approval_notice(request):
-    return render(request, 'core/pendingApproval.html')
-
 
 @login_required
 def dev_login_as(request, user_id):

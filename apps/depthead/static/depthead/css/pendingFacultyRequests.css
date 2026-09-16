@@ -1,10 +1,8 @@
-.pending-section .crud-action-form .btn-primary,
 .management-table-header-actions .btn-primary.header-action {
     background: var(--primary);
     color: var(--text-light);
 }
 
-.pending-section .crud-action-form .btn-primary:hover,
 .management-table-header-actions .btn-primary.header-action:hover {
     background: var(--primary-dark);
 }
@@ -26,102 +24,6 @@
 
 .btn-primary.danger:hover {
     background: #c82333;
-}
-
-.pending-requests-list {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-.pending-request-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 20px;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 16px;
-    padding: 20px 24px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.pending-request-row:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
-}
-
-.pending-request-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.pending-request-info h3 {
-    margin: 0;
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.pending-request-info .email {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-}
-
-.pending-request-meta {
-    display: flex;
-    gap: 16px;
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-}
-
-.pending-request-meta span {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.pending-request-actions {
-    display: flex;
-    gap: 12px;
-    flex-shrink: 0;
-}
-
-.btn-approve,
-.btn-decline {
-    border: none;
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-}
-
-.btn-approve {
-    background-color: #16a34a;
-    color: #fff;
-}
-
-.btn-approve:hover {
-    background-color: #15803d;
-}
-
-.btn-decline {
-    background-color: #fff;
-    color: #dc2626;
-    border: 1px solid #dc2626;
-}
-
-.btn-decline:hover {
-    background-color: #fef2f2;
-}
-
-.btn-approve:active,
-.btn-decline:active {
-    transform: scale(0.97);
 }
 
 .empty-state {
