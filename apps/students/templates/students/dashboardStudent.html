@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}?v=20260819-status-colors">
     <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20260903-status-labels">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+    <link rel="stylesheet" href="{% static 'css/announcements.css' %}">
 </head>
 
 <body class="student-dashboard">
@@ -76,6 +77,9 @@
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
     <script src="{% static 'students/js/dashboardStudent.js' %}?v=20260903-status-labels"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
+{% url 'students:active_announcements' as announcement_fetch_url %}
+    {% include 'partials/announcementModal.html' %}
+    <script src="{% static 'js/announcements.js' %}"></script>
 </body>
 
 </html>

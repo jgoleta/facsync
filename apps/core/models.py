@@ -109,6 +109,8 @@ class College(models.Model):
         return self.name
 
 class CollegeAnnouncement(models.Model):
+    AUDIENCE_CHOICES = [('faculty', 'Faculty'), ('students', 'Students'), ('both', 'Both')]
+    audience = models.CharField(max_length=8, choices=AUDIENCE_CHOICES, default='both')
     college = models.CharField(max_length=20, choices=COLLEGE_CHOICES)
     message = models.TextField()
     posted_at = models.DateTimeField(auto_now_add=True)

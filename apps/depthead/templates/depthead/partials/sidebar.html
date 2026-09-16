@@ -44,6 +44,7 @@
     </nav>
 
     <div class="sidebar-footer">
+        {% include 'components/_account_identity.html' with show_profile_icon=True %}
         <a href="{% url 'account_logout' %}" class="nav-item">
             <span>Logout</span>
         </a>

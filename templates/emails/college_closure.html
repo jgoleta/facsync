@@ -1,0 +1,11 @@
+{% extends "emails/base_email.html" %}
+{% block heading %}College closure notice{% endblock %}
+{% block body %}
+<p>Hi {{ name }},</p>
+<p><strong>{{ college }}</strong></p>
+<p>Your college is closed for new consultation requests.</p>
+{% if reason %}<p>{{ reason|linebreaksbr }}</p>{% endif %}
+{% if closure_start %}<p>From {{ closure_start|date:"M d, Y" }}.</p>{% endif %}
+{% if closure_end %}<p>Through {{ closure_end|date:"M d, Y" }}.</p>{% endif %}
+<p><a href="{{ site_url }}/login/">Sign in to FacSync</a></p>
+{% endblock %}

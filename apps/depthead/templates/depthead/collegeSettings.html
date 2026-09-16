@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | College Settings</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_settings.css' %}">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_settings.css' %}?v=20260916-overlay-fix">
     <style>
         .settings-grid {
             display: grid;
@@ -86,7 +86,9 @@
                     <p class="empty-state">Your college could not be found. Contact a Super Admin.</p>
                     {% endif %}
                 
-                    <h2 style="margin-top: 32px;">Office Closure</h2>
+                    <div class="closure-heading"><h2>Office Closure</h2>
+                    <span class="closure-status-label">College Live Status</span>
+                    <span id="closure-status" role="status" class="closure-badge {% if closure_form.instance.is_closed %}closed{% else %}open{% endif %}">{% if closure_form.instance.is_closed %}Closed{% else %}Open{% endif %}</span></div>
                     {% if messages %}
                     {% for message in messages %}
                     {% if forloop.last %}
@@ -94,7 +96,7 @@
                     {% endif %}
                     {% endfor %}
                     {% endif %}
-                    <form method="post" id="closure-form" class="settings-form">
+                    <form method="post" id="closure-form" data-status-url="{% url 'depthead:closure_status' %}" data-college="{{ request.user.college_name }}" class="settings-form">
                         {% csrf_token %}
                         <div class="form-group form-group-toggle">
                             <label for="{{ closure_form.is_closed.id_for_label }}">Office Closure</label>
@@ -126,11 +128,15 @@
                         <p>Create and manage college announcements.</p>
                     </header>
                 
-                    <form id="announcement-form" class="settings-form" method="post" action="{% url 'depthead:create_announcement' %}">
+                    <form id="announcement-form" data-college="{{ request.user.college_name }}" class="settings-form" method="post" action="{% url 'depthead:create_announcement' %}">
                         {% csrf_token %}
                         <div class="form-group">
                             <label for="ann-message">Message</label>
                             <textarea id="ann-message" name="message" required placeholder="Write your announcement here..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="ann-audience">Audience</label>
+                            {{ announcement_form.audience }}
                         </div>
                         <div class="form-group">
                             <label for="ann-expiry">Expires on (optional)</label>
@@ -146,7 +152,7 @@
                         {% for a in college_announcements %}
                         <div class="announcement-item">
                             <p>{{ a.message }}</p>
-                            <small>Posted {{ a.posted_at|date:"M d, Y" }} · Expires {{ a.expiry|date:"M d, Y" }}</small>
+                            <small>{{ a.get_audience_display }} ? Posted {{ a.posted_at|date:"M d, Y" }} · Expires {{ a.expiry|date:"M d, Y" }}</small>
                         </div>
                         {% empty %}
                         <p class="empty-state">No active announcements.</p>
@@ -159,7 +165,16 @@
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-spinner"></div>
     </div>
-    <script src="{% static 'depthead/js/collegeSettings.js' %}"></script>
-    <script src="{% static 'js/announcements.js' %}"></script>
+    <div id="settings-confirm" class="modal-overlay hidden">
+        <div class="modal settings-confirm" role="dialog" aria-modal="true" aria-labelledby="settings-confirm-title" aria-describedby="settings-confirm-message">
+            <h2 id="settings-confirm-title"></h2><p id="settings-confirm-message"></p>
+            <div class="modal-actions">
+                <button type="button" id="settings-confirm-cancel">Cancel</button>
+                <button type="button" id="settings-confirm-save" class="primary-button">Save</button>
+            </div>
+        </div>
+    </div>
+    <script src="{% static 'depthead/js/collegeSettings.js' %}?v=20260916-overlay-fix"></script>
+    <script src="{% static 'js/announcements.js' %}?v=20260916-overlay-fix"></script>
 </body>
 </html>

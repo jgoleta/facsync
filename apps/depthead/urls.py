@@ -4,6 +4,7 @@ from . import views
 app_name = 'depthead'
 
 urlpatterns = [
+    path('college-settings/closure-status/', views.closure_status, name='closure_status'),
     path('', views.admin_dashboard, name='admin_dashboard'),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
     path('api/ai-insights/', views.ai_insights_api, name='ai_insights_api'),

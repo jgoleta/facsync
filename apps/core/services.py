@@ -1,3 +1,5 @@
+import logging
+from .colleges import get_college_label
 from django.utils import timezone
 from .models import CollegeAnnouncement, Notification, User
 from django.core.mail import send_mail, EmailMultiAlternatives
@@ -16,10 +18,10 @@ def create_notification(recipient, notification_type, title, message, url=''):
     )
 
 
-def notify_college_users(college, notification_type, title, message, url='', exclude_user_id=None):
+def notify_college_users(college, notification_type, title, message, url='', exclude_user_id=None, roles=('student', 'faculty')):
     recipients = User.objects.filter(
         college=college,
-        role__in=('student', 'faculty'),
+        role__in=roles,
         account_status='active',
     )
     if exclude_user_id:
@@ -77,10 +79,20 @@ def send_faculty_status_email(student, faculty_name, status_label, url):
         settings.DEFAULT_FROM_EMAIL, [student.email], fail_silently=True,
     )
 
-def get_active_announcements(college=None):
-    qs = CollegeAnnouncement.objects.filter(expiry__gt=timezone.now())
-    if college:
-        qs = qs.filter(college=college)
+def active_announcement_queryset(college=None, *, audience='both'):
+    audiences = {'faculty': ('faculty', 'both'), 'students': ('students', 'both'), 'both': ('both',)}
+    qs = CollegeAnnouncement.objects.filter(
+        expiry__gt=timezone.now(), audience__in=audiences[audience],
+    )
+    if audience != 'both' and not college:
+        return qs.none()
+    if college is not None:
+        qs = qs.filter(college__iexact=college)
+    return qs
+
+
+def get_active_announcements(college=None, *, audience='both'):
+    qs = active_announcement_queryset(college, audience=audience)
     return [
         {
             'college': a.get_college_display(),
@@ -147,4 +159,42 @@ def send_depthead_deactivated_email(user):
         'depthead_deactivated.html',
         {'name': user.get_full_name() or user.username},
         [user.email],
+    )
+
+logger = logging.getLogger(__name__)
+
+
+def _email_college_faculty(college, subject, template, context):
+    if not college:
+        return
+    recipients = User.objects.filter(
+        role='faculty', account_status='active', college__iexact=college,
+    ).exclude(email='')
+    for faculty in recipients:
+        if not faculty.email.strip():
+            continue
+        try:
+            _send_html_email(subject, template, {
+                **context, 'name': faculty.get_full_name() or faculty.username,
+                'college': get_college_label(college),
+            }, [faculty.email])
+        except Exception:
+            logger.exception('Failed to send %s to faculty %s', template, faculty.pk)
+
+
+def send_announcement_email_to_faculty(announcement):
+    if announcement.audience not in ('faculty', 'both'):
+        return
+    _email_college_faculty(
+        announcement.college, 'New college announcement', 'college_announcement.html',
+        {'message': announcement.message, 'expiry': announcement.expiry},
+    )
+
+
+def send_closure_email_to_faculty(closure):
+    if not closure.is_closed:
+        return
+    _email_college_faculty(
+        closure.college, 'College closed for new consultation requests', 'college_closure.html',
+        {'reason': closure.reason, 'closure_start': closure.closure_start, 'closure_end': closure.closure_end},
     )

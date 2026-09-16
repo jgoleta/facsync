@@ -1,5 +1,6 @@
 {% if request.user.role == 'student' or request.user.role == 'faculty' %}
 <span class="notification-nav">
+    {% include 'components/_account_identity.html' %}
     <span class="hidden">{% csrf_token %}</span>
     <button type="button" id="notificationBell" class="notification-bell" aria-label="Notifications" aria-expanded="false">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">

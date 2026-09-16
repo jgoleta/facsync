@@ -9,6 +9,7 @@
     <title>FacSync | Faculty Dashboard</title>
     <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260903-queue-style-update">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+    <link rel="stylesheet" href="{% static 'css/announcements.css' %}">
 </head>
 
 <body>
@@ -214,6 +215,9 @@
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
     <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260903-status-feedback-cleanup"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
+{% url 'faculty:active_announcements' as announcement_fetch_url %}
+    {% include 'partials/announcementModal.html' %}
+    <script src="{% static 'js/announcements.js' %}"></script>
 </body>
 
 </html>

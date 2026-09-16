@@ -485,3 +485,38 @@ input:checked + .slider:before {
     transform: rotate(360deg);
   }
 }
+
+/* Signed-in identity shared by the notification navigation and admin sidebars. */
+.account-identity {
+  display: inline-block;
+  min-width: 0;
+  color: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.notification-nav .account-identity {
+  max-width: clamp(90px, 15vw, 220px);
+  white-space: normal;
+  margin-right: 10px;
+}
+.sidebar .sidebar-footer > .account-identity {
+  display: block;
+  padding: 8px 12px;
+  white-space: normal;
+}
+.sidebar .sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sidebar .account-identity-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.account-profile-icon { width: 20px; height: 20px; flex: 0 0 20px; }
+.account-identity-with-icon > span { min-width: 0; overflow-wrap: anywhere; }
+.sidebar-account { padding: 12px 20px; }

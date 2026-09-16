@@ -2,8 +2,8 @@ import json
 import json
 import uuid
 from datetime import date, datetime, time, timedelta
-from apps.core.models import OfficeClosure, CollegeAnnouncement
-from apps.core.services import create_notification, get_active_announcements
+from apps.core.models import OfficeClosure
+from apps.core.services import create_notification, get_active_announcements, active_announcement_queryset
 
 from django.contrib.auth.decorators import login_required
 from apps.core.decorators import role_required
@@ -104,7 +104,7 @@ def dashboard(request):
     return render(request, 'students/dashboardStudent.html', {
         'faculty_directory': faculty_directory,
         'closed_colleges': closed_colleges,
-        'announcements': get_active_announcements(request.user.college),
+        'announcements': get_active_announcements(request.user.college, audience='students'),
     })
 
 @login_required
@@ -156,20 +156,8 @@ def api_schedule_events(request):
 @login_required
 @role_required('student')
 def active_announcements(request):
-    qs = CollegeAnnouncement.objects.filter(
-        college=request.user.college,
-        expiry__gt=timezone.now()
-    )
-    return JsonResponse({
-        'announcements': [
-            {
-                'college': a.get_college_display(),
-                'message': a.message,
-                'posted_at': a.posted_at.strftime('%b %d, %Y'),
-            }
-            for a in qs
-        ]
-    })
+    return JsonResponse({'announcements': get_active_announcements(request.user.college, audience='students')})
+
 
 @login_required
 @role_required('student')
@@ -313,10 +301,7 @@ def home(request):
     )
 
     student_college = get_college_label(request.user.college)
-    college_announcement = CollegeAnnouncement.objects.filter(
-        college__iexact=request.user.college or '',
-        expiry__gt=timezone.now(),
-    ).first()
+    college_announcement = active_announcement_queryset(request.user.college, audience='students').first()
     available_faculty_count = 0
     if student_college:
         for faculty in FacultyProfile.objects.select_related('user').all():

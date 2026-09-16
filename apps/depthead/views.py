@@ -17,6 +17,8 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_GET
 from apps.core.services import notify_college_users, send_faculty_invite_email, send_faculty_removed_email
+from apps.core.services import send_announcement_email_to_faculty, send_closure_email_to_faculty
+from django.views.decorators.cache import never_cache
 from apps.core.faculty import mark_inactive_faculty
 from datetime import timedelta, date
 from django.utils.dateparse import parse_datetime
@@ -392,6 +394,8 @@ def faculty_monitoring(request):
 @login_required
 @role_required('depthead')
 def college_settings(request):
+    if not request.user.college:
+        return JsonResponse({'success': False, 'error': 'Your account has no college set.'}, status=400)
     closure, _ = OfficeClosure.objects.get_or_create(
         college__iexact=request.user.college,
         defaults={'college': request.user.college}
@@ -402,8 +406,14 @@ def college_settings(request):
             closure = form.save(commit=False)
             closure.college = request.user.college
             closure.updated_by = request.user
+            was_closed = OfficeClosure.objects.values_list('is_closed', flat=True).get(pk=closure.pk)
             closure.save()
-            return JsonResponse({'success': True})
+            if not was_closed and closure.is_closed:
+                try:
+                    send_closure_email_to_faculty(closure)
+                except Exception:
+                    logger.exception('Failed to send closure emails for college %s', closure.college)
+            return JsonResponse({'success': True, 'is_closed': closure.is_closed})
         errors = ' '.join(
             error for error_list in form.errors.values() for error in error_list
         )
@@ -421,6 +431,7 @@ def college_settings(request):
     return render(request, 'depthead/collegeSettings.html', {
         'closure_form': form,
         'college_announcements': college_announcements,
+        'announcement_form': CollegeAnnouncementForm(),
         'college': college,
     })
 
@@ -617,12 +628,20 @@ def create_announcement(request):
         message=announcement.message,
         url='',
         exclude_user_id=request.user.id,
+        roles={'faculty': ('faculty',), 'students': ('student',), 'both': ('student', 'faculty')}[announcement.audience],
     )
+
+    try:
+        send_announcement_email_to_faculty(announcement)
+    except Exception:
+        logger.exception('Failed to send announcement emails for announcement %s', announcement.pk)
 
     return JsonResponse({
         'success': True,
         'announcement': {
             'message': announcement.message,
+            'audience': announcement.audience,
+            'audience_label': announcement.get_audience_display(),
             'posted_at': announcement.posted_at.strftime('%b %d, %Y'),
             'expiry': announcement.expiry.strftime('%b %d, %Y'),
         }
@@ -672,3 +691,14 @@ def faculty_monitoring_data(request):
             'is_inactive': is_inactive,
         })
     return JsonResponse({'faculty_list': faculty_list})
+
+
+@login_required
+@role_required('depthead')
+@require_GET
+@never_cache
+def closure_status(request):
+    if not request.user.college:
+        return JsonResponse({'error': 'Your account has no college set.'}, status=400)
+    state = OfficeClosure.objects.filter(college__iexact=request.user.college).values_list('is_closed', flat=True).first()
+    return JsonResponse({'is_closed': bool(state)})
