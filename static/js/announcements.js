@@ -17,26 +17,17 @@ async function showAnnouncementsOnce() {
   if (!announcements.length) return;
 
   const list = document.getElementById("announcementList");
-  list.innerHTML = announcements
-    .map(
-      (a) => `
-        <div class="announcement-item">
-            <strong>${a.college}</strong>
-            <p>${a.message}</p>
-            <small>${a.posted_at}</small>
-        </div>
-    `,
-    )
-    .join("");
-
-  modal.classList.remove("hidden");
-
-  const closeBtn = document.getElementById("closeAnnouncementModal");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", () => {
-      modal.classList.add("hidden");
-    });
-  }
+  list.replaceChildren(...announcements.map((announcement) => {
+    const item = document.createElement('div');
+    item.className = 'announcement-item';
+    for (const [tag, text] of [['strong', announcement.college], ['p', announcement.message], ['small', announcement.posted_at]]) {
+      const element = document.createElement(tag);
+      element.textContent = text;
+      item.appendChild(element);
+    }
+    return item;
+  }));
+  modal.showModal();
 }
 
 document.addEventListener("DOMContentLoaded", showAnnouncementsOnce);
@@ -47,24 +38,24 @@ if (announcementForm) {
     e.preventDefault();
 
     const form = e.target;
-    const messageInput = document.getElementById("ann-message");
-    const expiryInput = document.getElementById("ann-expiry");
+    if (form.dataset.saving === 'true') return;
+    form.dataset.saving = 'true';
+    const submitButton = form.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
     const list = document.getElementById("announcements-list");
     const overlay = document.getElementById("loadingOverlay");
 
-    const formData = new FormData();
-    formData.append("message", messageInput.value);
-    if (expiryInput.value) {
-      formData.append("expiry_date", expiryInput.value);
-    }
+    const formData = new FormData(form);
+    let confirmed = false;
 
     const csrfToken = document.querySelector(
       "[name=csrfmiddlewaretoken]",
     ).value;
 
-    overlay.classList.add("show");
-
     try {
+      confirmed = await confirmCollegeAction('Post Announcement?', announcementConfirmationMessage(formData.get('audience'), form.dataset.college));
+      if (!confirmed) return;
+      overlay.classList.add("show");
       const response = await fetch(form.action, {
         method: "POST",
         headers: { "X-CSRFToken": csrfToken },
@@ -82,10 +73,11 @@ if (announcementForm) {
 
       const item = document.createElement("div");
       item.className = "announcement-item";
-      item.innerHTML = `
-            <p>${data.announcement.message}</p>
-            <small>Posted ${data.announcement.posted_at} · Expires ${data.announcement.expiry}</small>
-        `;
+      const message = document.createElement('p');
+      message.textContent = data.announcement.message;
+      const details = document.createElement('small');
+      details.textContent = `${data.announcement.audience_label} ? Posted ${data.announcement.posted_at} ? Expires ${data.announcement.expiry}`;
+      item.append(message, details);
       list.prepend(item);
 
       form.reset();
@@ -93,7 +85,10 @@ if (announcementForm) {
     } catch (err) {
       showToast("Something went wrong posting your announcement.", true);
     } finally {
+      if (confirmed) closeCollegeConfirmation();
       overlay.classList.remove("show");
+      form.dataset.saving = 'false';
+      submitButton.disabled = false;
     }
   });
 }

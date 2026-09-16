@@ -1,0 +1,9 @@
+{% extends "emails/base_email.html" %}
+{% block heading %}College announcement{% endblock %}
+{% block body %}
+<p>Hi {{ name }},</p>
+<p><strong>{{ college }}</strong></p>
+<p>{{ message|linebreaksbr }}</p>
+<p>Expires {{ expiry|date:"M d, Y" }}.</p>
+<p><a href="{{ site_url }}/login/">Sign in to FacSync</a></p>
+{% endblock %}

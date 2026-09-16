@@ -24,7 +24,8 @@ class CollegeAnnouncementForm(forms.ModelForm):
 
     class Meta:
         model = CollegeAnnouncement
-        fields = ['message']
+        fields = ['message', 'audience']
+        widgets = {'audience': forms.Select(attrs={'id': 'ann-audience'})}
 
     def save(self, commit=True):
         instance = super().save(commit=False)

@@ -14,6 +14,11 @@ from django.views.decorators.http import require_http_methods
 from .models import Notification
 from apps.core.colleges import get_college_label
 
+def active_announcements(request):
+    from .services import get_active_announcements
+    return JsonResponse({'announcements': get_active_announcements(audience='both')})
+
+
 def landing_page(request):
     return render(request, 'core/landingPage.html')
 

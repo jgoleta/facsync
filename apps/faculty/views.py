@@ -19,7 +19,6 @@ from apps.core.services import create_notification, get_active_announcements
 from django.http import JsonResponse
 from django.utils import timezone
 
-from apps.core.models import CollegeAnnouncement
 
 from .services.google_calendar import (
     GoogleCalendarError,
@@ -407,27 +406,15 @@ def dashboard(request):
         'consultations_today_count': faculty_consultations.filter(date=today).exclude(
             status__in={'declined', 'cancelled'},
         ).count(),
-        'announcements': get_active_announcements(request.user.college),
+        'announcements': get_active_announcements(request.user.college, audience='faculty'),
     })
 
 
 @login_required
 @role_required('faculty')
 def active_announcements(request):
-    qs = CollegeAnnouncement.objects.filter(
-        college=request.user.college,
-        expiry__gt=timezone.now()
-    )
-    return JsonResponse({
-        'announcements': [
-            {
-                'college': a.get_college_display(),
-                'message': a.message,
-                'posted_at': a.posted_at.strftime('%b %d, %Y'),
-            }
-            for a in qs
-        ]
-    })
+    return JsonResponse({'announcements': get_active_announcements(request.user.college, audience='faculty')})
+
 
 @login_required
 @role_required('faculty')

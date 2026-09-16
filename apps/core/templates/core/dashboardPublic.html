@@ -9,6 +9,7 @@
     <title>FacSync | Public Dashboard</title>
     <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}?v=20260819-status-colors">
     <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20260903-status-labels">
+    <link rel="stylesheet" href="{% static 'css/announcements.css' %}">
 </head>
 
 <body class="student-dashboard public-dashboard">
@@ -103,6 +104,9 @@
     </div>
     
     <script src="{% static 'students/js/dashboardStudent.js' %}"></script>
+{% url 'core:active_announcements' as announcement_fetch_url %}
+    {% include 'partials/announcementModal.html' %}
+    <script src="{% static 'js/announcements.js' %}"></script>
 </body>
 
 </html>

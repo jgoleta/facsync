@@ -44,6 +44,9 @@
                     <span>Manage Students</span>
                 </a>
             </nav>
+            <div class="sidebar-account">
+                {% include 'components/_account_identity.html' with show_profile_icon=True %}
+            </div>
             <div class="sidebar-divider"></div>
             <div class="sidebar-footer">
                 <a href="{% url 'account_logout' %}" class="nav-item">
