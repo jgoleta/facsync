@@ -497,6 +497,7 @@ input:checked + .slider:before {
   overflow-wrap: anywhere;
 }
 .notification-nav .account-identity {
+  color: #f8fafc;
   max-width: clamp(90px, 15vw, 220px);
   white-space: normal;
   margin-right: 10px;
