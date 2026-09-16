@@ -108,15 +108,6 @@ def send_faculty_invite_email(email, college):
     )
 
 
-def send_faculty_approved_email(user):
-    _send_html_email(
-        "Your FacSync faculty account is approved",
-        'faculty_approved.html',
-        {'name': user.get_full_name() or user.username},
-        [user.email],
-    )
-
-
 def send_faculty_removed_email(email, name):
     _send_html_email(
         "Your FacSync faculty account was removed",

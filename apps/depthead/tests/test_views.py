@@ -28,26 +28,6 @@ class DeptheadViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'depthead/adminDashboard.html')
 
-    @patch('apps.depthead.views.send_faculty_approved_email')
-    def test_approve_faculty_succeeds_when_email_fails(self, send_email):
-        faculty = get_user_model().objects.create_user(
-            username='approval-email-failure', email='approval@example.com',
-            role='faculty', account_status='pending', college='CCS',
-        )
-        send_email.side_effect = SMTPAuthenticationError(535, b'Authentication failed')
-
-        with self.assertLogs('apps.depthead.views', level='ERROR') as logs:
-            response = self.client.post(reverse('depthead:approve_faculty', args=[faculty.pk]))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()['success'])
-        faculty.refresh_from_db()
-        self.assertFalse(response.json()['email_sent'])
-        self.assertEqual(faculty.account_status, 'active')
-        send_email.assert_called_once_with(faculty)
-        self.assertIn('Failed to send faculty approval email to approval@example.com', logs.output[0])
-        self.assertIsInstance(logs.records[0].exc_info[1], SMTPAuthenticationError)
-
     @patch('apps.depthead.views.send_faculty_removed_email')
     def test_remove_faculty_succeeds_when_email_fails(self, send_email):
         faculty = get_user_model().objects.create_user(
@@ -68,8 +48,8 @@ class DeptheadViewTests(TestCase):
         self.assertIn('Failed to send faculty removal email to removal@example.com', logs.output[0])
         self.assertIsInstance(logs.records[0].exc_info[1], SMTPAuthenticationError)
 
-    def test_faculty_actions_report_email_success(self):
-        for action, status, verb in [('approve', 'pending', 'approved'), ('remove', 'active', 'removed')]:
+    def test_faculty_removal_reports_email_success(self):
+        for action, status, verb in [('remove', 'active', 'removed')]:
             with self.subTest(action=action):
                 faculty = get_user_model().objects.create_user(
                     username=f'{action}-email-success', email='faculty@example.com',
@@ -315,3 +295,42 @@ class DeptheadViewTests(TestCase):
         response = self.client.get(reverse('depthead:faculty_trends'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'depthead/facultyTrends.html')
+
+
+    def test_retired_approval_routes_return_404(self):
+        faculty = get_user_model().objects.create_user(
+            username='legacy-pending-route-test', role='faculty',
+            account_status='pending', college='CCS',
+        )
+        for action in ('approve', 'decline'):
+            for method in ('get', 'post'):
+                with self.subTest(action=action, method=method):
+                    response = getattr(self.client, method)(
+                        f'/depthead/adminFaculty/{faculty.pk}/{action}/'
+                    )
+                    self.assertEqual(response.status_code, 404)
+        faculty.refresh_from_db()
+        self.assertEqual(faculty.account_status, 'pending')
+
+
+    def test_faculty_page_preserves_active_directory_without_approval_section(self):
+        active = get_user_model().objects.create_user(
+            username='active-directory', role='faculty', college='CCS',
+            email='active-directory@example.com', account_status='active',
+        )
+        for status in ('pending', 'declined'):
+            get_user_model().objects.create_user(
+                username=f'legacy-{status}', role='faculty', college='CCS',
+                email=f'{status}@example.com', account_status=status,
+            )
+        response = self.client.get(reverse('depthead:admin_faculty'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context['active_faculty']), [active])
+        self.assertNotIn('pending_faculty', response.context)
+        self.assertNotContains(response, 'Pending Faculty Requests')
+        self.assertNotContains(response, 'pending@example.com')
+        self.assertNotContains(response, 'declined@example.com')
+        self.assertContains(response, 'Registered Faculty')
+        self.assertContains(response, reverse('depthead:invite_faculty'))
+        self.assertContains(response, reverse('depthead:remove_faculty', args=[active.pk]))
+        self.assertContains(response, reverse('depthead:faculty_schedule_template'))

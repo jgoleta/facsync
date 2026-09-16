@@ -339,17 +339,11 @@ table tbody tr:last-child td {
   letter-spacing: -0.04em;
 }
 
-.pending-section,
 .management-table-wrapper {
   border: 1px solid #dce7f3;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 12px 30px rgba(30, 64, 175, 0.06);
-}
-
-.pending-section {
-  margin-bottom: 22px;
-  padding: 24px;
 }
 
 .section-heading {
@@ -526,15 +520,6 @@ table td:nth-child(2) {
   background: #ffe4e6;
 }
 
-/* Keep pending-request actions compact without changing the page header buttons. */
-.pending-section td:last-child .btn-primary,
-.pending-section td:last-child .btn-secondary {
-  padding: 8px 13px;
-  border-radius: 7px;
-  font-size: 0.78rem;
-  line-height: 1.2;
-}
-
 .crud-action-form button:disabled {
   cursor: wait;
   opacity: 0.65;
@@ -584,7 +569,6 @@ table td:nth-child(2) {
     text-align: center;
   }
 
-  .pending-section,
   .management-table-wrapper {
     padding: 18px;
   }
