@@ -12,6 +12,12 @@ def serialize_schedule_event(event, include_sync_metadata=False, human_status=Fa
     payload = {
         'id': event.pk,
         'title': event.title,
+        'offering_id': event.offering_id,
+        'subject_code': event.subject_code,
+        'section': event.section,
+        'units': event.units,
+        'lecture': event.lecture,
+        'lab': event.lab,
         'description': event.description,
         'location': event.location,
         'status': get_schedule_status_label(event) if human_status else (event.schedule_status or event.event_type),

@@ -20,11 +20,15 @@ async function showAnnouncementsOnce() {
   list.replaceChildren(...announcements.map((announcement) => {
     const item = document.createElement('div');
     item.className = 'announcement-item';
-    for (const [tag, text] of [['strong', announcement.college], ['p', announcement.message], ['small', announcement.posted_at]]) {
-      const element = document.createElement(tag);
-      element.textContent = text;
-      item.appendChild(element);
-    }
+    const college = document.createElement('strong');
+    college.className = 'announcement-item-college';
+    college.textContent = announcement.college;
+    const message = document.createElement('p');
+    message.textContent = announcement.message;
+    const posted = document.createElement('small');
+    posted.className = 'announcement-item-date';
+    posted.textContent = announcement.posted_at;
+    item.append(college, message, posted);
     return item;
   }));
   modal.showModal();

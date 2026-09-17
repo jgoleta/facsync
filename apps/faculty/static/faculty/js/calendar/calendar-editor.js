@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const schedulePreviewCard = document.getElementById("schedule-preview-card");
   const schedulePreviewClose = document.getElementById("schedule-preview-close");
   const schedulePreviewBody = document.getElementById("schedule-preview-body");
+  const schedulePreviewSearch = document.getElementById("schedule-preview-search");
   const schedulePreviewEmpty = document.getElementById("schedule-preview-empty");
   const schedulePreviewCount = document.getElementById("schedule-preview-count");
   const bulkDeleteEventsBtn = document.getElementById("delete-selected-events-btn");
@@ -38,6 +39,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let schedulePreviewEventIds = [];
   let bulkDeleteEventIds = new Set();
   let schedulePreviewHasOtherUploader = false;
+  let schedulePreviewRows = [];
+  let returnToSchedulePreview = false;
   let scheduleUploadInProgress = false;
   let scheduleCrudLoadingCount = 0;
   let deleteEventConfirmResolver = null;
@@ -199,13 +202,22 @@ document.addEventListener("DOMContentLoaded", () => {
     schedulePreviewBody.innerHTML = "";
     rows.forEach((row) => {
       const tr = document.createElement("tr");
-      [row.event_title, row.short_description || "—", row.room_location || "—", row.recurring_day || "None",
-        `${row.start_month || "—"}-${row.end_month || "—"}`, row.start_time, row.end_time, row.status_type || "Busy", row.uploader_label]
+      [row.OFFERING_ID, row.SUBJ_CODE, row.SECTION, row.SUBJECT_TITLE, row.UNITS, row.LECTURE,
+        row.LAB, row.DAYFROM, row.DAYTO, row.TIMEFROM, row.TIMETO, row.ROOM, row.uploader_label]
         .forEach((value) => {
           const td = document.createElement("td");
           td.textContent = value;
           tr.appendChild(td);
         });
+      const actionCell = document.createElement("td");
+      actionCell.className = "schedule-preview-actions-cell";
+      const editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "schedule-preview-edit-btn";
+      editButton.dataset.eventId = String(row.id);
+      editButton.textContent = "Edit";
+      actionCell.appendChild(editButton);
+      tr.appendChild(actionCell);
       schedulePreviewBody.appendChild(tr);
     });
     if (schedulePreviewCount) {
@@ -214,6 +226,44 @@ document.addEventListener("DOMContentLoaded", () => {
     if (schedulePreviewEmpty) schedulePreviewEmpty.classList.toggle("hidden", rows.length > 0);
     if (schedulePreviewModal) schedulePreviewModal.classList.remove("hidden");
   }
+
+  function openUploadedScheduleEditor(row) {
+    const dayFrom = row.DAYFROM || "";
+    closeSchedulePreview();
+    returnToSchedulePreview = true;
+    activeEventContext = {
+      dateKey: dayFrom,
+      eventData: {
+        id: row.id,
+        title: row.SUBJECT_TITLE || "Untitled event",
+        type: "busy",
+        description: `${row.SUBJ_CODE || ""} ${row.SECTION || ""}`.trim(),
+        location: row.ROOM || "",
+        date: dayFrom,
+        isRecurring: false,
+        dayOfWeek: "",
+        startDate: dayFrom,
+        endDate: row.DAYTO || dayFrom,
+        startTime: row.TIMEFROM || "00:00",
+        endTime: row.TIMETO || "00:00",
+      },
+    };
+    openAddEventModalForEdit();
+  }
+
+  schedulePreviewBody?.addEventListener("click", (event) => {
+    const editButton = event.target.closest(".schedule-preview-edit-btn");
+    if (!editButton) return;
+    const row = schedulePreviewRows.find((item) => String(item.id) === editButton.dataset.eventId);
+    if (row) openUploadedScheduleEditor(row);
+  });
+
+  schedulePreviewSearch?.addEventListener("input", () => {
+    const query = schedulePreviewSearch.value.trim().toLowerCase();
+    const filteredRows = schedulePreviewRows.filter((row) => Object.values(row)
+      .some((value) => String(value ?? "").toLowerCase().includes(query)));
+    renderSchedulePreview(filteredRows);
+  });
 
   // Hide the uploaded schedule preview modal.
   function closeSchedulePreview() {
@@ -340,6 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Unable to load schedule preview.");
     const rows = data.preview || [];
+    schedulePreviewRows = rows;
     schedulePreviewEventIds = rows.map((row) => row.id);
     schedulePreviewHasOtherUploader = rows.some((row) => row.uploaded_by_other);
     renderSchedulePreview(rows);
@@ -1167,6 +1218,10 @@ document.addEventListener("DOMContentLoaded", () => {
         ? 'Schedule event updated successfully.'
         : 'Schedule event added successfully.');
       await fetchEventsFromApi();
+      if (returnToSchedulePreview) {
+        returnToSchedulePreview = false;
+        await loadSchedulePreview();
+      }
       } finally {
         eventSaveInProgress = false;
       }

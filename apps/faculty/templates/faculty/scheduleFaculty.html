@@ -7,8 +7,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Schedule</title>
-    <link rel="stylesheet" href="{% static 'css/shared_schedule.css' %}?v=20260902-legend-card-refresh">
-    <link rel="stylesheet" href="{% static 'faculty/css/scheduleFaculty.css' %}?v=20260910-header-meta-row">
+    <link rel="stylesheet" href="{% static 'css/shared_schedule.css' %}?v=20260917-preview-actions">
+    <link rel="stylesheet" href="{% static 'faculty/css/scheduleFaculty.css' %}?v=20260917-preview-delete-red">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
 </head>
 
@@ -91,11 +91,17 @@
                     </div>
                     <span id="schedule-preview-count" class="date-pill"></span>
                 </div>
+                <div class="schedule-preview-toolbar">
+                    <label class="schedule-preview-search" for="schedule-preview-search">
+                        <span>Search schedule events</span>
+                        <input type="search" id="schedule-preview-search" placeholder="Search offering, subject, section, room..." autocomplete="off">
+                    </label>
+                </div>
                 <div class="schedule-preview-table-wrap">
                     <p id="schedule-preview-empty" class="schedule-preview-empty">No uploaded schedule entries.</p>
                     <table class="schedule-preview-table">
                         <thead>
-                            <tr><th>Event Title</th><th>Short Description</th><th>Room / Location</th><th>Recurring Day</th><th>Allocation Months</th><th>Start Time</th><th>End Time</th><th>Status Type</th><th>Uploader</th></tr>
+                            <tr><th>Offering ID</th><th>Subject Code</th><th>Section</th><th>Subject Title</th><th>Units</th><th>Lecture</th><th>Lab</th><th>Day From</th><th>Day To</th><th>Time From</th><th>Time To</th><th>Room</th><th>Uploader</th><th>Actions</th></tr>
                         </thead>
                         <tbody id="schedule-preview-body"></tbody>
                     </table>
@@ -107,7 +113,9 @@
                     {% endif %}
                 </div>
                 <div class="schedule-preview-actions">
-                    <button type="button" id="clear-schedule-btn" class="btn-danger" disabled>Delete All Previewed Entries</button>
+                    <button type="button" id="clear-schedule-btn" class="secondary-button legend-action-button bulk-delete-action schedule-preview-delete-all-btn" disabled>
+                        Delete All Previewed Entries
+                    </button>
                 </div>
             </section>
         </div>
@@ -193,26 +201,28 @@
                         <label for="eventDescription">Short Description</label>
                         <textarea id="eventDescription" rows="3" placeholder="e.g. Team sync"></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="eventLocation">Room / Location</label>
-                        <input type="text" id="eventLocation" maxlength="128" placeholder="e.g. Room 204">
+                    <div id="location-day-inputs-wrapper">
+                        <div class="form-group">
+                            <label for="eventLocation">Room / Location</label>
+                            <input type="text" id="eventLocation" maxlength="128" placeholder="e.g. Room 204">
+                        </div>
+                        <div id="event-day-group" class="form-group">
+                            <label for="eventDay">Recurring day</label>
+                            <select id="eventDay">
+                                <option value="">None</option>
+                                <option value="monday">Monday</option>
+                                <option value="tuesday">Tuesday</option>
+                                <option value="wednesday">Wednesday</option>
+                                <option value="thursday">Thursday</option>
+                                <option value="friday">Friday</option>
+                                <option value="saturday">Saturday</option>
+                                <option value="sunday">Sunday</option>
+                            </select>
+                        </div>
                     </div>
                     <div id="event-date-group" class="form-group">
                         <label for="eventDate">Date</label>
                         <input type="date" id="eventDate" required>
-                    </div>
-                    <div id="event-day-group" class="form-group">
-                        <label for="eventDay">Recurring day</label>
-                        <select id="eventDay">
-                            <option value="">None</option>
-                            <option value="monday">Monday</option>
-                            <option value="tuesday">Tuesday</option>
-                            <option value="wednesday">Wednesday</option>
-                            <option value="thursday">Thursday</option>
-                            <option value="friday">Friday</option>
-                            <option value="saturday">Saturday</option>
-                            <option value="sunday">Sunday</option>
-                        </select>
                     </div>
                     <div id="time-inputs-wrapper">
                         <div class="form-group">
@@ -275,7 +285,7 @@
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
     <script src="{% static 'js/calendar/calendar-core.js' %}?v=20260910-month-navigation"></script>
-    <script src="{% static 'faculty/js/calendar/calendar-editor.js' %}?v=20260910-month-dropdown"></script>
+    <script src="{% static 'faculty/js/calendar/calendar-editor.js' %}?v=20260917-preview-edit-search"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 

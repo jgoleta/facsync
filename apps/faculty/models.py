@@ -5,7 +5,7 @@ from apps.core.colleges import get_college_label
 
 class FacultyProfile(models.Model):
     STATUS_CHOICES = [
-        ('not_set', 'Not Set (Default Status)'),
+        ('not_set', 'Not Set'),
         ('available', 'Available'),
         ('busy', 'Busy'),
         ('virtual_only', 'Virtual Only'),
@@ -74,7 +74,7 @@ class GoogleCalendarConnection(models.Model):
 
 class StatusHistory(models.Model):
     STATUS_CHOICES = [
-        ('not_set', 'Not Set (Default Status)'),
+        ('not_set', 'Not Set'),
         ('available', 'Available'),
         ('busy', 'Busy'),
         ('virtual_only', 'Virtual Only'),
@@ -121,6 +121,12 @@ class ScheduleEvent(models.Model):
 
     faculty = models.ForeignKey(FacultyProfile, on_delete=models.CASCADE, related_name='schedule_events')
     title = models.CharField(max_length=128)
+    offering_id = models.CharField(max_length=128, blank=True)
+    subject_code = models.CharField(max_length=64, blank=True)
+    section = models.CharField(max_length=64, blank=True)
+    units = models.CharField(max_length=32, blank=True)
+    lecture = models.CharField(max_length=32, blank=True)
+    lab = models.CharField(max_length=32, blank=True)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='uploaded_schedule_events')
     description = models.TextField(blank=True)
     location = models.CharField(max_length=128, blank=True)

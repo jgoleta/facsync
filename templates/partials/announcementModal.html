@@ -1,7 +1,11 @@
 <dialog id="announcementModal" class="announcement-dialog" data-fetch-url="{{ announcement_fetch_url }}" aria-labelledby="announcementTitle">
     <header class="announcement-dialog-header">
-        <h2 id="announcementTitle">College announcements</h2>
-        <form method="dialog"><button type="submit" aria-label="Close announcements" autofocus>Close</button></form>
+        <div>
+            <span class="announcement-dialog-eyebrow">Stay informed</span>
+            <h2 id="announcementTitle">College announcements</h2>
+            <p class="announcement-dialog-subtitle">Important updates and notices from your college.</p>
+        </div>
+        <form method="dialog"><button type="submit" class="announcement-dialog-close" aria-label="Close announcements" autofocus>&times;</button></form>
     </header>
-    <div id="announcementList" class="announcement-list"></div>
+    <div id="announcementList" class="announcement-list" aria-live="polite"></div>
 </dialog>

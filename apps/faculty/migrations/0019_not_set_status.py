@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
             name='current_status',
             field=models.CharField(
                 choices=[
-                    ('not_set', 'Not Set (Default Status)'),
+                    ('not_set', 'Not Set'),
                     ('available', 'Available'),
                     ('busy', 'Busy'),
                     ('virtual_only', 'Virtual Only'),
@@ -29,7 +29,7 @@ class Migration(migrations.Migration):
             name='manual_status',
             field=models.CharField(
                 choices=[
-                    ('not_set', 'Not Set (Default Status)'),
+                    ('not_set', 'Not Set'),
                     ('available', 'Available'),
                     ('busy', 'Busy'),
                     ('virtual_only', 'Virtual Only'),
@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
             name='status',
             field=models.CharField(
                 choices=[
-                    ('not_set', 'Not Set (Default Status)'),
+                    ('not_set', 'Not Set'),
                     ('available', 'Available'),
                     ('busy', 'Busy'),
                     ('virtual_only', 'Virtual Only'),
