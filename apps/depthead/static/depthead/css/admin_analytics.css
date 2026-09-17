@@ -60,7 +60,7 @@ table td:first-child {
     .analytics-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    .analytics-grid .chart-card:first-child {
+    .analytics-grid > .chart-card:first-child {
         grid-column: span 2;
     }
 }

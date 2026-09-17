@@ -34,6 +34,7 @@ from .services.analytics import (
     get_student_request_frequency_display,
     normalize_period,
 )
+from .services.schedule_availability import get_schedule_availability
 
 
 logger = logging.getLogger(__name__)
@@ -583,21 +584,12 @@ def faculty_trends(request):
         })
 
     
-    #chart bars, one per faculty
-    max_bar_height = 160
-    baseline_y = 250
-    bar_width = 40
-    gap = 70
-    start_x = 100
+    # Preserve fractional rates; CSS gives tiny positive values a visible marker.
     chart_bars = []
-    for i, t in enumerate(trends):
+    for t in trends:
         rate = t['availability_rate']
-        height = round((rate / 100) * max_bar_height) if rate is not None else 0
         chart_bars.append({
-            'x': start_x + i * gap,
-            'y': baseline_y - height,
-            'height': height,
-            'label': t['name'].split()[0] if t['name'] else '',
+            'label': t['name'],
             'rate': rate,
             'has_data': rate is not None,
         })
@@ -605,6 +597,9 @@ def faculty_trends(request):
     return render(request, 'depthead/facultyTrends.html', {
         'trends': trends,
         'chart_bars': chart_bars,
+        'schedule_availability': get_schedule_availability(college_code),
+        'consultation_start': date.fromisoformat(analytics['consultation_period']['start_date']),
+        'consultation_end': date.fromisoformat(analytics['consultation_period']['end_date']),
     })
 
 
