@@ -1,0 +1,43 @@
+.faculty-trends .trends-layout { display: grid; gap: 24px; }
+.faculty-trends .trends-chart-pair { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.faculty-trends .chart-card,
+.faculty-trends .table-card { min-width: 0; padding: 24px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-card); }
+.faculty-trends h2 { font-size: 1.1rem; margin: 0 0 8px; }
+.faculty-trends p { line-height: 1.5; }
+.faculty-trends .chart-caption,
+.faculty-trends .chart-note { font-size: .85rem; color: var(--text-secondary); margin: 8px 0; }
+.faculty-trends .period-label { font-size: .8rem; font-weight: 600; margin: 16px 0; }
+.faculty-trends .bar-chart { list-style: none; padding: 0; margin: 0; }
+.faculty-trends .bar-row { padding: 8px 0; }
+.faculty-trends .bar-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 16px; font-size: .875rem; margin-bottom: 8px; }
+.faculty-trends .bar-heading > :first-child { min-width: 0; overflow-wrap: anywhere; }
+.faculty-trends .bar-heading > :last-child { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.faculty-trends .bar-track { height: 12px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+.faculty-trends .bar-fill { height: 100%; border-radius: inherit; }
+.faculty-trends .history-bar { background: #7c3aed; }
+.faculty-trends .history-bar-positive { min-width: 3px; }
+.faculty-trends .schedule-fill { background: #2563eb; }
+.faculty-trends .bar-axis { display: flex; justify-content: space-between; font-size: .75rem; color: var(--text-secondary); margin: 8px 0 16px; }
+.faculty-trends .history-chart-scroll { max-height: 390px; overflow-y: auto; scrollbar-gutter: stable; }
+.faculty-trends .table-scroll { overflow-x: auto; margin-top: 20px; }
+.faculty-trends table { border-collapse: collapse; width: 100%; text-align: left; font-size: .9rem; }
+.faculty-trends th,
+.faculty-trends td { padding: 14px 16px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+.faculty-trends thead { color: var(--text-secondary); background: var(--bg-main, #f8fafc); }
+.faculty-trends tbody tr:last-child > * { border-bottom: 0; }
+.faculty-trends .numeric { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.faculty-trends .faculty-detail-table { min-width: 720px; }
+.faculty-trends .daily-winners-table { table-layout: fixed; }
+.faculty-trends .daily-winners-table th:first-child { width: 25%; }
+.faculty-trends .daily-winners-table th:last-child { width: 20%; }
+.faculty-trends .winner-name { display: block; overflow-wrap: anywhere; }
+.faculty-trends .empty-state { color: var(--text-secondary); padding: 24px 0; }
+.faculty-trends [tabindex="0"]:focus-visible { outline: 2px solid #2563eb; outline-offset: 4px; }
+@media (min-width: 1200px) {
+    .faculty-trends .trends-chart-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+    .faculty-trends .chart-card, .faculty-trends .table-card { padding: 16px; }
+    .faculty-trends .bar-heading { flex-wrap: wrap; }
+    .faculty-trends th, .faculty-trends td { padding: 12px 8px; }
+}

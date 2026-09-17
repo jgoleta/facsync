@@ -1,5 +1,5 @@
 <!doctype html>
-{% load static %}
+{% load static l10n %}
 <html lang="en">
 
 <head>
@@ -9,100 +9,107 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Trends</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}">
+    <link rel="stylesheet" href="{% static 'depthead/css/faculty_trends.css' %}">
 </head>
 
 <body>
     <div class="admin-shell">
         {% include 'depthead/partials/sidebar.html' %}
 
-        <main class="main-content">
+        <main class="main-content faculty-trends">
             <header class="main-header">
-                <h1>Faculty Availability Trends ({{ request.user.college_name }})</h1>
-                <p>Track faculty activity and response metrics.</p>
+                <h1>Faculty Trends</h1>
+                <p>{{ request.user.college_name }} &middot; Active faculty: {{ schedule_availability.faculty_count }}</p>
             </header>
 
-            <div class="analytics-grid">
-                <div class="chart-card">
-                    <h3>Faculty Availability Rate (Last 7 Days)</h3>
-                    <div class="chart-graphic" role="img" aria-label="Faculty availability rate chart">
-                        <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="40" y="30" width="520" height="240" rx="16" fill="#ffffff" />
-                            <g stroke="#cbd5e1" stroke-width="1">
-                                <line x1="80" y1="250" x2="500" y2="250" />
-                                <line x1="80" y1="210" x2="500" y2="210" />
-                                <line x1="80" y1="170" x2="500" y2="170" />
-                                <line x1="80" y1="130" x2="500" y2="130" />
-                                <line x1="80" y1="90" x2="500" y2="90" />
-                            </g>
-                            {% for bar in chart_bars %}
-                            {% if bar.has_data %}
-                            <rect x="{{ bar.x }}" y="{{ bar.y }}" width="40" height="{{ bar.height }}" rx="6" fill="#2563eb">
-                                <title>{{ bar.label }}: {{ bar.rate }}% available</title>
-                            </rect>
-                            {% endif %}
-                            {% endfor %}
-                            <g font-family="Segoe UI, Arial, sans-serif" fill="#475569" font-size="13">
+            <div class="trends-layout">
+                <div class="trends-chart-pair">
+                    <section class="chart-card" aria-labelledby="history-chart-title">
+                        <h2 id="history-chart-title">Status availability by faculty</h2>
+                        <p class="chart-caption">Time in the Available status, based on recorded status history.</p>
+                        <p class="period-label">Last 7 days</p>
+                        <div class="history-chart-scroll" tabindex="0" role="region" aria-label="Faculty status availability">
+                            <ul class="bar-chart">
                                 {% for bar in chart_bars %}
-                                <text x="{{ bar.x }}" y="270">{{ bar.label }}</text>
+                                <li class="bar-row">
+                                    <div class="bar-heading"><span>{{ bar.label }}</span><strong>{% if bar.has_data %}{{ bar.rate }}%{% else %}No status history{% endif %}</strong></div>
+                                    <div class="bar-track" aria-hidden="true">
+                                        {% if bar.has_data %}<div class="bar-fill history-bar{% if bar.rate > 0 %} history-bar-positive{% endif %}" style="width: {{ bar.rate|unlocalize }}%;"></div>{% endif %}
+                                    </div>
+                                </li>
+                                {% empty %}
+                                <li class="empty-state">No faculty data yet.</li>
                                 {% endfor %}
-                            </g>
-                        </svg>
+                            </ul>
+                        </div>
+                        <div class="bar-axis" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
+                        <p class="chart-note">Tiny positive rates use a minimum-width marker. Labels show the calculated percentage.</p>
+                    </section>
+                    <section class="chart-card" aria-labelledby="schedule-chart-title">
+                        <h2 id="schedule-chart-title">College-wide availability by day</h2>
+                        <p class="chart-caption">Based on recorded schedules. At least 60 consecutive minutes free between 8am&ndash;5pm ({{ schedule_availability.timezone }}).</p>
+                        <p class="period-label">This week: {{ schedule_availability.week_start|date:"M j" }} &ndash; {{ schedule_availability.week_end|date:"M j, Y" }}</p>
+                        <ul class="bar-chart" aria-label="Daily faculty availability">
+                            {% for row in schedule_availability.rows %}
+                            <li class="bar-row">
+                                <div class="bar-heading">
+                                    <span><strong>{{ row.day }}</strong> &middot; {{ row.date|date:"M j" }}</span>
+                                    <span>{% if row.availability_percent is not None %}<strong>{{ row.availability_percent }}%</strong> ({{ row.available_count }} of {{ schedule_availability.faculty_count }}){% else %}No faculty data{% endif %}</span>
+                                </div>
+                                <div class="bar-track" aria-hidden="true">
+                                    {% if row.availability_percent is not None %}<div class="bar-fill schedule-fill" style="width: {{ row.availability_percent|unlocalize }}%;"></div>{% endif %}
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        <div class="bar-axis" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
+                        <p class="chart-note">Faculty without recorded schedules count as fully unscheduled. Free time does not guarantee availability.</p>
+                    </section>
+                </div>
+                <div class="table-card">
+                    <h2>Most available faculty per day</h2>
+                    <p>{{ schedule_availability.week_start|date:"M j" }}–{{ schedule_availability.week_end|date:"M j, Y" }} · 8am–5pm ({{ schedule_availability.timezone }}).</p>
+                    <p>Ranked by total unscheduled time. Faculty without recorded schedules are excluded. All ties are shown.</p>
+                    <div class="table-scroll" tabindex="0" role="region" aria-label="Most available faculty by day">
+                    <table class="daily-winners-table">
+                        <thead><tr><th scope="col">Day</th><th scope="col">Faculty</th><th scope="col">Open time</th></tr></thead>
+                        <tbody>
+                            {% for row in schedule_availability.rows %}
+                            <tr>
+                                <th scope="row">{{ row.day }}<br>{{ row.date|date:"M j" }}</th>
+                                <td>{% if not schedule_availability.faculty_count %}No faculty data{% elif row.winners %}{% for name in row.winners %}<span class="winner-name">{{ name }}</span>{% endfor %}{% else %}{{ row.ranking_empty }}{% endif %}</td>
+                                <td>{% if row.winners %}{{ row.open_display }}{% else %}—{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                     </div>
                 </div>
-                
-                <div class="table-card">
-                    <h3>Status Update Frequency</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Faculty Name</th>
-                                <th>Last Update</th>
-                                <th>Frequency (updates/day)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for t in trends %}
-                            <tr>
-                                <td>{{ t.name }}</td>
-                                <td>{{ t.last_update_display }}</td>
-                                <td>{{ t.updates_per_day }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="empty-state">No faculty data yet.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-                
-                <div class="table-card">
-                    <h3>Request & Response Rates</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Faculty Name</th>
-                                <th>Completion Rate</th>
-                                <th>Avg. Response Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for t in trends %}
-                            <tr>
-                                <td>{{ t.name }}</td>
-                                <td>{% if t.completion_rate is not None %}{{ t.completion_rate }}%{% else %}No data{% endif %}</td>
-                                <td>{% if t.avg_response_hours is not None %}{{ t.avg_response_hours }}h{% else %}No data{% endif %}
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="empty-state">No faculty data yet.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+
+                <section class="table-card" aria-labelledby="faculty-detail-title">
+                    <h2 id="faculty-detail-title">Faculty activity and consultations</h2>
+                    <p class="chart-caption">Status activity: last 7 days. Consultations: month-to-date ({{ consultation_start|date:"M j" }} &ndash; {{ consultation_end|date:"M j, Y" }}), based on scheduled consultation dates.</p>
+                    <div class="table-scroll" tabindex="0" role="region" aria-label="Faculty activity and consultation details">
+                        <table class="faculty-detail-table">
+                            <thead>
+                                <tr><th scope="col" rowspan="2">Faculty</th><th scope="colgroup" colspan="2">Status activity &middot; Last 7 days</th><th scope="colgroup" colspan="2">Consultations &middot; Month-to-date</th></tr>
+                                <tr><th scope="col">Last recorded update</th><th scope="col">Updates/day</th><th scope="col">Completion rate</th><th scope="col">Avg. time to approval</th></tr>
+                            </thead>
+                            <tbody>
+                                {% for t in trends %}
+                                <tr>
+                                    <th scope="row">{{ t.name }}</th>
+                                    <td>{{ t.last_update_display }}</td>
+                                    <td class="numeric">{{ t.updates_per_day }}</td>
+                                    <td class="numeric">{% if t.completion_rate is not None %}{{ t.completion_rate }}%{% else %}No data{% endif %}</td>
+                                    <td class="numeric">{% if t.avg_response_hours is not None %}{{ t.avg_response_hours }}h{% else %}No data{% endif %}</td>
+                                </tr>
+                                {% empty %}<tr><td colspan="5" class="empty-state">No faculty data yet.</td></tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="chart-note">Last recorded update can predate the reporting window. Approval time includes requests with a recorded approval.</p>
+                </section>
             </div>
         </main>
     </div>
