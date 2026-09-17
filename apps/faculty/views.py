@@ -51,8 +51,8 @@ from .models import (
 
 
 SCHEDULE_CSV_HEADERS = [
-    'event_title', 'short_description', 'room_location', 'recurring_day',
-    'start_month', 'end_month', 'start_time', 'end_time', 'status_type',
+    'OFFERING_ID', 'SUBJ_CODE', 'SECTION', 'SUBJECT_TITLE', 'UNITS',
+    'LECTURE', 'LAB', 'DAYFROM', 'DAYTO', 'TIMEFROM', 'TIMETO', 'ROOM',
 ]
 SCHEDULE_CSV_MAX_BYTES = 2 * 1024 * 1024
 SCHEDULE_CSV_MAX_ROWS = 500
@@ -254,9 +254,10 @@ def _parse_schedule_csv(uploaded_file):
     parsed = []
     errors = []
     intervals_by_day = {}
+    offering_ids = set()
     for row_number, row in enumerate(csv_rows, start=2):
         if None in row and any(str(value or '').strip() for value in row[None]):
-            errors.append(_csv_error(row_number, 'The row contains more values than the nine required columns.'))
+            errors.append(_csv_error(row_number, 'The row contains more values than the twelve required columns.'))
             continue
         if row is None or all(not str(value or '').strip() for value in row.values() if value is not None):
             continue
@@ -266,71 +267,66 @@ def _parse_schedule_csv(uploaded_file):
 
         values = {key: (value or '').strip() for key, value in row.items() if key in SCHEDULE_CSV_HEADERS}
         missing = [key for key in SCHEDULE_CSV_HEADERS if not values.get(key)]
-        # Description, room, recurring day, and status may be blank where defaults apply.
-        missing = [key for key in missing if key in ('event_title', 'start_time', 'end_time')]
         if missing:
             errors.append(_csv_error(row_number, f'Missing required value(s): {", ".join(missing)}.'))
             continue
+        if values['OFFERING_ID'] in offering_ids:
+            errors.append(_csv_error(row_number, 'OFFERING_ID must be unique within the CSV file.'))
+            continue
+        offering_ids.add(values['OFFERING_ID'])
 
         try:
-            day_key = values['recurring_day'].casefold() or 'none'
-            day_label = 'None' if day_key == 'none' else SCHEDULE_WEEKDAYS[day_key]
+            day_from = date.fromisoformat(values['DAYFROM'])
+            day_to = date.fromisoformat(values['DAYTO'])
+            if day_from > day_to:
+                errors.append(_csv_error(row_number, 'DAYFROM must be on or before DAYTO.'))
+                continue
+            day_key = ''
+            day_label = f'{day_from.isoformat()} to {day_to.isoformat()}'
+        except ValueError:
+            errors.append(_csv_error(row_number, 'DAYFROM and DAYTO must use ISO dates (YYYY-MM-DD).'))
+            continue
         except KeyError:
-            errors.append(_csv_error(row_number, 'recurring_day must be a weekday from Monday through Sunday, or None.'))
+            errors.append(_csv_error(row_number, 'DAYFROM and DAYTO are required and must use ISO dates (YYYY-MM-DD).'))
             continue
 
-        start_match = SCHEDULE_TIME_RE.fullmatch(values['start_time'])
-        end_match = SCHEDULE_TIME_RE.fullmatch(values['end_time'])
+        start_match = SCHEDULE_TIME_RE.fullmatch(values['TIMEFROM'])
+        end_match = SCHEDULE_TIME_RE.fullmatch(values['TIMETO'])
         if not start_match or not end_match:
-            errors.append(_csv_error(row_number, 'start_time and end_time must use 24-hour HH:MM format.'))
+            errors.append(_csv_error(row_number, 'TIMEFROM and TIMETO must use 24-hour HH:MM format.'))
             continue
-        start_value = time.fromisoformat(values['start_time'])
-        end_value = time.fromisoformat(values['end_time'])
+        start_value = time.fromisoformat(values['TIMEFROM'])
+        end_value = time.fromisoformat(values['TIMETO'])
         if start_value >= end_value:
-            errors.append(_csv_error(row_number, 'start_time must be earlier than end_time.'))
+            errors.append(_csv_error(row_number, 'TIMEFROM must be earlier than TIMETO.'))
             continue
 
-        status_key = values['status_type'].casefold() or 'busy'
-        status_data = SCHEDULE_STATUS_TYPES.get(status_key)
-        if status_data is None:
-            errors.append(_csv_error(
-                row_number,
-                'status_type must be one of: Busy, Available, Class, Office Hours, Unavailable, On Leave.',
-            ))
+        if len(values['ROOM']) > 128:
+            errors.append(_csv_error(row_number, 'ROOM must be 128 characters or fewer.'))
             continue
-        if len(values['room_location']) > 128:
-            errors.append(_csv_error(row_number, 'room_location must be 128 characters or fewer.'))
-            continue
-
-        start_month = end_month = None
-        if day_key != 'none' or values['start_month'] or values['end_month']:
-            if not values['start_month'] or not values['end_month']:
-                errors.append(_csv_error(row_number, 'Weekday rows require start_month and end_month.'))
-                continue
-            try:
-                start_month = int(values['start_month'])
-                end_month = int(values['end_month'])
-            except ValueError:
-                errors.append(_csv_error(row_number, 'start_month and end_month must be numeric months from 1 to 12.'))
-                continue
-            if start_month not in SCHEDULE_MONTHS or end_month not in SCHEDULE_MONTHS:
-                errors.append(_csv_error(row_number, 'start_month and end_month must be between 1 and 12.'))
-                continue
 
         interval = (start_value, end_value, row_number)
-        intervals_by_day.setdefault(day_key, []).append(interval)
+        interval_key = (day_from, day_to)
+        intervals_by_day.setdefault(interval_key, []).append(interval)
         parsed.append({
             'day': day_label,
-            'day_of_week': '' if day_key == 'none' else day_key,
-            'title': values['event_title'],
-            'description': values['short_description'],
+            'date': day_from,
+            'recurrence_start_date': day_from,
+            'recurrence_end_date': day_to,
+            'day_of_week': day_key,
+            'offering_id': values['OFFERING_ID'],
+            'subject_code': values['SUBJ_CODE'],
+            'section': values['SECTION'],
+            'title': values['SUBJECT_TITLE'],
+            'units': values['UNITS'],
+            'lecture': values['LECTURE'],
+            'lab': values['LAB'],
+            'description': f"{values['SUBJ_CODE']} {values['SECTION']}".strip(),
             'start_time': start_value,
             'end_time': end_value,
-            'status': status_data[0],
-            'event_type': status_data[1],
-            'room': values['room_location'],
-            'start_month': start_month,
-            'end_month': end_month,
+            'status': 'Class',
+            'event_type': 'busy',
+            'room': values['ROOM'],
         })
 
     for day, intervals in intervals_by_day.items():
@@ -352,18 +348,18 @@ def _parse_schedule_csv(uploaded_file):
 
 def _schedule_csv_row(event):
     return {
-        'event_title': event.title,
-        'short_description': event.description,
-        'room_location': event.location,
-        'recurring_day': (
-            SCHEDULE_WEEKDAYS.get(event.day_of_week)
-            or ('None' if event.start_month else (event.date.isoformat() if event.date else ''))
-        ),
-        'start_month': event.start_month or '',
-        'end_month': event.end_month or '',
-        'start_time': event.start_time.strftime('%H:%M') if event.start_time else '',
-        'end_time': event.end_time.strftime('%H:%M') if event.end_time else '',
-        'status_type': get_schedule_status_label(event),
+        'OFFERING_ID': event.offering_id,
+        'SUBJ_CODE': event.subject_code,
+        'SECTION': event.section,
+        'SUBJECT_TITLE': event.title,
+        'UNITS': event.units,
+        'LECTURE': event.lecture,
+        'LAB': event.lab,
+        'DAYFROM': event.recurrence_start_date.isoformat() if event.recurrence_start_date else (event.date.isoformat() if event.date else ''),
+        'DAYTO': event.recurrence_end_date.isoformat() if event.recurrence_end_date else (event.date.isoformat() if event.date else ''),
+        'TIMEFROM': event.start_time.strftime('%H:%M') if event.start_time else '',
+        'TIMETO': event.end_time.strftime('%H:%M') if event.end_time else '',
+        'ROOM': event.location,
     }
 
 
@@ -391,7 +387,7 @@ def dashboard(request):
         'on_leave': 'on-leave',
         'unavailable': 'unavailable',
     }.get(current_status, 'not-set')
-    status_label = dict(FacultyProfile.STATUS_CHOICES).get(current_status, 'Not Set (Default Status)')
+    status_label = dict(FacultyProfile.STATUS_CHOICES).get(current_status, 'Not Set')
     return render(request, 'faculty/dashboardFaculty.html', {
         'faculty_profile': faculty_profile,
         'current_status': current_status,
@@ -547,8 +543,8 @@ def schedule_template(request):
     response['Content-Disposition'] = 'attachment; filename=schedule_template.csv'
     writer = csv.writer(response)
     writer.writerow(SCHEDULE_CSV_HEADERS)
-    writer.writerow(['Introductory lecture', 'Introductory lecture', 'Room 204', 'Monday', '8', '5', '10:30', '12:00', 'Busy'])
-    writer.writerow(['Office hours', 'Student consultations', 'Room 204', 'Monday', '8', '5', '13:00', '15:00', 'Busy'])
+    writer.writerow(['OFFERING-001', 'CS101', 'A', 'Introduction to Computing', '3', '3', '0', '2026-08-17', '2026-12-15', '10:30', '12:00', 'Room 204'])
+    writer.writerow(['OFFERING-002', 'CS102', 'A', 'Data Structures', '3', '3', '0', '2026-08-18', '2026-12-15', '13:00', '15:00', 'Room 204'])
     return response
 
 
@@ -576,15 +572,21 @@ def upload_schedule(request):
             ScheduleEvent(
                 faculty=faculty,
                 title=row['title'],
+                offering_id=row['offering_id'],
+                subject_code=row['subject_code'],
+                section=row['section'],
+                units=row['units'],
+                lecture=row['lecture'],
+                lab=row['lab'],
                 uploaded_by=request.user,
                 description=row['description'],
                 location=row['room'],
                 schedule_status=row['status'],
                 event_type=row['event_type'],
-                date=None,
+                date=row['date'],
                 day_of_week=row['day_of_week'],
-                start_month=row['start_month'],
-                end_month=row['end_month'],
+                recurrence_start_date=row['recurrence_start_date'],
+                recurrence_end_date=row['recurrence_end_date'],
                 start_time=row['start_time'],
                 end_time=row['end_time'],
                 managed_by_facsync=True,

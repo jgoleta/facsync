@@ -169,12 +169,12 @@ def faculty_schedule_template(request):
     writer = csv.writer(response)
     writer.writerow(SCHEDULE_CSV_HEADERS)
     writer.writerow([
-        'Introductory lecture', 'Introductory lecture', 'Room 204',
-        'Monday', '8', '5', '10:30', '12:00', 'Busy',
+        'OFFERING-001', 'CS101', 'A', 'Introduction to Computing', '3', '3', '0',
+        '2026-08-17', '2026-12-15', '10:30', '12:00', 'Room 204',
     ])
     writer.writerow([
-        'Office hours', 'Student consultations', 'Room 204',
-        'Monday', '8', '5', '13:00', '15:00', 'Busy',
+        'OFFERING-002', 'CS102', 'A', 'Data Structures', '3', '3', '0',
+        '2026-08-18', '2026-12-15', '13:00', '15:00', 'Room 204',
     ])
     return response
 
@@ -205,15 +205,21 @@ def upload_faculty_schedule(request, faculty_id):
             ScheduleEvent(
                 faculty=faculty,
                 title=row['title'],
+                offering_id=row['offering_id'],
+                subject_code=row['subject_code'],
+                section=row['section'],
+                units=row['units'],
+                lecture=row['lecture'],
+                lab=row['lab'],
                 uploaded_by=request.user,
                 description=row['description'],
                 location=row['room'],
                 schedule_status=row['status'],
                 event_type=row['event_type'],
-                date=None,
+                date=row['date'],
                 day_of_week=row['day_of_week'],
-                start_month=row['start_month'],
-                end_month=row['end_month'],
+                recurrence_start_date=row['recurrence_start_date'],
+                recurrence_end_date=row['recurrence_end_date'],
                 start_time=row['start_time'],
                 end_time=row['end_time'],
                 managed_by_facsync=True,
@@ -357,7 +363,7 @@ def student_behavior(request):
 
 
 STATUS_LABELS = {
-    'not_set': ('Not Set (Default Status)', 'status-not-set'),
+    'not_set': ('Not Set', 'status-not-set'),
     'available': ('Available', 'status-available'),
     'busy': ('Busy', 'status-busy'),
     'virtual_only': ('Virtual Only', 'status-virtual'),

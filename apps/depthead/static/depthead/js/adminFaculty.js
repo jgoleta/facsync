@@ -200,14 +200,9 @@ function renderSchedulePreview(rows) {
     rows.forEach((row) => {
         const tr = document.createElement('tr');
         [
-            row.event_title,
-            row.short_description || '—',
-            row.room_location || '—',
-            row.recurring_day || 'None',
-            `${row.start_month || '—'}-${row.end_month || '—'}`,
-            row.start_time || '—',
-            row.end_time || '—',
-            row.status_type || 'Busy',
+            row.OFFERING_ID, row.SUBJ_CODE, row.SECTION, row.SUBJECT_TITLE,
+            row.UNITS, row.LECTURE, row.LAB, row.DAYFROM, row.DAYTO, row.TIMEFROM, row.TIMETO,
+            row.ROOM,
         ].forEach((value) => {
             const td = document.createElement('td');
             td.textContent = value;
