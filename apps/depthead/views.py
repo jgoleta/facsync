@@ -21,8 +21,6 @@ from apps.core.services import send_announcement_email_to_faculty, send_closure_
 from django.views.decorators.cache import never_cache
 from apps.core.faculty import mark_inactive_faculty
 from datetime import timedelta, date
-from django.utils.dateparse import parse_datetime
-from django.utils.timesince import timesince
 from .services import (
     generate_ai_insights,
     get_college_analytics,
@@ -36,6 +34,11 @@ from .services.analytics import (
 )
 from .services.schedule_availability import get_schedule_availability
 
+
+from .services.analytics_display import (
+    student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display,
+)
+from .services.analytics_browser import ANALYTICS_QUESTIONS, analytics_browser_answer
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +132,10 @@ def admin_dashboard(request):
         'data_quality': analytics['data_quality'],
         'analytics': analytics,
         'ai_insights': {'available': None},
+        'analytics_questions': [
+            {'metric': key, 'group': group, 'question': question}
+            for key, (group, question) in ANALYTICS_QUESTIONS.items()
+        ],
     })
 
 
@@ -296,15 +303,7 @@ def delete_faculty_schedule(request, faculty_id):
 @role_required('depthead')
 def student_behavior(request):
     college_code = request.user.college
-    current_period = normalize_period()
-    today = current_period.end_date
-    month_starts = []
-    cursor = today.replace(day=1)
-    for _ in range(6):
-        month_starts.append(cursor)
-        cursor = (cursor - timedelta(days=1)).replace(day=1)
-    month_starts.reverse()  #oldest to newest
-
+    month_starts, today = student_reporting_period()
     analytics = get_college_analytics(college_code, month_starts[0], today)
     monthly_lookup = {
         row['month']: row['count']
@@ -334,20 +333,7 @@ def student_behavior(request):
 
     polyline_str = " ".join(f"{p['x']},{p['y']}" for p in line_points)
 
-    # Request-submission periods use requested_at in the analytics timezone.
-    request_months = analytics['request_patterns']['monthly_trend']
-    if request_months:
-        peak_period_count = max(row['count'] for row in request_months)
-        peak_months = [
-            date.fromisoformat(f"{row['month']}-01").strftime('%B %Y')
-            for row in request_months
-            if row['count'] == peak_period_count
-        ]
-        peak_period_label = ', '.join(peak_months)
-    else:
-        peak_period_label = "No data"
-        peak_period_count = 0
-
+    peak_period_label, peak_period_count = peak_request_month(analytics['request_patterns']['monthly_trend'])
     consultations_qs = get_base_consultation_queryset(
         college_code,
         normalize_period(month_starts[0], today),
@@ -502,26 +488,7 @@ def peak_analytics(request):
             })
             start_angle = end_angle
 
-    # Names are presentation-only and are not present in the AI-ready payload.
-    workload_items = analytics['faculty_workload']['items'][:5]
-    faculty_ids = [item['faculty_key'].removeprefix('faculty:') for item in workload_items]
-    profiles_by_id = {
-        profile.faculty_id: profile
-        for profile in FacultyProfile.objects.filter(
-            faculty_id__in=faculty_ids
-        ).select_related('user')
-    }
-    load_distribution_list = []
-    for item in workload_items:
-        faculty_id = item['faculty_key'].removeprefix('faculty:')
-        profile = profiles_by_id.get(faculty_id)
-        if profile is None:
-            continue
-        load_distribution_list.append({
-            'name': profile.user.get_full_name() or profile.user.username,
-            'count': item['total_requests'],
-        })
-
+    load_distribution_list = faculty_load_display(analytics)
     max_count = max(hourly_data.values()) if any(hourly_data.values()) else 1
     chart_bars = []
     gap = 20
@@ -557,33 +524,8 @@ def peak_analytics(request):
 def faculty_trends(request):
     college_code = request.user.college
     analytics = get_faculty_trends(college_code)
-    faculty_ids = [
-        item['faculty_key'].removeprefix('faculty:')
-        for item in analytics['items']
-    ]
-    profiles_by_id = {
-        profile.faculty_id: profile
-        for profile in FacultyProfile.objects.filter(
-            faculty_id__in=faculty_ids
-        ).select_related('user')
-    }
-    trends = []
-    for item in analytics['items']:
-        faculty_id = item['faculty_key'].removeprefix('faculty:')
-        profile = profiles_by_id.get(faculty_id)
-        if profile is None:
-            continue
-        last_update_at = parse_datetime(item['last_update_at']) if item['last_update_at'] else None
-        trends.append({
-            'name': profile.user.get_full_name() or profile.user.username,
-            'updates_per_day': item['updates_per_day'],
-            'last_update_display': f"{timesince(last_update_at)} ago" if last_update_at else "No data",
-            'completion_rate': item['completion_rate_percent'],
-            'avg_response_hours': item['average_approval_response_hours'],
-            'availability_rate': item['availability_rate_percent'],
-        })
+    trends = faculty_trends_display(analytics)
 
-    
     # Preserve fractional rates; CSS gives tiny positive values a visible marker.
     chart_bars = []
     for t in trends:
@@ -703,3 +645,20 @@ def closure_status(request):
         return JsonResponse({'error': 'Your account has no college set.'}, status=400)
     state = OfficeClosure.objects.filter(college__iexact=request.user.college).values_list('is_closed', flat=True).first()
     return JsonResponse({'is_closed': bool(state)})
+
+
+@login_required
+@role_required('depthead')
+@require_GET
+@never_cache
+def analytics_browser_api(request):
+    if not request.user.college:
+        return JsonResponse({'error': 'Your account has no college set.'}, status=400)
+    metric = request.GET.get('metric', '')
+    if metric not in ANALYTICS_QUESTIONS:
+        return JsonResponse({'error': 'Unknown analytics question.'}, status=400)
+    try:
+        return JsonResponse(analytics_browser_answer(metric, request.user.college))
+    except Exception:
+        logger.exception('Unable to load analytics browser metric %s', metric)
+        return JsonResponse({'error': "Sorry, I couldn't load that right now."}, status=500)

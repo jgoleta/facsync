@@ -6,6 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FacSync | College Overview</title>
+    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
@@ -155,6 +156,8 @@
             </div>
         </main>
     </div>
+    {% include 'depthead/partials/analytics_browser.html' %}
+    <script src="{% static 'depthead/js/analytics_browser.js' %}" defer></script>
     <script src="{% static 'depthead/js/ai_insights.js' %}?v=20260905-filter" defer></script>
 </body>
 </html>

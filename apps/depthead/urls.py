@@ -4,6 +4,7 @@ from . import views
 app_name = 'depthead'
 
 urlpatterns = [
+    path('api/analytics-browser/', views.analytics_browser_api, name='analytics_browser_api'),
     path('college-settings/closure-status/', views.closure_status, name='closure_status'),
     path('', views.admin_dashboard, name='admin_dashboard'),
     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),

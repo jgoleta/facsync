@@ -1,0 +1,20 @@
+<div id="analytics-browser" data-endpoint="{% url 'depthead:analytics_browser_api' %}">
+    <button type="button" id="analytics-chat-toggle" aria-label="Open analytics browser" aria-expanded="false" aria-controls="analytics-chat-panel" hidden>
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 11a8 8 0 0 1-8 8H7l-5 3V11a9 9 0 0 1 19 0Z"/><path d="M7 11h10M7 7h7"/></svg>
+    </button>
+    <section id="analytics-chat-panel" role="dialog" aria-labelledby="analytics-chat-title" hidden>
+        <header class="analytics-chat-header">
+            <div><h2 id="analytics-chat-title">Browse college analytics</h2><p>Choose a question to view existing metrics. No AI.</p></div>
+            <button type="button" id="analytics-chat-close" aria-label="Close analytics browser">&times;</button>
+        </header>
+        <div id="analytics-chat-messages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="Analytics conversation"></div>
+        <div class="analytics-chat-questions" aria-label="Preset questions">
+            {% regroup analytics_questions by group as question_groups %}
+            {% for group in question_groups %}
+            <fieldset><legend>{{ group.grouper }}</legend>
+                {% for item in group.list %}<button type="button" data-metric="{{ item.metric }}">{{ item.question }}</button>{% endfor %}
+            </fieldset>
+            {% endfor %}
+        </div>
+    </section>
+</div>
