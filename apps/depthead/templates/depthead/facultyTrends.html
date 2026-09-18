@@ -47,22 +47,36 @@
                     </section>
                     <section class="chart-card" aria-labelledby="schedule-chart-title">
                         <h2 id="schedule-chart-title">College-wide availability by day</h2>
-                        <p class="chart-caption">Based on recorded schedules. At least 60 consecutive minutes free between 8am&ndash;5pm ({{ schedule_availability.timezone }}).</p>
                         <p class="period-label">This week: {{ schedule_availability.week_start|date:"M j" }} &ndash; {{ schedule_availability.week_end|date:"M j, Y" }}</p>
-                        <ul class="bar-chart" aria-label="Daily faculty availability">
-                            {% for row in schedule_availability.rows %}
-                            <li class="bar-row">
-                                <div class="bar-heading">
-                                    <span><strong>{{ row.day }}</strong> &middot; {{ row.date|date:"M j" }}</span>
-                                    <span>{% if row.availability_percent is not None %}<strong>{{ row.availability_percent }}%</strong> ({{ row.available_count }} of {{ schedule_availability.faculty_count }}){% else %}No faculty data{% endif %}</span>
-                                </div>
-                                <div class="bar-track" aria-hidden="true">
-                                    {% if row.availability_percent is not None %}<div class="bar-fill schedule-fill" style="width: {{ row.availability_percent|unlocalize }}%;"></div>{% endif %}
-                                </div>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                        <div class="bar-axis" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
+                        {% if schedule_availability.faculty_count %}
+                        <div class="daily-chart-scroll" tabindex="0" role="region" aria-label="Daily faculty availability chart">
+                            <svg class="daily-chart" viewBox="0 0 560 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="daily-chart-title daily-chart-description">
+                                <title id="daily-chart-title">College-wide availability by day</title>
+                                <desc id="daily-chart-description">Percentage of faculty with significant open time, Monday through Sunday. Each bar includes its date and faculty count.</desc>
+                                <g class="daily-grid">
+                                    <line x1="48" y1="40" x2="544" y2="40" />
+                                    <line x1="48" y1="140" x2="544" y2="140" />
+                                    <line x1="48" y1="240" x2="544" y2="240" />
+                                </g>
+                                <g class="daily-axis" text-anchor="end"><text x="40" y="44">100%</text><text x="40" y="144">50%</text><text x="40" y="244">0%</text></g>
+                                {% for row in schedule_availability.rows %}
+                                {% widthratio forloop.counter0 1 70 as offset %}
+                                {% widthratio row.availability_percent 100 200 as height %}
+                                <g transform="translate({{ offset|add:85 }},240)">
+                                    <title>{{ row.day }} {{ row.date|date:"M j" }}: {{ row.availability_percent }}% ({{ row.available_count }} of {{ schedule_availability.faculty_count }})</title>
+                                    <g transform="scale(1,-1)"><rect class="daily-bar" x="-18" y="0" width="36" height="{{ height }}" rx="4" /></g>
+                                    <g transform="translate(0,-{{ height }})"><text class="daily-value" y="-10" text-anchor="middle">{{ row.availability_percent }}%</text></g>
+                                    <text class="daily-day" y="24" text-anchor="middle">{{ row.day|slice:":3" }}</text>
+                                    <text class="daily-axis" y="44" text-anchor="middle">{{ row.date|date:"M j" }}</text>
+                                    <text class="daily-axis" y="64" text-anchor="middle">({{ row.available_count }} of {{ schedule_availability.faculty_count }})</text>
+                                </g>
+                                {% endfor %}
+                            </svg>
+                        </div>
+                        {% else %}
+                        <p class="empty-state">No faculty data for this week.</p>
+                        {% endif %}
+                        <p class="chart-caption">Based on recorded schedules. At least 60 consecutive minutes free between 8am&ndash;5pm ({{ schedule_availability.timezone }}).</p>
                         <p class="chart-note">Faculty without recorded schedules count as fully unscheduled. Free time does not guarantee availability.</p>
                     </section>
                 </div>
@@ -92,8 +106,8 @@
                     <div class="table-scroll" tabindex="0" role="region" aria-label="Faculty activity and consultation details">
                         <table class="faculty-detail-table">
                             <thead>
-                                <tr><th scope="col" rowspan="2">Faculty</th><th scope="colgroup" colspan="2">Status activity &middot; Last 7 days</th><th scope="colgroup" colspan="2">Consultations &middot; Month-to-date</th></tr>
-                                <tr><th scope="col">Last recorded update</th><th scope="col">Updates/day</th><th scope="col">Completion rate</th><th scope="col">Avg. time to approval</th></tr>
+                                <tr><th scope="col" rowspan="2">Faculty</th><th scope="colgroup" colspan="2">Status activity &middot; Last 7 days</th><th scope="colgroup" colspan="2" class="consultation-column consultation-divider">Consultations &middot; Month-to-date</th></tr>
+                                <tr><th scope="col">Last recorded update</th><th scope="col">Updates/day</th><th scope="col" class="consultation-column consultation-divider">Completion rate</th><th scope="col" class="consultation-column">Avg. time to approval</th></tr>
                             </thead>
                             <tbody>
                                 {% for t in trends %}
@@ -101,8 +115,8 @@
                                     <th scope="row">{{ t.name }}</th>
                                     <td>{{ t.last_update_display }}</td>
                                     <td class="numeric">{{ t.updates_per_day }}</td>
-                                    <td class="numeric">{% if t.completion_rate is not None %}{{ t.completion_rate }}%{% else %}No data{% endif %}</td>
-                                    <td class="numeric">{% if t.avg_response_hours is not None %}{{ t.avg_response_hours }}h{% else %}No data{% endif %}</td>
+                                    <td class="numeric consultation-column consultation-divider">{% if t.completion_rate is not None %}{{ t.completion_rate }}%{% else %}No data{% endif %}</td>
+                                    <td class="numeric consultation-column">{% if t.avg_response_hours is not None %}{{ t.avg_response_hours }}h{% else %}No data{% endif %}</td>
                                 </tr>
                                 {% empty %}<tr><td colspan="5" class="empty-state">No faculty data yet.</td></tr>{% endfor %}
                             </tbody>
