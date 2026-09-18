@@ -1,0 +1,23 @@
+#analytics-browser { position: fixed; right: 24px; bottom: 24px; z-index: 1100; color: var(--text); }
+#analytics-browser [hidden] { display: none !important; }
+#analytics-chat-toggle { display: grid; place-items: center; width: 56px; height: 56px; margin-left: auto; border: 1px solid var(--border); border-radius: 50%; background: var(--accent); color: var(--text-light); cursor: pointer; }
+#analytics-chat-panel { position: absolute; right: 0; bottom: 68px; width: min(420px, calc(100vw - 32px)); height: min(650px, calc(100dvh - 120px)); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: var(--card-bg); box-shadow: 0 8px 24px var(--border); }
+.analytics-chat-header { display: flex; align-items: flex-start; gap: 12px; padding: 16px; background: var(--accent-soft); }
+.analytics-chat-header h2 { margin: 0; font-size: 1rem; }
+.analytics-chat-header p { margin: 6px 0 0; font-size: .8rem; color: var(--muted); }
+#analytics-chat-close { margin-left: auto; border: 0; background: transparent; color: var(--text); font-size: 1.5rem; cursor: pointer; min-width: 32px; min-height: 32px; }
+#analytics-chat-messages { flex: 1; min-height: 100px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.analytics-message { max-width: 92%; padding: 12px; border-radius: 14px; margin: 0; overflow-wrap: anywhere; font-size: .875rem; line-height: 1.5; flex-shrink: 0; }
+.analytics-message.sent { align-self: flex-end; background: var(--accent); color: var(--text-light); border-bottom-right-radius: 3px; }
+.analytics-message.received { align-self: flex-start; background: var(--bg-main); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+.analytics-message p { margin: 0 0 8px; }
+.analytics-message ul { margin: 8px 0; padding-left: 18px; }
+.analytics-message a { color: var(--accent); }
+.analytics-answer-period { font-weight: 600; }
+.analytics-chat-questions { max-height: 38%; overflow-y: auto; border-top: 1px solid var(--border); padding: 12px; }
+.analytics-chat-questions fieldset { border: 0; margin: 0 0 12px; padding: 0; }
+.analytics-chat-questions legend { font-size: .8rem; font-weight: 600; margin-bottom: 6px; }
+.analytics-chat-questions button { display: block; width: 100%; text-align: left; padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); color: var(--accent); cursor: pointer; }
+.analytics-chat-questions button:hover { background: var(--accent-soft); }
+#analytics-browser button:focus-visible, #analytics-browser a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 600px) { #analytics-browser { right: 16px; bottom: 16px; } }

@@ -1,0 +1,664 @@
+diff --git a/apps/depthead/templates/depthead/adminDashboard.html b/apps/depthead/templates/depthead/adminDashboard.html
+index 7a4cd4e..eb19305 100644
+--- a/apps/depthead/templates/depthead/adminDashboard.html
++++ b/apps/depthead/templates/depthead/adminDashboard.html
+@@ -6,6 +6,7 @@
+     <meta charset="utf-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1">
+     <title>FacSync | College Overview</title>
++    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}">
+     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
+     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
+@@ -155,6 +156,8 @@
+             </div>
+         </main>
+     </div>
++    {% include 'depthead/partials/analytics_browser.html' %}
++    <script src="{% static 'depthead/js/analytics_browser.js' %}" defer></script>
+     <script src="{% static 'depthead/js/ai_insights.js' %}?v=20260905-filter" defer></script>
+ </body>
+ </html>
+diff --git a/apps/depthead/urls.py b/apps/depthead/urls.py
+index 357e154..2b6e760 100644
+--- a/apps/depthead/urls.py
++++ b/apps/depthead/urls.py
+@@ -4,6 +4,7 @@ from . import views
+ app_name = 'depthead'
+ 
+ urlpatterns = [
++    path('api/analytics-browser/', views.analytics_browser_api, name='analytics_browser_api'),
+     path('college-settings/closure-status/', views.closure_status, name='closure_status'),
+     path('', views.admin_dashboard, name='admin_dashboard'),
+     path('dashboard/', views.admin_dashboard, name='admin_dashboard'),
+diff --git a/apps/depthead/views.py b/apps/depthead/views.py
+index 90ab9df..14a523a 100644
+--- a/apps/depthead/views.py
++++ b/apps/depthead/views.py
+@@ -21,8 +21,6 @@ from apps.core.services import send_announcement_email_to_faculty, send_closure_
+ from django.views.decorators.cache import never_cache
+ from apps.core.faculty import mark_inactive_faculty
+ from datetime import timedelta, date
+-from django.utils.dateparse import parse_datetime
+-from django.utils.timesince import timesince
+ from .services import (
+     generate_ai_insights,
+     get_college_analytics,
+@@ -37,6 +35,11 @@ from .services.analytics import (
+ from .services.schedule_availability import get_schedule_availability
+ 
+ 
++from .services.analytics_display import (
++    student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display,
++)
++from .services.analytics_browser import ANALYTICS_QUESTIONS, analytics_browser_answer
++
+ logger = logging.getLogger(__name__)
+ 
+ 
+@@ -129,6 +132,10 @@ def admin_dashboard(request):
+         'data_quality': analytics['data_quality'],
+         'analytics': analytics,
+         'ai_insights': {'available': None},
++        'analytics_questions': [
++            {'metric': key, 'group': group, 'question': question}
++            for key, (group, question) in ANALYTICS_QUESTIONS.items()
++        ],
+     })
+ 
+ 
+@@ -296,15 +303,7 @@ def delete_faculty_schedule(request, faculty_id):
+ @role_required('depthead')
+ def student_behavior(request):
+     college_code = request.user.college
+-    current_period = normalize_period()
+-    today = current_period.end_date
+-    month_starts = []
+-    cursor = today.replace(day=1)
+-    for _ in range(6):
+-        month_starts.append(cursor)
+-        cursor = (cursor - timedelta(days=1)).replace(day=1)
+-    month_starts.reverse()  #oldest to newest
+-
++    month_starts, today = student_reporting_period()
+     analytics = get_college_analytics(college_code, month_starts[0], today)
+     monthly_lookup = {
+         row['month']: row['count']
+@@ -334,20 +333,7 @@ def student_behavior(request):
+ 
+     polyline_str = " ".join(f"{p['x']},{p['y']}" for p in line_points)
+ 
+-    # Request-submission periods use requested_at in the analytics timezone.
+-    request_months = analytics['request_patterns']['monthly_trend']
+-    if request_months:
+-        peak_period_count = max(row['count'] for row in request_months)
+-        peak_months = [
+-            date.fromisoformat(f"{row['month']}-01").strftime('%B %Y')
+-            for row in request_months
+-            if row['count'] == peak_period_count
+-        ]
+-        peak_period_label = ', '.join(peak_months)
+-    else:
+-        peak_period_label = "No data"
+-        peak_period_count = 0
+-
++    peak_period_label, peak_period_count = peak_request_month(analytics['request_patterns']['monthly_trend'])
+     consultations_qs = get_base_consultation_queryset(
+         college_code,
+         normalize_period(month_starts[0], today),
+@@ -502,26 +488,7 @@ def peak_analytics(request):
+             })
+             start_angle = end_angle
+ 
+-    # Names are presentation-only and are not present in the AI-ready payload.
+-    workload_items = analytics['faculty_workload']['items'][:5]
+-    faculty_ids = [item['faculty_key'].removeprefix('faculty:') for item in workload_items]
+-    profiles_by_id = {
+-        profile.faculty_id: profile
+-        for profile in FacultyProfile.objects.filter(
+-            faculty_id__in=faculty_ids
+-        ).select_related('user')
+-    }
+-    load_distribution_list = []
+-    for item in workload_items:
+-        faculty_id = item['faculty_key'].removeprefix('faculty:')
+-        profile = profiles_by_id.get(faculty_id)
+-        if profile is None:
+-            continue
+-        load_distribution_list.append({
+-            'name': profile.user.get_full_name() or profile.user.username,
+-            'count': item['total_requests'],
+-        })
+-
++    load_distribution_list = faculty_load_display(analytics)
+     max_count = max(hourly_data.values()) if any(hourly_data.values()) else 1
+     chart_bars = []
+     gap = 20
+@@ -557,33 +524,8 @@ def peak_analytics(request):
+ def faculty_trends(request):
+     college_code = request.user.college
+     analytics = get_faculty_trends(college_code)
+-    faculty_ids = [
+-        item['faculty_key'].removeprefix('faculty:')
+-        for item in analytics['items']
+-    ]
+-    profiles_by_id = {
+-        profile.faculty_id: profile
+-        for profile in FacultyProfile.objects.filter(
+-            faculty_id__in=faculty_ids
+-        ).select_related('user')
+-    }
+-    trends = []
+-    for item in analytics['items']:
+-        faculty_id = item['faculty_key'].removeprefix('faculty:')
+-        profile = profiles_by_id.get(faculty_id)
+-        if profile is None:
+-            continue
+-        last_update_at = parse_datetime(item['last_update_at']) if item['last_update_at'] else None
+-        trends.append({
+-            'name': profile.user.get_full_name() or profile.user.username,
+-            'updates_per_day': item['updates_per_day'],
+-            'last_update_display': f"{timesince(last_update_at)} ago" if last_update_at else "No data",
+-            'completion_rate': item['completion_rate_percent'],
+-            'avg_response_hours': item['average_approval_response_hours'],
+-            'availability_rate': item['availability_rate_percent'],
+-        })
++    trends = faculty_trends_display(analytics)
+ 
+-    
+     # Preserve fractional rates; CSS gives tiny positive values a visible marker.
+     chart_bars = []
+     for t in trends:
+@@ -703,3 +645,20 @@ def closure_status(request):
+         return JsonResponse({'error': 'Your account has no college set.'}, status=400)
+     state = OfficeClosure.objects.filter(college__iexact=request.user.college).values_list('is_closed', flat=True).first()
+     return JsonResponse({'is_closed': bool(state)})
++
++
++@login_required
++@role_required('depthead')
++@require_GET
++@never_cache
++def analytics_browser_api(request):
++    if not request.user.college:
++        return JsonResponse({'error': 'Your account has no college set.'}, status=400)
++    metric = request.GET.get('metric', '')
++    if metric not in ANALYTICS_QUESTIONS:
++        return JsonResponse({'error': 'Unknown analytics question.'}, status=400)
++    try:
++        return JsonResponse(analytics_browser_answer(metric, request.user.college))
++    except Exception:
++        logger.exception('Unable to load analytics browser metric %s', metric)
++        return JsonResponse({'error': "Sorry, I couldn't load that right now."}, status=500)
+--- /dev/null
++++ b/apps/depthead/services/analytics_browser.py
+@@ -0,0 +1,111 @@
++"""Deterministic presentation of existing metrics; no AI or stored conversation."""
++from django.urls import reverse
++from . import analytics
++from .analytics_display import (
++    student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display,
++)
++from .schedule_availability import get_schedule_availability
++
++
++ANALYTICS_QUESTIONS = {
++    'peak_hour': ('Consultations', 'What is the peak consultation hour?'),
++    'peak_day': ('Consultations', 'What is the peak consultation day?'),
++    'capacity': ('Consultations', 'Can we measure the supply-demand gap?'),
++    'faculty_load': ('Consultations', 'Which faculty receive the most requests?'),
++    'status_frequency': ('Faculty', 'How often do faculty update their status?'),
++    'completion_rates': ('Faculty', 'What are faculty consultation completion rates?'),
++    'approval_times': ('Faculty', 'How long do faculty take to approve requests?'),
++    'status_availability': ('Faculty', 'What are faculty status availability rates?'),
++    'peak_request_period': ('Students', 'Which month had the most submitted requests?'),
++    'student_frequency': ('Students', 'Which students submit the most requests?'),
++    'daily_faculty': ('Schedules', 'Who has the most open schedule time each day?'),
++    'daily_availability': ('Schedules', 'How much schedule availability is there each day?'),
++}
++
++
++def analytics_browser_answer(metric, college):
++    period = analytics.normalize_period()
++    period_label = f'Month-to-date: {period.start_date} to {period.end_date} ({period.timezone_name})'
++    source = 'peak_analytics'
++    lines = []
++    note = ''
++    if metric == 'capacity':
++        capacity = analytics.get_capacity_capability()
++        if not capacity['authoritatively_calculable']:
++            lines = ['The supply-demand gap is not currently measurable.']
++            note = 'Consultation slots and maximum consultation capacity are not defined. Recorded schedule gaps alone cannot establish how many consultations faculty can accommodate.'
++        period_label = 'Current data capability'
++    elif metric in ('peak_hour', 'peak_day', 'faculty_load'):
++        consultations = analytics.get_base_consultation_queryset(college, period)
++        if metric == 'faculty_load':
++            rows = faculty_load_display({'faculty_workload': analytics.get_faculty_workload(consultations)})
++            lines = [f"{row['name']}: {row['count']} requests" for row in rows]
++            note = 'Top five faculty by requests across all request statuses.'
++        else:
++            patterns = analytics.get_scheduled_consultation_patterns(consultations)
++            if metric == 'peak_hour':
++                peak = patterns['peak_hour']
++                labels = [f"{hour % 12 or 12}{'AM' if hour < 12 else 'PM'}" for hour in peak['hours']]
++            else:
++                peak = patterns['peak_weekday']
++                labels = peak['weekdays']
++            lines = [f"{label}: {peak['count']} completed consultations" for label in labels]
++            note = 'Based on scheduled dates and times of completed consultations. All tied peaks are shown.'
++    elif metric in ('peak_request_period', 'student_frequency'):
++        source = 'student_behavior'
++        months, today = student_reporting_period()
++        period = analytics.normalize_period(months[0], today)
++        period_label = f'{period.start_date} to {period.end_date} ({period.timezone_name})'
++        if metric == 'peak_request_period':
++            patterns = analytics.get_request_submission_patterns(college, period)
++            label, count = peak_request_month(patterns['monthly_trend'])
++            lines = [f'{label}: {count} submitted requests'] if count else []
++            note = 'Peak submission month across the current month and five preceding months; ties included.'
++        else:
++            rows = analytics.get_student_request_frequency_display(analytics.get_base_consultation_queryset(college, period))
++            lines = [f"{row['name']}: {row['count']} requests" for row in rows]
++            note = 'Top ten students, based on scheduled consultation dates in this six-month range.'
++    elif metric in ('daily_faculty', 'daily_availability'):
++        source = 'faculty_trends'
++        data = get_schedule_availability(college)
++        period_label = f"This week: {data['week_start']} to {data['week_end']} ({data['timezone']}); 8am-5pm"
++        for row in data['rows']:
++            label = f"{row['day']} ({row['date']})"
++            if not data['faculty_count']:
++                value = 'No faculty data'
++            elif metric == 'daily_faculty':
++                value = f"{', '.join(row['winners'])}: {row['open_display']} open" if row['winners'] else row['ranking_empty']
++            else:
++                value = f"{row['availability_percent']}% ({row['available_count']} of {data['faculty_count']} faculty)"
++            lines.append(f'{label}: {value}')
++        note = ('Ranked by total open time; all ties shown. Faculty without recorded schedules are excluded.'
++                if metric == 'daily_faculty' else
++                'Based on recorded schedules: at least 60 consecutive minutes free. Faculty without records count as fully unscheduled. Free time does not guarantee availability.')
++    else:
++        source = 'faculty_trends'
++        data = analytics.get_faculty_trends(college)
++        rows = faculty_trends_display(data)
++        field, unit = {
++            'completion_rates': ('completion_rate', '%'),
++            'approval_times': ('avg_response_hours', ' hours'),
++            'status_availability': ('availability_rate', '%'),
++            'status_frequency': ('updates_per_day', ' updates/day'),
++        }[metric]
++        for row in rows:
++            value = f'{row[field]}{unit}' if row[field] is not None else 'No data'
++            if metric == 'status_frequency':
++                value += f"; last recorded update: {row['last_update_display']}"
++            lines.append(f"{row['name']}: {value}")
++        if metric in ('status_frequency', 'status_availability'):
++            period_label = 'Rolling last 7 days (Asia/Manila)'
++        else:
++            period_label = f"Month-to-date: {data['consultation_period']['start_date']} to {data['consultation_period']['end_date']} (Asia/Manila)"
++        note = {
++            'status_frequency': 'Status-history updates divided by seven. The last recorded update may predate this window.',
++            'status_availability': 'Observed time in the Available status; this is not schedule-based availability.',
++            'completion_rates': 'Completed requests divided by all requests scheduled in the reporting period.',
++            'approval_times': 'Average time from submission to recorded approval for requests scheduled in the reporting period.',
++        }[metric]
++    return {'metric': metric, 'question': ANALYTICS_QUESTIONS[metric][1],
++            'period': period_label, 'lines': lines or ['No data for this reporting period.'],
++            'note': note, 'source_url': reverse(f'depthead:{source}')}
+--- /dev/null
++++ b/apps/depthead/services/analytics_display.py
+@@ -0,0 +1,90 @@
++"""Shared presentation for analytics pages and the preset browser."""
++from datetime import date, timedelta
++from django.utils.dateparse import parse_datetime
++from django.utils.timesince import timesince
++from apps.faculty.models import FacultyProfile
++from .analytics import normalize_period
++
++
++def student_reporting_period():
++    current_period = normalize_period()
++    today = current_period.end_date
++    month_starts = []
++    cursor = today.replace(day=1)
++    for _ in range(6):
++        month_starts.append(cursor)
++        cursor = (cursor - timedelta(days=1)).replace(day=1)
++    month_starts.reverse()  #oldest to newest
++
++    return month_starts, today
++
++
++def peak_request_month(request_months):
++    if request_months:
++        peak_period_count = max(row['count'] for row in request_months)
++        peak_months = [
++            date.fromisoformat(f"{row['month']}-01").strftime('%B %Y')
++            for row in request_months
++            if row['count'] == peak_period_count
++        ]
++        peak_period_label = ', '.join(peak_months)
++    else:
++        peak_period_label = "No data"
++        peak_period_count = 0
++
++    return peak_period_label, peak_period_count
++
++
++def faculty_load_display(analytics):
++    # Names are presentation-only and are not present in the AI-ready payload.
++    workload_items = analytics['faculty_workload']['items'][:5]
++    faculty_ids = [item['faculty_key'].removeprefix('faculty:') for item in workload_items]
++    profiles_by_id = {
++        profile.faculty_id: profile
++        for profile in FacultyProfile.objects.filter(
++            faculty_id__in=faculty_ids
++        ).select_related('user')
++    }
++    load_distribution_list = []
++    for item in workload_items:
++        faculty_id = item['faculty_key'].removeprefix('faculty:')
++        profile = profiles_by_id.get(faculty_id)
++        if profile is None:
++            continue
++        load_distribution_list.append({
++            'name': profile.user.get_full_name() or profile.user.username,
++            'count': item['total_requests'],
++        })
++
++    return load_distribution_list
++
++
++def faculty_trends_display(analytics):
++    faculty_ids = [
++        item['faculty_key'].removeprefix('faculty:')
++        for item in analytics['items']
++    ]
++    profiles_by_id = {
++        profile.faculty_id: profile
++        for profile in FacultyProfile.objects.filter(
++            faculty_id__in=faculty_ids
++        ).select_related('user')
++    }
++    trends = []
++    for item in analytics['items']:
++        faculty_id = item['faculty_key'].removeprefix('faculty:')
++        profile = profiles_by_id.get(faculty_id)
++        if profile is None:
++            continue
++        last_update_at = parse_datetime(item['last_update_at']) if item['last_update_at'] else None
++        trends.append({
++            'name': profile.user.get_full_name() or profile.user.username,
++            'updates_per_day': item['updates_per_day'],
++            'last_update_display': f"{timesince(last_update_at)} ago" if last_update_at else "No data",
++            'completion_rate': item['completion_rate_percent'],
++            'avg_response_hours': item['average_approval_response_hours'],
++            'availability_rate': item['availability_rate_percent'],
++        })
++
++
++    return trends
+--- /dev/null
++++ b/apps/depthead/static/depthead/css/analytics_browser.css
+@@ -0,0 +1,23 @@
++#analytics-browser { position: fixed; right: 24px; bottom: 24px; z-index: 1100; color: var(--text); }
++#analytics-browser [hidden] { display: none !important; }
++#analytics-chat-toggle { display: grid; place-items: center; width: 56px; height: 56px; margin-left: auto; border: 1px solid var(--border); border-radius: 50%; background: var(--accent); color: var(--text-light); cursor: pointer; }
++#analytics-chat-panel { position: absolute; right: 0; bottom: 68px; width: min(420px, calc(100vw - 32px)); height: min(650px, calc(100dvh - 120px)); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: var(--card-bg); box-shadow: 0 8px 24px var(--border); }
++.analytics-chat-header { display: flex; align-items: flex-start; gap: 12px; padding: 16px; background: var(--accent-soft); }
++.analytics-chat-header h2 { margin: 0; font-size: 1rem; }
++.analytics-chat-header p { margin: 6px 0 0; font-size: .8rem; color: var(--muted); }
++#analytics-chat-close { margin-left: auto; border: 0; background: transparent; color: var(--text); font-size: 1.5rem; cursor: pointer; min-width: 32px; min-height: 32px; }
++#analytics-chat-messages { flex: 1; min-height: 100px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
++.analytics-message { max-width: 92%; padding: 12px; border-radius: 14px; margin: 0; overflow-wrap: anywhere; font-size: .875rem; line-height: 1.5; flex-shrink: 0; }
++.analytics-message.sent { align-self: flex-end; background: var(--accent); color: var(--text-light); border-bottom-right-radius: 3px; }
++.analytics-message.received { align-self: flex-start; background: var(--bg-main); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
++.analytics-message p { margin: 0 0 8px; }
++.analytics-message ul { margin: 8px 0; padding-left: 18px; }
++.analytics-message a { color: var(--accent); }
++.analytics-answer-period { font-weight: 600; }
++.analytics-chat-questions { max-height: 38%; overflow-y: auto; border-top: 1px solid var(--border); padding: 12px; }
++.analytics-chat-questions fieldset { border: 0; margin: 0 0 12px; padding: 0; }
++.analytics-chat-questions legend { font-size: .8rem; font-weight: 600; margin-bottom: 6px; }
++.analytics-chat-questions button { display: block; width: 100%; text-align: left; padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); color: var(--accent); cursor: pointer; }
++.analytics-chat-questions button:hover { background: var(--accent-soft); }
++#analytics-browser button:focus-visible, #analytics-browser a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
++@media (max-width: 600px) { #analytics-browser { right: 16px; bottom: 16px; } }
+--- /dev/null
++++ b/apps/depthead/static/depthead/js/analytics_browser.js
+@@ -0,0 +1,75 @@
++(() => {
++  'use strict';
++  const root = document.getElementById('analytics-browser');
++  if (!root) return;
++  const toggle = document.getElementById('analytics-chat-toggle');
++  const panel = document.getElementById('analytics-chat-panel');
++  const close = document.getElementById('analytics-chat-close');
++  const messages = document.getElementById('analytics-chat-messages');
++  function setOpen(open) {
++    panel.hidden = !open;
++    toggle.setAttribute('aria-expanded', String(open));
++    toggle.setAttribute('aria-label', open ? 'Close analytics browser' : 'Open analytics browser');
++    (open ? close : toggle).focus();
++  }
++  // A restored browser page also starts a fresh conversation.
++  function reset() {
++    messages.replaceChildren();
++    panel.hidden = true;
++    toggle.setAttribute('aria-expanded', 'false');
++    toggle.setAttribute('aria-label', 'Open analytics browser');
++  }
++  reset();
++  window.addEventListener('pageshow', reset);
++  toggle.hidden = false;
++  toggle.addEventListener('click', () => setOpen(panel.hidden));
++  close.addEventListener('click', () => setOpen(false));
++  root.addEventListener('keydown', event => {
++    if (event.key === 'Escape' && !panel.hidden) {
++      event.preventDefault();
++      setOpen(false);
++    }
++  });
++  function element(tag, text, className) {
++    const node = document.createElement(tag);
++    node.textContent = text;
++    if (className) node.className = className;
++    return node;
++  }
++  function scrollLatest() { messages.scrollTop = messages.scrollHeight; }
++  root.querySelectorAll('[data-metric]').forEach(button => {
++    button.addEventListener('click', async () => {
++      messages.append(element('p', button.textContent, 'analytics-message sent'));
++      const reply = element('div', 'Loading analytics...', 'analytics-message received');
++      reply.setAttribute('aria-busy', 'true');
++      messages.append(reply);
++      scrollLatest();
++      const controller = new AbortController();
++      const timeout = setTimeout(() => controller.abort(), 20000);
++      try {
++        const url = new URL(root.dataset.endpoint, window.location.origin);
++        url.searchParams.set('metric', button.dataset.metric);
++        const response = await fetch(url, {credentials: 'same-origin', cache: 'no-store', signal: controller.signal});
++        if (!response.ok) throw new Error('Request failed');
++        const data = await response.json();
++        if (!Array.isArray(data.lines)) throw new Error('Invalid response');
++        reply.replaceChildren(element('p', data.period, 'analytics-answer-period'));
++        const list = document.createElement('ul');
++        data.lines.forEach(line => list.append(element('li', line)));
++        reply.append(list, element('p', data.note));
++        const source = new URL(data.source_url, window.location.origin);
++        if (source.origin === window.location.origin) {
++          const link = element('a', 'View source analytics');
++          link.href = source.href;
++          reply.append(link);
++        }
++      } catch (_) {
++        reply.replaceChildren(element('p', "Sorry, I couldn't load that right now. Please try again."));
++      } finally {
++        clearTimeout(timeout);
++        reply.setAttribute('aria-busy', 'false');
++        scrollLatest();
++      }
++    });
++  });
++})();
+--- /dev/null
++++ b/apps/depthead/templates/depthead/partials/analytics_browser.html
+@@ -0,0 +1,20 @@
++<div id="analytics-browser" data-endpoint="{% url 'depthead:analytics_browser_api' %}">
++    <button type="button" id="analytics-chat-toggle" aria-label="Open analytics browser" aria-expanded="false" aria-controls="analytics-chat-panel" hidden>
++        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 11a8 8 0 0 1-8 8H7l-5 3V11a9 9 0 0 1 19 0Z"/><path d="M7 11h10M7 7h7"/></svg>
++    </button>
++    <section id="analytics-chat-panel" role="dialog" aria-labelledby="analytics-chat-title" hidden>
++        <header class="analytics-chat-header">
++            <div><h2 id="analytics-chat-title">Browse college analytics</h2><p>Choose a question to view existing metrics. No AI.</p></div>
++            <button type="button" id="analytics-chat-close" aria-label="Close analytics browser">&times;</button>
++        </header>
++        <div id="analytics-chat-messages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="Analytics conversation"></div>
++        <div class="analytics-chat-questions" aria-label="Preset questions">
++            {% regroup analytics_questions by group as question_groups %}
++            {% for group in question_groups %}
++            <fieldset><legend>{{ group.grouper }}</legend>
++                {% for item in group.list %}<button type="button" data-metric="{{ item.metric }}">{{ item.question }}</button>{% endfor %}
++            </fieldset>
++            {% endfor %}
++        </div>
++    </section>
++</div>
+--- /dev/null
++++ b/apps/depthead/tests/test_analytics_browser.py
+@@ -0,0 +1,75 @@
++from unittest.mock import patch
++from django.test import TestCase
++from django.urls import reverse
++from apps.core.models import User
++from apps.faculty.models import FacultyProfile, ConsultationRequest
++from apps.depthead.services.analytics_browser import ANALYTICS_QUESTIONS
++
++
++class AnalyticsBrowserTests(TestCase):
++    def setUp(self):
++        self.head = User.objects.create(username='browser-head', role='depthead', college='CCS')
++        self.client.force_login(self.head)
++        self.url = reverse('depthead:analytics_browser_api')
++
++    def test_all_questions_return_scoped_answers_without_ai(self):
++        with patch('apps.depthead.views.generate_ai_insights') as ai:
++            for metric in ANALYTICS_QUESTIONS:
++                with self.subTest(metric=metric):
++                    response = self.client.get(self.url, {'metric': metric})
++                    self.assertEqual(response.status_code, 200)
++                    self.assertTrue(response.json()['lines'])
++                    self.assertIn('no-store', response['Cache-Control'])
++            ai.assert_not_called()
++
++    def test_scope_ignores_client_college(self):
++        for college in ('CCS', 'CBA'):
++            user = User.objects.create(username=college, role='faculty', college=college)
++            faculty = FacultyProfile.objects.create(faculty_id=college, user=user, college_id=college)
++            from django.utils import timezone
++            ConsultationRequest.objects.create(request_id=college, faculty=faculty, user=self.head,
++                                               date=timezone.localdate(), status='completed')
++        response = self.client.get(self.url, {'metric': 'faculty_load', 'college': 'CBA'})
++        self.assertEqual(response.json()['lines'], ['CCS: 1 requests'])
++
++    def test_validation_and_access(self):
++        self.assertEqual(self.client.get(self.url, {'metric': 'unknown'}).status_code, 400)
++        self.assertEqual(self.client.post(self.url).status_code, 405)
++        self.head.college = ''
++        self.head.save()
++        self.assertEqual(self.client.get(self.url, {'metric': 'capacity'}).status_code, 400)
++        self.head.role = 'student'
++        self.head.save()
++        self.assertEqual(self.client.get(self.url, {'metric': 'capacity'}).status_code, 403)
++        self.client.logout()
++        self.assertEqual(self.client.get(self.url, {'metric': 'capacity'}).status_code, 302)
++
++    @patch('apps.depthead.services.analytics_browser.get_schedule_availability')
++    def test_repeated_fetch_reuses_schedule_service_each_time(self, schedules):
++        schedules.return_value = {'week_start': '2026-09-14', 'week_end': '2026-09-20',
++                                 'timezone': 'Asia/Manila', 'faculty_count': 0, 'rows': []}
++        for _ in range(2):
++            self.assertEqual(self.client.get(self.url, {'metric': 'daily_availability'}).status_code, 200)
++        self.assertEqual(schedules.call_count, 2)
++        schedules.assert_called_with('CCS')
++
++    def test_capacity_honestly_unavailable(self):
++        answer = self.client.get(self.url, {'metric': 'capacity'}).json()
++        self.assertIn('not currently measurable', answer['lines'][0])
++
++    @patch('apps.depthead.views.analytics_browser_answer', side_effect=RuntimeError('offline'))
++    def test_error_returns_friendly_json(self, answer):
++        with self.assertLogs('apps.depthead.views', level='ERROR'):
++            response = self.client.get(self.url, {'metric': 'capacity'})
++        self.assertEqual(response.status_code, 500)
++        self.assertIn("couldn't load", response.json()['error'])
++
++    def test_widget_only_on_overview(self):
++        response = self.client.get(reverse('depthead:admin_dashboard'))
++        self.assertContains(response, 'id="analytics-browser"', count=1)
++        self.assertContains(response, 'data-metric=', count=12)
++        for page in ('peak_analytics', 'faculty_trends', 'student_behavior'):
++            response = self.client.get(reverse(f'depthead:{page}'))
++            self.assertEqual(response.status_code, 200)
++            self.assertNotContains(response, 'id="analytics-browser"')
++            self.assertNotContains(response, 'analytics_browser.js')
+--- /dev/null
++++ b/tests/analytics_browser.test.js
+@@ -0,0 +1,57 @@
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const vm = require('node:vm');
++const fs = require('node:fs');
++function setup() {
++  class Node {
++    constructor() { this.children = []; this.events = {}; this.attrs = {}; this.hidden = true; this.dataset = {}; this.textContent = ''; }
++    append(...nodes) { this.children.push(...nodes); }
++    replaceChildren(...nodes) { this.children = nodes; }
++    setAttribute(k,v) { this.attrs[k] = v; }
++    addEventListener(k,v) { this.events[k] = v; }
++    focus() { this.focused = true; }
++  }
++  const ids = Object.fromEntries(['analytics-browser','analytics-chat-toggle','analytics-chat-panel','analytics-chat-close','analytics-chat-messages'].map(id => [id,new Node()]));
++  const button = new Node(); button.dataset.metric = 'capacity'; button.textContent = 'Capacity?';
++  ids['analytics-browser'].dataset.endpoint = '/api/analytics-browser/';
++  ids['analytics-browser'].querySelectorAll = () => [button];
++  const requests = [], windowEvents = {};
++  vm.runInNewContext(fs.readFileSync('apps/depthead/static/depthead/js/analytics_browser.js','utf8'), {
++    document: {getElementById: id => ids[id], createElement: () => new Node()},
++    window: {location:{origin:'https://example.test'}, addEventListener:(k,v)=>windowEvents[k]=v},
++    URL, AbortController, setTimeout, clearTimeout,
++    fetch: (url, options) => new Promise((resolve,reject) => requests.push({url,options,resolve,reject})),
++  });
++  return {ids,button,requests,windowEvents};
++}
++const answer = label => ({ok:true,json:async()=>({period:label,lines:['<script>literal</script>'],note:'note',source_url:'/source/'})});
++test('repeated clicks fetch fresh data and out-of-order replies stay with their question', async()=>{
++  const {ids,button,requests}=setup();
++  const first=button.events.click(), second=button.events.click();
++  const messages=ids['analytics-chat-messages'];
++  assert.equal(requests.length,2); assert.equal(button.disabled,undefined);
++  assert.equal(messages.children[1].attrs['aria-busy'],'true');
++  assert.equal(requests[0].options.cache,'no-store');
++  requests[1].resolve(answer('second')); await second;
++  requests[0].resolve(answer('first')); await first;
++  assert.equal(messages.children[1].children[0].textContent,'first');
++  assert.equal(messages.children[3].children[0].textContent,'second');
++  assert.equal(messages.children[1].children[1].children[0].textContent,'<script>literal</script>');
++});
++test('fetch failures become friendly replies and buttons remain usable',async()=>{
++  const {ids,button,requests}=setup();
++  const pending=button.events.click(); requests[0].reject(Error('offline')); await pending;
++  assert.match(ids['analytics-chat-messages'].children[1].children[0].textContent,/couldn't load/);
++  assert.equal(ids['analytics-chat-messages'].children[1].attrs['aria-busy'],'false');
++  assert.equal(button.disabled,undefined);
++});
++test('toggle, Escape, focus return and page reset',()=>{
++  const {ids,windowEvents}=setup();
++  const toggle=ids['analytics-chat-toggle'],panel=ids['analytics-chat-panel'];
++  assert.equal(panel.hidden,true);
++  toggle.events.click(); assert.equal(panel.hidden,false); assert.ok(ids['analytics-chat-close'].focused);
++  ids['analytics-browser'].events.keydown({key:'Escape',preventDefault(){}});
++  assert.equal(panel.hidden,true); assert.ok(toggle.focused);
++  ids['analytics-chat-messages'].append({textContent:'old'});
++  windowEvents.pageshow(); assert.equal(ids['analytics-chat-messages'].children.length,0);
++});
