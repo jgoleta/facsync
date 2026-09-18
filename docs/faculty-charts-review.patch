@@ -1,0 +1,141 @@
+diff --git a/apps/depthead/static/depthead/css/faculty_trends.css b/apps/depthead/static/depthead/css/faculty_trends.css
+index 4f016c4..eca9873 100644
+--- a/apps/depthead/static/depthead/css/faculty_trends.css
++++ b/apps/depthead/static/depthead/css/faculty_trends.css
+@@ -1,5 +1,5 @@
+ .faculty-trends .trends-layout { display: grid; gap: 24px; }
+-.faculty-trends .trends-chart-pair { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
++.faculty-trends .trends-chart-pair { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+ .faculty-trends .chart-card,
+ .faculty-trends .table-card { min-width: 0; padding: 24px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-card); }
+ .faculty-trends h2 { font-size: 1.1rem; margin: 0 0 8px; }
+@@ -8,17 +8,16 @@
+ .faculty-trends .chart-note { font-size: .85rem; color: var(--text-secondary); margin: 8px 0; }
+ .faculty-trends .period-label { font-size: .8rem; font-weight: 600; margin: 16px 0; }
+ .faculty-trends .bar-chart { list-style: none; padding: 0; margin: 0; }
+-.faculty-trends .bar-row { padding: 8px 0; }
+-.faculty-trends .bar-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 16px; font-size: .875rem; margin-bottom: 8px; }
++.faculty-trends .bar-row { padding: 12px 0; }
++.faculty-trends .bar-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 16px; font-size: .875rem; line-height: 1.5; margin-bottom: 10px; }
+ .faculty-trends .bar-heading > :first-child { min-width: 0; overflow-wrap: anywhere; }
+ .faculty-trends .bar-heading > :last-child { flex-shrink: 0; font-variant-numeric: tabular-nums; }
+-.faculty-trends .bar-track { height: 12px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
++.faculty-trends .bar-track { height: 10px; background: var(--accent-soft); border-radius: 6px; overflow: hidden; }
+ .faculty-trends .bar-fill { height: 100%; border-radius: inherit; }
+-.faculty-trends .history-bar { background: #7c3aed; }
++.faculty-trends .history-bar { background: var(--accent); }
+ .faculty-trends .history-bar-positive { min-width: 3px; }
+-.faculty-trends .schedule-fill { background: #2563eb; }
+ .faculty-trends .bar-axis { display: flex; justify-content: space-between; font-size: .75rem; color: var(--text-secondary); margin: 8px 0 16px; }
+-.faculty-trends .history-chart-scroll { max-height: 390px; overflow-y: auto; scrollbar-gutter: stable; }
++.faculty-trends .history-chart-scroll { max-height: 390px; overflow-y: auto;  }
+ .faculty-trends .table-scroll { overflow-x: auto; margin-top: 20px; }
+ .faculty-trends table { border-collapse: collapse; width: 100%; text-align: left; font-size: .9rem; }
+ .faculty-trends th,
+@@ -32,7 +31,7 @@
+ .faculty-trends .daily-winners-table th:last-child { width: 20%; }
+ .faculty-trends .winner-name { display: block; overflow-wrap: anywhere; }
+ .faculty-trends .empty-state { color: var(--text-secondary); padding: 24px 0; }
+-.faculty-trends [tabindex="0"]:focus-visible { outline: 2px solid #2563eb; outline-offset: 4px; }
++.faculty-trends [tabindex="0"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+ @media (min-width: 1200px) {
+     .faculty-trends .trends-chart-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+ }
+@@ -41,3 +40,11 @@
+     .faculty-trends .bar-heading { flex-wrap: wrap; }
+     .faculty-trends th, .faculty-trends td { padding: 12px 8px; }
+ }
++
++.faculty-trends .daily-chart-scroll { overflow-x: auto; }
++.faculty-trends .daily-chart { display: block; width: 100%; min-width: 420px; height: auto; }
++.faculty-trends .daily-grid { stroke: var(--border); stroke-width: 1; }
++.faculty-trends .daily-bar { fill: var(--accent); }
++.faculty-trends .daily-axis { fill: var(--muted); font-size: 12px; }
++.faculty-trends .daily-value { fill: var(--text); font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
++.faculty-trends .daily-day { fill: var(--text); font-size: 13px; font-weight: 600; }
+diff --git a/apps/depthead/templates/depthead/facultyTrends.html b/apps/depthead/templates/depthead/facultyTrends.html
+index 342acd8..b5424fa 100644
+--- a/apps/depthead/templates/depthead/facultyTrends.html
++++ b/apps/depthead/templates/depthead/facultyTrends.html
+@@ -47,22 +47,36 @@
+                     </section>
+                     <section class="chart-card" aria-labelledby="schedule-chart-title">
+                         <h2 id="schedule-chart-title">College-wide availability by day</h2>
+-                        <p class="chart-caption">Based on recorded schedules. At least 60 consecutive minutes free between 8am&ndash;5pm ({{ schedule_availability.timezone }}).</p>
+                         <p class="period-label">This week: {{ schedule_availability.week_start|date:"M j" }} &ndash; {{ schedule_availability.week_end|date:"M j, Y" }}</p>
+-                        <ul class="bar-chart" aria-label="Daily faculty availability">
+-                            {% for row in schedule_availability.rows %}
+-                            <li class="bar-row">
+-                                <div class="bar-heading">
+-                                    <span><strong>{{ row.day }}</strong> &middot; {{ row.date|date:"M j" }}</span>
+-                                    <span>{% if row.availability_percent is not None %}<strong>{{ row.availability_percent }}%</strong> ({{ row.available_count }} of {{ schedule_availability.faculty_count }}){% else %}No faculty data{% endif %}</span>
+-                                </div>
+-                                <div class="bar-track" aria-hidden="true">
+-                                    {% if row.availability_percent is not None %}<div class="bar-fill schedule-fill" style="width: {{ row.availability_percent|unlocalize }}%;"></div>{% endif %}
+-                                </div>
+-                            </li>
+-                            {% endfor %}
+-                        </ul>
+-                        <div class="bar-axis" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
++                        {% if schedule_availability.faculty_count %}
++                        <div class="daily-chart-scroll" tabindex="0" role="region" aria-label="Daily faculty availability chart">
++                            <svg class="daily-chart" viewBox="0 0 560 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="daily-chart-title daily-chart-description">
++                                <title id="daily-chart-title">College-wide availability by day</title>
++                                <desc id="daily-chart-description">Percentage of faculty with significant open time, Monday through Sunday. Each bar includes its date and faculty count.</desc>
++                                <g class="daily-grid">
++                                    <line x1="48" y1="40" x2="544" y2="40" />
++                                    <line x1="48" y1="140" x2="544" y2="140" />
++                                    <line x1="48" y1="240" x2="544" y2="240" />
++                                </g>
++                                <g class="daily-axis" text-anchor="end"><text x="40" y="44">100%</text><text x="40" y="144">50%</text><text x="40" y="244">0%</text></g>
++                                {% for row in schedule_availability.rows %}
++                                {% widthratio forloop.counter0 1 70 as offset %}
++                                {% widthratio row.availability_percent 100 200 as height %}
++                                <g transform="translate({{ offset|add:85 }},240)">
++                                    <title>{{ row.day }} {{ row.date|date:"M j" }}: {{ row.availability_percent }}% ({{ row.available_count }} of {{ schedule_availability.faculty_count }})</title>
++                                    <g transform="scale(1,-1)"><rect class="daily-bar" x="-18" y="0" width="36" height="{{ height }}" rx="4" /></g>
++                                    <g transform="translate(0,-{{ height }})"><text class="daily-value" y="-10" text-anchor="middle">{{ row.availability_percent }}%</text></g>
++                                    <text class="daily-day" y="24" text-anchor="middle">{{ row.day|slice:":3" }}</text>
++                                    <text class="daily-axis" y="44" text-anchor="middle">{{ row.date|date:"M j" }}</text>
++                                    <text class="daily-axis" y="64" text-anchor="middle">({{ row.available_count }} of {{ schedule_availability.faculty_count }})</text>
++                                </g>
++                                {% endfor %}
++                            </svg>
++                        </div>
++                        {% else %}
++                        <p class="empty-state">No faculty data for this week.</p>
++                        {% endif %}
++                        <p class="chart-caption">Based on recorded schedules. At least 60 consecutive minutes free between 8am&ndash;5pm ({{ schedule_availability.timezone }}).</p>
+                         <p class="chart-note">Faculty without recorded schedules count as fully unscheduled. Free time does not guarantee availability.</p>
+                     </section>
+                 </div>
+diff --git a/apps/depthead/tests/test_schedule_availability.py b/apps/depthead/tests/test_schedule_availability.py
+index fb5483b..4802501 100644
+--- a/apps/depthead/tests/test_schedule_availability.py
++++ b/apps/depthead/tests/test_schedule_availability.py
+@@ -161,8 +161,8 @@ class ScheduleAvailabilityTests(TestCase):
+         self.assertContains(response, 'style="width: 0%;"')
+         self.assertContains(response, 'No status history', count=1)
+         self.assertContains(response, '0.08%')
+-        self.assertContains(response, 'style="width: 100%;"', count=7)
+-        self.assertContains(response, '(3 of 3)', count=7)
++        self.assertContains(response, 'height="200"', count=7)
++        self.assertContains(response, '(3 of 3)', count=14)
+         self.assertContains(response, 'class="trends-chart-pair"', count=1)
+         self.assertContains(response, 'Avg. time to approval')
+         self.assertContains(response, 'Sep 1')
+@@ -170,11 +170,11 @@ class ScheduleAvailabilityTests(TestCase):
+         self.assertNotContains(response, '8am?5pm')
+ 
+     @patch('apps.depthead.services.schedule_availability.timezone.now')
+-    def test_schedule_chart_renders_zero_as_zero_width(self, now):
++    def test_schedule_chart_renders_zero_as_zero_height(self, now):
+         now.return_value = datetime(2026, 9, 14, 4, tzinfo=timezone.utc)
+         self.event(self.faculty('Booked'))
+         head = get_user_model().objects.create(username='zero-head', role='depthead', college='CCS')
+         self.client.force_login(head)
+         response = self.client.get(reverse('depthead:faculty_trends'))
+-        self.assertContains(response, 'style="width: 0%;"', count=1)
+-        self.assertContains(response, '(0 of 1)', count=1)
++        self.assertContains(response, 'height="0"', count=1)
++        self.assertContains(response, '(0 of 1)', count=2)
