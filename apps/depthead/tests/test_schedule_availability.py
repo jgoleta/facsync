@@ -161,8 +161,8 @@ class ScheduleAvailabilityTests(TestCase):
         self.assertContains(response, 'style="width: 0%;"')
         self.assertContains(response, 'No status history', count=1)
         self.assertContains(response, '0.08%')
-        self.assertContains(response, 'style="width: 100%;"', count=7)
-        self.assertContains(response, '(3 of 3)', count=7)
+        self.assertContains(response, 'height="200"', count=7)
+        self.assertContains(response, '(3 of 3)', count=14)
         self.assertContains(response, 'class="trends-chart-pair"', count=1)
         self.assertContains(response, 'Avg. time to approval')
         self.assertContains(response, 'Sep 1')
@@ -170,11 +170,11 @@ class ScheduleAvailabilityTests(TestCase):
         self.assertNotContains(response, '8am?5pm')
 
     @patch('apps.depthead.services.schedule_availability.timezone.now')
-    def test_schedule_chart_renders_zero_as_zero_width(self, now):
+    def test_schedule_chart_renders_zero_as_zero_height(self, now):
         now.return_value = datetime(2026, 9, 14, 4, tzinfo=timezone.utc)
         self.event(self.faculty('Booked'))
         head = get_user_model().objects.create(username='zero-head', role='depthead', college='CCS')
         self.client.force_login(head)
         response = self.client.get(reverse('depthead:faculty_trends'))
-        self.assertContains(response, 'style="width: 0%;"', count=1)
-        self.assertContains(response, '(0 of 1)', count=1)
+        self.assertContains(response, 'height="0"', count=1)
+        self.assertContains(response, '(0 of 1)', count=2)
