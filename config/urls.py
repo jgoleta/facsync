@@ -15,6 +15,7 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
+from django.conf import settings
 from django.urls import path, include
 
 urlpatterns = [
@@ -26,4 +27,10 @@ urlpatterns = [
     path('depthead/', include('apps.depthead.urls')),
     path('superadmin/', include('apps.superadmin.urls')),
 ]
+
+# The app check also keeps these URLs out of production/test settings, even
+# when the shared base configuration has DEBUG enabled.
+if settings.DEBUG and 'debug_toolbar' in settings.INSTALLED_APPS:
+    from debug_toolbar.toolbar import debug_toolbar_urls
+    urlpatterns += debug_toolbar_urls()
 
