@@ -1,3 +1,4 @@
+"""Frozen pre-aggregator-batching oracle. Do not import production reducers here."""
 
 from __future__ import annotations
 
@@ -150,30 +151,21 @@ def get_base_consultation_queryset(college_code, period=None):
     return queryset
 
 
-def _consultation_rows(consultations):
-    """Load only calculation fields once, or reuse an existing request snapshot."""
-    if isinstance(consultations, list):
-        return consultations
-    return list(consultations.only(
-        'faculty_id', 'user_id', 'status', 'agenda', 'date',
-        'start_time', 'end_time', 'requested_at', 'approved_at',
-    ))
-
-
 def get_consultation_summary(consultations):
     """Return status, agenda, completion, and approval-delay aggregates."""
 
-    consultations = _consultation_rows(consultations)
-    total = len(consultations)
+    total = consultations.count()
     status_distribution = {
         key: 0 for key in _status_keys(ConsultationRequest.STATUS_CHOICES)
     }
-    status_distribution.update(Counter(row.status for row in consultations))
+    for row in consultations.values("status").annotate(count=Count("request_id")):
+        status_distribution[row["status"]] = row["count"]
 
     agenda_distribution = {
         key: 0 for key in _status_keys(ConsultationRequest.AGENDA_CHOICES)
     }
-    agenda_distribution.update(Counter(row.agenda for row in consultations))
+    for row in consultations.values("agenda").annotate(count=Count("request_id")):
+        agenda_distribution[row["agenda"]] = row["count"]
 
     completed = status_distribution.get("completed", 0)
     resolved_denominator = sum(
@@ -182,10 +174,10 @@ def get_consultation_summary(consultations):
     )
 
     response_durations = []
-    for row in consultations:
-        if row.approved_at is None:
-            continue
-        duration = row.approved_at - row.requested_at
+    for requested_at, approved_at in consultations.filter(
+        approved_at__isnull=False
+    ).values_list("requested_at", "approved_at"):
+        duration = approved_at - requested_at
         if duration.total_seconds() >= 0:
             response_durations.append(duration.total_seconds() / 3600)
 
@@ -220,9 +212,17 @@ def get_consultation_summary(consultations):
 def get_scheduled_consultation_patterns(consultations):
     """Return occurrence proxies based on completed consultations' schedules."""
 
-    completed = [row for row in _consultation_rows(consultations) if row.status == 'completed']
-    hour_counts = Counter(row.start_time.hour for row in completed if row.start_time is not None)
-    weekday_counts = Counter(row.date.weekday() for row in completed)
+    completed = consultations.filter(status="completed")
+    hour_counts = Counter(
+        start_time.hour
+        for start_time in completed.exclude(start_time__isnull=True).values_list(
+            "start_time", flat=True
+        )
+    )
+    weekday_counts = Counter(
+        scheduled_date.weekday()
+        for scheduled_date in completed.values_list("date", flat=True)
+    )
     peak_hours, peak_hour_count = _peak(hour_counts)
     peak_weekday_indexes, peak_weekday_count = _peak(weekday_counts)
 
@@ -230,7 +230,7 @@ def get_scheduled_consultation_patterns(consultations):
         "actual_occurrence_timestamps_available": False,
         "timestamp_source": "scheduled date + start_time",
         "status_filter": ["completed"],
-        "sample_size": len(completed),
+        "sample_size": completed.count(),
         "hourly_distribution": [
             {"hour": hour, "count": hour_counts.get(hour, 0)}
             for hour in range(24)
@@ -262,8 +262,7 @@ def get_request_submission_patterns(college_code, period):
     combination_counts = Counter()
     monthly_counts = Counter()
 
-    timestamps = list(requests.values_list("requested_at", flat=True))
-    for requested_at in timestamps:
+    for requested_at in requests.values_list("requested_at", flat=True):
         local_requested_at = requested_at.astimezone(period.timezone)
         hour = local_requested_at.hour
         weekday = local_requested_at.weekday()
@@ -279,7 +278,7 @@ def get_request_submission_patterns(college_code, period):
     return {
         "timestamp_source": "requested_at",
         "timezone": period.timezone_name,
-        "total_submitted": len(timestamps),
+        "total_submitted": requests.count(),
         "hourly_distribution": [
             {"hour": hour, "count": hour_counts.get(hour, 0)}
             for hour in range(24)
@@ -322,14 +321,14 @@ def _eligible_faculty(college_code):
     )
 
 
-def get_current_availability(college_code, *, faculty=None):
+def get_current_availability(college_code):
     """Return the persisted current-status snapshot for active faculty."""
 
-    if faculty is None:
-        faculty = list(_eligible_faculty(college_code).only('current_status'))
+    faculty = _eligible_faculty(college_code)
     distribution = {key: 0 for key in _status_keys(FacultyProfile.STATUS_CHOICES)}
-    distribution.update(Counter(row.current_status for row in faculty))
-    total = len(faculty)
+    for row in faculty.values("current_status").annotate(count=Count("faculty_id")):
+        distribution[row["current_status"]] = row["count"]
+    total = faculty.count()
     available = distribution.get("available", 0)
     return {
         "total_active_faculty": total,
@@ -398,28 +397,10 @@ def _integrate_status_history(carry_status, rows, window_start, window_end):
     }
 
 
-def _availability_history(college_code, period):
-    """Fetch the roster with carry-in states, then all in-window history."""
-    carry = StatusHistory.objects.filter(
-        faculty_id=OuterRef('faculty_id'), changed_at__lt=period.start_datetime,
-    ).order_by('-changed_at')
-    faculty = list(_eligible_faculty(college_code).only('faculty_id', 'current_status').annotate(
-        carry_status=Subquery(carry.values('status')[:1]),
-    ).order_by('faculty_id'))
-    history = defaultdict(list)
-    window_end = min(period.end_datetime_exclusive, period.generated_at)
-    for row in StatusHistory.objects.filter(
-        faculty_id__in=[profile.faculty_id for profile in faculty],
-        changed_at__gte=period.start_datetime, changed_at__lt=window_end,
-    ).only('faculty_id', 'status', 'changed_at').order_by('changed_at'):
-        history[row.faculty_id].append(row)
-    return faculty, history
-
-
-def get_historical_availability_proxy(college_code, period, *, snapshot=None):
+def get_historical_availability_proxy(college_code, period):
     """Return a faculty-time-weighted status-history availability proxy."""
 
-    faculty, history = snapshot if snapshot is not None else _availability_history(college_code, period)
+    faculty = list(_eligible_faculty(college_code).order_by("faculty_id"))
     window_start = period.start_datetime
     window_end = min(period.end_datetime_exclusive, period.generated_at)
     possible_window_seconds = max((window_end - window_start).total_seconds(), 0)
@@ -430,9 +411,7 @@ def get_historical_availability_proxy(college_code, period, *, snapshot=None):
     partial_history_faculty = 0
 
     for profile in faculty:
-        observation = _integrate_status_history(
-            profile.carry_status, history[profile.faculty_id], window_start, window_end,
-        )
+        observation = _status_observation(profile, window_start, window_end)
         if not observation or observation["observed_seconds"] <= 0:
             faculty_without_history += 1
             continue
@@ -478,8 +457,11 @@ def get_historical_availability_proxy(college_code, period, *, snapshot=None):
 def get_student_behavior(consultations):
     """Return period-bounded, non-identifying student aggregates."""
 
-    counts = Counter(row.user_id for row in _consultation_rows(consultations))
-    request_counts = [{'request_count': count} for count in counts.values()]
+    request_counts = list(
+        consultations.values("user_id").annotate(
+            request_count=Count("request_id")
+        )
+    )
     unique_students = len(request_counts)
     repeat_students = sum(row["request_count"] > 1 for row in request_counts)
     total = sum(row["request_count"] for row in request_counts)
@@ -522,15 +504,14 @@ def get_student_request_frequency_display(consultations, limit=10):
 def get_faculty_workload(consultations):
     """Return period-bounded workload counts without faculty names or emails."""
 
-    by_faculty = defaultdict(Counter)
-    for row in _consultation_rows(consultations):
-        by_faculty[row.faculty_id][row.status] += 1
-    rows = []
-    for faculty_id, counts in by_faculty.items():
-        row = {'faculty_id': faculty_id, 'total_requests': sum(counts.values())}
-        row.update({f'{status}_requests': counts[status] for status, _ in ConsultationRequest.STATUS_CHOICES})
-        rows.append(row)
-    rows.sort(key=lambda row: (-row['total_requests'], row['faculty_id']))
+    rows = consultations.values("faculty_id").annotate(
+        total_requests=Count("request_id"),
+        completed_requests=Count("request_id", filter=Q(status="completed")),
+        pending_requests=Count("request_id", filter=Q(status="pending")),
+        approved_requests=Count("request_id", filter=Q(status="approved")),
+        declined_requests=Count("request_id", filter=Q(status="declined")),
+        cancelled_requests=Count("request_id", filter=Q(status="cancelled")),
+    ).order_by("-total_requests", "faculty_id")
     items = []
     for row in rows:
         items.append({
@@ -572,8 +553,8 @@ def get_walk_in_analytics(college_code, period):
         joined_at__lt=period.end_datetime_exclusive,
     )
     distribution = {key: 0 for key in _status_keys(WalkInQueue.QUEUE_STATUS_CHOICES)}
-    walk_ins = list(walk_ins.only('status', 'joined_at', 'notified_at', 'served_at'))
-    distribution.update(Counter(row.status for row in walk_ins))
+    for row in walk_ins.values("status").annotate(count=Count("queue_id")):
+        distribution[row["status"]] = row["count"]
 
     hour_counts = Counter()
     weekday_counts = Counter()
@@ -584,7 +565,7 @@ def get_walk_in_analytics(college_code, period):
     missing_notified_at = 0
     missing_served_at = 0
 
-    for queue in walk_ins:
+    for queue in walk_ins.only("joined_at", "notified_at", "served_at"):
         local_joined_at = queue.joined_at.astimezone(period.timezone)
         hour_counts[local_joined_at.hour] += 1
         weekday_counts[local_joined_at.weekday()] += 1
@@ -612,7 +593,7 @@ def get_walk_in_analytics(college_code, period):
     return {
         "timestamp_source": "joined_at",
         "timezone": period.timezone_name,
-        "total": len(walk_ins),
+        "total": walk_ins.count(),
         "status_distribution": distribution,
         "completed_count": completed,
         "resolved_denominator": resolved_denominator,
@@ -659,12 +640,10 @@ def get_walk_in_analytics(college_code, period):
     }
 
 
-def get_trends(college_code, period, *, current_rows=None):
+def get_trends(college_code, period):
     """Compare equal-duration scheduled-date periods and return monthly counts."""
 
-    current = current_rows if current_rows is not None else _consultation_rows(
-        get_base_consultation_queryset(college_code, period)
-    )
+    current = get_base_consultation_queryset(college_code, period)
     previous_end = period.start_date - timedelta(days=1)
     previous_start = previous_end - timedelta(days=period.duration_days - 1)
     previous_period = normalize_period(
@@ -673,15 +652,13 @@ def get_trends(college_code, period, *, current_rows=None):
         period.timezone_name,
     )
     previous = get_base_consultation_queryset(college_code, previous_period)
-    previous_counts = previous.aggregate(
-        total=Count('request_id'), completed=Count('request_id', filter=Q(status='completed')),
-    )
-    current_count = len(current)
-    previous_count = previous_counts['total']
-    current_completed = sum(row.status == 'completed' for row in current)
-    previous_completed = previous_counts['completed']
+    current_count = current.count()
+    previous_count = previous.count()
+    current_completed = current.filter(status="completed").count()
+    previous_completed = previous.filter(status="completed").count()
     monthly_counts = Counter(
-        row.date.strftime("%Y-%m") for row in current
+        scheduled_date.strftime("%Y-%m")
+        for scheduled_date in current.values_list("date", flat=True)
     )
     warnings = []
     if not period.is_complete:
@@ -760,9 +737,8 @@ def get_data_quality(
 ):
     """Return metric coverage and conservative multi-dimensional confidence."""
 
-    consultations = _consultation_rows(consultations)
-    sample_size = len(consultations)
-    scheduled_dates = [row.date for row in consultations]
+    sample_size = consultations.count()
+    scheduled_dates = list(consultations.values_list("date", flat=True))
     distinct_weeks = len({value.isocalendar()[:2] for value in scheduled_dates})
     months_with_data = len({(value.year, value.month) for value in scheduled_dates})
     if scheduled_dates:
@@ -776,10 +752,12 @@ def get_data_quality(
         distinct_weeks,
         unique_students,
     )
-    missing_start_time = sum(row.start_time is None for row in consultations)
-    missing_end_time = sum(row.end_time is None for row in consultations)
-    missing_approved_at = sum(row.approved_at is None for row in consultations)
-    response_time_sample_size = sample_size - missing_approved_at
+    missing_start_time = consultations.filter(start_time__isnull=True).count()
+    missing_end_time = consultations.filter(end_time__isnull=True).count()
+    missing_approved_at = consultations.filter(approved_at__isnull=True).count()
+    response_time_sample_size = consultations.filter(
+        approved_at__isnull=False
+    ).count()
     warnings = []
     if sample_size < 20:
         warnings.append("Low consultation sample size.")
@@ -915,25 +893,22 @@ def get_college_analytics(
 
     period = normalize_period(start_date, end_date, timezone_name)
     normalized_college_code = str(college_code or "").strip()
-    consultations = _consultation_rows(get_base_consultation_queryset(
+    consultations = get_base_consultation_queryset(
         normalized_college_code, period
-    ))
+    )
     summary = get_consultation_summary(consultations)
     consultation_patterns = get_scheduled_consultation_patterns(consultations)
     request_patterns = get_request_submission_patterns(
         normalized_college_code, period
     )
-    availability_snapshot = _availability_history(normalized_college_code, period)
-    current_availability = get_current_availability(
-        normalized_college_code, faculty=availability_snapshot[0],
-    )
+    current_availability = get_current_availability(normalized_college_code)
     historical_availability = get_historical_availability_proxy(
-        normalized_college_code, period, snapshot=availability_snapshot,
+        normalized_college_code, period
     )
     student_behavior = get_student_behavior(consultations)
     faculty_workload = get_faculty_workload(consultations)
     walk_ins = get_walk_in_analytics(normalized_college_code, period)
-    trends = get_trends(normalized_college_code, period, current_rows=consultations)
+    trends = get_trends(normalized_college_code, period)
     data_quality = get_data_quality(
         consultations,
         period,
