@@ -1,0 +1,358 @@
+{
+  "account": "testdepthead",
+  "college": "CED",
+  "active_faculty": 0,
+  "session_note": "In-memory authenticated session; normal middleware and live DB. Session lookup itself excluded.",
+  "pages": [
+    {
+      "query_count": 31,
+      "sql_ms": 5083.748,
+      "similar_groups": 4,
+      "similar_queries": 11,
+      "duplicate_groups": 4,
+      "duplicate_queries": 9,
+      "duplicate_repeats": 5,
+      "slowest": [
+        {
+          "ms": 459.084,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"approved_at\" IS NOT NULL)"
+        },
+        {
+          "ms": 304.591,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s) ORDER BY 1 DESC"
+        },
+        {
+          "ms": 274.054,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) ORDER BY 1 DESC"
+        },
+        {
+          "ms": 206.592,
+          "sql": "SELECT \"faculty_walkinqueue\".\"queue_id\", \"faculty_walkinqueue\".\"joined_at\", \"faculty_walkinqueue\".\"served_at\", \"faculty_walkinqueue\".\"notified_at\" FROM \"faculty_walkinqueue\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_walkinqueue\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_walkinqueue\".\"joined_at\" >= %s AND \"faculty_walkinqueue\".\"joined_at\" < %s) ORDER BY \"faculty_walkinqueue\".\"position\" ASC, \"faculty_walkinqueue\".\"joined_at\" ASC"
+        },
+        {
+          "ms": 201.869,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        }
+      ],
+      "similar_patterns": [
+        {
+          "count": 4,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s)"
+        },
+        {
+          "count": 3,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        },
+        {
+          "count": 2,
+          "sql": "SELECT \"core_college\".\"id\", \"core_college\".\"code\", \"core_college\".\"name\", \"core_college\".\"description\", \"core_college\".\"created_at\" FROM \"core_college\" WHERE UPPER(\"core_college\".\"code\"::text) = UPPER(%s) ORDER BY \"core_college\".\"id\" ASC LIMIT 1"
+        },
+        {
+          "count": 2,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) ORDER BY 1 DESC"
+        }
+      ],
+      "page": "admin_dashboard",
+      "run": 1,
+      "wall_ms": 8642.82
+    },
+    {
+      "query_count": 31,
+      "sql_ms": 4465.74,
+      "similar_groups": 4,
+      "similar_queries": 11,
+      "duplicate_groups": 4,
+      "duplicate_queries": 9,
+      "duplicate_repeats": 5,
+      "slowest": [
+        {
+          "ms": 207.198,
+          "sql": "SELECT \"core_user\".\"id\", \"core_user\".\"password\", \"core_user\".\"last_login\", \"core_user\".\"is_superuser\", \"core_user\".\"username\", \"core_user\".\"first_name\", \"core_user\".\"last_name\", \"core_user\".\"email\", \"core_user\".\"is_staff\", \"core_user\".\"is_active\", \"core_user\".\"date_joined\", \"core_user\".\"title\", \"core_user\".\"role\", \"core_user\".\"account_status\", \"core_user\".\"college\", \"core_user\".\"profile_completed\", \"core_user\".\"student_id\", \"core_user\".\"year_level\" FROM \"core_user\" WHERE \"core_user\".\"id\" = %s LIMIT 21"
+        },
+        {
+          "ms": 204.155,
+          "sql": "SELECT \"faculty_consultationrequest\".\"requested_at\" AS \"requested_at\", \"faculty_consultationrequest\".\"approved_at\" AS \"approved_at\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"approved_at\" IS NOT NULL) ORDER BY \"faculty_consultationrequest\".\"date\" DESC"
+        },
+        {
+          "ms": 203.381,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s) ORDER BY 1 DESC"
+        },
+        {
+          "ms": 200.883,
+          "sql": "SELECT \"faculty_walkinqueue\".\"queue_id\", \"faculty_walkinqueue\".\"joined_at\", \"faculty_walkinqueue\".\"served_at\", \"faculty_walkinqueue\".\"notified_at\" FROM \"faculty_walkinqueue\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_walkinqueue\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_walkinqueue\".\"joined_at\" >= %s AND \"faculty_walkinqueue\".\"joined_at\" < %s) ORDER BY \"faculty_walkinqueue\".\"position\" ASC, \"faculty_walkinqueue\".\"joined_at\" ASC"
+        },
+        {
+          "ms": 198.844,
+          "sql": "SELECT \"faculty_consultationrequest\".\"requested_at\" AS \"requested_at\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"requested_at\" >= %s AND \"faculty_consultationrequest\".\"requested_at\" < %s) ORDER BY \"faculty_consultationrequest\".\"date\" DESC"
+        }
+      ],
+      "similar_patterns": [
+        {
+          "count": 4,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s)"
+        },
+        {
+          "count": 3,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        },
+        {
+          "count": 2,
+          "sql": "SELECT \"core_college\".\"id\", \"core_college\".\"code\", \"core_college\".\"name\", \"core_college\".\"description\", \"core_college\".\"created_at\" FROM \"core_college\" WHERE UPPER(\"core_college\".\"code\"::text) = UPPER(%s) ORDER BY \"core_college\".\"id\" ASC LIMIT 1"
+        },
+        {
+          "count": 2,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) ORDER BY 1 DESC"
+        }
+      ],
+      "page": "admin_dashboard",
+      "run": 2,
+      "wall_ms": 4801.72
+    },
+    {
+      "query_count": 30,
+      "sql_ms": 3446.141,
+      "similar_groups": 3,
+      "similar_queries": 9,
+      "duplicate_groups": 3,
+      "duplicate_queries": 7,
+      "duplicate_repeats": 4,
+      "slowest": [
+        {
+          "ms": 406.182,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        },
+        {
+          "ms": 112.62,
+          "sql": "SELECT \"faculty_facultyprofile\".\"faculty_id\", \"faculty_facultyprofile\".\"user_id\", \"faculty_facultyprofile\".\"college_id\", \"faculty_facultyprofile\".\"office_location\", \"faculty_facultyprofile\".\"current_status\", \"faculty_facultyprofile\".\"status_note\", \"faculty_facultyprofile\".\"status_updated_at\", \"faculty_facultyprofile\".\"manual_status\", \"faculty_facultyprofile\".\"manual_status_override\", \"faculty_facultyprofile\".\"manual_status_expires_at\", \"faculty_facultyprofile\".\"sync_enabled\", \"faculty_facultyprofile\".\"walk_ins_enabled\", \"faculty_facultyprofile\".\"last_calendar_sync_at\", \"faculty_facultyprofile\".\"schedule_last_updated_at\", \"faculty_facultyprofile\".\"photo_url\", \"faculty_facultyprofile\".\"biography\" FROM \"faculty_facultyprofile\" INNER JOIN \"core_user\" ON (\"faculty_facultyprofile\".\"user_id\" = \"core_user\".\"id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"core_user\".\"account_status\" = %s AND \"core_user\".\"role\" = %s) ORDER BY \"faculty_facultyprofile\".\"faculty_id\" ASC"
+        },
+        {
+          "ms": 111.245,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) ORDER BY 1 DESC"
+        },
+        {
+          "ms": 108.627,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"requested_at\" >= %s AND \"faculty_consultationrequest\".\"requested_at\" < %s)"
+        },
+        {
+          "ms": 107.157,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s) ORDER BY 1 DESC"
+        }
+      ],
+      "similar_patterns": [
+        {
+          "count": 4,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s)"
+        },
+        {
+          "count": 3,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        },
+        {
+          "count": 2,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) ORDER BY 1 DESC"
+        }
+      ],
+      "page": "peak_analytics",
+      "run": 1,
+      "wall_ms": 3823.716
+    },
+    {
+      "query_count": 30,
+      "sql_ms": 4763.053,
+      "similar_groups": 3,
+      "similar_queries": 9,
+      "duplicate_groups": 3,
+      "duplicate_queries": 7,
+      "duplicate_repeats": 4,
+      "slowest": [
+        {
+          "ms": 299.157,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) ORDER BY 1 DESC"
+        },
+        {
+          "ms": 206.559,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"start_time\" IS NULL)"
+        },
+        {
+          "ms": 201.918,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        },
+        {
+          "ms": 200.076,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_facultyprofile\" INNER JOIN \"core_user\" ON (\"faculty_facultyprofile\".\"user_id\" = \"core_user\".\"id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"core_user\".\"account_status\" = %s AND \"core_user\".\"role\" = %s)"
+        },
+        {
+          "ms": 199.652,
+          "sql": "SELECT \"faculty_consultationrequest\".\"user_id\" AS \"user_id\", COUNT(\"faculty_consultationrequest\".\"request_id\") AS \"request_count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) GROUP BY 1"
+        }
+      ],
+      "similar_patterns": [
+        {
+          "count": 4,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s)"
+        },
+        {
+          "count": 3,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        },
+        {
+          "count": 2,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) ORDER BY 1 DESC"
+        }
+      ],
+      "page": "peak_analytics",
+      "run": 2,
+      "wall_ms": 5145.914
+    },
+    {
+      "query_count": 3,
+      "sql_ms": 363.189,
+      "similar_groups": 0,
+      "similar_queries": 0,
+      "duplicate_groups": 0,
+      "duplicate_queries": 0,
+      "duplicate_repeats": 0,
+      "slowest": [
+        {
+          "ms": 159.372,
+          "sql": "SELECT \"core_user\".\"id\", \"core_user\".\"password\", \"core_user\".\"last_login\", \"core_user\".\"is_superuser\", \"core_user\".\"username\", \"core_user\".\"first_name\", \"core_user\".\"last_name\", \"core_user\".\"email\", \"core_user\".\"is_staff\", \"core_user\".\"is_active\", \"core_user\".\"date_joined\", \"core_user\".\"title\", \"core_user\".\"role\", \"core_user\".\"account_status\", \"core_user\".\"college\", \"core_user\".\"profile_completed\", \"core_user\".\"student_id\", \"core_user\".\"year_level\" FROM \"core_user\" WHERE \"core_user\".\"id\" = %s LIMIT 21"
+        },
+        {
+          "ms": 103.481,
+          "sql": "SELECT \"faculty_facultyprofile\".\"faculty_id\", \"faculty_facultyprofile\".\"user_id\", \"faculty_facultyprofile\".\"college_id\", \"faculty_facultyprofile\".\"office_location\", \"faculty_facultyprofile\".\"current_status\", \"faculty_facultyprofile\".\"status_note\", \"faculty_facultyprofile\".\"status_updated_at\", \"faculty_facultyprofile\".\"manual_status\", \"faculty_facultyprofile\".\"manual_status_override\", \"faculty_facultyprofile\".\"manual_status_expires_at\", \"faculty_facultyprofile\".\"sync_enabled\", \"faculty_facultyprofile\".\"walk_ins_enabled\", \"faculty_facultyprofile\".\"last_calendar_sync_at\", \"faculty_facultyprofile\".\"schedule_last_updated_at\", \"faculty_facultyprofile\".\"photo_url\", \"faculty_facultyprofile\".\"biography\", \"core_user\".\"id\", \"core_user\".\"password\", \"core_user\".\"last_login\", \"core_user\".\"is_superuser\", \"core_user\".\"username\", \"core_user\".\"first_name\", \"core_user\".\"last_name\", \"core_user\".\"email\", \"core_user\".\"is_staff\", \"core_user\".\"is_active\", \"core_user\".\"date_joined\", \"core_user\".\"title\", \"core_user\".\"role\", \"core_user\".\"account_status\", \"core_user\".\"college\", \"core_user\".\"profile_completed\", \"core_user\".\"student_id\", \"core_user\".\"year_level\" FROM \"faculty_facultyprofile\" INNER JOIN \"core_user\" ON (\"faculty_facultyprofile\".\"user_id\" = \"core_user\".\"id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"core_user\".\"account_status\" = %s AND \"core_user\".\"role\" = %s) ORDER BY \"faculty_facultyprofile\".\"faculty_id\" ASC"
+        },
+        {
+          "ms": 100.336,
+          "sql": "SELECT \"faculty_facultyprofile\".\"faculty_id\", \"faculty_facultyprofile\".\"user_id\", \"faculty_facultyprofile\".\"college_id\", \"faculty_facultyprofile\".\"office_location\", \"faculty_facultyprofile\".\"current_status\", \"faculty_facultyprofile\".\"status_note\", \"faculty_facultyprofile\".\"status_updated_at\", \"faculty_facultyprofile\".\"manual_status\", \"faculty_facultyprofile\".\"manual_status_override\", \"faculty_facultyprofile\".\"manual_status_expires_at\", \"faculty_facultyprofile\".\"sync_enabled\", \"faculty_facultyprofile\".\"walk_ins_enabled\", \"faculty_facultyprofile\".\"last_calendar_sync_at\", \"faculty_facultyprofile\".\"schedule_last_updated_at\", \"faculty_facultyprofile\".\"photo_url\", \"faculty_facultyprofile\".\"biography\" FROM \"faculty_facultyprofile\" INNER JOIN \"core_user\" ON (\"faculty_facultyprofile\".\"user_id\" = \"core_user\".\"id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"core_user\".\"account_status\" = %s AND \"core_user\".\"role\" = %s) ORDER BY \"faculty_facultyprofile\".\"faculty_id\" ASC"
+        }
+      ],
+      "similar_patterns": [],
+      "page": "faculty_trends",
+      "run": 1,
+      "wall_ms": 450.54
+    },
+    {
+      "query_count": 3,
+      "sql_ms": 517.637,
+      "similar_groups": 0,
+      "similar_queries": 0,
+      "duplicate_groups": 0,
+      "duplicate_queries": 0,
+      "duplicate_repeats": 0,
+      "slowest": [
+        {
+          "ms": 218.686,
+          "sql": "SELECT \"faculty_facultyprofile\".\"faculty_id\", \"faculty_facultyprofile\".\"user_id\", \"faculty_facultyprofile\".\"college_id\", \"faculty_facultyprofile\".\"office_location\", \"faculty_facultyprofile\".\"current_status\", \"faculty_facultyprofile\".\"status_note\", \"faculty_facultyprofile\".\"status_updated_at\", \"faculty_facultyprofile\".\"manual_status\", \"faculty_facultyprofile\".\"manual_status_override\", \"faculty_facultyprofile\".\"manual_status_expires_at\", \"faculty_facultyprofile\".\"sync_enabled\", \"faculty_facultyprofile\".\"walk_ins_enabled\", \"faculty_facultyprofile\".\"last_calendar_sync_at\", \"faculty_facultyprofile\".\"schedule_last_updated_at\", \"faculty_facultyprofile\".\"photo_url\", \"faculty_facultyprofile\".\"biography\" FROM \"faculty_facultyprofile\" INNER JOIN \"core_user\" ON (\"faculty_facultyprofile\".\"user_id\" = \"core_user\".\"id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"core_user\".\"account_status\" = %s AND \"core_user\".\"role\" = %s) ORDER BY \"faculty_facultyprofile\".\"faculty_id\" ASC"
+        },
+        {
+          "ms": 197.135,
+          "sql": "SELECT \"faculty_facultyprofile\".\"faculty_id\", \"faculty_facultyprofile\".\"user_id\", \"faculty_facultyprofile\".\"college_id\", \"faculty_facultyprofile\".\"office_location\", \"faculty_facultyprofile\".\"current_status\", \"faculty_facultyprofile\".\"status_note\", \"faculty_facultyprofile\".\"status_updated_at\", \"faculty_facultyprofile\".\"manual_status\", \"faculty_facultyprofile\".\"manual_status_override\", \"faculty_facultyprofile\".\"manual_status_expires_at\", \"faculty_facultyprofile\".\"sync_enabled\", \"faculty_facultyprofile\".\"walk_ins_enabled\", \"faculty_facultyprofile\".\"last_calendar_sync_at\", \"faculty_facultyprofile\".\"schedule_last_updated_at\", \"faculty_facultyprofile\".\"photo_url\", \"faculty_facultyprofile\".\"biography\", \"core_user\".\"id\", \"core_user\".\"password\", \"core_user\".\"last_login\", \"core_user\".\"is_superuser\", \"core_user\".\"username\", \"core_user\".\"first_name\", \"core_user\".\"last_name\", \"core_user\".\"email\", \"core_user\".\"is_staff\", \"core_user\".\"is_active\", \"core_user\".\"date_joined\", \"core_user\".\"title\", \"core_user\".\"role\", \"core_user\".\"account_status\", \"core_user\".\"college\", \"core_user\".\"profile_completed\", \"core_user\".\"student_id\", \"core_user\".\"year_level\" FROM \"faculty_facultyprofile\" INNER JOIN \"core_user\" ON (\"faculty_facultyprofile\".\"user_id\" = \"core_user\".\"id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"core_user\".\"account_status\" = %s AND \"core_user\".\"role\" = %s) ORDER BY \"faculty_facultyprofile\".\"faculty_id\" ASC"
+        },
+        {
+          "ms": 101.817,
+          "sql": "SELECT \"core_user\".\"id\", \"core_user\".\"password\", \"core_user\".\"last_login\", \"core_user\".\"is_superuser\", \"core_user\".\"username\", \"core_user\".\"first_name\", \"core_user\".\"last_name\", \"core_user\".\"email\", \"core_user\".\"is_staff\", \"core_user\".\"is_active\", \"core_user\".\"date_joined\", \"core_user\".\"title\", \"core_user\".\"role\", \"core_user\".\"account_status\", \"core_user\".\"college\", \"core_user\".\"profile_completed\", \"core_user\".\"student_id\", \"core_user\".\"year_level\" FROM \"core_user\" WHERE \"core_user\".\"id\" = %s LIMIT 21"
+        }
+      ],
+      "similar_patterns": [],
+      "page": "faculty_trends",
+      "run": 2,
+      "wall_ms": 634.112
+    },
+    {
+      "query_count": 31,
+      "sql_ms": 5112.857,
+      "similar_groups": 3,
+      "similar_queries": 9,
+      "duplicate_groups": 3,
+      "duplicate_queries": 7,
+      "duplicate_repeats": 4,
+      "slowest": [
+        {
+          "ms": 611.564,
+          "sql": "SELECT \"faculty_walkinqueue\".\"queue_id\", \"faculty_walkinqueue\".\"joined_at\", \"faculty_walkinqueue\".\"served_at\", \"faculty_walkinqueue\".\"notified_at\" FROM \"faculty_walkinqueue\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_walkinqueue\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_walkinqueue\".\"joined_at\" >= %s AND \"faculty_walkinqueue\".\"joined_at\" < %s) ORDER BY \"faculty_walkinqueue\".\"position\" ASC, \"faculty_walkinqueue\".\"joined_at\" ASC"
+        },
+        {
+          "ms": 505.911,
+          "sql": "SELECT \"faculty_facultyprofile\".\"current_status\" AS \"current_status\", COUNT(\"faculty_facultyprofile\".\"faculty_id\") AS \"count\" FROM \"faculty_facultyprofile\" INNER JOIN \"core_user\" ON (\"faculty_facultyprofile\".\"user_id\" = \"core_user\".\"id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"core_user\".\"account_status\" = %s AND \"core_user\".\"role\" = %s) GROUP BY 1"
+        },
+        {
+          "ms": 289.624,
+          "sql": "SELECT \"faculty_walkinqueue\".\"status\" AS \"status\", COUNT(\"faculty_walkinqueue\".\"queue_id\") AS \"count\" FROM \"faculty_walkinqueue\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_walkinqueue\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_walkinqueue\".\"joined_at\" >= %s AND \"faculty_walkinqueue\".\"joined_at\" < %s) GROUP BY 1"
+        },
+        {
+          "ms": 231.268,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        },
+        {
+          "ms": 200.54,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s)"
+        }
+      ],
+      "similar_patterns": [
+        {
+          "count": 4,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s)"
+        },
+        {
+          "count": 3,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        },
+        {
+          "count": 2,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) ORDER BY 1 DESC"
+        }
+      ],
+      "page": "student_behavior",
+      "run": 1,
+      "wall_ms": 5338.769
+    },
+    {
+      "query_count": 31,
+      "sql_ms": 4704.868,
+      "similar_groups": 3,
+      "similar_queries": 9,
+      "duplicate_groups": 3,
+      "duplicate_queries": 7,
+      "duplicate_repeats": 4,
+      "slowest": [
+        {
+          "ms": 208.075,
+          "sql": "SELECT \"faculty_consultationrequest\".\"agenda\" AS \"agenda\", COUNT(\"faculty_consultationrequest\".\"request_id\") AS \"count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) GROUP BY 1"
+        },
+        {
+          "ms": 203.903,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s) ORDER BY 1 DESC"
+        },
+        {
+          "ms": 202.17,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s)"
+        },
+        {
+          "ms": 201.763,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        },
+        {
+          "ms": 200.377,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) ORDER BY 1 DESC"
+        }
+      ],
+      "similar_patterns": [
+        {
+          "count": 4,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s)"
+        },
+        {
+          "count": 3,
+          "sql": "SELECT COUNT(*) AS \"__count\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s AND \"faculty_consultationrequest\".\"status\" = %s)"
+        },
+        {
+          "count": 2,
+          "sql": "SELECT \"faculty_consultationrequest\".\"date\" AS \"date\" FROM \"faculty_consultationrequest\" INNER JOIN \"faculty_facultyprofile\" ON (\"faculty_consultationrequest\".\"faculty_id\" = \"faculty_facultyprofile\".\"faculty_id\") WHERE (UPPER(\"faculty_facultyprofile\".\"college_id\"::text) = UPPER(%s) AND \"faculty_consultationrequest\".\"date\" >= %s AND \"faculty_consultationrequest\".\"date\" <= %s) ORDER BY 1 DESC"
+        }
+      ],
+      "page": "student_behavior",
+      "run": 2,
+      "wall_ms": 5027.457
+    }
+  ]
+}

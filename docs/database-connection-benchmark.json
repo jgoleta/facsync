@@ -1,0 +1,332 @@
+{
+  "settings": {
+    "ENGINE": "django.db.backends.postgresql",
+    "HOST": "aws-1-ap-south-1.pooler.supabase.com",
+    "PORT": "5432",
+    "CONN_MAX_AGE": 0,
+    "CONN_HEALTH_CHECKS": false
+  },
+  "pool_option_configured": false,
+  "rounds": [
+    {
+      "conn_max_age": 0,
+      "requests": [
+        {
+          "request": 1,
+          "reused": false,
+          "connect_ms": 1020.432,
+          "django_execute_ms": [
+            105.623,
+            107.399,
+            189.738
+          ],
+          "driver_execute_ms": [
+            194.699,
+            108.511,
+            108.474
+          ]
+        },
+        {
+          "request": 2,
+          "reused": false,
+          "connect_ms": 646.415,
+          "django_execute_ms": [
+            101.388,
+            118.817,
+            101.432
+          ],
+          "driver_execute_ms": [
+            101.18,
+            101.378,
+            101.434
+          ]
+        },
+        {
+          "request": 3,
+          "reused": false,
+          "connect_ms": 797.234,
+          "django_execute_ms": [
+            102.777,
+            108.654,
+            106.38
+          ],
+          "driver_execute_ms": [
+            103.289,
+            102.357,
+            105.546
+          ]
+        },
+        {
+          "request": 4,
+          "reused": false,
+          "connect_ms": 665.418,
+          "django_execute_ms": [
+            101.222,
+            99.602,
+            105.225
+          ],
+          "driver_execute_ms": [
+            99.658,
+            101.043,
+            99.21
+          ]
+        },
+        {
+          "request": 5,
+          "reused": false,
+          "connect_ms": 681.013,
+          "django_execute_ms": [
+            101.001,
+            101.286,
+            104.62
+          ],
+          "driver_execute_ms": [
+            105.197,
+            103.595,
+            101.901
+          ]
+        }
+      ]
+    },
+    {
+      "conn_max_age": 60,
+      "requests": [
+        {
+          "request": 1,
+          "reused": false,
+          "connect_ms": 663.738,
+          "django_execute_ms": [
+            99.539,
+            97.965,
+            97.98
+          ],
+          "driver_execute_ms": [
+            100.625,
+            102.495,
+            100.836
+          ]
+        },
+        {
+          "request": 2,
+          "reused": true,
+          "connect_ms": 0.026,
+          "django_execute_ms": [
+            100.371,
+            97.571,
+            99.946
+          ],
+          "driver_execute_ms": [
+            102.189,
+            97.938,
+            96.489
+          ]
+        },
+        {
+          "request": 3,
+          "reused": true,
+          "connect_ms": 0.005,
+          "django_execute_ms": [
+            102.441,
+            106.549,
+            99.642
+          ],
+          "driver_execute_ms": [
+            101.671,
+            96.85,
+            98.633
+          ]
+        },
+        {
+          "request": 4,
+          "reused": true,
+          "connect_ms": 0.013,
+          "django_execute_ms": [
+            100.519,
+            100.079,
+            97.197
+          ],
+          "driver_execute_ms": [
+            99.866,
+            99.712,
+            97.646
+          ]
+        },
+        {
+          "request": 5,
+          "reused": true,
+          "connect_ms": 0.013,
+          "django_execute_ms": [
+            100.01,
+            97.866,
+            96.69
+          ],
+          "driver_execute_ms": [
+            100.281,
+            99.262,
+            97.273
+          ]
+        }
+      ]
+    },
+    {
+      "conn_max_age": 0,
+      "requests": [
+        {
+          "request": 1,
+          "reused": false,
+          "connect_ms": 739.441,
+          "django_execute_ms": [
+            133.379,
+            204.777,
+            242.881
+          ],
+          "driver_execute_ms": [
+            208.29,
+            204.697,
+            203.835
+          ]
+        },
+        {
+          "request": 2,
+          "reused": false,
+          "connect_ms": 884.957,
+          "django_execute_ms": [
+            205.312,
+            204.803,
+            211.377
+          ],
+          "driver_execute_ms": [
+            203.019,
+            202.944,
+            112.943
+          ]
+        },
+        {
+          "request": 3,
+          "reused": false,
+          "connect_ms": 870.095,
+          "django_execute_ms": [
+            103.057,
+            102.917,
+            201.154
+          ],
+          "driver_execute_ms": [
+            151.815,
+            103.125,
+            205.477
+          ]
+        },
+        {
+          "request": 4,
+          "reused": false,
+          "connect_ms": 646.085,
+          "django_execute_ms": [
+            163.386,
+            203.548,
+            106.919
+          ],
+          "driver_execute_ms": [
+            100.732,
+            102.416,
+            104.228
+          ]
+        },
+        {
+          "request": 5,
+          "reused": false,
+          "connect_ms": 840.368,
+          "django_execute_ms": [
+            102.837,
+            101.672,
+            169.979
+          ],
+          "driver_execute_ms": [
+            101.458,
+            101.3,
+            105.405
+          ]
+        }
+      ]
+    },
+    {
+      "conn_max_age": 60,
+      "requests": [
+        {
+          "request": 1,
+          "reused": false,
+          "connect_ms": 660.571,
+          "django_execute_ms": [
+            96.906,
+            100.904,
+            98.693
+          ],
+          "driver_execute_ms": [
+            100.179,
+            97.093,
+            102.653
+          ]
+        },
+        {
+          "request": 2,
+          "reused": true,
+          "connect_ms": 0.065,
+          "django_execute_ms": [
+            102.947,
+            102.265,
+            98.225
+          ],
+          "driver_execute_ms": [
+            100.204,
+            427.17,
+            121.47
+          ]
+        },
+        {
+          "request": 3,
+          "reused": true,
+          "connect_ms": 0.017,
+          "django_execute_ms": [
+            101.049,
+            110.62,
+            104.43
+          ],
+          "driver_execute_ms": [
+            97.447,
+            99.075,
+            99.543
+          ]
+        },
+        {
+          "request": 4,
+          "reused": true,
+          "connect_ms": 0.005,
+          "django_execute_ms": [
+            100.249,
+            96.521,
+            98.98
+          ],
+          "driver_execute_ms": [
+            96.824,
+            97.261,
+            100.39
+          ]
+        },
+        {
+          "request": 5,
+          "reused": true,
+          "connect_ms": 0.008,
+          "django_execute_ms": [
+            101.672,
+            100.826,
+            100.25
+          ],
+          "driver_execute_ms": [
+            98.86,
+            101.686,
+            101.908
+          ]
+        }
+      ]
+    }
+  ]
+}
