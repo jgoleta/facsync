@@ -9,6 +9,7 @@ from apps.core.forms import CollegeAnnouncementForm, CollegeDescriptionForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm
 from apps.faculty.models import FacultyProfile, ScheduleEvent
+from apps.core.services import send_schedule_uploaded_email
 from apps.faculty.views import SCHEDULE_CSV_HEADERS, _event_json, _parse_schedule_csv, _schedule_csv_row
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
@@ -238,8 +239,15 @@ def upload_faculty_schedule(request, faculty_id):
         faculty.schedule_last_updated_at = updated_at
         faculty.save(update_fields=['schedule_last_updated_at'])
 
+    email_sent = False
+    try:
+        email_sent = send_schedule_uploaded_email(faculty.user, events, request.user)
+    except Exception:
+        logger.exception('Failed to send schedule upload email for faculty %s', faculty.faculty_id)
+
     return JsonResponse({
         'message': f'Schedule uploaded for {faculty.user.get_full_name() or faculty.user.username}. {len(events)} row(s) added.',
+        'email_sent': email_sent,
         'added_count': len(events),
         'last_updated_at': updated_at.isoformat(),
         'preview': [_schedule_csv_row(event) for event in events],

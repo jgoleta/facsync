@@ -1,0 +1,223 @@
+diff --git a/apps/core/services.py b/apps/core/services.py
+index 588aea6..c5000fd 100644
+--- a/apps/core/services.py
++++ b/apps/core/services.py
+@@ -6,6 +6,7 @@ from django.core.mail import send_mail, EmailMultiAlternatives
+ from django.conf import settings
+ from django.template.loader import render_to_string
+ from django.utils.html import strip_tags
++from django.urls import reverse
+ 
+ 
+ def create_notification(recipient, notification_type, title, message, url=''):
+@@ -108,7 +109,35 @@ def _send_html_email(subject, template_name, context, recipient_list, fail_silen
+     text_content = strip_tags(html_content)
+     msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, recipient_list)
+     msg.attach_alternative(html_content, "text/html")
+-    msg.send(fail_silently=fail_silently)
++    return msg.send(fail_silently=fail_silently)
++
++
++def send_schedule_uploaded_email(faculty_user, uploaded_events, uploaded_by):
++    """Notify the recipient about only the newly saved College Head upload."""
++    email = (faculty_user.email or '').strip()
++    if not email:
++        return False
++    entries = []
++    for event in uploaded_events:
++        start_date = event.recurrence_start_date or event.date
++        end_date = event.recurrence_end_date or event.date or start_date
++        entries.append({
++            'event': event,
++            'start_date': start_date,
++            'end_date': end_date if end_date != start_date else None,
++        })
++    return bool(_send_html_email(
++        'Your College Head uploaded your schedule â€” FacSync',
++        'schedule_uploaded.html',
++        {
++            'name': faculty_user.get_full_name() or faculty_user.username,
++            'uploader_name': uploaded_by.get_full_name() or uploaded_by.username,
++            'entries': entries,
++            'entry_count': len(entries),
++            'schedule_url': settings.SITE_URL.rstrip('/') + reverse('faculty:schedule'),
++        },
++        [email],
++    ))
+ 
+ 
+ def send_faculty_invite_email(email, college):
+diff --git a/apps/depthead/views.py b/apps/depthead/views.py
+index 14a523a..d3460bb 100644
+--- a/apps/depthead/views.py
++++ b/apps/depthead/views.py
+@@ -9,6 +9,7 @@ from apps.core.forms import CollegeAnnouncementForm, CollegeDescriptionForm
+ from django.contrib import messages
+ from .forms import FacultyInviteForm, OfficeClosureForm
+ from apps.faculty.models import FacultyProfile, ScheduleEvent
++from apps.core.services import send_schedule_uploaded_email
+ from apps.faculty.views import SCHEDULE_CSV_HEADERS, _event_json, _parse_schedule_csv, _schedule_csv_row
+ from django.utils import timezone
+ from django.http import HttpResponse, JsonResponse
+@@ -238,8 +239,15 @@ def upload_faculty_schedule(request, faculty_id):
+         faculty.schedule_last_updated_at = updated_at
+         faculty.save(update_fields=['schedule_last_updated_at'])
+ 
++    email_sent = False
++    try:
++        email_sent = send_schedule_uploaded_email(faculty.user, events, request.user)
++    except Exception:
++        logger.exception('Failed to send schedule upload email for faculty %s', faculty.faculty_id)
++
+     return JsonResponse({
+         'message': f'Schedule uploaded for {faculty.user.get_full_name() or faculty.user.username}. {len(events)} row(s) added.',
++        'email_sent': email_sent,
+         'added_count': len(events),
+         'last_updated_at': updated_at.isoformat(),
+         'preview': [_schedule_csv_row(event) for event in events],
+--- /dev/null
++++ b/templates/emails/schedule_uploaded.html
+@@ -0,0 +1,42 @@
++{% extends "emails/base_email.html" %}
++{% block title %}Your College Head uploaded your schedule{% endblock %}
++{% block heading %}New schedule entries added{% endblock %}
++{% block body %}
++<p>Hi <strong>{{ name }}</strong>,</p>
++<p><strong>{{ uploader_name }}</strong>, your College Head, uploaded <strong>{{ entry_count }} schedule entr{{ entry_count|pluralize:"y,ies" }}</strong> to your FacSync schedule.</p>
++<p>These entries were added to your existing schedule.</p>
++<table width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse; font-size:13px; table-layout:fixed;">
++    <thead>
++        <tr style="background-color:#eaf4ff; text-align:left;">
++            <th scope="col" style="width:44%; border-bottom:1px solid #dfe7f2;">Subject / section</th>
++            <th scope="col" style="width:36%; border-bottom:1px solid #dfe7f2;">Uploaded dates / time</th>
++            <th scope="col" style="width:20%; border-bottom:1px solid #dfe7f2;">Room</th>
++        </tr>
++    </thead>
++    <tbody>
++        {% for entry in entries %}
++        <tr>
++            <td style="vertical-align:top; border-bottom:1px solid #dfe7f2; overflow-wrap:anywhere;">
++                <strong>{% if entry.event.subject_code %}{{ entry.event.subject_code }} &mdash; {% endif %}{{ entry.event.title }}</strong><br>
++                Section: {{ entry.event.section|default:"Not provided" }}<br>
++                Offering: {{ entry.event.offering_id|default:"Not provided" }}<br>
++                Units: {{ entry.event.units|default:"Not provided" }} &middot; Lecture: {{ entry.event.lecture|default:"Not provided" }} &middot; Lab: {{ entry.event.lab|default:"Not provided" }}
++            </td>
++            <td style="vertical-align:top; border-bottom:1px solid #dfe7f2;">
++                {% if entry.start_date %}{{ entry.start_date|date:"M j, Y" }}{% if entry.end_date %} &ndash; {{ entry.end_date|date:"M j, Y" }}{% endif %}{% else %}Date not provided{% endif %}<br>
++                {% if entry.event.start_time %}{{ entry.event.start_time|time:"H:i" }}{% if entry.event.end_time %}&ndash;{{ entry.event.end_time|time:"H:i" }}{% endif %}{% else %}All day{% endif %}
++            </td>
++            <td style="vertical-align:top; border-bottom:1px solid #dfe7f2; overflow-wrap:anywhere;">{{ entry.event.location|default:"Not provided" }}</td>
++        </tr>
++        {% endfor %}
++    </tbody>
++</table>
++<p>This summary includes only the entries from this upload. Review your full schedule in FacSync.</p>
++{% endblock %}
++{% block button %}
++<tr>
++    <td align="center" style="padding:8px 40px 24px 40px;">
++        <a href="{{ schedule_url }}" style="display:inline-block; background:linear-gradient(45deg,#3b82f6,#0b74de); color:#ffffff; text-decoration:none; font-weight:600; padding:12px 28px; border-radius:999px;">Review my schedule</a>
++    </td>
++</tr>
++{% endblock %}
+--- /dev/null
++++ b/apps/depthead/tests/test_schedule_upload_email.py
+@@ -0,0 +1,98 @@
++from datetime import date
++from smtplib import SMTPException
++from unittest.mock import patch
++
++from django.core import mail
++from django.core.files.uploadedfile import SimpleUploadedFile
++from django.test import TestCase, override_settings
++from django.urls import reverse
++
++from apps.core.models import User
++from apps.faculty.models import FacultyProfile, ScheduleEvent
++
++
++@override_settings(SITE_URL='https://facsync.example/', EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
++class ScheduleUploadEmailTests(TestCase):
++    def setUp(self):
++        self.head = User.objects.create(username='head-email', role='depthead', college='CCS')
++        self.user = User.objects.create(username='faculty-email', role='faculty', college='CCS', email='faculty@example.com')
++        self.faculty = FacultyProfile.objects.create(faculty_id='email-faculty', user=self.user, college_id='CCS')
++        self.client.force_login(self.head)
++        self.url = reverse('depthead:upload_faculty_schedule', args=[self.faculty.pk])
++
++    def upload(self, url=None, row=None):
++        header = 'OFFERING_ID,SUBJ_CODE,SECTION,SUBJECT_TITLE,UNITS,LECTURE,LAB,DAYFROM,DAYTO,TIMEFROM,TIMETO,ROOM\n'
++        row = row or 'OFF-1,CS101,BSCS-1A,Computing,3,2,1,2026-09-21,2026-09-21,08:00,09:30,Room 204\n'
++        return self.client.post(url or self.url, {'file': SimpleUploadedFile('schedule.csv', (header+row).encode(), content_type='text/csv')})
++
++    def test_success_single_date_batch_only_summary_and_link(self):
++        ScheduleEvent.objects.create(faculty=self.faculty, title='OLD EVENT', date=date(2026, 9, 1))
++        response = self.upload()
++        self.assertEqual(response.status_code, 201)
++        self.assertIs(response.json()['email_sent'], True)
++        self.assertEqual(len(mail.outbox), 1)
++        email = mail.outbox[0]
++        self.assertEqual(email.to, ['faculty@example.com'])
++        html = email.alternatives[0].content
++        for text in ('head-email', 'CS101', 'BSCS-1A', 'Computing', 'OFF-1', 'Room 204',
++                     '08:00', '09:30', 'Units: 3', 'Lecture: 2', 'Lab: 1',
++                     'only the entries from this upload', 'https://facsync.example/faculty/schedule/'):
++            self.assertIn(text, html)
++        self.assertEqual(html.count('Sep 21, 2026'), 1)
++        self.assertIn('1 schedule entry', html)
++        self.assertNotIn('OLD EVENT', html)
++        self.assertIn('Computing', email.body)
++        self.assertEqual(self.faculty.schedule_events.count(), 2)
++
++    def test_date_range_and_escaped_content(self):
++        response = self.upload(row='OFF-1,CS101,A,<script>bad</script>,3,2,1,2026-09-21,2026-12-18,08:00,09:30,<b>Room</b>\n')
++        self.assertEqual(response.status_code, 201)
++        html = mail.outbox[0].alternatives[0].content
++        self.assertIn('Sep 21, 2026 &ndash; Dec 18, 2026', html)
++        self.assertIn('&lt;script&gt;bad&lt;/script&gt;', html)
++        self.assertNotIn('<script>', html)
++        self.assertIn('&lt;b&gt;Room&lt;/b&gt;', html)
++
++    @patch('apps.core.services.EmailMultiAlternatives.send', side_effect=SMTPException('mail unavailable'))
++    def test_email_failure_preserves_successful_upload(self, send):
++        with self.assertLogs('apps.depthead.views', level='ERROR'):
++            response = self.upload()
++        self.assertEqual(response.status_code, 201)
++        self.assertIs(response.json()['email_sent'], False)
++        self.assertEqual(response.json()['added_count'], 1)
++        self.assertEqual(self.faculty.schedule_events.count(), 1)
++        self.faculty.refresh_from_db()
++        self.assertIsNotNone(self.faculty.schedule_last_updated_at)
++
++    def test_missing_recipient_does_not_attempt_send(self):
++        self.user.email = ' '
++        self.user.save(update_fields=['email'])
++        with patch('apps.core.services._send_html_email') as send:
++            response = self.upload()
++        self.assertEqual(response.status_code, 201)
++        self.assertIs(response.json()['email_sent'], False)
++        send.assert_not_called()
++
++    @patch('apps.core.services.EmailMultiAlternatives.send', return_value=0)
++    def test_backend_zero_sends_is_not_reported_as_sent(self, send):
++        self.assertIs(self.upload().json()['email_sent'], False)
++
++    def test_invalid_and_cross_college_uploads_send_nothing(self):
++        self.assertEqual(self.upload(row='invalid\n').status_code, 400)
++        self.faculty.college_id = 'CBA'
++        self.faculty.save(update_fields=['college_id'])
++        self.assertEqual(self.upload().status_code, 404)
++        self.assertEqual(len(mail.outbox), 0)
++        self.assertFalse(self.faculty.schedule_events.exists())
++
++    def test_repeated_uploads_send_once_each_and_self_upload_sends_nothing(self):
++        for _ in range(2):
++            self.assertEqual(self.upload().status_code, 201)
++        self.assertEqual(len(mail.outbox), 2)
++        for email in mail.outbox:
++            self.assertIn('1 schedule entry', email.alternatives[0].content)
++        self.client.force_login(self.user)
++        response = self.upload(reverse('faculty:upload_schedule'))
++        self.assertEqual(response.status_code, 201)
++        self.assertEqual(len(mail.outbox), 2)
++        self.assertEqual(self.faculty.schedule_events.count(), 3)

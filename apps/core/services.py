@@ -6,6 +6,7 @@ from django.core.mail import send_mail, EmailMultiAlternatives
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.urls import reverse
 
 
 def create_notification(recipient, notification_type, title, message, url=''):
@@ -108,7 +109,35 @@ def _send_html_email(subject, template_name, context, recipient_list, fail_silen
     text_content = strip_tags(html_content)
     msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, recipient_list)
     msg.attach_alternative(html_content, "text/html")
-    msg.send(fail_silently=fail_silently)
+    return msg.send(fail_silently=fail_silently)
+
+
+def send_schedule_uploaded_email(faculty_user, uploaded_events, uploaded_by):
+    """Notify the recipient about only the newly saved College Head upload."""
+    email = (faculty_user.email or '').strip()
+    if not email:
+        return False
+    entries = []
+    for event in uploaded_events:
+        start_date = event.recurrence_start_date or event.date
+        end_date = event.recurrence_end_date or event.date or start_date
+        entries.append({
+            'event': event,
+            'start_date': start_date,
+            'end_date': end_date if end_date != start_date else None,
+        })
+    return bool(_send_html_email(
+        'Your College Head uploaded your schedule — FacSync',
+        'schedule_uploaded.html',
+        {
+            'name': faculty_user.get_full_name() or faculty_user.username,
+            'uploader_name': uploaded_by.get_full_name() or uploaded_by.username,
+            'entries': entries,
+            'entry_count': len(entries),
+            'schedule_url': settings.SITE_URL.rstrip('/') + reverse('faculty:schedule'),
+        },
+        [email],
+    ))
 
 
 def send_faculty_invite_email(email, college):

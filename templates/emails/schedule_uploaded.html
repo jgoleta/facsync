@@ -1,0 +1,42 @@
+{% extends "emails/base_email.html" %}
+{% block title %}Your College Head uploaded your schedule{% endblock %}
+{% block heading %}New schedule entries added{% endblock %}
+{% block body %}
+<p>Hi <strong>{{ name }}</strong>,</p>
+<p><strong>{{ uploader_name }}</strong>, your College Head, uploaded <strong>{{ entry_count }} schedule entr{{ entry_count|pluralize:"y,ies" }}</strong> to your FacSync schedule.</p>
+<p>These entries were added to your existing schedule.</p>
+<table width="100%" cellpadding="8" cellspacing="0" style="border-collapse:collapse; font-size:13px; table-layout:fixed;">
+    <thead>
+        <tr style="background-color:#eaf4ff; text-align:left;">
+            <th scope="col" style="width:44%; border-bottom:1px solid #dfe7f2;">Subject / section</th>
+            <th scope="col" style="width:36%; border-bottom:1px solid #dfe7f2;">Uploaded dates / time</th>
+            <th scope="col" style="width:20%; border-bottom:1px solid #dfe7f2;">Room</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entry in entries %}
+        <tr>
+            <td style="vertical-align:top; border-bottom:1px solid #dfe7f2; overflow-wrap:anywhere;">
+                <strong>{% if entry.event.subject_code %}{{ entry.event.subject_code }} &mdash; {% endif %}{{ entry.event.title }}</strong><br>
+                Section: {{ entry.event.section|default:"Not provided" }}<br>
+                Offering: {{ entry.event.offering_id|default:"Not provided" }}<br>
+                Units: {{ entry.event.units|default:"Not provided" }} &middot; Lecture: {{ entry.event.lecture|default:"Not provided" }} &middot; Lab: {{ entry.event.lab|default:"Not provided" }}
+            </td>
+            <td style="vertical-align:top; border-bottom:1px solid #dfe7f2;">
+                {% if entry.start_date %}{{ entry.start_date|date:"M j, Y" }}{% if entry.end_date %} &ndash; {{ entry.end_date|date:"M j, Y" }}{% endif %}{% else %}Date not provided{% endif %}<br>
+                {% if entry.event.start_time %}{{ entry.event.start_time|time:"H:i" }}{% if entry.event.end_time %}&ndash;{{ entry.event.end_time|time:"H:i" }}{% endif %}{% else %}All day{% endif %}
+            </td>
+            <td style="vertical-align:top; border-bottom:1px solid #dfe7f2; overflow-wrap:anywhere;">{{ entry.event.location|default:"Not provided" }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+<p>This summary includes only the entries from this upload. Review your full schedule in FacSync.</p>
+{% endblock %}
+{% block button %}
+<tr>
+    <td align="center" style="padding:8px 40px 24px 40px;">
+        <a href="{{ schedule_url }}" style="display:inline-block; background:linear-gradient(45deg,#3b82f6,#0b74de); color:#ffffff; text-decoration:none; font-weight:600; padding:12px 28px; border-radius:999px;">Review my schedule</a>
+    </td>
+</tr>
+{% endblock %}
