@@ -38,6 +38,7 @@ from .services.schedule_availability import get_schedule_availability
 
 from .services.analytics_display import (
     student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display,
+    consultation_topics_display,
 )
 from .services.analytics_browser import ANALYTICS_QUESTIONS, analytics_browser_answer
 
@@ -354,6 +355,9 @@ def student_behavior(request):
         'peak_period_label': peak_period_label,
         'peak_period_count': peak_period_count,
         'student_frequency': student_frequency,
+        'consultation_topics': consultation_topics_display(analytics['consultations']),
+        'topics_period_start': month_starts[0],
+        'topics_period_end': today,
     })
 
 
