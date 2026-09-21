@@ -2,7 +2,7 @@
 from datetime import date, timedelta
 from django.utils.dateparse import parse_datetime
 from django.utils.timesince import timesince
-from apps.faculty.models import FacultyProfile
+from apps.faculty.models import FacultyProfile, ConsultationRequest
 from .analytics import normalize_period
 
 
@@ -17,6 +17,28 @@ def student_reporting_period():
     month_starts.reverse()  #oldest to newest
 
     return month_starts, today
+
+
+def consultation_topics_display(summary):
+    """Present the existing agenda counts without fetching consultation rows."""
+    total = summary['total_records']
+    if not total:
+        return []
+    labels = dict(ConsultationRequest.AGENDA_CHOICES)
+    counts = dict.fromkeys(labels, 0)
+    for key, count in summary['agenda_distribution'].items():
+        bucket = key if key and key.strip() else None
+        counts[bucket] = counts.get(bucket, 0) + count
+    rows = [
+        {
+            'label': labels.get(key, f'Unrecognized topic ({key})') if key else 'Unspecified',
+            'count': count,
+            'percentage': round(count / total * 100, 2),
+        }
+        for key, count in counts.items()
+        if key in labels or count
+    ]
+    return sorted(rows, key=lambda row: (-row['count'], row['label']))
 
 
 def peak_request_month(request_months):
