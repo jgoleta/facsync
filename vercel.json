@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "django",
+  "buildCommand": "python manage.py check --deploy --settings=config.settings.production",
+  "env": {
+    "DJANGO_SETTINGS_MODULE": "config.settings.production"
+  },
+  "build": {
+    "env": {
+      "DJANGO_SETTINGS_MODULE": "config.settings.production"
+    }
+  }
+}
