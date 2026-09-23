@@ -1,0 +1,12 @@
+.env
+.env.*
+venv/
+.venv/
+.git/
+.vscode/
+.kilo/
+__pycache__/
+*.pyc
+*.log
+docs/
+staticfiles/
