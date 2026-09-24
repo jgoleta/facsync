@@ -22,6 +22,9 @@ def active_announcements(request):
 def landing_page(request):
     return render(request, 'core/landingPage.html')
 
+def terms_of_service(request):
+    return render(request, 'core/terms_of_service.html')
+
 def login_page(request):
     return render(request, 'core/loginPage.html')
 

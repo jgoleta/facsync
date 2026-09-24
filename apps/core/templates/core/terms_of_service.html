@@ -1,0 +1,80 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service | FacSync</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/landingPage.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/legal.css' %}">
+</head>
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="{% url 'core:landing' %}" class="brand">
+                <span class="brand-mark" aria-hidden="true">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links" aria-label="Main navigation">
+                <a href="{% url 'core:landing' %}">Home</a>
+                <a href="{% url 'core:login' %}" class="nav-btn">Sign In</a>
+            </nav>
+        </header>
+        <main class="legal-content">
+            <h1>Terms of Service</h1>
+            <p class="legal-updated">Last updated: <time datetime="2026-09-24">September 24, 2026</time></p>
+
+            <section aria-labelledby="about">
+                <h2 id="about">1. About FacSync</h2>
+                <p>FacSync is a non-commercial student capstone project operated by the FacSync student project team at Ateneo de Naga University. It helps students, faculty and college administrators coordinate faculty availability, schedules and consultations. It is an academic project, not a commercial company.</p>
+                <p>These terms describe the conditions for using FacSync. Please use the service only if you agree to follow them.</p>
+            </section>
+            <section aria-labelledby="eligibility">
+                <h2 id="eligibility">2. Who may use the service</h2>
+                <p>Account-based features are intended for students, faculty and authorized administrative staff participating in the university pilot. FacSync supports Student, Faculty, College Head and Super Admin roles. Public information pages can be viewed without an account.</p>
+                <p>You must provide accurate account and affiliation information and use only the access assigned to you. Having a Google account or successfully registering does not itself establish eligibility to participate in the pilot.</p>
+            </section>
+            <section aria-labelledby="accounts">
+                <h2 id="accounts">3. Registration and account access</h2>
+                <p>Students can register through Google Sign-In and complete their student profile. New student accounts become active immediately; student registration does not require administrative approval before access is granted.</p>
+                <p>Faculty members must receive an invitation from a College Head or Super Admin. College Heads must receive an invitation from a Super Admin. Invited users must sign in with the email address used for their invitation. Super Admin access is assigned administratively.</p>
+                <p>Protect access to your account, do not share it or impersonate another person, and report suspected unauthorized use to an administrator. Administrators may restrict or remove access when an account is ineligible or misused.</p>
+            </section>
+            <section aria-labelledby="acceptable-use">
+                <h2 id="acceptable-use">4. Acceptable use</h2>
+                <p>Use FacSync for legitimate university coordination. Do not submit deliberately false or abusive requests, spam faculty, disrupt schedules, attempt to bypass access controls, or access another person’s records without authorization.</p>
+                <p>Upload or enter only information you are authorized to provide. Keep consultation messages and schedule descriptions relevant, and avoid including unnecessary sensitive information about yourself or others.</p>
+            </section>
+            <section aria-labelledby="scheduling">
+                <h2 id="scheduling">5. Scheduling and connected services</h2>
+                <p>A consultation request is not a confirmed appointment until it is approved. Availability indicators and calendar information may be delayed or incomplete. Confirm important arrangements directly with the faculty member or college.</p>
+                <p>Google Calendar connection is optional. If enabled, synchronization can read and change calendar events as part of FacSync’s scheduling functions. Google and other connected services also have their own terms.</p>
+                <p>Analytics and AI-generated insights are informational aids and may contain errors. They should not be treated as authoritative academic assessments or used alone for decisions about students or faculty.</p>
+            </section>
+            <section aria-labelledby="availability">
+                <h2 id="availability">6. Availability and changes to the service</h2>
+                <p>FacSync is provided as an academic project without an uptime or uninterrupted-service guarantee. Errors, maintenance, network problems or third-party outages may affect access, notifications and synchronization.</p>
+                <p>Features may change, and the project may be suspended or discontinued. Keep separate records of important appointments and use established university channels for urgent matters.</p>
+            </section>
+            <section aria-labelledby="responsibility">
+                <h2 id="responsibility">7. Responsibility and limitations</h2>
+                <p>Please use reasonable judgment when relying on FacSync. To the extent permitted by applicable law, the project team is not responsible for indirect losses resulting from outages, delayed notifications, synchronization errors or reliance on inaccurate information.</p>
+                <p>Nothing in these terms excludes rights or responsibilities that cannot lawfully be excluded.</p>
+            </section>
+            <section aria-labelledby="updates">
+                <h2 id="updates">8. Updates to these terms</h2>
+                <p>Changes will be published on this page with an updated revision date. For significant changes affecting account use, the project team will also provide a notice through the service or by email. Please review the revised terms before continuing to use FacSync.</p>
+            </section>
+            <section aria-labelledby="contact">
+                <h2 id="contact">9. Contact</h2>
+                <p>For questions about these terms or your account, contact your College Head or the FacSync Super Admin.</p>
+            </section>
+        </main>
+        <footer class="footer">
+            <div><p>&copy; 2026 FacSync. Built for modern faculty coordination.</p></div>
+            <div><a href="{% url 'core:landing' %}">Back to Home</a></div>
+        </footer>
+    </div>
+</body>
+</html>
