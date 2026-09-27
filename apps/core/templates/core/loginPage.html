@@ -21,8 +21,8 @@
             </div>
             {% if messages %}
             {% for message in messages %}
-            {% if forloop.last %}
-            <p style="color: red;">{{ message }}</p>
+            {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR and 'registration_status' not in message.tags %}
+            <p role="alert" style="color: red;">{{ message }}</p>
             {% endif %}
             {% endfor %}
             {% endif %}

@@ -16,10 +16,10 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
         if user_exists:
             existing_user = sociallogin.user
             if existing_user.account_status == 'pending':
-                messages.error(request, "Your registration is pending review. Please contact your College Head.")
+                messages.error(request, "Your registration is pending review. Please contact your College Head.", extra_tags='registration_status')
                 raise ImmediateHttpResponse(redirect('core:login'))
             elif existing_user.account_status == 'declined':
-                messages.error(request, "Your registration was declined. Please contact your College Head.")
+                messages.error(request, "Your registration was declined. Please contact your College Head.", extra_tags='registration_status')
                 raise ImmediateHttpResponse(redirect('core:login'))
             elif existing_user.account_status == 'deactivated':
                 messages.error(request, "Your account has been deactivated. Please contact a Super Admin.")
