@@ -322,8 +322,12 @@ if (scheduleFileInput) {
             setScheduleUploadStatus('Please choose a .csv file.', true);
             return;
         }
+        const syncToGoogle = window.confirm(
+            "Do you want this schedule to also be reflected in this faculty's Google Calendar?",
+        );
         const formData = new FormData();
         formData.append('file', file);
+        formData.append('sync_to_google', syncToGoogle ? 'true' : 'false');
         setScheduleUploadStatus('Validating and saving schedule...');
         setCrudLoading(true, 'Uploading faculty schedule...');
         try {
@@ -341,7 +345,18 @@ if (scheduleFileInput) {
                 throw new Error(details);
             }
             renderSchedulePreview(data.preview || []);
-            setScheduleUploadStatus(data.message || 'Schedule uploaded successfully.');
+            const calendarSync = data.calendar_sync || {};
+            const syncMessage = calendarSync.status === 'synced'
+                ? ` ${calendarSync.synced_count} event(s) also synced to Google Calendar.`
+                : calendarSync.status === 'not_connected'
+                    ? ` ${calendarSync.message || 'Google Calendar is not connected.'}`
+                    : calendarSync.status === 'failed'
+                        ? ` Google Calendar sync failed: ${calendarSync.message || 'Unable to sync.'}`
+                        : '';
+            setScheduleUploadStatus(
+                `${data.message || 'Schedule uploaded successfully.'}${syncMessage}`,
+                calendarSync.status === 'failed',
+            );
         } catch (error) {
             setScheduleUploadStatus(error.message, true);
         } finally {

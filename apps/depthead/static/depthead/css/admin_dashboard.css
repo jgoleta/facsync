@@ -61,14 +61,18 @@
 }
 
 .overview-context {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(150px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    justify-content: flex-end;
     gap: 10px;
     flex: 0 1 390px;
 }
 
 .context-chip {
-    min-width: 0;
+    width: fit-content;
+    max-width: 100%;
+    flex: 0 1 auto;
     padding: 14px 16px;
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 14px;
@@ -89,10 +93,8 @@
 
 .context-chip strong {
     display: block;
-    overflow: hidden;
+    overflow-wrap: anywhere;
     font-size: 0.86rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 .context-chip.confidence-good strong {
@@ -532,9 +534,16 @@
         border-radius: 18px;
     }
 
-    .overview-context,
+    .overview-context {
+        flex-direction: column;
+    }
+
     .summary-cards {
         grid-template-columns: 1fr;
+    }
+
+    .context-chip {
+        width: 100%;
     }
 
     .metric-card,

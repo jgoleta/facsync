@@ -16,6 +16,7 @@ from google import genai
 from google.genai import types
 from pydantic import BaseModel, ConfigDict, Field, StringConstraints, ValidationError
 
+from apps.faculty.models import ConsultationRequest
 from ..models import CollegeAIInsight
 
 
@@ -37,6 +38,7 @@ ALLOWED_ANALYTICS_SECTIONS = (
     "trends",
     "capacity",
     "data_quality",
+    "schedule_availability",
 )
 
 SENSITIVE_KEYS = {
@@ -176,6 +178,11 @@ proxies. Do not claim a supply-demand gap, faculty shortage, or capacity
 utilization when capacity.authoritatively_calculable is false. Do not present
 historical availability proxies as exact historical availability. Do not
 present walk-in timing proxies as exact service duration.
+
+The schedule_availability section contains anonymous Django aggregates derived
+from faculty schedules and synced calendar events. Use its daily availability
+ratios for planning-window insights, but do not request or infer faculty
+identities, event titles, descriptions, or other raw schedule details.
 
 Respect every data-quality warning. When confidence is low, use cautious phrases
 such as "The available data suggests" or "Early observations indicate", and say
@@ -319,6 +326,63 @@ def _prompt_for(analytics, serialized_payload):
     )
 
 
+def _agenda_recommendation(analytics):
+    """Build a concise recommendation from the authoritative agenda counts."""
+
+    consultations = analytics.get("consultations") or {}
+    total = consultations.get("total_records") or 0
+    distribution = consultations.get("agenda_distribution") or {}
+    if not total or not isinstance(distribution, dict):
+        return None
+
+    labels = dict(ConsultationRequest.AGENDA_CHOICES)
+    topics = []
+    for key, count in distribution.items():
+        try:
+            count = int(count)
+        except (TypeError, ValueError):
+            continue
+        if count <= 0:
+            continue
+        normalized_key = key.strip() if isinstance(key, str) else key
+        label = labels.get(normalized_key, "Unspecified" if not normalized_key else str(normalized_key))
+        topics.append((count, label))
+
+    if not topics:
+        return None
+
+    topics.sort(key=lambda topic: (-topic[0], topic[1]))
+    topic_text = ", ".join(
+        f"{label} ({count}, {count / total * 100:.1f}%)"
+        for count, label in topics[:3]
+    )
+    return {
+        "title": "Frequently discussed consultation topics (agendas)",
+        "description": (
+            f"The most frequently selected consultation agendas were {topic_text}. "
+            "Use these topics to guide faculty availability and consultation planning."
+        ),
+    }
+
+
+def _add_agenda_recommendation(result, analytics):
+    """Ensure the dashboard recommendations include the agenda-based insight."""
+
+    if not result or result.get("available") is not True:
+        return result
+    recommendation = _agenda_recommendation(analytics)
+    if recommendation is None:
+        return result
+    recommendations = result.setdefault("recommendations", [])
+    if not any(
+        item.get("title") == recommendation["title"]
+        for item in recommendations
+        if isinstance(item, dict)
+    ):
+        recommendations.insert(0, recommendation)
+    return result
+
+
 def _validated_content(response):
     parsed = getattr(response, "parsed", None)
     if isinstance(parsed, AIInsightsContent):
@@ -427,13 +491,17 @@ def generate_ai_insights(analytics, force_refresh=False):
         ):
             stored_result = _safe_stored_result(stored_record)
             if stored_result is not None:
-                return deepcopy(stored_result)
+                return _add_agenda_recommendation(deepcopy(stored_result), analytics)
 
         api_key = getattr(settings, "GEMINI_API_KEY", None)
         if not api_key:
             logger.info("Gemini insights skipped because no API key is configured.")
             stale_result = _safe_stored_result(stored_record, stale=True)
-            return deepcopy(stale_result) if stale_result else _unavailable_result()
+            return (
+                _add_agenda_recommendation(deepcopy(stale_result), analytics)
+                if stale_result
+                else _unavailable_result()
+            )
 
         model_name = _model_name()
         client = genai.Client(api_key=api_key)
@@ -476,7 +544,7 @@ def generate_ai_insights(analytics, force_refresh=False):
                 "refresh_after": refresh_after,
             },
         )
-        return deepcopy(result)
+        return _add_agenda_recommendation(deepcopy(result), analytics)
     except Exception as exc:  # SDK, transport, parsing, and validation failures.
         stale_result = _safe_stored_result(
             locals().get("stored_record"),
@@ -487,7 +555,7 @@ def generate_ai_insights(analytics, force_refresh=False):
                 "Gemini refresh failed; serving stored insights for college %s.",
                 stored_record.college_code,
             )
-            return deepcopy(stale_result)
+            return _add_agenda_recommendation(deepcopy(stale_result), analytics)
         if isinstance(exc, ValidationError):
             issues = [
                 {

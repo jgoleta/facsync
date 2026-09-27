@@ -8,7 +8,8 @@ from apps.core.models import User, FacultyInvite, OfficeClosure, CollegeAnnounce
 from apps.core.forms import CollegeAnnouncementForm, CollegeDescriptionForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm
-from apps.faculty.models import FacultyProfile, ScheduleEvent
+from apps.faculty.models import FacultyProfile, GoogleCalendarConnection, ScheduleEvent
+from apps.faculty.services.google_calendar import GoogleCalendarError, create_google_event
 from apps.core.services import send_schedule_uploaded_email
 from apps.faculty.views import SCHEDULE_CSV_HEADERS, _event_json, _parse_schedule_csv, _schedule_csv_row
 from django.utils import timezone
@@ -25,7 +26,6 @@ from datetime import timedelta, date
 from .services import (
     generate_ai_insights,
     get_college_analytics,
-    get_stored_ai_insights,
 )
 from .services.analytics import (
     get_base_consultation_queryset,
@@ -38,7 +38,8 @@ from .services.schedule_availability import get_schedule_availability
 
 from .services.analytics_display import (
     student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display,
-    consultation_topics_display,
+    consultation_topics_display, most_available_faculty_recommendation,
+    most_available_days_recommendation, schedule_availability_ai_summary,
 )
 from .services.analytics_browser import ANALYTICS_QUESTIONS, analytics_browser_answer
 
@@ -147,12 +148,26 @@ def admin_dashboard(request):
 def ai_insights_api(request):
     """Return AI interpretation for the authenticated College Head's scope."""
 
-    stored_insights = get_stored_ai_insights(request.user.college)
-    if stored_insights is not None:
-        return JsonResponse(stored_insights)
-
     analytics = get_college_analytics(request.user.college)
-    return JsonResponse(generate_ai_insights(analytics))
+    schedule_availability = get_schedule_availability(request.user.college)
+    analytics['schedule_availability'] = schedule_availability_ai_summary(
+        schedule_availability
+    )
+    result = generate_ai_insights(analytics)
+    if result.get('available') is True:
+        local_recommendations = [
+            most_available_faculty_recommendation(schedule_availability),
+            most_available_days_recommendation(schedule_availability),
+        ]
+        recommendations = result.setdefault('recommendations', [])
+        for local_recommendation in local_recommendations:
+            if local_recommendation and not any(
+                item.get('title') == local_recommendation['title']
+                for item in recommendations
+                if isinstance(item, dict)
+            ):
+                recommendations.insert(0, local_recommendation)
+    return JsonResponse(result)
 
 
 @login_required
@@ -240,6 +255,38 @@ def upload_faculty_schedule(request, faculty_id):
         faculty.schedule_last_updated_at = updated_at
         faculty.save(update_fields=['schedule_last_updated_at'])
 
+    calendar_sync = {
+        'requested': request.POST.get('sync_to_google') == 'true',
+        'status': 'not_requested',
+        'synced_count': 0,
+    }
+    if calendar_sync['requested']:
+        connection = GoogleCalendarConnection.objects.filter(user=faculty.user).first()
+        if connection is None:
+            calendar_sync.update(
+                status='not_connected',
+                message='The faculty member has not connected a Google Calendar.',
+            )
+        else:
+            try:
+                for event in events:
+                    google_event = create_google_event(connection, event)
+                    event.google_event_id = google_event.get('id')
+                    event.google_calendar_id = connection.calendar_id
+                    event.sync_state = 'synced'
+                    event.sync_error = ''
+                    event.save(update_fields=[
+                        'google_event_id', 'google_calendar_id', 'sync_state', 'sync_error',
+                    ])
+                    calendar_sync['synced_count'] += 1
+                calendar_sync['status'] = 'synced'
+            except GoogleCalendarError as exc:
+                calendar_sync.update(status='failed', message=str(exc))
+                logger.exception(
+                    'Failed to sync uploaded schedule to Google Calendar for faculty %s',
+                    faculty.faculty_id,
+                )
+
     email_sent = False
     try:
         email_sent = send_schedule_uploaded_email(faculty.user, events, request.user)
@@ -250,6 +297,7 @@ def upload_faculty_schedule(request, faculty_id):
         'message': f'Schedule uploaded for {faculty.user.get_full_name() or faculty.user.username}. {len(events)} row(s) added.',
         'email_sent': email_sent,
         'added_count': len(events),
+        'calendar_sync': calendar_sync,
         'last_updated_at': updated_at.isoformat(),
         'preview': [_schedule_csv_row(event) for event in events],
         'events': [_event_json(event) for event in events],

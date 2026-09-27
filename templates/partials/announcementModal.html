@@ -1,4 +1,4 @@
-<dialog id="announcementModal" class="announcement-dialog" data-fetch-url="{{ announcement_fetch_url }}" aria-labelledby="announcementTitle">
+<dialog id="announcementModal" class="announcement-dialog" data-fetch-url="{{ announcement_fetch_url }}" data-session-key="{{ request.user.pk|default:'anonymous' }}:{{ request.session.session_key|default:'none' }}" aria-labelledby="announcementTitle">
     <header class="announcement-dialog-header">
         <div>
             <span class="announcement-dialog-eyebrow">Stay informed</span>

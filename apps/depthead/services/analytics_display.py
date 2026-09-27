@@ -110,3 +110,77 @@ def faculty_trends_display(analytics):
 
 
     return trends
+
+
+def most_available_faculty_recommendation(schedule_availability):
+    """Format the local schedule ranking for the Dept Head recommendations."""
+
+    rows = schedule_availability.get('rows', [])
+    ranked_rows = [row for row in rows if row.get('winners')]
+    if not ranked_rows:
+        return None
+
+    daily_results = []
+    for row in ranked_rows:
+        day = row['date']
+        names = ', '.join(row['winners'])
+        daily_results.append(
+            f"{row['day']} ({day.strftime('%b')} {day.day}): {names}"
+        )
+
+    return {
+        'title': 'Most available faculty member per day',
+        'description': (
+            f"Based on recorded schedules for {schedule_availability['week_start'].strftime('%b')} "
+            f"{schedule_availability['week_start'].day}–{schedule_availability['week_end'].strftime('%b')} "
+            f"{schedule_availability['week_end'].day}, the daily ranking is: "
+            f"{'; '.join(daily_results)}."
+        ),
+    }
+
+
+def schedule_availability_ai_summary(schedule_availability):
+    """Return anonymous schedule aggregates that are safe to send to Gemini."""
+
+    return {
+        'week_start': schedule_availability['week_start'].isoformat(),
+        'week_end': schedule_availability['week_end'].isoformat(),
+        'faculty_count': schedule_availability['faculty_count'],
+        'daily': [
+            {
+                'day': row['day'],
+                'date': row['date'].isoformat(),
+                'available_count': row['available_count'],
+                'faculty_count': schedule_availability['faculty_count'],
+                'availability_percent': row['availability_percent'],
+            }
+            for row in schedule_availability.get('rows', [])
+        ],
+    }
+
+
+def most_available_days_recommendation(schedule_availability):
+    """Recommend the current week's days with the highest faculty availability."""
+
+    rows = [
+        row for row in schedule_availability.get('rows', [])
+        if row.get('availability_percent') is not None
+    ]
+    if not rows or not schedule_availability.get('faculty_count'):
+        return None
+
+    highest_rate = max(row['availability_percent'] for row in rows)
+    best_days = [row for row in rows if row['availability_percent'] == highest_rate]
+    day_text = ', '.join(
+        f"{row['day']} ({row['date'].strftime('%b')} {row['date'].day})"
+        for row in best_days
+    )
+    return {
+        'title': 'Best days for department events or retreats',
+        'description': (
+            f"{day_text} have the highest recorded faculty availability this week "
+            f"({highest_rate}% or {best_days[0]['available_count']} of "
+            f"{schedule_availability['faculty_count']} faculty). These days are best "
+            "for planning department events or retreats."
+        ),
+    }
