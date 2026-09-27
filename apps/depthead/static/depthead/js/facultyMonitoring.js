@@ -35,9 +35,8 @@ function escapeHtml(value) {
 }
 
 function renderFacultyCard(item) {
-  const inactiveClass = item.is_inactive ? " inactive" : "";
   return `
-    <div class="faculty-card ${escapeHtml(item.status_class)}${inactiveClass}">
+    <div class="faculty-card ${escapeHtml(item.status_class)}">
       <div class="faculty-avatar">${escapeHtml((item.name || "?").charAt(0).toUpperCase())}</div>
       <div class="card-header">
         <div>
