@@ -1,0 +1,149 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="How FacSync collects, uses, shares and retains account, consultation, schedule and Google Calendar information.">
+    <title>Privacy Policy | FacSync</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/landingPage.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/legal.css' %}">
+</head>
+
+<body>
+    <div class="page-shell">
+        <header class="topbar">
+            <a href="{% url 'core:landing' %}" class="brand">
+                <span class="brand-mark" aria-hidden="true">F</span>
+                <span>FacSync</span>
+            </a>
+            <nav class="nav-links" aria-label="Main navigation">
+                <a href="{% url 'core:landing' %}" class="nav-btn">Home</a>
+                <a href="{% url 'core:login' %}" class="nav-btn">Sign In</a>
+            </nav>
+        </header>
+        <main class="legal-content">
+            <h1>Privacy Policy</h1>
+            <p class="legal-updated">Last updated: <time datetime="2026-09-27">September 27, 2026</time></p>
+
+            <section aria-labelledby="about">
+                <h2 id="about">1. About FacSync</h2>
+                <p>FacSync is a non-commercial student capstone project operated by the FacSync student project team at
+                    Ateneo de Naga University. It helps students, faculty and college administrators coordinate faculty
+                    availability, schedules, consultations and walk-in queues. It is an academic project, not a
+                    commercial company.</p>
+            </section>
+            <section aria-labelledby="collection">
+                <h2 id="collection">2. Information we collect</h2>
+                <p>When you sign in with Google, we receive basic account information, including your name, email
+                    address, Google account identifier and profile information returned by Google, which may include a
+                    profile-picture URL and email verification information. We use this information to identify your
+                    account and provide access to FacSync. FacSync does not receive your Google password.</p>
+                <p>We also store information provided through registration and normal use: your username, role, college
+                    affiliation and account status; student ID and year level where applicable; faculty ID, office
+                    location and biography; consultation requests, agendas, messages and faculty notes; schedules;
+                    availability and status history; walk-in queue records; faculty-status subscriptions; and
+                    administrative records such as invitations, announcements and closure notices.</p>
+                <p>We keep account and activity timestamps, notifications and read status, and technical information
+                    needed for account access and synchronization, including event identifiers and synchronization
+                    errors.</p>
+            </section>
+            <section aria-labelledby="use">
+                <h2 id="use">3. How we use and display information</h2>
+                <p>We use this information to operate accounts, display faculty availability and schedules, arrange
+                    consultations, manage walk-in queues, deliver notifications, support college administration and
+                    generate operational analytics.</p>
+                <p>Faculty names, college affiliations, availability, status notes and update times are visible on the
+                    public availability dashboard. Signed-in students can view faculty schedules. Consultation and queue
+                    information is used by the participants and administrative features that support these services.</p>
+                <p>FacSync does not sell Google user data, share it with advertisers or use it for advertising. The
+                    project uses it for the account, scheduling, communication and analytics functions described here.
+                    Service providers process information as described below.</p>
+            </section>
+            <section aria-labelledby="calendar">
+                <h2 id="calendar">4. Optional Google Calendar connection</h2>
+                <p>Faculty members may connect Google Calendar separately from Google Sign-In. When connected, FacSync
+                    requests permission to read, create, update and delete calendar events to synchronize schedules,
+                    check conflicts and update availability. The connection uses the faculty member's primary calendar
+                    and currently reads a window from one day in the past to sixty days ahead.</p>
+                <p>FacSync stores selected event details locally, including titles, descriptions, dates, times, event
+                    types and event identifiers. Imported schedule titles and descriptions can appear in student-facing
+                    faculty schedules. Please avoid connecting a calendar containing details you do not want displayed
+                    through those schedules.</p>
+                <p>For synchronized consultations, FacSync sends Google the student's name and email address,
+                    appointment details, request identifier and faculty note. Google may send invitations and event
+                    updates to the student.</p>
+                <p>We store access and refresh tokens, expiry information and synchronization timestamps to maintain the
+                    connection without requiring repeated sign-in. The synchronization window is not a deletion deadline
+                    for locally stored records.</p>
+            </section>
+            <section aria-labelledby="providers">
+                <h2 id="providers">5. Service providers and analytics</h2>
+                <p><strong>Google Sign-In and Google Calendar API:</strong> Google processes information for account
+                    authentication and optional Calendar synchronization.</p>
+                <p><strong>Brevo:</strong> We use Brevo for transactional email delivery. Brevo processes recipient
+                    email addresses and email content, such as invitations, account notices, availability updates,
+                    announcements, schedule-upload details and consultation or walk-in notices.</p>
+                <p><strong>Google Gemini API:</strong> We send selected aggregate college analytics to Gemini to
+                    generate explanations and planning insights. These summaries include college and reporting-period
+                    information, counts and trends, and can include availability statistics derived from synced
+                    calendars. FacSync removes identifying and credential fields from the analytics payload and does not
+                    include faculty names or raw Calendar titles and descriptions in the schedule summary. Generated
+                    insights are stored for later display and may be inaccurate.</p>
+                <p>Google's handling of Gemini submissions depends on the service configuration. Under its
+                    unpaid-service terms, Google may use submitted content and generated responses to improve its
+                    products and machine-learning technologies, and human reviewers may process them. Paid-service terms
+                    provide different data-use protections. We have not confirmed paid-service protection for this
+                    deployment, so users should not assume these submissions are excluded from Google's product or model
+                    improvement. See the <a href="https://ai.google.dev/gemini-api/terms">Gemini API terms</a>.</p>
+                <p><strong>Vercel and Supabase:</strong> Vercel hosts the application, and Supabase provides database
+                    storage. These providers process application traffic and stored records as needed to operate the
+                    service.</p>
+            </section>
+            <section aria-labelledby="retention">
+                <h2 id="retention">6. Retention and account removal</h2>
+                <p>FacSync currently has no automatic deletion period for ordinary account, consultation, schedule or
+                    college records. These records remain in the system until removed through available application
+                    functions or by an administrator. Deactivating an account preserves its records. An announcement's
+                    expiry controls its display rather than deleting the stored record.</p>
+                <p>You may request account removal through your College Head, the FacSync Super Admin or <a
+                        href="mailto:facsync@gmail.com">facsync@gmail.com</a>. Account deletion can also remove related
+                    records. It does not automatically remove emails already delivered or events retained in Google
+                    Calendar, or automatically revoke Google access. Provider-held logs and backups are subject to the
+                    respective provider's retention arrangements; FacSync does not promise immediate deletion of those
+                    copies.</p>
+                <p>You can disconnect Google Calendar in FacSync. This removes the locally stored Calendar credentials
+                    and linked schedule records, clears consultation synchronization links and attempts to revoke Google
+                    access. Consultation records remain, and disconnecting does not delete events already held by
+                    Google. You can also revoke access through your Google Account settings.</p>
+            </section>
+            <section aria-labelledby="security">
+                <h2 id="security">7. Security and cookies</h2>
+                <p>FacSync uses account authentication, role-based permissions and secure connection settings to help
+                    protect information. Session and security cookies support sign-in and protect requests. We do not
+                    use advertising trackers. No system can guarantee complete security.</p>
+            </section>
+            <section aria-labelledby="contact">
+                <h2 id="contact">8. Contact and changes</h2>
+                <p>For privacy questions, corrections, inquiries or account-removal requests, email the FacSync project
+                    team at <a href="mailto:facsync@gmail.com">facsync@gmail.com</a>. You may also contact your College
+                    Head or the FacSync Super Admin.</p>
+                <p>Changes to this policy will be published on this page with an updated date.</p>
+            </section>
+        </main>
+        <footer class="footer">
+            <div>
+                <p>&copy; 2026 FacSync. Built for modern faculty coordination.</p>
+            </div>
+            <div>
+                <a href="{% url 'core:landing' %}">Back to Home</a>
+                <a href="{% url 'core:terms_of_service' %}">Terms of Service</a>
+            </div>
+        </footer>
+    </div>
+</body>
+
+</html>
