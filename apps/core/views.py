@@ -25,6 +25,9 @@ def landing_page(request):
 def terms_of_service(request):
     return render(request, 'core/terms_of_service.html')
 
+def privacy_policy(request):
+    return render(request, 'core/privacy_policy.html')
+
 def login_page(request):
     return render(request, 'core/loginPage.html')
 
