@@ -37,6 +37,11 @@ class AIInsightsServiceTests(TestCase):
             "consultations": {
                 "total_records": 10,
                 "status_distribution": {"completed": 6, "pending": 4},
+                "agenda_distribution": {
+                    "general_concern": 6,
+                    "academic_advising": 3,
+                    "project_consultation": 1,
+                },
             },
             "consultation_patterns": {"peak_hour": {"hours": [10], "count": 3}},
             "request_patterns": {"peak_hour": {"hours": [9], "count": 4}},
@@ -107,6 +112,11 @@ class AIInsightsServiceTests(TestCase):
             result["summary"],
             "The available data suggests a peak at 8:00 PM.",
         )
+        self.assertEqual(
+            result["recommendations"][0]["title"],
+            "Frequently discussed consultation topics (agendas)",
+        )
+        self.assertIn("General Concern / Talk (6, 60.0%)", result["recommendations"][0]["description"])
         self.assertNotIn("data_limitations", result)
         self.assertEqual(result["model"], "gemini-3.5-flash")
         self.assertTrue(result["generated_at"])

@@ -4,6 +4,13 @@ async function showAnnouncementsOnce() {
 
   const fetchUrl = modal.dataset.fetchUrl;
   if (!fetchUrl) return;
+  const sessionKey = modal.dataset.sessionKey || "anonymous";
+  const storageKey = `collegeAnnouncementsShown:${sessionKey}`;
+  try {
+    if (sessionStorage.getItem(storageKey) === "true") return;
+  } catch (e) {
+    // Continue if browser storage is unavailable.
+  }
 
   let announcements = [];
   try {
@@ -32,6 +39,11 @@ async function showAnnouncementsOnce() {
     return item;
   }));
   modal.showModal();
+  try {
+    sessionStorage.setItem(storageKey, "true");
+  } catch (e) {
+    // The popup still works when browser storage is unavailable.
+  }
 }
 
 document.addEventListener("DOMContentLoaded", showAnnouncementsOnce);

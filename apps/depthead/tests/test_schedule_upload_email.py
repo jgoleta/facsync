@@ -8,7 +8,7 @@ from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from apps.core.models import User
-from apps.faculty.models import FacultyProfile, ScheduleEvent
+from apps.faculty.models import FacultyProfile, GoogleCalendarConnection, ScheduleEvent
 
 
 @override_settings(SITE_URL='https://facsync.example/', EMAIL_BACKEND='django.core.mail.backends.locmem.EmailBackend')
@@ -20,10 +20,38 @@ class ScheduleUploadEmailTests(TestCase):
         self.client.force_login(self.head)
         self.url = reverse('depthead:upload_faculty_schedule', args=[self.faculty.pk])
 
-    def upload(self, url=None, row=None):
+    def upload(self, url=None, row=None, sync_to_google=False):
         header = 'OFFERING_ID,SUBJ_CODE,SECTION,SUBJECT_TITLE,UNITS,LECTURE,LAB,DAYFROM,DAYTO,TIMEFROM,TIMETO,ROOM\n'
         row = row or 'OFF-1,CS101,BSCS-1A,Computing,3,2,1,2026-09-21,2026-09-21,08:00,09:30,Room 204\n'
-        return self.client.post(url or self.url, {'file': SimpleUploadedFile('schedule.csv', (header+row).encode(), content_type='text/csv')})
+        return self.client.post(url or self.url, {
+            'file': SimpleUploadedFile('schedule.csv', (header+row).encode(), content_type='text/csv'),
+            'sync_to_google': 'true' if sync_to_google else 'false',
+        })
+
+    @patch('apps.depthead.views.create_google_event', return_value={'id': 'google-schedule-1'})
+    def test_upload_can_sync_new_events_to_faculty_google_calendar(self, create_event):
+        GoogleCalendarConnection.objects.create(
+            user=self.user,
+            google_user_id='google-user-1',
+            access_token='access-token',
+        )
+
+        response = self.upload(sync_to_google=True)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['calendar_sync']['status'], 'synced')
+        self.assertEqual(response.json()['calendar_sync']['synced_count'], 1)
+        create_event.assert_called_once()
+        event = self.faculty.schedule_events.get()
+        self.assertEqual(event.google_event_id, 'google-schedule-1')
+        self.assertEqual(event.sync_state, 'synced')
+
+    def test_upload_reports_when_google_calendar_is_not_connected(self):
+        response = self.upload(sync_to_google=True)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['calendar_sync']['status'], 'not_connected')
+        self.assertEqual(self.faculty.schedule_events.count(), 1)
 
     def test_success_single_date_batch_only_summary_and_link(self):
         ScheduleEvent.objects.create(faculty=self.faculty, title='OLD EVENT', date=date(2026, 9, 1))

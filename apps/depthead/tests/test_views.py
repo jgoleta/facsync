@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 from smtplib import SMTPAuthenticationError
 
 from django.test import TestCase
@@ -96,6 +96,57 @@ class DeptheadViewTests(TestCase):
         analytics_sent = generate_insights.call_args.args[0]
         self.assertEqual(analytics_sent['scope']['college_code'], self.depthead.college)
 
+    @patch('apps.depthead.views.get_schedule_availability')
+    @patch('apps.depthead.views.generate_ai_insights')
+    def test_ai_endpoint_adds_local_daily_faculty_recommendation(
+        self, generate_insights, get_schedule
+    ):
+        generate_insights.return_value = {
+            'available': True,
+            'error': None,
+            'summary': 'Aggregated insight.',
+            'key_insights': [],
+            'concerns': [],
+            'recommendations': [],
+            'model': 'gemini-3.5-flash',
+            'generated_at': '2026-09-05T10:00:00+08:00',
+        }
+        get_schedule.return_value = {
+            'week_start': date(2026, 9, 14),
+            'week_end': date(2026, 9, 20),
+            'rows': [
+                {
+                    'day': 'Monday',
+                    'date': date(2026, 9, 14),
+                    'winners': ['Ada Faculty'],
+                    'available_count': 1,
+                    'availability_percent': 100,
+                },
+            ],
+            'faculty_count': 1,
+        }
+
+        response = self.client.get(reverse('depthead:ai_insights_api'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()['recommendations'][0],
+            {
+                'title': 'Best days for department events or retreats',
+                'description': (
+                    'Monday (Sep 14) have the highest recorded faculty availability this week '
+                    '(100% or 1 of 1 faculty). These days are best '
+                    'for planning department events or retreats.'
+                ),
+            },
+        )
+        self.assertEqual(
+            response.json()['recommendations'][1]['title'],
+            'Most available faculty member per day',
+        )
+        self.assertIn('Ada Faculty', response.json()['recommendations'][1]['description'])
+        get_schedule.assert_called_once_with('CCS')
+
     @patch('apps.depthead.views.generate_ai_insights')
     def test_ai_endpoint_returns_safe_failure(self, generate_insights):
         generate_insights.return_value = {
@@ -120,7 +171,7 @@ class DeptheadViewTests(TestCase):
 
     @patch('apps.depthead.views.generate_ai_insights')
     @patch('apps.depthead.views.get_college_analytics')
-    def test_ai_endpoint_returns_fresh_database_result_without_generation(
+    def test_ai_endpoint_generates_from_current_analytics_for_cached_results(
         self,
         get_analytics,
         generate_insights,
@@ -144,13 +195,27 @@ class DeptheadViewTests(TestCase):
             refresh_after=generated_at + timedelta(days=7),
         )
 
+        get_analytics.return_value = {
+            'scope': {'college_code': 'CCS'},
+            'consultations': {'total_records': 0, 'agenda_distribution': {}},
+        }
+        generate_insights.return_value = {
+            'available': True,
+            'error': None,
+            'summary': 'Stored weekly summary.',
+            'key_insights': [],
+            'concerns': [],
+            'recommendations': [],
+            'model': 'gemini-3.5-flash',
+            'generated_at': generated_at.isoformat(),
+            'source': 'database',
+        }
         response = self.client.get(reverse('depthead:ai_insights_api'))
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['summary'], 'Stored weekly summary.')
-        self.assertEqual(response.json()['source'], 'database')
-        get_analytics.assert_not_called()
-        generate_insights.assert_not_called()
+        get_analytics.assert_called_once_with('CCS')
+        generate_insights.assert_called_once_with(get_analytics.return_value)
 
     @patch('apps.depthead.views.generate_ai_insights')
     def test_non_depthead_cannot_access_ai_endpoint(self, generate_insights):
