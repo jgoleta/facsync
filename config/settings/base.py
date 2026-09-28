@@ -179,6 +179,8 @@ ACCOUNT_LOGOUT_ON_GET = True
 AUTH_USER_MODEL = 'core.User'
 SOCIALACCOUNT_ADAPTER = 'apps.core.adapters.FacSyncSocialAdapter'
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
+BREVO_API_KEY = config('BREVO_API_KEY', default='')
+BREVO_BATCH_SIZE = config('BREVO_BATCH_SIZE', default=100, cast=int)
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
