@@ -1,8 +1,9 @@
 import logging
+from time import perf_counter
 from .colleges import get_college_label
 from django.utils import timezone
 from .models import CollegeAnnouncement, Notification, User
-from django.core.mail import send_mail, EmailMultiAlternatives
+from django.core.mail import send_mail, EmailMultiAlternatives, get_connection
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
@@ -103,12 +104,17 @@ def get_active_announcements(college=None, *, audience='both'):
         for a in qs
     ]
 
-def _send_html_email(subject, template_name, context, recipient_list, fail_silently=False):
-    context['site_url'] = settings.SITE_URL
+def _build_html_email(subject, template_name, context, recipient_list):
+    context = {**context, 'site_url': settings.SITE_URL}
     html_content = render_to_string(f'emails/{template_name}', context)
     text_content = strip_tags(html_content)
     msg = EmailMultiAlternatives(subject, text_content, settings.DEFAULT_FROM_EMAIL, recipient_list)
     msg.attach_alternative(html_content, "text/html")
+    return msg
+
+
+def _send_html_email(subject, template_name, context, recipient_list, fail_silently=False):
+    msg = _build_html_email(subject, template_name, context, recipient_list)
     return msg.send(fail_silently=fail_silently)
 
 
@@ -199,6 +205,28 @@ def _email_college_faculty(college, subject, template, context):
     recipients = User.objects.filter(
         role='faculty', account_status='active', college__iexact=college,
     ).exclude(email='')
+    backend = get_connection()
+    batch_sender = getattr(backend, 'send_personalized_batch', None)
+    if callable(batch_sender):
+        started = perf_counter()
+        messages = [
+            _build_html_email(subject, template, {
+                **context, 'name': faculty.get_full_name() or faculty.username,
+                'college': get_college_label(college),
+            }, [faculty.email.strip()])
+            for faculty in recipients if faculty.email.strip()
+        ]
+        try:
+            result = batch_sender(messages)
+        except Exception:
+            # Provider error details can contain addresses, content or credentials.
+            logger.error('Faculty email batch failed before a complete result; not retrying.')
+            return
+        log = logger.warning if result.rejected or result.unknown else logger.info
+        log('Faculty email batch: template=%s recipients=%s accepted=%s rejected=%s unknown=%s duration_ms=%.0f',
+            template, len(messages), result.accepted, result.rejected, result.unknown,
+            (perf_counter() - started) * 1000)
+        return result
     for faculty in recipients:
         if not faculty.email.strip():
             continue
