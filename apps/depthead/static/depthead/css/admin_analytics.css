@@ -142,3 +142,68 @@ table td:first-child {
     color: var(--accent);
     margin: 12px 0 4px;
 }
+
+/* Student behavior: trend and topics share a row with matching heights. */
+.student-behavior-grid {
+    gap: 20px;
+    align-items: stretch;
+}
+
+.student-behavior-grid > .chart-card,
+.student-behavior-grid > .table-card {
+    min-width: 0;
+    padding: 20px;
+}
+
+.student-behavior-grid > .chart-card:first-child {
+    grid-column: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.student-behavior-grid .chart-graphic {
+    flex: 1;
+    display: flex;
+    align-items: center;
+}
+
+.student-behavior-grid .chart-graphic svg {
+    max-height: none;
+}
+
+.student-behavior-grid h3 {
+    line-height: 1.45;
+}
+
+.student-behavior-grid .peak-period-display {
+    font-size: clamp(1.2rem, 1.6vw, 1.6rem);
+    line-height: 1.4;
+}
+
+.student-behavior-grid table th,
+.student-behavior-grid table td {
+    padding: 12px 8px;
+    overflow-wrap: anywhere;
+}
+
+.student-behavior-grid table th:last-child,
+.student-behavior-grid table td:last-child {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.student-behavior-grid .chart-caption {
+    line-height: 1.5;
+}
+
+@media (min-width: 1200px) {
+    .student-behavior-grid {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    }
+}
+
+@media (max-width: 1199px) {
+    .student-behavior-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
