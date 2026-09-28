@@ -7,6 +7,7 @@
   let overlay = null;
   let timer = null;
   let previousInert = false;
+  let previousNavigation = [];
 
   function reset() {
     if (!overlay) return;
@@ -15,6 +16,8 @@
     clearTimeout(timer);
     main.classList.remove('admin-navigation-pending');
     main.inert = previousInert;
+    previousNavigation.forEach(([item, active]) => item.classList.toggle('active', active));
+    previousNavigation = [];
   }
 
   function position() {
@@ -81,6 +84,12 @@
     const destination = destinations[target.pathname];
     if (!destination) return;
     show(...destination);
+    const items = link.closest('.sidebar').querySelectorAll('a.nav-item[href]');
+    previousNavigation = Array.from(items, item => [item, item.classList.contains('active')]);
+    items.forEach(item => {
+      const itemUrl = new URL(item.href, window.location.href);
+      item.classList.toggle('active', itemUrl.origin === target.origin && itemUrl.pathname === target.pathname);
+    });
     // Other click handlers may cancel the navigation after this handler runs.
     queueMicrotask(() => { if (event.defaultPrevented) reset(); });
   });
