@@ -18,11 +18,7 @@ from apps.faculty.models import ConsultationRequest, FacultyProfile, ScheduleEve
 from apps.faculty.services.calendar_events import serialize_consultation_event, serialize_schedule_event
 from .models import FacultyStatusSubscription
 from apps.faculty.services.google_calendar import refresh_faculty_status
-from apps.faculty.services.google_calendar import (
-    GoogleCalendarError,
-    delete_consultation_event,
-    refresh_consultation_meet_link,
-)
+from apps.faculty.services.google_calendar import GoogleCalendarError, delete_consultation_event
 from apps.faculty.models import GoogleCalendarConnection
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -171,10 +167,6 @@ def consultation_requests(request):
     consultations = ConsultationRequest.objects.filter(
         user=request.user,
     ).exclude(status='declined').select_related('faculty__user')
-    for consultation in consultations:
-        connection = GoogleCalendarConnection.objects.filter(user=consultation.faculty.user).first()
-        if connection:
-            refresh_consultation_meet_link(connection, consultation)
     return render(request, 'students/consultationRequests.html', {
         'consultations': consultations,
     })
@@ -220,10 +212,6 @@ def _consultation_json(consultation):
         'end_time': consultation.end_time.isoformat() if consultation.end_time else None,
         'agenda': consultation.agenda,
         'agenda_label': consultation.get_agenda_display(),
-        'mode': consultation.mode,
-        'mode_label': consultation.get_mode_display(),
-        'google_meet_link': consultation.google_meet_link if consultation.status == 'approved' else '',
-        'meet_generation_failed': bool(consultation.calendar_sync_error),
         'student_message': consultation.student_message,
         'faculty_note': consultation.faculty_note,
     }
@@ -239,11 +227,6 @@ def api_consultation_requests(request):
     ).exclude(status='declined').select_related('faculty__user')
 
     if request.method == 'GET':
-        for consultation in consultations:
-            if consultation.status == 'approved' and consultation.mode == 'online' and not consultation.google_meet_link:
-                connection = GoogleCalendarConnection.objects.filter(user_id=consultation.faculty.user_id).first()
-                if connection:
-                    refresh_consultation_meet_link(connection, consultation)
         return JsonResponse({'consultations': [_consultation_json(item) for item in consultations]})
     if request.method != 'POST':
         return HttpResponse(status=405)
@@ -266,9 +249,6 @@ def api_consultation_requests(request):
     agenda = str(payload.get('agenda') or '').strip()
     if agenda not in dict(ConsultationRequest.AGENDA_CHOICES):
         return JsonResponse({'error': 'Please select a valid consultation agenda.'}, status=400)
-    mode = str(payload.get('mode') or 'face_to_face').strip()
-    if mode not in dict(ConsultationRequest.MODE_CHOICES):
-        return JsonResponse({'error': 'Please select a valid consultation mode.'}, status=400)
     if OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).exists():
         return JsonResponse({'error': 'This college is currently closed and not accepting consultation requests.'}, status=409)
     requested_end_time = payload.get('end_time')
@@ -290,7 +270,6 @@ def api_consultation_requests(request):
         start_time=start_time,
         end_time=end_time,
         agenda=agenda,
-        mode=mode,
         student_message=str(payload.get('message') or '').strip(),
     )
     create_notification(

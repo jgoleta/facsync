@@ -285,25 +285,4 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     console.log('Faculty dashboard script loaded.');
-    let meetRefreshRunning = false;
-    window.setInterval(async () => {
-        if (meetRefreshRunning) return;
-        meetRefreshRunning = true;
-        try {
-            for (const pending of document.querySelectorAll('.meet-pending')) {
-                const item = pending.closest('[data-request-id]');
-                const response = await fetch(`/faculty/api/consultations/${encodeURIComponent(item.dataset.requestId)}/`, { cache: 'no-store' });
-                if (!response.ok) continue;
-                const data = await response.json();
-                if (data.google_meet_link || data.calendar_sync_error || data.status !== 'approved') {
-                    window.location.reload();
-                    return;
-                }
-            }
-        } catch (error) {
-            // Retry on the next interval after a temporary connection failure.
-        } finally {
-            meetRefreshRunning = false;
-        }
-    }, 10000);
 });

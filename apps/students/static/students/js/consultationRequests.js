@@ -69,21 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
             if (!response.ok) return;
 
-            // Approval and Meet recovery can finish while this page is open.
-            // Reload only when displayed status or link differs from the server.
-            const changed = (data.consultations || []).some(consultation => {
-                const item = Array.from(requestList.querySelectorAll('.request-item'))
-                    .find(node => node.dataset.requestId === consultation.request_id);
-                return item && (item.dataset.status !== consultation.status ||
-                    (item.dataset.meetFailed === 'true') !== Boolean(consultation.meet_generation_failed) ||
-                    (item.querySelector('.request-meet a')?.getAttribute('href') || '') !==
-                    (consultation.google_meet_link || ''));
-            });
-            if (changed) {
-                window.location.reload();
-                return;
-            }
-
             const activeRequestIds = new Set(
                 (data.consultations || []).map(consultation => consultation.request_id),
             );

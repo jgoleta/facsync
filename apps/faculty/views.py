@@ -24,7 +24,6 @@ from .services.google_calendar import (
     GoogleCalendarError,
     consultation_has_calendar_conflict,
     create_consultation_event,
-    consultation_meet_link,
     create_google_event,
     delete_consultation_event,
     delete_google_event,
@@ -35,7 +34,6 @@ from .services.google_calendar import (
     start_oauth,
     sync_google_calendar,
     refresh_faculty_status,
-    refresh_consultation_meet_link,
     update_google_event,
 )
 from .services.calendar_events import (
@@ -376,11 +374,6 @@ def dashboard(request):
     consultation_requests = faculty_consultations.exclude(
         status__in={'completed', 'declined'},
     ).select_related('user').order_by('-date', '-start_time')
-    if faculty_profile:
-        connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
-        if connection:
-            for consultation in consultation_requests:
-                refresh_consultation_meet_link(connection, consultation)
     completed_consultations = faculty_consultations.filter(
         status='completed',
     ).select_related('user').order_by('-date', '-start_time')
@@ -1207,10 +1200,7 @@ def _consultation_json(consultation):
         'date': consultation.date.isoformat(),
         'start_time': consultation.start_time.isoformat() if consultation.start_time else None,
         'end_time': consultation.end_time.isoformat() if consultation.end_time else None,
-        'mode': consultation.mode,
-        'mode_label': consultation.get_mode_display(),
         'google_event_id': consultation.google_event_id,
-        'google_meet_link': consultation.google_meet_link,
         'calendar_sync_status': consultation.calendar_sync_status,
         'calendar_sync_error': consultation.calendar_sync_error,
         'last_calendar_sync_at': (
@@ -1304,13 +1294,7 @@ def api_consultation(request, request_id):
                     'error': 'The faculty calendar has an overlapping event.',
                     'calendar_conflict': True,
                 }, status=409)
-        if new_status == 'approved' and consultation.mode == 'online' and not sync_enabled:
-            return JsonResponse({
-                'error': 'Connect Google Calendar before approving an online consultation.',
-            }, status=409)
-
         old_status = consultation.status
-        old_approved_at = consultation.approved_at
         consultation.status = new_status
         if new_status == 'approved' and not consultation.approved_at:
             consultation.approved_at = timezone.now()
@@ -1324,28 +1308,14 @@ def api_consultation(request, request_id):
                 try:
                     google_event = create_consultation_event(connection, consultation)
                     consultation.google_event_id = google_event.get('id')
-                    consultation.google_meet_link = consultation_meet_link(google_event)
                     consultation.google_calendar_id = connection.calendar_id
                     consultation.calendar_sync_status = 'synced'
                     consultation.last_calendar_sync_at = timezone.now()
                     if not consultation.google_event_id:
                         raise GoogleCalendarError('Google Calendar did not return an event ID.')
-                    if consultation.mode == 'online' and not consultation.google_meet_link:
-                        state = (google_event.get('conferenceData') or {}).get('createRequest', {}).get('status', {}).get('statusCode')
-                        if state == 'failure':
-                            raise GoogleCalendarError('Google could not generate the Meet conference for this calendar.')
-                        consultation.calendar_sync_status = 'pending'
                 except GoogleCalendarError as exc:
                     consultation.calendar_sync_status = 'failed'
                     consultation.calendar_sync_error = str(exc)
-                    if consultation.mode == 'online':
-                        consultation.status = old_status
-                        consultation.approved_at = old_approved_at
-                        consultation.save()
-                        return JsonResponse({
-                            'error': f'Unable to create the Google Meet link: {exc}',
-                            'meet_setup_required': True,
-                        }, status=502)
         elif new_status in {'declined', 'cancelled', 'completed'} and old_status == 'approved':
             if connection and consultation.google_event_id:
                 try:
@@ -1355,19 +1325,17 @@ def api_consultation(request, request_id):
                     consultation.calendar_sync_status = 'failed'
             consultation.google_event_id = None
             consultation.google_calendar_id = None
-            consultation.google_meet_link = ''
             if consultation.calendar_sync_status != 'failed':
                 consultation.calendar_sync_status = 'not_configured'
         consultation.save()
         if new_status in {'approved', 'declined'}:
-            meet_suffix = f' Join here: {consultation.google_meet_link}' if consultation.google_meet_link else ''
             create_notification(
                 recipient=consultation.user,
                 notification_type='booking_confirmation',
                 title=f'Booking {new_status}',
                 message=(
                     f'Your consultation request with {consultation.faculty} was '
-                    f'{new_status}.{meet_suffix}'
+                    f'{new_status}.'
                 ),
                 url='/student/consultation-requests/',
             )
@@ -1396,18 +1364,15 @@ def api_consultation(request, request_id):
                 if consultation.google_event_id:
                     try:
                         google_event = update_consultation_event(connection, consultation)
-                        consultation.google_meet_link = consultation_meet_link(google_event)
                     except GoogleCalendarError as exc:
                         if '(404)' not in str(exc):
                             raise
                         consultation.google_event_id = None
                         google_event = create_consultation_event(connection, consultation)
                         consultation.google_event_id = google_event.get('id')
-                        consultation.google_meet_link = consultation_meet_link(google_event)
                 else:
                     google_event = create_consultation_event(connection, consultation)
                     consultation.google_event_id = google_event.get('id')
-                    consultation.google_meet_link = consultation_meet_link(google_event)
                 consultation.google_calendar_id = connection.calendar_id
                 consultation.calendar_sync_status = 'synced'
                 consultation.last_calendar_sync_at = timezone.now()
@@ -1433,10 +1398,9 @@ def api_consultation(request, request_id):
         consultation.status = 'cancelled'
         consultation.google_event_id = None
         consultation.google_calendar_id = None
-        consultation.google_meet_link = ''
         consultation.save(update_fields=[
             'status', 'google_event_id', 'google_calendar_id',
-            'google_meet_link', 'calendar_sync_status', 'calendar_sync_error',
+            'calendar_sync_status', 'calendar_sync_error',
         ])
         _notify_consultation_student(
             consultation,
@@ -1447,7 +1411,5 @@ def api_consultation(request, request_id):
         return JsonResponse(_consultation_json(consultation))
 
     if request.method == 'GET':
-        if connection:
-            refresh_consultation_meet_link(connection, consultation)
         return JsonResponse(_consultation_json(consultation))
     return HttpResponse(status=405)
