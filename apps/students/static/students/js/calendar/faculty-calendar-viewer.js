@@ -691,7 +691,6 @@ if (consultationForm) {
           faculty_id: facultyId,
           date: document.getElementById("dateSelect").value,
           start_time: document.getElementById("timeSelect").value,
-          mode: document.getElementById("modeSelect").value,
           agenda: document.getElementById("agendaSelect").value,
           message: document.getElementById("message").value,
         }),

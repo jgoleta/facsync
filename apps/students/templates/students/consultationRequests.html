@@ -53,7 +53,7 @@
                 </div>
                 <ul id="consultationRequestList" class="consultation-request-list">
                     {% for consultation in consultations %}
-                    <li class="request-item" data-request-id="{{ consultation.request_id }}" data-status="{{ consultation.status }}" data-meet-failed="{{ consultation.calendar_sync_error|yesno:'true,false' }}">
+                    <li class="request-item" data-request-id="{{ consultation.request_id }}" data-status="{{ consultation.status }}">
                         <div class="request-status">
                             <span class="status-badge status-{{ consultation.status }}">{{ consultation.get_status_display }}</span>
                             <button type="button" class="delete-request-btn" aria-label="Delete request with {{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}" title="Delete request" data-delete-url="{% url 'students:api_delete_consultation' consultation.request_id %}">
@@ -80,18 +80,6 @@
                             {% if consultation.student_message %}<p class="request-message"><strong>Your Message:</strong> {{ consultation.student_message }}</p>{% endif %}
                             {% if consultation.faculty_note %}<p class="faculty-note"><strong>Faculty Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
                         </div>
-                        {% if consultation.google_meet_link %}
-                        <div class="request-meet">
-                            <a href="{{ consultation.google_meet_link }}" target="_blank" rel="noopener">Join Google Meet</a>
-                        </div>
-                        {% endif %}
-                        {% if consultation.mode == 'online' and consultation.status == 'approved' and not consultation.google_meet_link %}
-                        {% if consultation.calendar_sync_error %}
-                        <p class="request-meet-pending" role="status">Google Meet could not be generated. Your faculty member needs to resolve the Google Calendar connection or Meet availability for this account.</p>
-                        {% else %}
-                        <p class="request-meet-pending" role="status">Google Meet link is not ready yet.</p>
-                        {% endif %}
-                        {% endif %}
                         <p class="request-id"><span>Request ID</span> {{ consultation.request_id }}</p>
                     </li>
                     {% empty %}

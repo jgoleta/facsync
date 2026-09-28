@@ -29,22 +29,6 @@ commit `.env` or production credentials.
 
 ## Verification
 
-Online consultations use the faculty member's connected Google Calendar to
-create an event with a Google Meet conference. Enable the Calendar API and
-configure `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and the OAuth redirect URI
-for `/faculty/calendar/connect/`. The default `calendar.events` scope permits
-event creation; a separate Meet API or Meet Spaces permission is not required.
-The connected calendar must support Google Meet. An `Invalid conference type
-value` response means Google rejected the requested conference type; verify that
-the faculty can add Meet from Google Calendar and check Workspace settings.
-
-Approval saves the Google event ID immediately. If conference generation is
-pending, request pages poll for the URL and then show **Join Google Meet** to both
-participants. Rescheduling patches the same event. Completion removes the event
-and the link from FacSync; this does not guarantee revocation of a copied Meet URL.
-Consultation events have no attendees and use `sendUpdates=none`. Students and
-faculty access the Meet link in FacSync without Google Calendar invitations.
-
 python manage.py check
 python manage.py test --settings=config.settings.test
 

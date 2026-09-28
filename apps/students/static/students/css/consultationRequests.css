@@ -578,39 +578,9 @@ body {
   min-width: 0;
 }
 
-.request-item .request-meet a {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  background: #175fbb;
-  color: #fff;
-  font-weight: 700;
-  font-size: 0.875rem;
-  text-align: center;
-  text-decoration: none;
-}
-
-.request-item .request-meet a:hover {
-  background: #124c96;
-}
-
-.request-item .request-meet a:focus-visible,
 .request-item .delete-request-btn:focus-visible {
   outline: 3px solid #175fbb;
   outline-offset: 3px;
-}
-
-.request-meet-pending {
-  margin: 0;
-  padding: 12px;
-  border-radius: 10px;
-  background: #f3f8ff;
-  color: #38506d;
-  font-size: 0.84rem;
-  line-height: 1.5;
 }
 
 .request-status .status-badge {

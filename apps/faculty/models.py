@@ -160,10 +160,6 @@ class ScheduleEvent(models.Model):
 
 
 class ConsultationRequest(models.Model):
-    MODE_CHOICES = [
-        ('face_to_face', 'Face-to-face'),
-        ('online', 'Online'),
-    ]
     AGENDA_CHOICES = [
         ('grade_consultation', 'Grade Consultation'),
         ('project_consultation', 'Project Consultation'),
@@ -196,13 +192,11 @@ class ConsultationRequest(models.Model):
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     agenda = models.CharField(max_length=32, choices=AGENDA_CHOICES, default='general_concern')
-    mode = models.CharField(max_length=16, choices=MODE_CHOICES, default='face_to_face')
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='pending')
     student_message = models.TextField(blank=True, default='')
     faculty_note = models.TextField(blank=True)
     google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)
     google_calendar_id = models.CharField(max_length=1024, null=True, blank=True)
-    google_meet_link = models.URLField(max_length=2048, blank=True)
     calendar_sync_status = models.CharField(max_length=16, default='not_configured')
     calendar_sync_error = models.TextField(blank=True)
     last_calendar_sync_at = models.DateTimeField(null=True, blank=True)
