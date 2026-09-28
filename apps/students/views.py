@@ -18,7 +18,11 @@ from apps.faculty.models import ConsultationRequest, FacultyProfile, ScheduleEve
 from apps.faculty.services.calendar_events import serialize_consultation_event, serialize_schedule_event
 from .models import FacultyStatusSubscription
 from apps.faculty.services.google_calendar import refresh_faculty_status
-from apps.faculty.services.google_calendar import GoogleCalendarError, delete_consultation_event
+from apps.faculty.services.google_calendar import (
+    GoogleCalendarError,
+    delete_consultation_event,
+    refresh_consultation_meet_link,
+)
 from apps.faculty.models import GoogleCalendarConnection
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -167,6 +171,10 @@ def consultation_requests(request):
     consultations = ConsultationRequest.objects.filter(
         user=request.user,
     ).exclude(status='declined').select_related('faculty__user')
+    for consultation in consultations:
+        connection = GoogleCalendarConnection.objects.filter(user=consultation.faculty.user).first()
+        if connection:
+            refresh_consultation_meet_link(connection, consultation)
     return render(request, 'students/consultationRequests.html', {
         'consultations': consultations,
     })
@@ -215,6 +223,7 @@ def _consultation_json(consultation):
         'mode': consultation.mode,
         'mode_label': consultation.get_mode_display(),
         'google_meet_link': consultation.google_meet_link if consultation.status == 'approved' else '',
+        'meet_generation_failed': bool(consultation.calendar_sync_error),
         'student_message': consultation.student_message,
         'faculty_note': consultation.faculty_note,
     }
@@ -230,6 +239,11 @@ def api_consultation_requests(request):
     ).exclude(status='declined').select_related('faculty__user')
 
     if request.method == 'GET':
+        for consultation in consultations:
+            if consultation.status == 'approved' and consultation.mode == 'online' and not consultation.google_meet_link:
+                connection = GoogleCalendarConnection.objects.filter(user_id=consultation.faculty.user_id).first()
+                if connection:
+                    refresh_consultation_meet_link(connection, consultation)
         return JsonResponse({'consultations': [_consultation_json(item) for item in consultations]})
     if request.method != 'POST':
         return HttpResponse(status=405)
