@@ -212,6 +212,9 @@ def _consultation_json(consultation):
         'end_time': consultation.end_time.isoformat() if consultation.end_time else None,
         'agenda': consultation.agenda,
         'agenda_label': consultation.get_agenda_display(),
+        'mode': consultation.mode,
+        'mode_label': consultation.get_mode_display(),
+        'google_meet_link': consultation.google_meet_link if consultation.status == 'approved' else '',
         'student_message': consultation.student_message,
         'faculty_note': consultation.faculty_note,
     }
@@ -249,6 +252,9 @@ def api_consultation_requests(request):
     agenda = str(payload.get('agenda') or '').strip()
     if agenda not in dict(ConsultationRequest.AGENDA_CHOICES):
         return JsonResponse({'error': 'Please select a valid consultation agenda.'}, status=400)
+    mode = str(payload.get('mode') or 'face_to_face').strip()
+    if mode not in dict(ConsultationRequest.MODE_CHOICES):
+        return JsonResponse({'error': 'Please select a valid consultation mode.'}, status=400)
     if OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).exists():
         return JsonResponse({'error': 'This college is currently closed and not accepting consultation requests.'}, status=409)
     requested_end_time = payload.get('end_time')
@@ -270,6 +276,7 @@ def api_consultation_requests(request):
         start_time=start_time,
         end_time=end_time,
         agenda=agenda,
+        mode=mode,
         student_message=str(payload.get('message') or '').strip(),
     )
     create_notification(

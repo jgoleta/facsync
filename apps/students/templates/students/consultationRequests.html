@@ -68,6 +68,8 @@
                                 {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
                                 {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
                             </p>
+                            <p class="request-mode"><strong>Type:</strong> {{ consultation.get_mode_display }}</p>
+                            {% if consultation.google_meet_link %}<p class="request-meet"><strong>Google Meet:</strong> <a href="{{ consultation.google_meet_link }}" target="_blank" rel="noopener">Join meeting</a></p>{% endif %}
                             {% if consultation.student_message %}<p class="request-message"><strong>Your Message:</strong> {{ consultation.student_message }}</p>{% endif %}
                             <p class="request-id"><span>Request ID</span> {{ consultation.request_id }}</p>
                             {% if consultation.faculty_note %}<p class="faculty-note"><strong>Faculty Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}

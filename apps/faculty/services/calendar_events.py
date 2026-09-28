@@ -54,7 +54,7 @@ def serialize_consultation_event(consultation, viewer='student'):
         'request_id': consultation.request_id,
         'title': f'Consultation with {participant_name}',
         'description': consultation.student_message or 'Approved student consultation.',
-        'location': consultation.faculty.office_location,
+        'location': consultation.google_meet_link if consultation.mode == 'online' else consultation.faculty.office_location,
         'status': 'Consultation',
         'event_type': 'busy',
         'date': consultation.date.isoformat(),

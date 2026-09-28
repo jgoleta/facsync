@@ -407,6 +407,13 @@ def consultation_event_payload(consultation):
             'facsync_id': str(consultation.request_id),
         }
     }
+    if consultation.mode == 'online':
+        payload['conferenceData'] = {
+            'createRequest': {
+                'requestId': f'facsync-{consultation.request_id}',
+                'conferenceSolutionKey': {'type': 'hangoutsMeet'},
+            },
+        }
     return payload
 
 
@@ -416,10 +423,22 @@ def create_consultation_event(connection, consultation):
         connection,
         'POST',
         f'/calendars/{connection.calendar_id}/events',
-        params={'sendUpdates': 'all'},
+        params={'sendUpdates': 'all', 'conferenceDataVersion': 1},
         json=consultation_event_payload(consultation),
     )
     return response.json()
+
+
+def consultation_meet_link(google_event):
+    """Extract the video entry point returned by Google Calendar."""
+    if not isinstance(google_event, dict):
+        return ''
+    if google_event.get('hangoutLink'):
+        return google_event['hangoutLink']
+    for entry_point in (google_event.get('conferenceData') or {}).get('entryPoints', []):
+        if entry_point.get('entryPointType') == 'video' and entry_point.get('uri'):
+            return entry_point['uri']
+    return ''
 
 
 def update_consultation_event(connection, consultation):
@@ -428,7 +447,7 @@ def update_consultation_event(connection, consultation):
         connection,
         'PUT',
         f'/calendars/{connection.calendar_id}/events/{consultation.google_event_id}',
-        params={'sendUpdates': 'all'},
+        params={'sendUpdates': 'all', 'conferenceDataVersion': 1},
         json=consultation_event_payload(consultation),
     )
     return response.json()

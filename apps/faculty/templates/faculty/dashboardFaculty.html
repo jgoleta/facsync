@@ -111,6 +111,8 @@
                                 </p>
                                 <p class="student-name"><strong>Name:</strong> {{ consultation.user.get_full_name|default:consultation.user.username }}</p>
                                 <p class="request-agenda"><strong>Agenda:</strong> {{ consultation.get_agenda_display }}</p>
+                                <p class="request-mode"><strong>Type:</strong> {{ consultation.get_mode_display }}</p>
+                                {% if consultation.google_meet_link %}<p class="request-meet"><strong>Google Meet:</strong> <a href="{{ consultation.google_meet_link }}" target="_blank" rel="noopener">Join meeting</a></p>{% endif %}
                                 <p class="request-message"><strong>Message:</strong> {{ consultation.student_message|default:"No message provided." }}</p>
                             </div>
                             <div class="request-actions">
@@ -198,6 +200,7 @@
                         {% if consultation.end_time %} – {{ consultation.end_time|time:"g:i A" }}{% endif %}
                     </p>
                     <p><strong>Agenda:</strong> {{ consultation.get_agenda_display }}</p>
+                    <p><strong>Type:</strong> {{ consultation.get_mode_display }}</p>
                     {% if consultation.student_message %}
                     <p class="completed-message"><strong>Message:</strong> {{ consultation.student_message }}</p>
                     {% endif %}
