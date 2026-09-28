@@ -82,23 +82,33 @@
                     </section>
                 </div>
                 <div class="table-card">
-                    <h2>Most available faculty per day</h2>
-                    <p>{{ schedule_availability.week_start|date:"M j" }}–{{ schedule_availability.week_end|date:"M j, Y" }} · 8am–5pm ({{ schedule_availability.timezone }}).</p>
-                    <p>Ranked by total unscheduled time. Faculty without recorded schedules are excluded. All ties are shown.</p>
-                    <div class="table-scroll" tabindex="0" role="region" aria-label="Most available faculty by day">
-                    <table class="daily-winners-table">
-                        <thead><tr><th scope="col">Day</th><th scope="col">Faculty</th><th scope="col">Open time</th></tr></thead>
-                        <tbody>
-                            {% for row in schedule_availability.rows %}
-                            <tr>
-                                <th scope="row">{{ row.day }}<br>{{ row.date|date:"M j" }}</th>
-                                <td>{% if not schedule_availability.faculty_count %}No faculty data{% elif row.winners %}{% for name in row.winners %}<span class="winner-name">{{ name }}</span>{% endfor %}{% else %}{{ row.ranking_empty }}{% endif %}</td>
-                                <td>{% if row.winners %}{{ row.open_display }}{% else %}—{% endif %}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                    <div class="daily-winners-heading">
+                        <h2>Most available faculty per day</h2>
+                        <p class="period-label">{{ schedule_availability.week_start|date:"M j" }}&ndash;{{ schedule_availability.week_end|date:"M j, Y" }} &middot; 8am&ndash;5pm ({{ schedule_availability.timezone }}).</p>
                     </div>
+                    <p class="chart-note">Ranked by total unscheduled time. Faculty without recorded schedules are excluded. All ties are shown.</p>
+                    <div class="daily-winners" data-timezone="{{ schedule_availability.timezone }}">
+                        <div class="winner-tabs" role="tablist" aria-label="Day of the week" hidden>
+                            {% for row in schedule_availability.rows %}
+                            <button type="button" id="winner-tab-{{ forloop.counter0 }}" role="tab" aria-controls="winner-panel-{{ forloop.counter0 }}" aria-selected="false" tabindex="-1" data-date="{{ row.date|date:'Y-m-d' }}">{{ row.day|slice:":3" }}</button>
+                            {% endfor %}
+                        </div>
+                        {% for row in schedule_availability.rows %}
+                        <section class="winner-panel" id="winner-panel-{{ forloop.counter0 }}" aria-labelledby="winner-title-{{ forloop.counter0 }}">
+                            <h3 id="winner-title-{{ forloop.counter0 }}">{{ row.day }}, {{ row.date|date:"M j" }}</h3>
+                            {% if row.winners %}
+                            <p class="winner-duration">Unscheduled time: <strong>{{ row.open_display }} per faculty</strong></p>
+                            <ul class="winner-list">
+                                {% for name in row.winners %}<li>{{ name }}</li>{% endfor %}
+                            </ul>
+                            <p class="chart-note">All listed faculty share the highest total unscheduled time for this day.</p>
+                            {% else %}
+                            <p class="empty-state">{% if not schedule_availability.faculty_count %}No faculty data{% else %}{{ row.ranking_empty }}{% endif %}</p>
+                            {% endif %}
+                        </section>
+                        {% endfor %}
+                    </div>
+                    <p class="chart-note">Free time does not guarantee availability.</p>
                 </div>
 
                 <section class="table-card" aria-labelledby="faculty-detail-title">
@@ -128,5 +138,6 @@
             </div>
         </main>
     </div>
+    <script src="{% static 'depthead/js/faculty_trends.js' %}" defer></script>
 </body>
 </html>
