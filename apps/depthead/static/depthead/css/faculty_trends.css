@@ -28,10 +28,21 @@
 .faculty-trends .faculty-detail-table { min-width: 720px; }
 .faculty-trends .faculty-detail-table .consultation-column { background: var(--bg-main); }
 .faculty-trends .faculty-detail-table .consultation-divider { border-left: 2px solid var(--border-color); }
-.faculty-trends .daily-winners-table { table-layout: fixed; }
-.faculty-trends .daily-winners-table th:first-child { width: 25%; }
-.faculty-trends .daily-winners-table th:last-child { width: 20%; }
-.faculty-trends .winner-name { display: block; overflow-wrap: anywhere; }
+.faculty-trends .daily-winners-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 20px; }
+.faculty-trends .daily-winners-heading h2,
+.faculty-trends .daily-winners-heading .period-label { margin: 0; }
+.faculty-trends .winner-tabs { display: flex; gap: 6px; overflow-x: auto; padding: 4px 2px 12px; margin-top: 20px; border-bottom: 1px solid var(--border-color); }
+.faculty-trends .winner-tabs[hidden], .faculty-trends .winner-panel[hidden] { display: none; }
+.faculty-trends .winner-tabs button { flex: 1 0 64px; padding: 10px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); color: var(--text-secondary); font: inherit; font-weight: 600; cursor: pointer; }
+.faculty-trends .winner-tabs button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+.faculty-trends .winner-tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.faculty-trends .winner-panel { padding-top: 20px; }
+.faculty-trends .winner-panel h3 { font-size: 1rem; margin: 0 0 8px; }
+.faculty-trends .winner-duration { font-size: .9rem; margin: 0 0 16px; color: var(--text-secondary); }
+.faculty-trends .winner-duration strong { color: var(--accent); font-variant-numeric: tabular-nums; }
+.faculty-trends .winner-list { list-style: none; margin: 0 0 16px; padding: 0; }
+.faculty-trends .winner-list li { padding: 12px 0; border-bottom: 1px solid var(--border-color); overflow-wrap: anywhere; }
+.faculty-trends .winner-list li:last-child { border-bottom: 0; }
 .faculty-trends .empty-state { color: var(--text-secondary); padding: 24px 0; }
 .faculty-trends [tabindex="0"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 @media (min-width: 1200px) {
