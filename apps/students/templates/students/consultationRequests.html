@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Consultations</title>
-    <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}?v=20260928-request-card">
+    <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}?v=20260930-cancellation-fix">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
 </head>
 
@@ -46,8 +46,10 @@
                             <option value="all">All</option>
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
+                            <option value="cancellation_requested">Cancellation Requested</option>
                             <option value="declined">Declined</option>
                             <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
                 </div>
@@ -56,11 +58,12 @@
                     <li class="request-item" data-request-id="{{ consultation.request_id }}" data-status="{{ consultation.status }}">
                         <div class="request-status">
                             <span class="status-badge status-{{ consultation.status }}">{{ consultation.get_status_display }}</span>
-                            <button type="button" class="delete-request-btn" aria-label="Delete request with {{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}" title="Delete request" data-delete-url="{% url 'students:api_delete_consultation' consultation.request_id %}">
+                            {% if consultation.status != 'approved' and consultation.status != 'cancellation_requested' %}<button type="button" class="delete-request-btn" aria-label="Delete request with {{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}" title="Delete request" data-delete-url="{% url 'students:api_delete_consultation' consultation.request_id %}">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                                     <path d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M5 6l1 14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-14M10 10v7M14 10v7" />
                                 </svg>
-                            </button>
+                            </button>{% elif consultation.status == 'approved' %}
+                            <button type="button" class="request-cancellation-btn" title="Request cancellation" data-cancellation-url="{% url 'students:api_request_consultation_cancellation' consultation.request_id %}">Request Cancellation</button>{% endif %}
                         </div>
                         <div class="request-info">
                             <div class="request-card-heading">
@@ -76,7 +79,7 @@
                                 {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
                                 {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
                             </p>
-                            <p class="request-mode"><strong>Type:</strong> {{ consultation.get_mode_display }}</p>
+                            <p class="request-mode"><strong>Type:</strong> {{ consultation.get_consultation_type_display }}</p>
                             {% if consultation.student_message %}<p class="request-message"><strong>Your Message:</strong> {{ consultation.student_message }}</p>{% endif %}
                             {% if consultation.faculty_note %}<p class="faculty-note"><strong>Faculty Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
                         </div>
@@ -90,7 +93,7 @@
         </main>
     </div>
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
-    <script src="{% static 'students/js/consultationRequests.js' %}?v=20260905-delete-request"></script>
+    <script src="{% static 'students/js/consultationRequests.js' %}?v=20260930-cancellation-fix"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 </html>

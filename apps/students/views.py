@@ -141,7 +141,7 @@ def api_schedule_events(request):
     approved_consultations = ConsultationRequest.objects.filter(
         faculty=faculty,
         user=request.user,
-        status='approved',
+        status__in=['approved', 'cancellation_requested'],
     ).select_related('faculty__user').order_by('date', 'start_time')
     calendar_events.extend(
         serialize_consultation_event(consultation, viewer='student')
@@ -166,7 +166,7 @@ def consultation_requests(request):
     """Show only the signed-in student's consultation requests."""
     consultations = ConsultationRequest.objects.filter(
         user=request.user,
-    ).exclude(status='declined').select_related('faculty__user')
+    ).select_related('faculty__user')
     return render(request, 'students/consultationRequests.html', {
         'consultations': consultations,
     })
@@ -183,6 +183,11 @@ def api_delete_consultation(request, request_id):
             ConsultationRequest.objects.select_for_update(),
             request_id=request_id, user=request.user,
         )
+        if consultation.status in {'approved', 'cancellation_requested'}:
+            return JsonResponse(
+                {'error': 'Approved consultations must be cancelled by faculty approval of a cancellation request.'},
+                status=409,
+            )
         if consultation.google_event_id:
             connection = GoogleCalendarConnection.objects.filter(
                 user_id=consultation.faculty.user_id,
@@ -200,6 +205,38 @@ def api_delete_consultation(request, request_id):
     return HttpResponse(status=204)
 
 
+@login_required
+@role_required('student')
+@require_http_methods(['POST'])
+@csrf_protect
+def api_request_consultation_cancellation(request, request_id):
+    """Ask the assigned faculty member to cancel an approved consultation."""
+    with transaction.atomic():
+        consultation = get_object_or_404(
+            ConsultationRequest.objects.select_for_update().select_related('faculty__user'),
+            request_id=request_id, user=request.user,
+        )
+        if consultation.status != 'approved':
+            return JsonResponse(
+                {'error': 'Only an approved consultation can have a cancellation request.'},
+                status=409,
+            )
+        consultation.status = 'cancellation_requested'
+        consultation.save(update_fields=['status'])
+
+    create_notification(
+        recipient=consultation.faculty.user,
+        notification_type='consultation_request',
+        title='Cancellation request received',
+        message=(
+            f'{request.user.get_full_name() or request.user.username} requested cancellation of '
+            f'the consultation on {consultation.date.strftime("%B %d, %Y")}.'
+        ),
+        url='/faculty/dashboard/',
+    )
+    return JsonResponse(_consultation_json(consultation))
+
+
 def _consultation_json(consultation):
     """Serialize a student's consultation for the booking and listing APIs."""
     return {
@@ -212,6 +249,8 @@ def _consultation_json(consultation):
         'end_time': consultation.end_time.isoformat() if consultation.end_time else None,
         'agenda': consultation.agenda,
         'agenda_label': consultation.get_agenda_display(),
+        'consultation_type': consultation.consultation_type,
+        'consultation_type_label': consultation.get_consultation_type_display(),
         'student_message': consultation.student_message,
         'faculty_note': consultation.faculty_note,
     }
@@ -224,7 +263,7 @@ def api_consultation_requests(request):
     """List or create consultation requests owned by the signed-in student."""
     consultations = ConsultationRequest.objects.filter(
         user=request.user,
-    ).exclude(status='declined').select_related('faculty__user')
+    ).select_related('faculty__user')
 
     if request.method == 'GET':
         return JsonResponse({'consultations': [_consultation_json(item) for item in consultations]})
@@ -249,6 +288,9 @@ def api_consultation_requests(request):
     agenda = str(payload.get('agenda') or '').strip()
     if agenda not in dict(ConsultationRequest.AGENDA_CHOICES):
         return JsonResponse({'error': 'Please select a valid consultation agenda.'}, status=400)
+    consultation_type = str(payload.get('consultation_type') or 'face_to_face').strip()
+    if consultation_type not in dict(ConsultationRequest.CONSULTATION_TYPE_CHOICES):
+        return JsonResponse({'error': 'Please select a valid consultation type.'}, status=400)
     if OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).exists():
         return JsonResponse({'error': 'This college is currently closed and not accepting consultation requests.'}, status=409)
     requested_end_time = payload.get('end_time')
@@ -270,6 +312,7 @@ def api_consultation_requests(request):
         start_time=start_time,
         end_time=end_time,
         agenda=agenda,
+        consultation_type=consultation_type,
         student_message=str(payload.get('message') or '').strip(),
     )
     create_notification(
@@ -292,7 +335,7 @@ def home(request):
     current_time = timezone.localtime().time()
     upcoming_bookings = ConsultationRequest.objects.filter(
         user=request.user,
-        status='approved',
+        status__in=['approved', 'cancellation_requested'],
     ).select_related('faculty').order_by('date', 'start_time')
     upcoming_booking_count = sum(
         1 for booking in upcoming_bookings

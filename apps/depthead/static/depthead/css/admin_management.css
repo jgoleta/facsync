@@ -87,12 +87,6 @@ table tbody tr:last-child td {
   transition: background-color 0.2s ease;
 }
 
-.schedule-upload-modal {
-  width: min(95vw, 1100px);
-  max-width: 1100px;
-  overflow-y: auto;
-}
-
 .faculty-schedule-upload-status {
   min-height: 1.25em;
   margin: 0 0 14px;
@@ -211,6 +205,10 @@ table tbody tr:last-child td {
   transition:
     opacity 0.2s ease,
     visibility 0.2s ease;
+}
+
+#facultySchedulePreviewModal {
+  z-index: 1100;
 }
 
 .modal-overlay.hidden {

@@ -492,6 +492,11 @@ h2 {
     color: #991b1b;
 }
 
+.consultation-status.status-cancellation_requested {
+    background: #fef3c7;
+    color: #92400e;
+}
+
 .request-actions textarea {
     width: 100%;
     padding: 10px;
@@ -504,6 +509,7 @@ h2 {
     box-sizing: border-box;
 }
 
+.request-info .action-buttons,
 .request-actions .action-buttons {
     display: flex;
     gap: 10px;
@@ -595,10 +601,12 @@ h2 {
     min-height: 0;
   }
 
+  .request-info .action-buttons,
   .request-actions .action-buttons {
     flex-wrap: wrap;
   }
 
+  .request-info .action-buttons > *,
   .request-actions .action-buttons > * {
     flex: 1 1 130px;
   }

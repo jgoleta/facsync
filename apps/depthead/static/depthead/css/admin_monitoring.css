@@ -265,3 +265,29 @@
     justify-content: center;
   }
 }
+.monitoring-status-counts {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0 0 24px;
+}
+
+.monitoring-status-summary {
+  padding: 20px;
+  border: 1px solid #dce7f3;
+  border-top: 3px solid var(--summary-color);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.summary-available { --summary-color: #15803d; }
+.summary-busy { --summary-color: #f97316; }
+.summary-virtual_only { --summary-color: #2563eb; }
+.summary-on_leave { --summary-color: #71717a; }
+.summary-unavailable { --summary-color: #ef4444; }
+.monitoring-status-summary dt { color: #475569; font-size: .85rem; font-weight: 600; }
+.monitoring-status-summary dd { margin: 10px 0 0; color: var(--summary-color); font-size: 2rem; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; }
+@media (max-width: 768px) {
+  .monitoring-status-counts { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .monitoring-status-summary { padding: 16px; }
+}

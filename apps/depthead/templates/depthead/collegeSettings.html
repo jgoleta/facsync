@@ -9,64 +9,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | College Settings</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_settings.css' %}?v=20260916-overlay-fix">
-    <style>
-        .settings-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
-            gap: 24px;
-            align-items: start;
-        }
-    
-        .settings-card h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-        }
-    
-        .announcements-card .card-header {
-            padding-bottom: 0;
-        }
-    
-        .form-group input[type="date"] {
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 10px 12px;
-            font: inherit;
-            width: 100%;
-            box-sizing: border-box;
-        }
-    
-        .closure-date-pair {
-            display: flex;
-            gap: 16px;
-        }
-    
-        .closure-date-pair .form-group {
-            flex: 1;
-        }
-    
-        @media (max-width: 1024px) {
-            .settings-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_settings.css' %}?v=20260930-settings-cards">
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
-<body>
+<body class="college-settings-page">
     <div class="admin-shell">
         {% include 'depthead/partials/sidebar.html' %}
 
         <main class="main-content">
             <header class="main-header">
-                <h1>College Settings ({{ request.user.college_name }})</h1>
-                <p>Manage general settings and announcements for your college.</p>
+                <p class="settings-eyebrow">College administration</p>
+                <h1>College Settings</h1>
+                <p>Manage your college profile, booking availability, and announcements.</p>
+                <span class="settings-college-label">{{ request.user.college_name }}</span>
             </header>
 
             <div class="settings-grid">
+                <div class="settings-column">
                 <div class="settings-card">
-                    <h2>General Settings</h2>
+                    <header class="settings-section-heading">
+                        <p class="settings-eyebrow">Profile</p>
+                        <h2>College Details</h2>
+                        <p>Keep your college information up to date.</p>
+                    </header>
                     
                     {% if college %}
                     <form method="post" action="{% url 'depthead:edit_college_description' %}" class="settings-form">
@@ -77,7 +43,7 @@
                         </div>
                         <div class="form-group">
                             <label for="college-desc">Description</label>
-                            <textarea id="college-desc" name="description">{{ college.description }}</textarea>
+                            <textarea id="college-desc" name="description" rows="4" placeholder="Write a short introduction to your college...">{{ college.description }}</textarea>
                         </div>
                         <div class="form-actions">
                             <button type="submit" class="primary-button">Save Changes</button>
@@ -86,8 +52,14 @@
                     {% else %}
                     <p class="empty-state">Your college could not be found. Contact a Super Admin.</p>
                     {% endif %}
-                
-                    <div class="closure-heading"><h2>Office Closure</h2>
+                </div>
+                <div class="settings-card closure-card">
+                    <header class="settings-section-heading">
+                        <p class="settings-eyebrow">Booking availability</p>
+                        <h2>Office Closure</h2>
+                        <p>Control when your college accepts new consultation requests.</p>
+                    </header>
+                    <div class="closure-heading">
                     <span class="closure-status-label">College Live Status</span>
                     <span id="closure-status" role="status" class="closure-badge {% if closure_form.instance.is_closed %}closed{% else %}open{% endif %}">{% if closure_form.instance.is_closed %}Closed{% else %}Open{% endif %}</span></div>
                     {% if messages %}
@@ -100,7 +72,7 @@
                     <form method="post" id="closure-form" data-status-url="{% url 'depthead:closure_status' %}" data-college="{{ request.user.college_name }}" class="settings-form">
                         {% csrf_token %}
                         <div class="form-group form-group-toggle">
-                            <label for="{{ closure_form.is_closed.id_for_label }}">Office Closure</label>
+                            <label for="{{ closure_form.is_closed.id_for_label }}">Close office for bookings</label>
                             <p>Activate to prevent new bookings and notify users of office closure.</p>
                             {{ closure_form.is_closed }}
                         </div>
@@ -123,10 +95,12 @@
                         </div>
                     </form>
                 </div>
+                </div>
                 <div class="settings-card announcements-card">
                     <header class="card-header">
+                        <p class="settings-eyebrow">Communication</p>
                         <h2>Announcements</h2>
-                        <p>Create and manage college announcements.</p>
+                        <p>Share timely updates with students and faculty.</p>
                     </header>
                 
                     <form id="announcement-form" data-college="{{ request.user.college_name }}" class="settings-form" method="post" action="{% url 'depthead:create_announcement' %}">
@@ -149,11 +123,12 @@
                         </div>
                     </form>
                 
+                    <h3 class="announcements-heading">Active announcements</h3>
                     <div id="announcements-list" class="announcements-list">
                         {% for a in college_announcements %}
                         <div class="announcement-item">
                             <p>{{ a.message }}</p>
-                            <small>{{ a.get_audience_display }} ? Posted {{ a.posted_at|date:"M d, Y" }} · Expires {{ a.expiry|date:"M d, Y" }}</small>
+                            <small>{{ a.get_audience_display }} &middot; Posted {{ a.posted_at|date:"M d, Y" }} &middot; Expires {{ a.expiry|date:"M d, Y" }}</small>
                         </div>
                         {% empty %}
                         <p class="empty-state">No active announcements.</p>
@@ -163,8 +138,8 @@
             </div>
         </main>
     </div>
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-spinner"></div>
+    <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite" aria-label="Saving settings">
+        <div class="loading-spinner" aria-hidden="true"></div>
     </div>
     <div id="settings-confirm" class="modal-overlay hidden">
         <div class="modal settings-confirm" role="dialog" aria-modal="true" aria-labelledby="settings-confirm-title" aria-describedby="settings-confirm-message">

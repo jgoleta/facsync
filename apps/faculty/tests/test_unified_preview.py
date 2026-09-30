@@ -37,25 +37,25 @@ class UnifiedPreviewTests(TestCase):
         response = self.client.get(reverse('faculty:view_schedule_preview'))
         self.assertEqual(response.status_code, 200)
         rows = response.json()['preview']
-        self.assertEqual(len(rows), 4)
-        self.assertEqual(rows[0]['id'], legacy.pk)
-        self.assertEqual(rows[0]['uploader_label'], 'Uploader unknown')
-        self.assertEqual(rows[1]['uploader_label'], 'Uploaded by college-head-preview')
-        self.assertTrue(rows[1]['uploaded_by_other'])
-        self.assertEqual(rows[2]['uploader_label'], 'Uploaded by you')
-        self.assertFalse(rows[2]['uploaded_by_other'])
+        self.assertEqual(len(rows), 3)
+        self.assertNotIn(legacy.pk, [row['id'] for row in rows])
+        self.assertEqual(rows[0]['uploader_label'], 'Uploaded by college-head-preview')
+        self.assertTrue(rows[0]['uploaded_by_other'])
+        self.assertEqual(rows[1]['uploader_label'], 'Uploaded by you')
+        self.assertFalse(rows[1]['uploaded_by_other'])
         self.client.force_login(self.head)
         head_rows = self.client.get(reverse('depthead:view_faculty_schedule_preview', args=[self.faculty.faculty_id])).json()['preview']
-        self.assertEqual([{k: v for k, v in row.items() if k not in ('id', 'uploader_label', 'uploaded_by_other')} for row in rows], head_rows)
+        self.assertEqual([row['id'] for row in rows], [row['id'] for row in head_rows])
         self.client.force_login(self.user)
         other_user = get_user_model().objects.create_user(username='other', role='faculty')
         other_faculty = FacultyProfile.objects.create(user=other_user, faculty_id='other', college_id='CCS')
         other_event = ScheduleEvent.objects.create(faculty=other_faculty, title='Private', managed_by_facsync=True)
-        self.assertEqual(len(self.client.get(reverse('faculty:view_schedule_preview')).json()['preview']), 4)
+        self.assertEqual(len(self.client.get(reverse('faculty:view_schedule_preview')).json()['preview']), 3)
         response = self.client.post(reverse('faculty:clear_schedule'),
-            data=json.dumps({'event_ids': [r['id'] for r in rows] + [external.pk, other_event.pk]}), content_type='application/json')
+            data=json.dumps({'event_ids': [r['id'] for r in rows] + [legacy.pk, external.pk, other_event.pk]}), content_type='application/json')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['deleted_count'], 4)
+        self.assertEqual(response.json()['deleted_count'], 3)
+        self.assertTrue(ScheduleEvent.objects.filter(pk=legacy.pk).exists())
         self.assertTrue(ScheduleEvent.objects.filter(pk=external.pk).exists())
         self.assertTrue(ScheduleEvent.objects.filter(pk=other_event.pk).exists())
 
@@ -67,7 +67,18 @@ class UnifiedPreviewTests(TestCase):
         self.assertEqual(self.client.get(reverse('faculty:view_schedule_preview')).status_code, 302)
 
     def test_deleted_uploader_preserves_schedule(self):
-        event = ScheduleEvent.objects.create(faculty=self.faculty, title='Retained', uploaded_by=self.head, managed_by_facsync=True)
+        event = ScheduleEvent.objects.create(faculty=self.faculty, title='Retained', uploaded_by=self.head, managed_by_facsync=False, is_csv_upload=True)
         self.head.delete()
         event.refresh_from_db()
         self.assertIsNone(event.uploaded_by_id)
+        rows = self.client.get(reverse('faculty:view_schedule_preview')).json()['preview']
+        self.assertEqual([row['id'] for row in rows], [event.pk])
+
+    def test_head_delete_leaves_non_csv_events_intact(self):
+        manual = ScheduleEvent.objects.create(faculty=self.faculty, title='Manual', managed_by_facsync=True)
+        uploaded = ScheduleEvent.objects.create(faculty=self.faculty, title='CSV', is_csv_upload=True)
+        self.client.force_login(self.head)
+        response = self.client.post(reverse('depthead:delete_faculty_schedule', args=[self.faculty.pk]))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(ScheduleEvent.objects.filter(pk=manual.pk).exists())
+        self.assertFalse(ScheduleEvent.objects.filter(pk=uploaded.pk).exists())

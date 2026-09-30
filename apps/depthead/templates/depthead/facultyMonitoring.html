@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Monitoring</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_monitoring.css' %}?v=20260822-monitoring-ui-2">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_monitoring.css' %}?v=20260930-status-colors">
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -30,6 +30,15 @@
                     <strong id="monitoringLiveCount">{{ faculty_list|length }}</strong>
                 </div>
             </header>
+
+            <dl class="monitoring-status-counts" aria-label="Faculty counts by current status" aria-live="polite" aria-atomic="true">
+                {% for status in status_counts %}
+                <div class="monitoring-status-summary summary-{{ status.key }}">
+                    <dt>{{ status.label }}</dt>
+                    <dd data-status-count="{{ status.key }}">{{ status.count }}</dd>
+                </div>
+                {% endfor %}
+            </dl>
 
             <div class="monitoring-toolbar">
                 <div>
@@ -67,6 +76,6 @@
             </div>
         </main>
     </div>
-    <script src="{% static 'depthead/js/facultyMonitoring.js' %}"></script>
+    <script src="{% static 'depthead/js/facultyMonitoring.js' %}?v=20260930-status-counts"></script>
 </body>
 </html>
