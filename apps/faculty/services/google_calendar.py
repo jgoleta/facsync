@@ -668,7 +668,7 @@ def sync_google_calendar(user):
                 ).first()
                 if consultation:
                     consultation_event_ids.add(event_id)
-                    if consultation.status != 'approved':
+                    if consultation.status not in {'approved', 'cancellation_requested'}:
                         continue
                     # Manual edits to a FacSync event are intentionally
                     # reconciled back into the consultation record on poll.
@@ -748,7 +748,7 @@ def sync_google_calendar(user):
             google_event_id__isnull=False,
             date__gte=window_start,
             date__lte=window_end,
-            status='approved',
+            status__in=['approved', 'cancellation_requested'],
         )
         for consultation in consultations:
             if consultation.google_event_id in consultation_event_ids:
@@ -899,7 +899,7 @@ def refresh_faculty_status(faculty, google_events=None):
     for consultation in ConsultationRequest.objects.filter(
         faculty=faculty,
         date=now.date(),
-        status='approved',
+        status__in=['approved', 'cancellation_requested'],
     ):
         consider_event(consultation.date, consultation.start_time, consultation.end_time, 'busy')
 

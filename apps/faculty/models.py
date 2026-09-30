@@ -144,6 +144,7 @@ class ScheduleEvent(models.Model):
     google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)
     google_calendar_id = models.CharField(max_length=1024, null=True, blank=True)
     managed_by_facsync = models.BooleanField(default=False)
+    is_csv_upload = models.BooleanField(default=False)
     sync_state = models.CharField(max_length=16, default='local')
     sync_error = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -160,6 +161,11 @@ class ScheduleEvent(models.Model):
 
 
 class ConsultationRequest(models.Model):
+    CONSULTATION_TYPE_CHOICES = [
+        ('face_to_face', 'Face-to-Face'),
+        ('online', 'Online'),
+    ]
+
     AGENDA_CHOICES = [
         ('grade_consultation', 'Grade Consultation'),
         ('project_consultation', 'Project Consultation'),
@@ -170,6 +176,7 @@ class ConsultationRequest(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('approved', 'Approved'),
+        ('cancellation_requested', 'Cancellation Requested'),
         ('declined', 'Declined'),
         ('cancelled', 'Cancelled'),
         ('completed', 'Completed'),
@@ -192,7 +199,12 @@ class ConsultationRequest(models.Model):
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     agenda = models.CharField(max_length=32, choices=AGENDA_CHOICES, default='general_concern')
-    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='pending')
+    consultation_type = models.CharField(
+        max_length=16,
+        choices=CONSULTATION_TYPE_CHOICES,
+        default='face_to_face',
+    )
+    status = models.CharField(max_length=24, choices=STATUS_CHOICES, default='pending')
     student_message = models.TextField(blank=True, default='')
     faculty_note = models.TextField(blank=True)
     google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)

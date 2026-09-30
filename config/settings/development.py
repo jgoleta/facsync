@@ -12,3 +12,19 @@ DATABASES = {
 INSTALLED_APPS = [*INSTALLED_APPS, 'debug_toolbar']
 MIDDLEWARE = ['debug_toolbar.middleware.DebugToolbarMiddleware', *MIDDLEWARE]
 INTERNAL_IPS = ['127.0.0.1', '::1']
+
+# Read edited templates on every development request, including long-lived workers.
+TEMPLATES = [
+    {
+        **template,
+        'APP_DIRS': False,
+        'OPTIONS': {
+            **template['OPTIONS'],
+            'loaders': [
+                'django.template.loaders.filesystem.Loader',
+                'django.template.loaders.app_directories.Loader',
+            ],
+        },
+    }
+    for template in TEMPLATES
+]

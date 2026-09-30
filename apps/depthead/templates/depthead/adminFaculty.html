@@ -10,11 +10,15 @@
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav" />
     <link
       rel="stylesheet"
-      href="{% static 'depthead/css/admin_management.css' %}?v=20260823-management-ui-8"
+      href="{% static 'depthead/css/admin_management.css' %}?v=20260930-schedule-preview-layer"
     />
     <link
       rel="stylesheet"
       href="{% static 'depthead/css/pendingFacultyRequests.css' %}?v=20260908-matching-primary-buttons"
+    />
+    <link
+      rel="stylesheet"
+      href="{% static 'faculty/css/scheduleFaculty.css' %}?v=20260930-shared-preview-css"
     />
     {% include 'components/_admin_navigation_loading.html' %}
   </head>
@@ -197,64 +201,45 @@
     <input type="file" id="facultyScheduleFile" accept=".csv,text/csv" hidden />
     <div id="deptheadCsrfToken" class="hidden">{% csrf_token %}</div>
 
-    <div class="modal-overlay hidden" id="facultySchedulePreviewModal">
-      <div
-        class="modal schedule-upload-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="facultySchedulePreviewTitle"
-      >
-        <div class="modal-header">
+    <div class="modal-overlay hidden" id="facultySchedulePreviewModal" role="dialog" aria-modal="true" aria-labelledby="facultySchedulePreviewTitle">
+      <section class="modal-content schedule-preview-card schedule-preview-modal" aria-live="polite">
+        <button type="button" class="modal-close-btn" id="closeFacultySchedulePreview" aria-label="Close upload preview">&times;</button>
+        <div class="schedule-preview-header">
           <div>
+            <p class="eyebrow">Upload preview</p>
             <h2 id="facultySchedulePreviewTitle">Schedule Upload Preview</h2>
             <p id="facultySchedulePreviewFaculty">Selected faculty</p>
           </div>
-          <button
-            type="button"
-            class="modal-close"
-            id="closeFacultySchedulePreview"
-          >
-            &times;
-          </button>
+          <span id="facultySchedulePreviewCount" class="date-pill"></span>
         </div>
-        <p
-          id="facultyScheduleUploadStatus"
-          class="faculty-schedule-upload-status"
-          role="status"
-          aria-live="polite"
-        ></p>
-        <div class="faculty-schedule-preview-wrap">
-          <p
-            id="facultySchedulePreviewEmpty"
-            class="faculty-schedule-preview-empty"
-          >
-            Choose a CSV file from the selected faculty row to preview it here.
-          </p>
-          <table
-            id="facultySchedulePreviewTable"
-            class="faculty-schedule-preview-table hidden"
-          >
+        <div class="schedule-preview-toolbar">
+          <label class="schedule-preview-search" for="facultySchedulePreviewSearch">
+            <span>Search schedule events</span>
+            <input type="search" id="facultySchedulePreviewSearch" placeholder="Search offering, subject, section, room..." autocomplete="off">
+          </label>
+        </div>
+        <div class="schedule-preview-table-wrap">
+          <p id="facultySchedulePreviewEmpty" class="schedule-preview-empty">Choose a CSV file from the selected faculty row to preview it here.</p>
+          <table id="facultySchedulePreviewTable" class="schedule-preview-table hidden">
             <thead>
               <tr>
                 <th>Offering ID</th><th>Subject Code</th><th>Section</th><th>Subject Title</th>
-                <th>Units</th><th>Lecture</th><th>Lab</th><th>Day From</th><th>Day To</th><th>Time From</th>
-                <th>Time To</th><th>Room</th>
+                <th>Units</th><th>Lecture</th><th>Lab</th><th>Recurring Day</th><th>Day From</th><th>Day To</th><th>Time From</th>
+                <th>Time To</th><th>Room</th><th>Uploader</th>
               </tr>
             </thead>
             <tbody id="facultySchedulePreviewBody"></tbody>
           </table>
         </div>
-        <div class="modal-actions schedule-preview-actions">
-          <button
-            type="button"
-            id="deleteFacultyUploadedSchedule"
-            class="btn-danger"
-            disabled
-          >
-            Delete Uploaded Schedule
+        <div class="schedule-preview-meta">
+          <p id="facultyScheduleUploadStatus" class="calendar-sync-status" role="status" aria-live="polite"></p>
+        </div>
+        <div class="schedule-preview-actions">
+          <button type="button" id="deleteFacultyUploadedSchedule" class="secondary-button legend-action-button bulk-delete-action schedule-preview-delete-all-btn" disabled>
+            Delete Previewed Schedule
           </button>
         </div>
-      </div>
+      </section>
     </div>
 
     <div class="modal-overlay hidden" id="removeFacultyConfirmModal">

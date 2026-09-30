@@ -256,7 +256,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const note = item.querySelector('textarea')?.value || '';
                 if (!requestId) return;
 
-                button.disabled = true;
+                const decidingCancellation = item.dataset.status === 'cancellation_requested';
+                const actionButtons = item.querySelectorAll('[data-action]');
+                actionButtons.forEach(actionButton => { actionButton.disabled = true; });
                 facultyFeedback?.showLoading('Updating consultation request...');
                 try {
                     // Persist the faculty decision, then reload the real request list.
@@ -269,14 +271,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         body: JSON.stringify({ status: button.dataset.action, faculty_note: note }),
                     });
                     const data = await response.json().catch(() => ({}));
-                if (!response.ok) throw new Error(data.error || 'Unable to update the consultation request.');
-                    if (['completed', 'declined'].includes(data.status)) {
+                    if (!response.ok) throw new Error(data.error || 'Unable to update the consultation request.');
+                    if (['completed', 'declined', 'cancelled'].includes(data.status)) {
                         item.remove();
                     }
-                    facultyFeedback?.showToast('Consultation request updated successfully.');
+                    facultyFeedback?.showToast(decidingCancellation
+                        ? (data.status === 'cancelled'
+                            ? 'Cancellation accepted. The appointment is cancelled.'
+                            : 'Cancellation declined. The appointment remains scheduled.')
+                        : 'Consultation request updated successfully.');
                     window.setTimeout(() => window.location.reload(), 800);
                 } catch (error) {
-                    button.disabled = false;
+                    actionButtons.forEach(actionButton => { actionButton.disabled = false; });
                     facultyFeedback?.showToast(error.message, true);
                 } finally {
                     facultyFeedback?.hideLoading();

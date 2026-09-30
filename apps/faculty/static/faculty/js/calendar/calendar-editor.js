@@ -203,7 +203,7 @@ document.addEventListener("DOMContentLoaded", () => {
     rows.forEach((row) => {
       const tr = document.createElement("tr");
       [row.OFFERING_ID, row.SUBJ_CODE, row.SECTION, row.SUBJECT_TITLE, row.UNITS, row.LECTURE,
-        row.LAB, row.DAYFROM, row.DAYTO, row.TIMEFROM, row.TIMETO, row.ROOM, row.uploader_label]
+        row.LAB, row.RECURRING_DAY, row.DAYFROM, row.DAYTO, row.TIMEFROM, row.TIMETO, row.ROOM, row.uploader_label]
         .forEach((value) => {
           const td = document.createElement("td");
           td.textContent = value;
@@ -240,8 +240,10 @@ document.addEventListener("DOMContentLoaded", () => {
         description: `${row.SUBJ_CODE || ""} ${row.SECTION || ""}`.trim(),
         location: row.ROOM || "",
         date: dayFrom,
-        isRecurring: false,
-        dayOfWeek: "",
+        isRecurring: Boolean(row.RECURRING_DAY),
+        dayOfWeek: (row.RECURRING_DAY || "").toLowerCase(),
+        startMonth: dayFrom ? Number(dayFrom.slice(5, 7)) : null,
+        endMonth: row.DAYTO ? Number(row.DAYTO.slice(5, 7)) : null,
         startDate: dayFrom,
         endDate: row.DAYTO || dayFrom,
         startTime: row.TIMEFROM || "00:00",

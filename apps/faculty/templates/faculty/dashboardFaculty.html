@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260903-queue-style-update">
+    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260930-cancellation-actions">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     <link rel="stylesheet" href="{% static 'css/announcements.css' %}?v=20260917-faculty-announcement-ui">
 </head>
@@ -95,7 +95,8 @@
                             <select id="consultationStatusFilter">
                                 <option value="all">All requests</option>
                                 <option value="pending">Pending</option>
-                                <option value="approved">Approved</option>
+                            <option value="approved">Approved</option>
+                            <option value="cancellation_requested">Cancellation Requested</option>
                             </select>
                         </div>
                     </div>
@@ -111,11 +112,21 @@
                                 </p>
                                 <p class="student-name"><strong>Name:</strong> {{ consultation.user.get_full_name|default:consultation.user.username }}</p>
                                 <p class="request-agenda"><strong>Agenda:</strong> {{ consultation.get_agenda_display }}</p>
+                                <p class="request-type"><strong>Consultation Type:</strong>
+                                    {% if consultation.consultation_type == 'online' %}Online{% else %}Face-to-Face{% endif %}
+                                </p>
                                 <p class="request-message"><strong>Message:</strong> {{ consultation.student_message|default:"No message provided." }}</p>
+                                {% if consultation.status == 'cancellation_requested' or consultation.get_status_display == 'Cancellation Requested' %}
+                                <p class="faculty-note">The student requested cancellation. Accept to cancel the appointment, or decline to keep it scheduled.</p>
+                                <div class="action-buttons">
+                                    <button type="button" class="btn-approve" data-action="cancelled">Accept Cancellation</button>
+                                    <button type="button" class="btn-decline" data-action="approved">Decline Cancellation</button>
+                                </div>
+                                {% endif %}
                             </div>
                             <div class="request-actions">
                                 {% if consultation.faculty_note %}<p class="faculty-note"><strong>Your Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
-                                {% if consultation.status == 'pending' %}<textarea placeholder="Add an optional note..."></textarea>{% endif %}
+                                {% if consultation.status == 'pending' or consultation.status == 'cancellation_requested' or consultation.get_status_display == 'Cancellation Requested' %}<textarea placeholder="Add an optional note..."></textarea>{% endif %}
                                 <div class="action-buttons">
                                     {% if consultation.status == 'pending' %}
                                     <button type="button" class="btn-approve" data-action="approved">Approve</button>
@@ -198,7 +209,9 @@
                         {% if consultation.end_time %} – {{ consultation.end_time|time:"g:i A" }}{% endif %}
                     </p>
                     <p><strong>Agenda:</strong> {{ consultation.get_agenda_display }}</p>
-                    <p><strong>Type:</strong> {{ consultation.get_mode_display }}</p>
+                    <p><strong>Consultation Type:</strong>
+                        {% if consultation.consultation_type == 'online' %}Online{% else %}Face-to-Face{% endif %}
+                    </p>
                     {% if consultation.student_message %}
                     <p class="completed-message"><strong>Message:</strong> {{ consultation.student_message }}</p>
                     {% endif %}
@@ -214,7 +227,7 @@
     </div>
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260903-status-feedback-cleanup"></script>
+    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260930-cancellation-decision"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 {% url 'faculty:active_announcements' as announcement_fetch_url %}
     {% include 'partials/announcementModal.html' %}

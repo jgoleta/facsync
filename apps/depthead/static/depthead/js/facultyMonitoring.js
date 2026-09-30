@@ -60,7 +60,7 @@ async function refreshFacultyMonitoring() {
   if (!url) return;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) return;
     const data = await response.json();
     const facultyList = data.faculty_list || [];
@@ -74,6 +74,11 @@ async function refreshFacultyMonitoring() {
 
     const liveCount = document.getElementById("monitoringLiveCount");
     if (liveCount) liveCount.textContent = facultyList.length;
+    const counts = new Map((data.status_counts || []).map(item => [item.key, item.count]));
+    document.querySelectorAll('[data-status-count]').forEach(element => {
+      const count = String(counts.get(element.dataset.statusCount) ?? 0);
+      if (element.textContent !== count) element.textContent = count;
+    });
   } catch (error) {}
 }
 

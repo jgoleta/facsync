@@ -105,7 +105,10 @@ const scheduleUploadStatus = document.getElementById('facultyScheduleUploadStatu
 const schedulePreviewEmpty = document.getElementById('facultySchedulePreviewEmpty');
 const schedulePreviewTable = document.getElementById('facultySchedulePreviewTable');
 const schedulePreviewBody = document.getElementById('facultySchedulePreviewBody');
+const schedulePreviewSearch = document.getElementById('facultySchedulePreviewSearch');
+const schedulePreviewCount = document.getElementById('facultySchedulePreviewCount');
 const deleteUploadedScheduleButton = document.getElementById('deleteFacultyUploadedSchedule');
+let schedulePreviewRows = [];
 let selectedFacultyId = '';
 let selectedFacultyUploadUrl = '';
 let selectedFacultyPreviewUrl = '';
@@ -187,7 +190,7 @@ document.querySelectorAll('.crud-action-form').forEach((form) => {
 function setScheduleUploadStatus(message, isError = false) {
     if (!scheduleUploadStatus) return;
     scheduleUploadStatus.textContent = message;
-    scheduleUploadStatus.className = `faculty-schedule-upload-status${isError ? ' error' : ''}`;
+    scheduleUploadStatus.className = `calendar-sync-status${isError ? ' error' : ''}`;
 }
 
 function closeSchedulePreview() {
@@ -201,8 +204,8 @@ function renderSchedulePreview(rows) {
         const tr = document.createElement('tr');
         [
             row.OFFERING_ID, row.SUBJ_CODE, row.SECTION, row.SUBJECT_TITLE,
-            row.UNITS, row.LECTURE, row.LAB, row.DAYFROM, row.DAYTO, row.TIMEFROM, row.TIMETO,
-            row.ROOM,
+            row.UNITS, row.LECTURE, row.LAB, row.RECURRING_DAY, row.DAYFROM, row.DAYTO, row.TIMEFROM, row.TIMETO,
+            row.ROOM, row.uploader_label || 'Uploader unknown',
         ].forEach((value) => {
             const td = document.createElement('td');
             td.textContent = value;
@@ -212,8 +215,15 @@ function renderSchedulePreview(rows) {
     });
     schedulePreviewEmpty.classList.toggle('hidden', rows.length > 0);
     schedulePreviewTable.classList.toggle('hidden', rows.length === 0);
+    if (schedulePreviewCount) schedulePreviewCount.textContent = `${rows.length} row${rows.length === 1 ? '' : 's'}`;
     if (deleteUploadedScheduleButton) deleteUploadedScheduleButton.disabled = rows.length === 0;
 }
+
+schedulePreviewSearch?.addEventListener('input', () => {
+    const query = schedulePreviewSearch.value.trim().toLowerCase();
+    renderSchedulePreview(schedulePreviewRows.filter((row) => Object.values(row)
+        .some((value) => String(value ?? '').toLowerCase().includes(query))));
+});
 
 function selectFacultySchedule(button) {
     selectedFacultyId = button.dataset.facultyId || '';
@@ -229,6 +239,7 @@ async function viewFacultySchedulePreview(button) {
     selectFacultySchedule(button);
     if (schedulePreviewModal) schedulePreviewModal.classList.remove('hidden');
     renderSchedulePreview([]);
+    schedulePreviewRows = [];
     setScheduleUploadStatus('Loading uploaded schedule...');
     setCrudLoading(true, 'Loading uploaded schedule...');
     try {
@@ -238,7 +249,9 @@ async function viewFacultySchedulePreview(button) {
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'Unable to load the uploaded schedule.');
-        renderSchedulePreview(data.preview || []);
+        schedulePreviewRows = data.preview || [];
+        if (schedulePreviewSearch) schedulePreviewSearch.value = '';
+        renderSchedulePreview(schedulePreviewRows);
         setScheduleUploadStatus(
             data.preview && data.preview.length
                 ? `${data.preview.length} uploaded schedule row(s).`
@@ -344,7 +357,8 @@ if (scheduleFileInput) {
                 const details = (data.errors || [data.error || 'Unable to upload schedule.']).join(' ');
                 throw new Error(details);
             }
-            renderSchedulePreview(data.preview || []);
+            schedulePreviewRows = data.preview || [];
+            renderSchedulePreview(schedulePreviewRows);
             const calendarSync = data.calendar_sync || {};
             const syncMessage = calendarSync.status === 'synced'
                 ? ` ${calendarSync.synced_count} event(s) also synced to Google Calendar.`

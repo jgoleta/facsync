@@ -28,6 +28,43 @@ class DeptheadViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'depthead/adminDashboard.html')
 
+    def test_monitoring_status_counts_and_live_updates(self):
+        statuses = ('available', 'busy', 'virtual_only', 'on_leave', 'unavailable')
+        for index, status in enumerate((*statuses, 'available', 'not_set', 'available')):
+            college = 'CBA' if index == 7 else 'CCS'
+            user = get_user_model().objects.create_user(
+                username=f'monitor-{index}', role='faculty',
+                account_status='active', college=college,
+            )
+            FacultyProfile.objects.create(
+                faculty_id=f'monitor-{index}', user=user,
+                college_id=college, current_status=status,
+            )
+        expected = dict.fromkeys(statuses, 1)
+        expected['available'] = 2
+        response = self.client.get(reverse('depthead:faculty_monitoring'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            {item['key']: item['count'] for item in response.context['status_counts']},
+            expected,
+        )
+        for status in statuses:
+            self.assertContains(response, f'data-status-count="{status}"')
+        FacultyProfile.objects.filter(pk='monitor-0').update(current_status='unavailable')
+        expected.update(available=1, unavailable=2)
+        response = self.client.get(reverse('depthead:faculty_monitoring_data'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            {item['key']: item['count'] for item in response.json()['status_counts']},
+            expected,
+        )
+
+    def test_monitoring_empty_status_counts(self):
+        response = self.client.get(reverse('depthead:faculty_monitoring_data'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()['status_counts']), 5)
+        self.assertTrue(all(item['count'] == 0 for item in response.json()['status_counts']))
+
     @patch('apps.depthead.views.send_faculty_removed_email')
     def test_remove_faculty_succeeds_when_email_fails(self, send_email):
         faculty = get_user_model().objects.create_user(

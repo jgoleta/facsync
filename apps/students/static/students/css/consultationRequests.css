@@ -663,3 +663,22 @@ body {
 
 .delete-request-btn:hover { background: #fff1f0; }
 .delete-request-btn:disabled { opacity: 0.6; cursor: wait; }
+.request-cancellation-btn {
+  padding: 8px 12px;
+  border: 1px solid #b45309;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+  font: inherit;
+  cursor: pointer;
+}
+
+.request-cancellation-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.status-badge.status-cancellation_requested {
+  background: #fef3c7;
+  color: #92400e;
+}

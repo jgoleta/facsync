@@ -194,11 +194,11 @@ def faculty_schedule_template(request):
     writer = csv.writer(response)
     writer.writerow(SCHEDULE_CSV_HEADERS)
     writer.writerow([
-        'OFFERING-001', 'CS101', 'A', 'Introduction to Computing', '3', '3', '0',
+        'OFFERING-001', 'CS101', 'A', 'Introduction to Computing', '3', '3', '0', 'Monday',
         '2026-08-17', '2026-12-15', '10:30', '12:00', 'Room 204',
     ])
     writer.writerow([
-        'OFFERING-002', 'CS102', 'A', 'Data Structures', '3', '3', '0',
+        'OFFERING-002', 'CS102', 'A', 'Data Structures', '3', '3', '0', 'Tuesday',
         '2026-08-18', '2026-12-15', '13:00', '15:00', 'Room 204',
     ])
     return response
@@ -237,12 +237,15 @@ def upload_faculty_schedule(request, faculty_id):
                 lecture=row['lecture'],
                 lab=row['lab'],
                 uploaded_by=request.user,
+                is_csv_upload=True,
                 description=row['description'],
                 location=row['room'],
                 schedule_status=row['status'],
                 event_type=row['event_type'],
                 date=row['date'],
                 day_of_week=row['day_of_week'],
+                start_month=row['start_month'],
+                end_month=row['end_month'],
                 recurrence_start_date=row['recurrence_start_date'],
                 recurrence_end_date=row['recurrence_end_date'],
                 start_time=row['start_time'],
@@ -317,14 +320,25 @@ def view_faculty_schedule_preview(request, faculty_id):
     events = list(
         ScheduleEvent.objects.filter(
             faculty=faculty,
-            managed_by_facsync=True,
-        ).order_by('id')
+            is_csv_upload=True,
+        ).select_related('uploaded_by').order_by('id')
     )
+    rows = []
+    for event in events:
+        uploader = event.uploaded_by
+        rows.append({
+            **_schedule_csv_row(event),
+            'id': event.pk,
+            'uploader_label': (
+                f'Uploaded by {uploader.get_full_name() or uploader.username}'
+                if uploader else 'Uploader unknown'
+            ),
+        })
     return JsonResponse({
         'faculty_id': faculty.faculty_id,
         'faculty_name': faculty.user.get_full_name() or faculty.user.username,
         'last_updated_at': faculty.schedule_last_updated_at.isoformat() if faculty.schedule_last_updated_at else None,
-        'preview': [_schedule_csv_row(event) for event in events],
+        'preview': rows,
         'events': [_event_json(event) for event in events],
     })
 
@@ -345,7 +359,7 @@ def delete_faculty_schedule(request, faculty_id):
     with transaction.atomic():
         deleted_count, _ = ScheduleEvent.objects.filter(
             faculty=faculty,
-            managed_by_facsync=True,
+            is_csv_upload=True,
         ).delete()
         faculty.schedule_last_updated_at = None
         faculty.save(update_fields=['schedule_last_updated_at'])
@@ -441,7 +455,22 @@ def faculty_monitoring(request):
             'is_inactive': is_inactive,
             'last_login': last_login,
         })
-    return render(request, 'depthead/facultyMonitoring.html', {'faculty_list': faculty_list})
+    return render(request, 'depthead/facultyMonitoring.html', {
+        'faculty_list': faculty_list,
+        'status_counts': _monitoring_status_counts(faculty_list),
+    })
+
+
+def _monitoring_status_counts(faculty_list):
+    """Summarize the same college-scoped faculty shown in monitoring."""
+    return [
+        {
+            'key': key,
+            'label': STATUS_LABELS[key][0],
+            'count': sum(item['status_class'] == STATUS_LABELS[key][1] for item in faculty_list),
+        }
+        for key in ('available', 'busy', 'virtual_only', 'on_leave', 'unavailable')
+    ]
 
 
 @login_required
@@ -693,7 +722,10 @@ def faculty_monitoring_data(request):
             'updated_at_iso': profile.status_updated_at.isoformat() if profile.status_updated_at else None,
             'is_inactive': is_inactive,
         })
-    return JsonResponse({'faculty_list': faculty_list})
+    return JsonResponse({
+        'faculty_list': faculty_list,
+        'status_counts': _monitoring_status_counts(faculty_list),
+    })
 
 
 @login_required

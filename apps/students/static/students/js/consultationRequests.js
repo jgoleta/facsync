@@ -4,6 +4,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const requestResultCount = document.getElementById('requestResultCount');
 
     requestList?.addEventListener('click', async (event) => {
+        const cancellationButton = event.target.closest('.request-cancellation-btn');
+        if (cancellationButton && !cancellationButton.disabled) {
+            if (!window.confirm('Send a cancellation request to the faculty member?')) return;
+            cancellationButton.disabled = true;
+            const feedback = window.studentFeedback;
+            feedback?.showLoading('Requesting consultation cancellation...');
+            try {
+                const cookie = document.cookie.split('; ').find(value => value.startsWith('csrftoken='));
+                const response = await fetch(cancellationButton.dataset.cancellationUrl, {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': cookie ? decodeURIComponent(cookie.slice('csrftoken='.length)) : '' },
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Unable to request cancellation.');
+                const item = cancellationButton.closest('.request-item');
+                item.dataset.status = data.status;
+                item.querySelector('.status-badge').textContent = data.status_label;
+                item.querySelector('.status-badge').className = `status-badge status-${data.status}`;
+                cancellationButton.remove();
+                feedback?.showToast('Cancellation request sent to faculty.');
+                applyFilter();
+            } catch (error) {
+                feedback?.showToast(error.message, true);
+                cancellationButton.disabled = false;
+            } finally {
+                feedback?.hideLoading();
+            }
+            return;
+        }
         const button = event.target.closest('.delete-request-btn');
         if (!button || button.disabled) return;
         if (!window.confirm('Delete this consultation request permanently? Any linked calendar appointment will also be removed.')) return;
@@ -68,6 +97,15 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/student/api/consultation-requests/', { cache: 'no-store' });
             const data = await response.json();
             if (!response.ok) return;
+
+            // A faculty decision changes the badge and available actions, not just list membership.
+            const updated = new Map((data.consultations || []).map(item => [item.request_id, item]));
+            if ([...requestList.querySelectorAll('.request-item')].some(item =>
+                updated.has(item.dataset.requestId)
+                && updated.get(item.dataset.requestId).status !== item.dataset.status)) {
+                window.location.reload();
+                return;
+            }
 
             const activeRequestIds = new Set(
                 (data.consultations || []).map(consultation => consultation.request_id),
