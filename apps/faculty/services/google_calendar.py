@@ -1,5 +1,6 @@
 import secrets
 import calendar
+import logging
 from datetime import date, datetime, time, timedelta
 from hmac import compare_digest
 from urllib.parse import urlencode
@@ -30,6 +31,44 @@ GOOGLE_CALENDAR_SCOPE = getattr(
     'GOOGLE_CALENDAR_SCOPE',
     'https://www.googleapis.com/auth/calendar.events',
 )
+logger = logging.getLogger(__name__)
+
+
+def _diagnostic_scopes(value):
+    """Only log recognized scope names, never arbitrary token-response values."""
+    if not isinstance(value, str):
+        return 'not_reported'
+    allowed = {
+        'openid', 'email', 'profile',
+        'https://www.googleapis.com/auth/userinfo.email',
+        'https://www.googleapis.com/auth/userinfo.profile',
+        'https://www.googleapis.com/auth/calendar',
+        'https://www.googleapis.com/auth/calendar.events',
+        'https://www.googleapis.com/auth/calendar.readonly',
+        'https://www.googleapis.com/auth/calendar.events.readonly',
+    }
+    return ','.join(sorted({scope if scope in allowed else 'other_scope'
+                            for scope in value.split()})) or 'empty'
+
+
+def _userinfo_error_reason(response):
+    """Allowlist machine error codes; do not log bodies or error descriptions."""
+    try:
+        payload = response.json()
+    except ValueError:
+        return 'non_json_response'
+    error = payload.get('error') if isinstance(payload, dict) else None
+    candidates = [error] if isinstance(error, str) else []
+    if isinstance(error, dict):
+        candidates.append(error.get('status'))
+        errors = error.get('errors')
+        if isinstance(errors, list):
+            candidates.extend(item.get('reason') for item in errors if isinstance(item, dict))
+    allowed = {'invalid_token', 'invalid_credentials', 'insufficient_scope',
+               'insufficientPermissions', 'authError', 'UNAUTHENTICATED',
+               'PERMISSION_DENIED', 'rateLimitExceeded', 'backendError'}
+    return next((value for value in candidates if isinstance(value, str) and value in allowed),
+                'unclassified')
 
 
 class GoogleCalendarError(Exception):
@@ -107,6 +146,11 @@ def finish_oauth(request, code, state):
     if not access_token:
         raise GoogleCalendarError('Google did not return an access token.')
 
+    diagnostic_id = secrets.token_hex(6)
+    # Warning level makes these temporary diagnostics visible without DEBUG=True.
+    logger.warning('calendar_oauth_diagnostic ref=%s stage=token_exchange requested_scopes=%s granted_scopes=%s',
+                   diagnostic_id, _diagnostic_scopes(GOOGLE_CALENDAR_SCOPE),
+                   _diagnostic_scopes(token_data.get('scope')))
     try:
         userinfo_response = requests.get(
             GOOGLE_USERINFO_URL,
@@ -114,10 +158,18 @@ def finish_oauth(request, code, state):
             timeout=20,
         )
     except requests.RequestException as exc:
+        reason = 'timeout' if isinstance(exc, requests.Timeout) else 'request_error'
+        logger.warning('calendar_oauth_diagnostic ref=%s stage=userinfo outcome=failed reason=%s',
+                       diagnostic_id, reason)
         raise GoogleCalendarError('Unable to verify the Google account.') from exc
     if not userinfo_response.ok:
+        logger.warning('calendar_oauth_diagnostic ref=%s stage=userinfo outcome=failed http_status=%s reason=%s',
+                       diagnostic_id, userinfo_response.status_code,
+                       _userinfo_error_reason(userinfo_response))
         raise GoogleCalendarError('Unable to verify the Google account.')
 
+    logger.warning('calendar_oauth_diagnostic ref=%s stage=userinfo outcome=http_success http_status=%s',
+                   diagnostic_id, userinfo_response.status_code)
     userinfo = userinfo_response.json()
     google_email = (userinfo.get('email') or '').casefold()
     local_email = (request.user.email or '').casefold()
