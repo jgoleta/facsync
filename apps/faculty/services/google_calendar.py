@@ -263,6 +263,7 @@ def list_google_events(connection):
         params = {
             'singleEvents': 'true',
             'showDeleted': 'false',
+            'showHiddenInvitations': 'true',
             'maxResults': 2500,
             'orderBy': 'startTime',
             'timeZone': getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE),
@@ -326,6 +327,7 @@ def _google_event_values(item, existing=None):
     return {
         'title': (item.get('summary') or 'Untitled event')[:128],
         'description': item.get('description') or '',
+        'location': (item.get('location') or '')[:128],
         'event_type': event_type,
         'date': event_date,
         'start_time': start_time,
@@ -574,7 +576,7 @@ def delete_google_event(connection, event):
         )
     except GoogleCalendarError as exc:
         # A record already deleted in Google is already in the desired state.
-        if '(404)' not in str(exc):
+        if not any(code in str(exc) for code in ('(404)', '(410)')):
             raise
 
 
@@ -617,8 +619,12 @@ def delete_google_event_instance(connection, recurring_event_id, occurrence_date
 
 def sync_google_calendar(user):
     """Pull calendar data, reconcile local records, update status, and record sync time."""
-    connection = GoogleCalendarConnection.objects.get(user=user)
+    connection = GoogleCalendarConnection.objects.filter(user=user).first()
+    if connection is None:
+        raise GoogleCalendarError('Connect Google Calendar before syncing.')
     faculty = FacultyProfile.objects.get(user=user)
+    if not faculty.sync_enabled:
+        raise GoogleCalendarError('Two-way sync is disabled in your profile.')
     try:
         google_events = list_google_events(connection)
         seen_ids = set()
@@ -685,7 +691,7 @@ def sync_google_calendar(user):
                         'google_calendar_id', 'calendar_sync_status',
                         'calendar_sync_error', 'last_calendar_sync_at',
                     ])
-                continue
+                    continue
 
             seen_ids.add(event_id)
             if event:

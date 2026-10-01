@@ -139,6 +139,11 @@ class ScheduleEvent(models.Model):
     recurrence_start_date = models.DateField(null=True, blank=True)
     recurrence_end_date = models.DateField(null=True, blank=True)
     recurrence_excluded_dates = models.JSONField(default=list, blank=True)
+    recurring_parent = models.ForeignKey(
+        'self', null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='edited_occurrences',
+    )
+    original_occurrence_date = models.DateField(null=True, blank=True)
     start_time = models.TimeField(null=True, blank=True)
     end_time = models.TimeField(null=True, blank=True)
     google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)
