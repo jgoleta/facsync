@@ -1,0 +1,594 @@
+diff --git a/apps/depthead/services/analytics.py b/apps/depthead/services/analytics.py
+index 0491f00..d23c056 100644
+--- a/apps/depthead/services/analytics.py
++++ b/apps/depthead/services/analytics.py
+@@ -250,13 +250,15 @@ def get_scheduled_consultation_patterns(consultations):
+     }
+ 
+ 
+-def get_request_submission_patterns(college_code, period):
++def get_request_submission_patterns(college_code, period, *, faculty=None):
+     """Aggregate request creation timestamps in the explicit local timezone."""
+ 
+     requests = get_base_consultation_queryset(college_code).filter(
+         requested_at__gte=period.start_datetime,
+         requested_at__lt=period.end_datetime_exclusive,
+     )
++    if faculty is not None:
++        requests = requests.filter(faculty=faculty)
+     hour_counts = Counter()
+     weekday_counts = Counter()
+     combination_counts = Counter()
+diff --git a/apps/depthead/services/analytics_browser.py b/apps/depthead/services/analytics_browser.py
+index 91adcb2..faa179c 100644
+--- a/apps/depthead/services/analytics_browser.py
++++ b/apps/depthead/services/analytics_browser.py
+@@ -1,29 +1,37 @@
+ """Deterministic presentation of existing metrics; no AI or stored conversation."""
+ from django.urls import reverse
++from apps.core.department_updates import UPDATE_QUESTIONS, department_update_answer
+ from . import analytics
+ from .analytics_display import (
+-    student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display,
++    student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display, consultation_topics_display,
+ )
+ from .schedule_availability import get_schedule_availability
+ 
+ 
+ ANALYTICS_QUESTIONS = {
+-    'peak_hour': ('Consultations', 'What is the peak consultation hour?'),
++    'daily_faculty': ('Schedules', 'Who has the most open schedule time each day?'),
++    'daily_availability': ('Schedules', 'How much schedule availability is there each day?'),
++    'consultation_topics': ('Consultations', 'What consultation topics are most frequently requested?'),
+     'peak_day': ('Consultations', 'What is the peak consultation day?'),
+-    'capacity': ('Consultations', 'Can we measure the supply-demand gap?'),
++    'peak_hour': ('Consultations', 'What is the peak consultation hour?'),
+     'faculty_load': ('Consultations', 'Which faculty receive the most requests?'),
+-    'status_frequency': ('Faculty', 'How often do faculty update their status?'),
++    'capacity': ('Consultations', 'Can we measure the supply-demand gap?'),
+     'completion_rates': ('Faculty', 'What are faculty consultation completion rates?'),
+     'approval_times': ('Faculty', 'How long do faculty take to approve requests?'),
+     'status_availability': ('Faculty', 'What are faculty status availability rates?'),
++    'status_frequency': ('Faculty', 'How often do faculty update their status?'),
+     'peak_request_period': ('Students', 'Which month had the most submitted requests?'),
+     'student_frequency': ('Students', 'Which students submit the most requests?'),
+-    'daily_faculty': ('Schedules', 'Who has the most open schedule time each day?'),
+-    'daily_availability': ('Schedules', 'How much schedule availability is there each day?'),
++    **{key: ('Department updates', question) for key, question in UPDATE_QUESTIONS.items()},
+ }
+ 
+ 
+ def analytics_browser_answer(metric, college):
++    if metric not in ANALYTICS_QUESTIONS:
++        raise ValueError('Unknown analytics question')
++    if metric in UPDATE_QUESTIONS:
++        answer = department_update_answer(metric, college, 'depthead', reverse('depthead:college_settings'))
++        return dict(answer, metric=metric, question=ANALYTICS_QUESTIONS[metric][1])
+     period = analytics.normalize_period()
+     period_label = f'Month-to-date: {period.start_date} to {period.end_date} ({period.timezone_name})'
+     source = 'peak_analytics'
+@@ -51,12 +59,17 @@ def analytics_browser_answer(metric, college):
+                 labels = peak['weekdays']
+             lines = [f"{label}: {peak['count']} completed consultations" for label in labels]
+             note = 'Based on scheduled dates and times of completed consultations. All tied peaks are shown.'
+-    elif metric in ('peak_request_period', 'student_frequency'):
++    elif metric in ('peak_request_period', 'student_frequency', 'consultation_topics'):
+         source = 'student_behavior'
+         months, today = student_reporting_period()
+         period = analytics.normalize_period(months[0], today)
+         period_label = f'{period.start_date} to {period.end_date} ({period.timezone_name})'
+-        if metric == 'peak_request_period':
++        if metric == 'consultation_topics':
++            summary = analytics.get_consultation_summary(analytics.get_base_consultation_queryset(college, period))
++            rows = consultation_topics_display(summary)
++            lines = [f"{row['label']}: {row['count']} requests ({row['percentage']:.2f}%)" for row in rows]
++            note = 'Topics selected when booking; all request statuses. Based on scheduled dates in this six-month range.'
++        elif metric == 'peak_request_period':
+             patterns = analytics.get_request_submission_patterns(college, period)
+             label, count = peak_request_month(patterns['monthly_trend'])
+             lines = [f'{label}: {count} submitted requests'] if count else []
+diff --git a/apps/depthead/static/depthead/css/analytics_browser.css b/apps/depthead/static/depthead/css/analytics_browser.css
+index 63e8cf5..0ad8ae6 100644
+--- a/apps/depthead/static/depthead/css/analytics_browser.css
++++ b/apps/depthead/static/depthead/css/analytics_browser.css
+@@ -1,6 +1,7 @@
+ #analytics-browser { position: fixed; right: 0; top: 0; height: 100dvh; pointer-events: none; z-index: 1100; color: var(--text); }
+ #analytics-browser [hidden] { display: none !important; }
+-#analytics-chat-toggle { position: absolute; right: 0; top: 45%; writing-mode: vertical-rl; padding: 18px 10px; border: 1px solid var(--border); border-radius: 12px 0 0 12px; background: var(--accent); color: var(--text-light); cursor: pointer; font: inherit; font-size: 15px; pointer-events: auto; }
++#analytics-chat-toggle { position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px; display: grid; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--accent); color: var(--text-light); cursor: pointer; pointer-events: auto; box-shadow: 0 4px 12px var(--border); }
++@media (max-width: 600px) { #analytics-chat-toggle { right: 16px; bottom: 16px; } }
+ #analytics-chat-panel { position: absolute; right: 0; top: 0; width: min(400px, 100vw); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; border-left: 1px solid var(--border); background: var(--card-bg); box-shadow: -4px 0 16px var(--border); pointer-events: auto; }
+ .analytics-chat-header { display: flex; align-items: flex-start; gap: 12px; padding: 16px; background: var(--accent-soft); }
+ .analytics-chat-header h2 { margin: 0; font-size: 18px; }
+@@ -23,7 +24,7 @@
+ body.analytics-chat-open .overview-page { container-type: inline-size; }
+ @media (min-width: 1280px) {
+     body.analytics-chat-open .admin-shell > .main-content { width: calc(100% - 660px); margin-right: 400px; }
+-    body.student-dashboard.analytics-chat-open .page-shell { margin-right: 400px; }
++    body.student-dashboard.analytics-chat-open .page-shell, body.faculty-chat-dashboard.analytics-chat-open .page-shell { margin-right: 400px; }
+     body.student-dashboard.analytics-chat-open .dashboard-container { width: calc(100% - 48px); min-width: 0; }
+ }
+ @container (max-width: 900px) {
+@@ -37,3 +38,7 @@ body.analytics-chat-open .overview-page { container-type: inline-size; }
+ @media (max-width: 600px) {
+     #analytics-chat-panel { width: 100vw; }
+ }
++
++@media (min-width: 1280px) {
++    body.faculty-chat-dashboard.analytics-chat-open .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
++}
+diff --git a/apps/depthead/static/depthead/js/analytics_browser.js b/apps/depthead/static/depthead/js/analytics_browser.js
+index 08a4940..b665c97 100644
+--- a/apps/depthead/static/depthead/js/analytics_browser.js
++++ b/apps/depthead/static/depthead/js/analytics_browser.js
+@@ -91,7 +91,7 @@
+         reply.append(list, element('p', data.note));
+         const source = new URL(data.source_url, window.location.origin);
+         if (source.origin === window.location.origin) {
+-          const link = element('a', root.dataset.sourceLabel || 'View source analytics');
++          const link = element('a', data.source_label || root.dataset.sourceLabel || 'View source analytics');
+           link.href = source.href;
+           reply.append(link);
+         }
+diff --git a/apps/depthead/templates/depthead/partials/analytics_browser.html b/apps/depthead/templates/depthead/partials/analytics_browser.html
+index 9bf7b8f..918841d 100644
+--- a/apps/depthead/templates/depthead/partials/analytics_browser.html
++++ b/apps/depthead/templates/depthead/partials/analytics_browser.html
+@@ -1,6 +1,6 @@
+-<div id="analytics-browser" data-endpoint="{% url 'depthead:analytics_browser_api' %}">
++<div id="analytics-browser" class="college-chat-browser" data-endpoint="{% url 'depthead:analytics_browser_api' %}">
+     <button type="button" id="analytics-chat-toggle" aria-label="Open analytics browser" aria-expanded="false" aria-controls="analytics-chat-panel" hidden>
+-        Analytics
++        {% include 'components/_chat_launcher_icon.html' %}
+     </button>
+     <section id="analytics-chat-panel" role="dialog" aria-labelledby="analytics-chat-title" hidden>
+         <header class="analytics-chat-header">
+diff --git a/apps/depthead/tests/test_analytics_browser.py b/apps/depthead/tests/test_analytics_browser.py
+index f35997e..96e6201 100644
+--- a/apps/depthead/tests/test_analytics_browser.py
++++ b/apps/depthead/tests/test_analytics_browser.py
+@@ -67,7 +67,7 @@ class AnalyticsBrowserTests(TestCase):
+     def test_widget_only_on_overview(self):
+         response = self.client.get(reverse('depthead:admin_dashboard'))
+         self.assertContains(response, 'id="analytics-browser"', count=1)
+-        self.assertContains(response, 'data-metric=', count=12)
++        self.assertContains(response, 'data-metric=', count=15)
+         for page in ('peak_analytics', 'faculty_trends', 'student_behavior'):
+             response = self.client.get(reverse(f'depthead:{page}'))
+             self.assertEqual(response.status_code, 200)
+diff --git a/apps/faculty/templates/faculty/dashboardFaculty.html b/apps/faculty/templates/faculty/dashboardFaculty.html
+index bf5ac8f..7d0fe08 100644
+--- a/apps/faculty/templates/faculty/dashboardFaculty.html
++++ b/apps/faculty/templates/faculty/dashboardFaculty.html
+@@ -10,9 +10,10 @@
+     <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260930-cancellation-actions">
+     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+     <link rel="stylesheet" href="{% static 'css/announcements.css' %}?v=20260917-faculty-announcement-ui">
++    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}">
+ </head>
+ 
+-<body>
++<body class="faculty-chat-dashboard">
+     <div class="hidden">{% csrf_token %}</div>
+     <div class="page-shell">
+         <header class="topbar">
+@@ -232,6 +233,8 @@
+ {% url 'faculty:active_announcements' as announcement_fetch_url %}
+     {% include 'partials/announcementModal.html' %}
+     <script src="{% static 'js/announcements.js' %}?v=20260927-login-session"></script>
++    {% include 'faculty/partials/consultation_browser.html' %}
++    <script src="{% static 'depthead/js/analytics_browser.js' %}" defer></script>
+ </body>
+ 
+ </html>
+diff --git a/apps/faculty/urls.py b/apps/faculty/urls.py
+index 32adfea..95104c1 100644
+--- a/apps/faculty/urls.py
++++ b/apps/faculty/urls.py
+@@ -4,6 +4,7 @@ from . import views
+ app_name = 'faculty'
+ 
+ urlpatterns = [
++    path('api/consultation-browser/', views.consultation_browser_api, name='consultation_browser_api'),
+     path('dashboard/', views.dashboard, name='dashboard'),
+     path('api/status/', views.update_status, name='update_status'),
+     path('api/walk-ins/preference/', views.api_walk_in_preference, name='api_walk_in_preference'),
+diff --git a/apps/faculty/views.py b/apps/faculty/views.py
+index 9b96188..d9e04df 100644
+--- a/apps/faculty/views.py
++++ b/apps/faculty/views.py
+@@ -1,3 +1,5 @@
++from .services.consultation_browser import QUESTIONS as FACULTY_BROWSER_QUESTIONS, consultation_browser_answer
++from django.views.decorators.http import require_GET
+ import csv
+ import io
+ import json
+@@ -500,6 +502,7 @@ def dashboard(request):
+     }.get(current_status, 'not-set')
+     status_label = dict(FacultyProfile.STATUS_CHOICES).get(current_status, 'Not Set')
+     return render(request, 'faculty/dashboardFaculty.html', {
++        'analytics_questions': [{'metric': key, 'group': group, 'question': question} for key, (group, question) in FACULTY_BROWSER_QUESTIONS.items()],
+         'faculty_profile': faculty_profile,
+         'current_status': current_status,
+         'manual_status_override': faculty_profile.manual_status_override if faculty_profile else False,
+@@ -1544,3 +1547,17 @@ def api_consultation(request, request_id):
+     if request.method == 'GET':
+         return JsonResponse(_consultation_json(consultation))
+     return HttpResponse(status=405)
++
++
++@login_required
++@role_required('faculty')
++@require_GET
++@never_cache
++def consultation_browser_api(request):
++    metric = request.GET.get('metric', '')
++    if metric not in FACULTY_BROWSER_QUESTIONS:
++        return JsonResponse({'error': 'Unknown consultation question.'}, status=400)
++    faculty = FacultyProfile.objects.filter(user=request.user).first()
++    if not faculty or not str(faculty.college_id or '').strip():
++        return JsonResponse({'error': 'Your faculty profile has no college set.'}, status=400)
++    return JsonResponse(consultation_browser_answer(metric, faculty))
+diff --git a/apps/students/availability_browser.py b/apps/students/availability_browser.py
+index 55e176c..0c1989c 100644
+--- a/apps/students/availability_browser.py
++++ b/apps/students/availability_browser.py
+@@ -4,6 +4,7 @@ from django.conf import settings
+ from django.urls import reverse
+ from django.utils import timezone
+ from apps.core.models import OfficeClosure
++from apps.core.department_updates import UPDATE_QUESTIONS, department_update_answer
+ from apps.depthead.services.analytics import _eligible_faculty
+ from apps.depthead.services.schedule_availability import get_schedule_availability
+ 
+@@ -12,12 +13,15 @@ QUESTIONS = {
+     'today_open': 'Which faculty have the most open schedule time today?',
+     'week_daily': 'Who has the most open schedule time each day this week?',
+     'best_day': 'Which day this week has the most faculty availability?',
++    **UPDATE_QUESTIONS,
+ }
+ 
+ 
+ def availability_answer(metric, college):
+     if metric not in QUESTIONS:
+         raise ValueError('Unknown availability question')
++    if metric in UPDATE_QUESTIONS:
++        return department_update_answer(metric, college, 'student', reverse('students:dashboard'))
+     tz = getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)
+     today = timezone.localtime(timezone.now(), ZoneInfo(tz)).date()
+     period = f'Today: {today} ({tz})'
+diff --git a/apps/students/templates/students/partials/availability_browser.html b/apps/students/templates/students/partials/availability_browser.html
+index 6758d69..5ca32d2 100644
+--- a/apps/students/templates/students/partials/availability_browser.html
++++ b/apps/students/templates/students/partials/availability_browser.html
+@@ -1,5 +1,5 @@
+ <div id="analytics-browser" data-endpoint="{% url 'students:availability_browser_api' %}" data-label="Faculty availability" data-source-label="View faculty directory">
+-    <button type="button" id="analytics-chat-toggle" aria-label="Open faculty availability" aria-expanded="false" aria-controls="analytics-chat-panel" hidden>Faculty availability</button>
++    <button type="button" id="analytics-chat-toggle" aria-label="Open faculty availability" aria-expanded="false" aria-controls="analytics-chat-panel" hidden>{% include 'components/_chat_launcher_icon.html' %}</button>
+     <section id="analytics-chat-panel" role="dialog" aria-labelledby="analytics-chat-title" hidden>
+         <header class="analytics-chat-header">
+             <div><h2 id="analytics-chat-title">Faculty availability</h2><p>{{ request.user.college_name|default:request.user.college }} &middot; Your college only</p></div>
+@@ -10,6 +10,9 @@
+             <fieldset><legend>Availability and schedules</legend>
+                 {% for metric, question in availability_questions %}<button type="button" data-metric="{{ metric }}">{{ question }}</button>{% endfor %}
+             </fieldset>
++            <fieldset><legend>Department updates</legend>
++                {% for metric, question in department_questions %}<button type="button" data-metric="{{ metric }}">{{ question }}</button>{% endfor %}
++            </fieldset>
+         </div>
+     </section>
+ </div>
+diff --git a/apps/students/tests/test_availability_browser.py b/apps/students/tests/test_availability_browser.py
+index 70b45da..9cfc171 100644
+--- a/apps/students/tests/test_availability_browser.py
++++ b/apps/students/tests/test_availability_browser.py
+@@ -8,6 +8,7 @@ from django.test.utils import CaptureQueriesContext
+ from apps.core.models import User, OfficeClosure
+ from apps.faculty.models import FacultyProfile, ScheduleEvent, StatusHistory
+ from apps.students.availability_browser import QUESTIONS
++from apps.core.department_updates import UPDATE_QUESTIONS
+ from apps.depthead.services.analytics_browser import ANALYTICS_QUESTIONS
+ 
+ 
+@@ -38,14 +39,14 @@ class AvailabilityBrowserTests(TestCase):
+                 text = response.content.decode()
+                 for private in ('PRIVATE-OTHER-COLLEGE', 'PRIVATE-EVENT-TITLE', 'PRIVATE-DESCRIPTION', 'completion_rate', 'response_time'):
+                     self.assertNotIn(private, text)
+-                self.assertEqual(set(response.json()), {'period', 'lines', 'note', 'source_url'})
++                self.assertEqual(set(response.json()), ({'period', 'lines', 'note', 'source_url', 'source_label'} if metric in UPDATE_QUESTIONS else {'period', 'lines', 'note', 'source_url'}))
+             refresh.assert_not_called()
+             admin.assert_not_called()
+         self.assertEqual(before, list(FacultyProfile.objects.values_list('pk', 'current_status', 'status_updated_at')))
+         self.assertEqual(history, StatusHistory.objects.count())
+ 
+     def test_rejects_all_admin_questions_and_unknown_metric(self):
+-        for metric in list(ANALYTICS_QUESTIONS) + ['unknown', '', '__dict__']:
++        for metric in [key for key in ANALYTICS_QUESTIONS if key not in UPDATE_QUESTIONS] + ['unknown', '', '__dict__']:
+             self.assertEqual(self.client.get(self.url, {'metric': metric}).status_code, 400)
+         self.assertEqual(self.client.get(reverse('depthead:analytics_browser_api'), {'metric':'faculty_load'}).status_code, 403)
+ 
+diff --git a/apps/students/views.py b/apps/students/views.py
+index 0d183d1..29da2a2 100644
+--- a/apps/students/views.py
++++ b/apps/students/views.py
+@@ -18,6 +18,7 @@ from apps.faculty.models import ConsultationRequest, FacultyProfile, ScheduleEve
+ from apps.faculty.services.calendar_events import serialize_consultation_event, serialize_schedule_event
+ from .models import FacultyStatusSubscription
+ from .availability_browser import QUESTIONS, availability_answer
++from apps.core.department_updates import UPDATE_QUESTIONS
+ from django.views.decorators.http import require_GET
+ from django.views.decorators.cache import never_cache
+ from apps.faculty.services.google_calendar import refresh_faculty_status
+@@ -106,7 +107,8 @@ def dashboard(request):
+     closed_colleges = _closed_college_map()
+     return render(request, 'students/dashboardStudent.html', {
+         'faculty_directory': faculty_directory,
+-        'availability_questions': QUESTIONS.items(),
++        'availability_questions': [(key, text) for key, text in QUESTIONS.items() if key not in UPDATE_QUESTIONS],
++        'department_questions': UPDATE_QUESTIONS.items(),
+         'closed_colleges': closed_colleges,
+         'announcements': get_active_announcements(request.user.college, audience='students'),
+     })
+--- /dev/null
++++ b/apps/core/department_updates.py
+@@ -0,0 +1,42 @@
++"""Read-only department notices, restricted by college and recipient role."""
++from django.utils import timezone
++from .models import CollegeAnnouncement, OfficeClosure
++
++UPDATE_QUESTIONS = {
++    'active_announcements': 'What announcements are currently active in my college?',
++    'college_closure': 'Is my college currently open or closed?',
++}
++
++
++def department_update_answer(metric, college, role, source_url):
++    if metric not in UPDATE_QUESTIONS or role not in ('student', 'faculty', 'depthead'):
++        raise ValueError('Unsupported department update')
++    if not str(college or '').strip():
++        raise ValueError('College is required')
++    if metric == 'active_announcements':
++        audiences = {'student': ('students', 'both'), 'faculty': ('faculty', 'both'),
++                     'depthead': ('students', 'faculty', 'both')}[role]
++        announcements = CollegeAnnouncement.objects.filter(
++            college__iexact=college, expiry__gt=timezone.now(), audience__in=audiences,
++        ).order_by('-posted_at', '-pk')
++        def stamp(value):
++            return timezone.localtime(value).strftime('%b %d, %Y %I:%M %p %Z')
++        lines = [f'{item.message} | Audience: {item.get_audience_display()} | Posted: {stamp(item.posted_at)} | Expires: {stamp(item.expiry)}'
++                 for item in announcements]
++        lines = lines or ['No active announcements for your audience in this college.']
++        period = 'Currently active college announcements'
++        note = 'Newest first. Only unexpired announcements for your college and audience are shown.'
++    else:
++        closure = OfficeClosure.objects.filter(college__iexact=college).first()
++        closed = bool(closure and closure.is_closed)
++        lines = ['College status: ' + ('Closed' if closed else 'Open')]
++        if closure:
++            lines.extend([f'Reason: {closure.reason or "Not provided"}',
++                          f'Recorded closure start: {closure.closure_start or "Not specified"}',
++                          f'Recorded closure end: {closure.closure_end or "Not specified"}'])
++        else:
++            lines.append('No closure record is configured.')
++        period = 'Current college closure status'
++        note = 'Status follows the saved open/closed setting. Recorded dates do not automatically change it.'
++    return {'period': period, 'lines': lines, 'note': note, 'source_url': source_url,
++            'source_label': 'View college settings' if role == 'depthead' else 'View dashboard'}
+--- /dev/null
++++ b/apps/faculty/services/consultation_browser.py
+@@ -0,0 +1,56 @@
++"""Preset answers restricted to the authenticated faculty member's own records."""
++from django.urls import reverse
++from apps.core.department_updates import UPDATE_QUESTIONS, department_update_answer
++from apps.depthead.services import analytics
++from apps.depthead.services.analytics_display import (
++    student_reporting_period, peak_request_month, consultation_topics_display,
++)
++
++QUESTIONS = {
++    'peak_hour': ('Consultations', 'What is the peak consultation hour?'),
++    'peak_day': ('Consultations', 'What is the peak consultation day?'),
++    'consultation_topics': ('Consultations', 'What consultation topics are most frequently requested?'),
++    'peak_request_period': ('Students', 'Which month had the most submitted requests?'),
++    'student_frequency': ('Students', 'Which students submit the most requests?'),
++    **{key: ('Department updates', question) for key, question in UPDATE_QUESTIONS.items()},
++}
++
++
++def consultation_browser_answer(metric, faculty):
++    if metric not in QUESTIONS:
++        raise ValueError('Unknown consultation question')
++    college = faculty.college_id
++    if metric in UPDATE_QUESTIONS:
++        return department_update_answer(metric, college, 'faculty', reverse('faculty:dashboard'))
++    period = analytics.normalize_period()
++    if metric in ('consultation_topics', 'peak_request_period', 'student_frequency'):
++        months, today = student_reporting_period()
++        period = analytics.normalize_period(months[0], today)
++    # Ownership is enforced before any aggregation, never supplied by the browser.
++    consultations = analytics.get_base_consultation_queryset(college, period).filter(faculty=faculty)
++    if metric in ('peak_hour', 'peak_day'):
++        patterns = analytics.get_scheduled_consultation_patterns(consultations)
++        if metric == 'peak_hour':
++            peak = patterns['peak_hour']
++            labels = [f"{hour % 12 or 12}{'AM' if hour < 12 else 'PM'}" for hour in peak['hours']]
++        else:
++            peak = patterns['peak_weekday']
++            labels = peak['weekdays']
++        lines = [f"{label}: {peak['count']} completed consultations" for label in labels]
++        note = 'Your completed consultations only, using scheduled dates and start times. All tied peaks are shown.'
++    elif metric == 'consultation_topics':
++        rows = consultation_topics_display(analytics.get_consultation_summary(consultations))
++        lines = [f"{row['label']}: {row['count']} requests ({row['percentage']:.2f}%)" for row in rows]
++        note = 'Your requests only, all statuses; topics selected when booking. Based on scheduled dates.'
++    elif metric == 'peak_request_period':
++        patterns = analytics.get_request_submission_patterns(college, period, faculty=faculty)
++        label, count = peak_request_month(patterns['monthly_trend'])
++        lines = [f'{label}: {count} submitted requests'] if count else []
++        note = 'Requests submitted to you, using submission dates across the current and five preceding months. All ties included.'
++    else:
++        rows = analytics.get_student_request_frequency_display(consultations)
++        lines = [f"{row['name']}: {row['count']} requests" for row in rows]
++        note = 'Top ten students requesting consultations with you only. Based on scheduled dates, all request statuses.'
++    return {'period': f'Your consultations: {period.start_date} to {period.end_date} ({period.timezone_name})',
++            'lines': lines or ['No data for this reporting period.'], 'note': note,
++            'source_url': reverse('faculty:booking_management'), 'source_label': 'View your consultations'}
+--- /dev/null
++++ b/apps/faculty/templates/faculty/partials/consultation_browser.html
+@@ -0,0 +1,20 @@
++<div id="analytics-browser" data-label="consultation browser" data-endpoint="{% url 'faculty:consultation_browser_api' %}">
++    <button type="button" id="analytics-chat-toggle" aria-label="Open consultation browser" aria-expanded="false" aria-controls="analytics-chat-panel" hidden>
++        {% include 'components/_chat_launcher_icon.html' %}
++    </button>
++    <section id="analytics-chat-panel" role="dialog" aria-labelledby="analytics-chat-title" hidden>
++        <header class="analytics-chat-header">
++            <div><h2 id="analytics-chat-title">Your consultations</h2><p>Your consultation records and college updates.</p></div>
++            <button type="button" id="analytics-chat-close" aria-label="Close consultation browser">&times;</button>
++        </header>
++        <div id="analytics-chat-messages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="Analytics conversation"></div>
++        <div class="analytics-chat-questions" aria-label="Preset questions">
++            {% regroup analytics_questions by group as question_groups %}
++            {% for group in question_groups %}
++            <fieldset><legend>{{ group.grouper }}</legend>
++                {% for item in group.list %}<button type="button" data-metric="{{ item.metric }}">{{ item.question }}</button>{% endfor %}
++            </fieldset>
++            {% endfor %}
++        </div>
++    </section>
++</div>
+--- /dev/null
++++ b/templates/components/_chat_launcher_icon.html
+@@ -0,0 +1 @@
++<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 11a8 8 0 0 1-8 8H7l-5 3V11a9 9 0 0 1 19 0Z"/><path d="M7 11h10M7 7h7"/></svg>
+--- /dev/null
++++ b/tests/test_chat_updates.py
+@@ -0,0 +1,129 @@
++from datetime import time, timedelta
++from unittest.mock import patch
++from django.test import TestCase
++from django.urls import reverse
++from django.utils import timezone
++from django.db import connection
++from django.test.utils import CaptureQueriesContext
++from apps.core.models import User, CollegeAnnouncement, OfficeClosure
++from apps.core.department_updates import UPDATE_QUESTIONS
++from apps.faculty.models import FacultyProfile, ConsultationRequest
++from apps.faculty.services.consultation_browser import QUESTIONS
++from apps.depthead.services.analytics_browser import ANALYTICS_QUESTIONS
++
++
++class ChatUpdatesTests(TestCase):
++    def setUp(self):
++        self.head = User.objects.create(username='head-chat', role='depthead', college='CCS')
++        self.student = User.objects.create(username='student-chat', role='student', college='CCS')
++        self.owner = User.objects.create(username='faculty-chat', role='faculty', college='CCS', account_status='active')
++        self.faculty = FacultyProfile.objects.create(user=self.owner, faculty_id='owner-chat', college_id='CCS')
++        self.url = reverse('faculty:consultation_browser_api')
++        self.client.force_login(self.owner)
++        now = timezone.now()
++        for college in ('CCS', 'CBA'):
++            for audience in ('faculty', 'students', 'both'):
++                CollegeAnnouncement.objects.create(college=college, audience=audience,
++                    message=f'{college}-{audience}-notice', expiry=now+timedelta(days=2), posted_by=self.head)
++        CollegeAnnouncement.objects.create(college='CCS', message='EXPIRED-NOTICE', expiry=now-timedelta(days=1), posted_by=self.head)
++        self.own = ConsultationRequest.objects.create(request_id='own-chat', faculty=self.faculty, user=self.student,
++            date=timezone.localdate(), start_time=time(9), end_time=time(10), status='completed', agenda='grade_consultation')
++
++    def test_announcement_audiences_and_college_for_all_roles(self):
++        for user, endpoint, visible, excluded in (
++            (self.owner, self.url, 'faculty', 'students'),
++            (self.student, reverse('students:availability_browser_api'), 'students', 'faculty'),
++            (self.head, reverse('depthead:analytics_browser_api'), 'faculty', None),
++        ):
++            self.client.force_login(user)
++            response = self.client.get(endpoint, {'metric':'active_announcements', 'college':'CBA', 'role':'depthead', 'audience':'both'})
++            self.assertEqual(response.status_code, 200)
++            text = str(response.json())
++            self.assertIn(f'CCS-{visible}-notice', text)
++            self.assertIn('CCS-both-notice', text)
++            if excluded:
++                self.assertNotIn(f'CCS-{excluded}-notice', text)
++            else:
++                self.assertIn('CCS-students-notice', text)
++            self.assertNotIn('CBA-', text)
++            self.assertNotIn('EXPIRED-NOTICE', text)
++            self.assertIn('Expires:', text)
++            self.assertIn('Posted:', text)
++            self.assertIn('no-store', response['Cache-Control'])
++
++    def test_faculty_metrics_ignore_other_faculty_even_in_same_college(self):
++        metrics = [key for key in QUESTIONS if key not in UPDATE_QUESTIONS]
++        original = {key:self.client.get(self.url, {'metric':key}).json() for key in metrics}
++        for college in ('CCS', 'CBA'):
++            user = User.objects.create(username=f'other-{college}', role='faculty', college=college)
++            profile = FacultyProfile.objects.create(user=user, faculty_id=f'other-{college}', college_id=college)
++            student = User.objects.create(username=f'PRIVATE-STUDENT-{college}', role='student', college=college)
++            for i in range(3):
++                ConsultationRequest.objects.create(request_id=f'other-{college}-{i}', faculty=profile, user=student,
++                    date=timezone.localdate(), start_time=time(15), end_time=time(16), status='completed', agenda='project_consultation')
++        with patch('apps.faculty.views.refresh_faculty_status') as refresh:
++            for metric in metrics:
++                with CaptureQueriesContext(connection) as queries:
++                    response = self.client.get(self.url, {'metric':metric, 'faculty_id':'other-CCS', 'college':'CBA'})
++                self.assertEqual(response.json(), original[metric])
++                self.assertNotIn('PRIVATE-STUDENT', str(response.json()))
++                for query in queries:
++                    self.assertNotRegex(query['sql'].upper(), r'^\s*(INSERT|UPDATE|DELETE)\b')
++            refresh.assert_not_called()
++        self.assertIn('1 submitted requests', str(original['peak_request_period']['lines']))
++        self.assertIn('student-chat: 1 requests', str(original['student_frequency']['lines']))
++
++    def test_faculty_role_method_and_metric_guards(self):
++        for metric in ('faculty_load', 'completion_rates', 'daily_faculty', 'available_now', 'unknown', ''):
++            self.assertEqual(self.client.get(self.url, {'metric':metric}).status_code, 400)
++        self.assertEqual(self.client.post(self.url).status_code, 405)
++        for user in (self.student, self.head):
++            self.client.force_login(user)
++            self.assertEqual(self.client.get(self.url, {'metric':'peak_day'}).status_code, 403)
++        admin = User.objects.create(username='admin-chat', role='superadmin')
++        self.client.force_login(admin)
++        self.assertEqual(self.client.get(self.url, {'metric':'peak_day'}).status_code, 403)
++        self.client.logout()
++        self.assertEqual(self.client.get(self.url, {'metric':'peak_day'}).status_code, 302)
++
++    def test_closure_matches_saved_flag_and_repeated_reads(self):
++        OfficeClosure.objects.create(college='CBA', is_closed=True, reason='PRIVATE-CLOSURE')
++        closure = OfficeClosure.objects.create(college='CCS', is_closed=True, reason='Meeting',
++            closure_start=timezone.localdate()-timedelta(days=3), closure_end=timezone.localdate()-timedelta(days=2))
++        for user, url in ((self.owner,self.url),(self.student,reverse('students:availability_browser_api')),
++                          (self.head,reverse('depthead:analytics_browser_api'))):
++            self.client.force_login(user)
++            response = self.client.get(url, {'metric':'college_closure','college':'CBA'})
++            self.assertIn('College status: Closed', response.json()['lines'])
++            self.assertNotIn('PRIVATE-CLOSURE', str(response.json()))
++        self.client.force_login(self.owner)
++        closure.is_closed = False
++        closure.save()
++        self.assertIn('College status: Open', self.client.get(self.url, {'metric':'college_closure'}).json()['lines'])
++        closure.delete()
++        self.assertIn('No closure record is configured.', self.client.get(self.url, {'metric':'college_closure'}).json()['lines'])
++
++    def test_empty_and_missing_profile(self):
++        ConsultationRequest.objects.all().delete()
++        for metric in QUESTIONS:
++            self.assertEqual(self.client.get(self.url, {'metric':metric}).status_code, 200)
++        self.faculty.college_id = ''
++        self.faculty.save()
++        self.assertEqual(self.client.get(self.url, {'metric':'active_announcements','college':'CCS'}).status_code, 400)
++        self.faculty.delete()
++        self.assertEqual(self.client.get(self.url, {'metric':'peak_day'}).status_code, 400)
++
++    def test_order_topics_and_dashboard_widget(self):
++        groups = list(dict.fromkeys(group for group, question in ANALYTICS_QUESTIONS.values()))
++        self.assertEqual(groups, ['Schedules','Consultations','Faculty','Students','Department updates'])
++        self.client.force_login(self.head)
++        response = self.client.get(reverse('depthead:analytics_browser_api'), {'metric':'consultation_topics'})
++        self.assertEqual(response.status_code, 200)
++        self.assertIn('1 requests (100.00%)', str(response.json()['lines']))
++        self.client.force_login(self.owner)
++        with patch('apps.faculty.views.refresh_faculty_status'):
++            response = self.client.get(reverse('faculty:dashboard'))
++        self.assertContains(response, self.url)
++        self.assertContains(response, 'Your consultations')
++        self.assertContains(response, 'Department updates')
++        self.assertNotContains(response, 'data-metric="completion_rates"')
