@@ -2,7 +2,7 @@ import csv
 import io
 import json
 import re
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timedelta
 
 from django.contrib.auth.decorators import login_required
 from apps.core.decorators import role_required
@@ -16,6 +16,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.cache import never_cache
+from apps.core.models import CollegeAnnouncement
 from apps.core.services import create_notification, get_active_announcements
 from django.http import JsonResponse
 from django.utils import timezone
@@ -233,6 +234,42 @@ def _event_values(payload, existing=None):
 
 def _event_json(event):
     return serialize_schedule_event(event, include_sync_metadata=True, human_status=True)
+
+
+def _adjust_recurring_edit(event, values):
+    """Carry occurrence exclusions and the final boundary to a new weekday."""
+    old_day = event.day_of_week
+    new_day = values.get('day_of_week')
+    if event.date is not None or not old_day or not new_day or old_day == new_day:
+        return
+
+    weekday_indexes = {day: index for index, day in enumerate(SCHEDULE_WEEKDAYS)}
+    old_index = weekday_indexes[old_day]
+    new_index = weekday_indexes[new_day]
+
+    translated_exclusions = []
+    for value in event.recurrence_excluded_dates or []:
+        try:
+            excluded_date = date.fromisoformat(value)
+        except (TypeError, ValueError):
+            translated_exclusions.append(value)
+            continue
+        if excluded_date.weekday() == old_index:
+            week_start = excluded_date - timedelta(days=excluded_date.weekday())
+            excluded_date = week_start + timedelta(days=new_index)
+        translated_exclusions.append(excluded_date.isoformat())
+    event.recurrence_excluded_dates = translated_exclusions
+
+    end_date = values.get('recurrence_end_date')
+    if end_date:
+        last_old_occurrence = end_date - timedelta(
+            days=(end_date.weekday() - old_index) % 7,
+        )
+        week_start = last_old_occurrence - timedelta(days=last_old_occurrence.weekday())
+        last_new_occurrence = week_start + timedelta(days=new_index)
+        if last_new_occurrence > end_date:
+            values['recurrence_end_date'] = last_new_occurrence
+            values['end_month'] = last_new_occurrence.month
 
 
 def _consultation_event_json(consultation):
@@ -499,6 +536,12 @@ def dashboard(request):
         'unavailable': 'unavailable',
     }.get(current_status, 'not-set')
     status_label = dict(FacultyProfile.STATUS_CHOICES).get(current_status, 'Not Set')
+    past_announcements = CollegeAnnouncement.objects.filter(
+        college__iexact=request.user.college,
+        audience__in=('faculty', 'both'),
+        expiry__lte=timezone.now(),
+    )
+
     return render(request, 'faculty/dashboardFaculty.html', {
         'faculty_profile': faculty_profile,
         'current_status': current_status,
@@ -514,6 +557,7 @@ def dashboard(request):
             status__in={'declined', 'cancelled'},
         ).count(),
         'announcements': get_active_announcements(request.user.college, audience='faculty'),
+        'past_announcements': past_announcements,
     })
 
 
@@ -711,9 +755,60 @@ def upload_schedule(request):
         faculty.schedule_last_updated_at = updated_at
         faculty.save(update_fields=['schedule_last_updated_at'])
 
+    calendar_sync = {
+        'requested': request.POST.get('sync_to_google') == 'true',
+        'status': 'not_requested',
+        'synced_count': 0,
+        'failed_count': 0,
+    }
+    if calendar_sync['requested']:
+        connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+        if connection is None:
+            calendar_sync.update(
+                status='not_connected',
+                message='Connect Google Calendar before syncing this schedule.',
+            )
+        elif not faculty.sync_enabled:
+            calendar_sync.update(
+                status='disabled',
+                message='Google Calendar sync is disabled in your profile.',
+            )
+        else:
+            for event in events:
+                try:
+                    google_event = create_google_event(connection, event)
+                    event.google_event_id = google_event.get('id')
+                    event.google_calendar_id = connection.calendar_id
+                    event.sync_state = 'synced'
+                    event.sync_error = ''
+                    if not event.google_event_id:
+                        raise GoogleCalendarError('Google Calendar did not return an event ID.')
+                    event.save(update_fields=[
+                        'google_event_id', 'google_calendar_id', 'sync_state', 'sync_error',
+                        'updated_at',
+                    ])
+                    calendar_sync['synced_count'] += 1
+                except GoogleCalendarError as exc:
+                    event.sync_state = 'out_of_sync'
+                    event.sync_error = str(exc)
+                    event.save(update_fields=['sync_state', 'sync_error', 'updated_at'])
+                    calendar_sync['failed_count'] += 1
+            calendar_sync['status'] = (
+                'synced' if not calendar_sync['failed_count'] else 'partial'
+            )
+            if calendar_sync['failed_count']:
+                calendar_sync['message'] = (
+                    f"{calendar_sync['synced_count']} event(s) synced; "
+                    f"{calendar_sync['failed_count']} event(s) could not be synced."
+                )
+
     return JsonResponse({
-        'message': f'Schedule uploaded successfully. {len(events)} row(s) added.',
+        'message': (
+            f'Schedule uploaded successfully. {len(events)} row(s) added.'
+            + (f" {calendar_sync['message']}" if calendar_sync.get('message') else '')
+        ),
         'added_count': len(events),
+        'calendar_sync': calendar_sync,
         'last_updated_at': updated_at.isoformat(),
         'preview': [_schedule_csv_row(event) for event in events],
         'events': [_event_json(event) for event in events],
@@ -771,11 +866,23 @@ def clear_schedule(request):
     except (TypeError, ValueError):
         return JsonResponse({'error': 'Invalid uploaded preview row IDs.'}, status=400)
 
+    events = list(ScheduleEvent.objects.filter(
+        faculty=faculty,
+        pk__in=event_ids,
+        is_csv_upload=True,
+    ))
+    connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+    try:
+        if connection:
+            for event in events:
+                if event.google_event_id:
+                    delete_google_event(connection, event)
+    except GoogleCalendarError as exc:
+        return JsonResponse({'error': str(exc)}, status=502)
+
     with transaction.atomic():
         deleted_count, _ = ScheduleEvent.objects.filter(
-            faculty=faculty,
-            pk__in=event_ids,
-            is_csv_upload=True,
+            pk__in=[event.pk for event in events],
         ).delete()
         faculty.schedule_last_updated_at = timezone.now()
         faculty.save(update_fields=['schedule_last_updated_at'])
@@ -1060,16 +1167,20 @@ def api_schedule_events(request):
     if request.method == 'GET':
         sync_error = None
         sync_requested = request.GET.get('sync') == '1'
+        sync_performed = False
         connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
         calendar_connected = connection is not None
         sync_enabled = bool(faculty.sync_enabled and connection)
         if sync_requested and sync_enabled:
             try:
                 sync_google_calendar(request.user)
+                sync_performed = True
             except GoogleCalendarError as exc:
                 sync_error = str(exc)
         elif sync_requested and calendar_connected and not faculty.sync_enabled:
             sync_error = 'Two-way sync is disabled in your profile.'
+        elif sync_requested and not calendar_connected:
+            sync_error = 'Connect Google Calendar before syncing.'
 
         events = list(ScheduleEvent.objects.filter(faculty=faculty))
         approved_consultations = list(
@@ -1088,7 +1199,7 @@ def api_schedule_events(request):
             'faculty_status': faculty.current_status,
             'calendar_connected': calendar_connected,
             'sync_enabled': sync_enabled,
-            'sync_performed': sync_requested and sync_enabled,
+            'sync_performed': sync_performed,
             'sync_error': sync_error,
         })
 
@@ -1164,11 +1275,13 @@ def api_schedule_events_bulk_delete(request):
         return JsonResponse({'error': 'One or more selected events could not be found.'}, status=404)
 
     connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
-    sync_enabled = bool(connection and faculty.sync_enabled)
+    # Deletion must still remove a linked Google event when two-way sync has
+    # been disabled after the event was originally synchronized.
+    calendar_available = bool(connection)
     deleted_ids = []
     try:
         for event in events:
-            if sync_enabled and event.google_event_id:
+            if calendar_available and event.google_event_id:
                 delete_google_event(connection, event)
             deleted_ids.append(event.pk)
             event.delete()
@@ -1202,19 +1315,69 @@ def api_schedule_event_detail(request, pk):
 
     connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
     sync_enabled = bool(connection and faculty.sync_enabled)
+    calendar_available = bool(connection)
 
     if request.method in ('PUT', 'PATCH'):
         try:
             payload = _json_body(request)
+            edit_scope = payload.get('edit_scope', 'all')
+            if edit_scope not in ('this', 'all'):
+                raise ValueError('edit_scope must be this or all')
+            occurrence_date = None
+            if edit_scope == 'this':
+                try:
+                    occurrence_date = date.fromisoformat(str(payload.get('occurrence_date') or ''))
+                except ValueError as exc:
+                    raise ValueError('A valid occurrence date is required for this-event edits.') from exc
+                if (event.date is not None or not event.day_of_week
+                        or occurrence_date.strftime('%A').lower() != event.day_of_week
+                        or occurrence_date.isoformat() in (event.recurrence_excluded_dates or [])
+                        or (event.recurrence_start_date and occurrence_date < event.recurrence_start_date)
+                        or (event.recurrence_end_date and occurrence_date > event.recurrence_end_date)):
+                    raise ValueError('Select an existing occurrence of this series.')
+                edited_date = date.fromisoformat(str(
+                    payload.get('date') or payload.get('start_date') or occurrence_date
+                ))
+                new_day = payload.get('day_of_week')
+                if new_day and new_day != event.day_of_week:
+                    weekdays = list(SCHEDULE_WEEKDAYS)
+                    if new_day not in weekdays:
+                        raise ValueError('Invalid day of week')
+                    edited_date = occurrence_date + timedelta(
+                        days=weekdays.index(new_day) - occurrence_date.weekday(),
+                    )
+                payload = {
+                    **payload,
+                    'date': edited_date.isoformat(),
+                    'day_of_week': '',
+                    'start_month': None,
+                    'end_month': None,
+                    'start_date': None,
+                    'end_date': None,
+                }
             values = _event_values(payload, existing=event)
+            if edit_scope == 'this':
+                values.update({
+                    'date': edited_date,
+                    'day_of_week': '',
+                    'start_month': None,
+                    'end_month': None,
+                    'recurrence_start_date': None,
+                    'recurrence_end_date': None,
+                })
         except ValueError as exc:
             return HttpResponseBadRequest(str(exc))
         sync_requested = payload.get('sync_to_google')
         if sync_requested is not None and not isinstance(sync_requested, bool):
             return HttpResponseBadRequest('sync_to_google must be true or false')
-        if sync_requested is True and faculty.sync_enabled and connection is None:
+        if sync_requested is True and connection is None:
             return JsonResponse(
                 {'error': 'Connect Google Calendar before adding this event to it.'},
+                status=409,
+            )
+        if edit_scope == 'this' and event.google_event_id and connection is None:
+            return JsonResponse(
+                {'error': 'Reconnect Google Calendar before editing this event.'},
                 status=409,
             )
         if sync_requested is False and event.google_event_id and connection is None:
@@ -1222,6 +1385,70 @@ def api_schedule_event_detail(request, pk):
                 {'error': 'Reconnect Google Calendar before removing this event from it.'},
                 status=409,
             )
+        if edit_scope == 'this':
+            try:
+                if calendar_available and event.google_event_id:
+                    delete_google_event_instance(
+                        connection,
+                        event.google_event_id,
+                        occurrence_date,
+                    )
+                excluded_dates = list(event.recurrence_excluded_dates or [])
+                occurrence_key = occurrence_date.isoformat()
+                if occurrence_key not in excluded_dates:
+                    excluded_dates.append(occurrence_key)
+                event.recurrence_excluded_dates = excluded_dates
+                event.save(update_fields=['recurrence_excluded_dates', 'updated_at'])
+
+                new_event = ScheduleEvent(
+                    faculty=faculty,
+                    recurring_parent=event,
+                    original_occurrence_date=occurrence_date,
+                    uploaded_by=event.uploaded_by,
+                    is_csv_upload=event.is_csv_upload,
+                    offering_id=event.offering_id,
+                    subject_code=event.subject_code,
+                    section=event.section,
+                    units=event.units,
+                    lecture=event.lecture,
+                    lab=event.lab,
+                    managed_by_facsync=False,
+                    sync_state='local',
+                    **values,
+                )
+                new_event.save()
+                new_sync_enabled = bool(
+                    connection and (
+                        sync_requested is True
+                        or (sync_requested is None and faculty.sync_enabled)
+                    )
+                )
+                if new_sync_enabled:
+                    google_event = create_google_event(connection, new_event)
+                    new_event.google_event_id = google_event.get('id')
+                    new_event.google_calendar_id = connection.calendar_id
+                    new_event.managed_by_facsync = True
+                    new_event.sync_state = 'synced'
+                    if not new_event.google_event_id:
+                        raise GoogleCalendarError('Google Calendar did not return an event ID.')
+                    new_event.save(update_fields=[
+                        'google_event_id', 'google_calendar_id', 'managed_by_facsync',
+                        'sync_state', 'updated_at',
+                    ])
+            except (GoogleCalendarError, ValueError) as exc:
+                return JsonResponse({'error': str(exc)}, status=502)
+            refresh_faculty_status(faculty)
+            return JsonResponse(_event_json(new_event))
+
+        edited_occurrences = list(event.edited_occurrences.filter(faculty=faculty))
+        if any(item.google_event_id for item in edited_occurrences) and not connection:
+            return JsonResponse({'error': 'Reconnect Google Calendar before editing this series.'}, status=409)
+        restored_dates = {item.original_occurrence_date.isoformat()
+                          for item in edited_occurrences if item.original_occurrence_date}
+        event.recurrence_excluded_dates = [
+            value for value in (event.recurrence_excluded_dates or []) if value not in restored_dates
+        ]
+        _adjust_recurring_edit(event, values)
         for field, value in values.items():
             setattr(event, field, value)
 
@@ -1242,8 +1469,17 @@ def api_schedule_event_detail(request, pk):
                 event.managed_by_facsync = False
                 event.sync_state = 'local'
                 event.sync_error = ''
-            elif sync_enabled:
-                if event.google_event_id:
+            elif event.google_event_id and calendar_available:
+                # An explicit sync choice replaces the Google event. This
+                # prevents the pre-edit event from remaining visible when an
+                # update is represented by a newly-created Google event.
+                if sync_requested is True:
+                    delete_google_event(connection, event)
+                    google_event = create_google_event(connection, event)
+                    event.google_event_id = google_event.get('id')
+                    event.google_calendar_id = connection.calendar_id
+                    event.managed_by_facsync = True
+                else:
                     try:
                         update_google_event(connection, event)
                     except GoogleCalendarError as exc:
@@ -1253,16 +1489,25 @@ def api_schedule_event_detail(request, pk):
                         event.google_event_id = google_event.get('id')
                         event.google_calendar_id = connection.calendar_id
                         event.managed_by_facsync = True
-                else:
-                    google_event = create_google_event(connection, event)
-                    event.google_event_id = google_event.get('id')
-                    event.google_calendar_id = connection.calendar_id
-                    event.managed_by_facsync = True
                 event.sync_state = 'synced'
                 event.sync_error = ''
                 if not event.google_event_id:
                     raise GoogleCalendarError('Google Calendar did not return an event ID.')
-            event.save()
+            elif sync_enabled:
+                google_event = create_google_event(connection, event)
+                event.google_event_id = google_event.get('id')
+                event.google_calendar_id = connection.calendar_id
+                event.managed_by_facsync = True
+                event.sync_state = 'synced'
+                event.sync_error = ''
+                if not event.google_event_id:
+                    raise GoogleCalendarError('Google Calendar did not return an event ID.')
+            for occurrence in edited_occurrences:
+                if occurrence.google_event_id:
+                    delete_google_event(connection, occurrence)
+            with transaction.atomic():
+                event.save()
+                ScheduleEvent.objects.filter(pk__in=[item.pk for item in edited_occurrences]).delete()
         except GoogleCalendarError as exc:
             return JsonResponse({'error': str(exc)}, status=502)
         refresh_faculty_status(faculty)
@@ -1276,7 +1521,7 @@ def api_schedule_event_detail(request, pk):
                     occurrence_date = date.fromisoformat(occurrence_date_value)
                 except ValueError as exc:
                     raise ValueError('Invalid occurrence date.') from exc
-                if sync_enabled and event.google_event_id:
+                if calendar_available and event.google_event_id:
                     delete_google_event_instance(
                         connection,
                         event.google_event_id,
@@ -1293,9 +1538,21 @@ def api_schedule_event_detail(request, pk):
                     'status': 'occurrence_deleted',
                     'occurrence_date': occurrence_key,
                 })
-            if sync_enabled and event.google_event_id:
-                delete_google_event(connection, event)
-            event.delete()
+            series_events = [event, *event.edited_occurrences.filter(faculty=faculty)]
+            if any(item.google_event_id and (
+                connection is None or (item.google_calendar_id
+                                       and item.google_calendar_id != connection.calendar_id)
+            ) for item in series_events):
+                return JsonResponse({
+                    'error': 'Reconnect the original Google Calendar before deleting these events.',
+                }, status=409)
+            for item in series_events:
+                if item.google_event_id:
+                    delete_google_event(connection, item)
+            with transaction.atomic():
+                ScheduleEvent.objects.filter(
+                    faculty=faculty, pk__in=[item.pk for item in series_events],
+                ).delete()
         except ValueError as exc:
             return HttpResponseBadRequest(str(exc))
         except GoogleCalendarError as exc:

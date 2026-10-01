@@ -419,6 +419,83 @@ class FacultyViewTests(TestCase):
         self.assertFalse(ScheduleEvent.objects.filter(pk__in=event_ids).exists())
         self.assertEqual(delete_google_event.call_count, 2)
 
+    @patch('apps.faculty.views.delete_google_event')
+    def test_bulk_delete_removes_google_events_when_sync_is_disabled(self, delete_google_event):
+        user = get_user_model().objects.create_user(
+            username='faculty-bulk-delete-sync-disabled',
+            password='test-password',
+            role='faculty',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-bulk-delete-sync-disabled',
+            user=user,
+            college_id='CCS',
+            sync_enabled=False,
+        )
+        connection = GoogleCalendarConnection.objects.create(
+            user=user,
+            google_user_id='google-bulk-delete-sync-disabled',
+            access_token='access-token',
+        )
+        event = ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Synced event',
+            event_type='busy',
+            date='2026-08-20',
+            start_time='09:00',
+            end_time='10:00',
+            google_event_id='google-event-to-delete',
+            google_calendar_id=connection.calendar_id,
+        )
+        self.client.force_login(user)
+
+        response = self.client.post(
+            reverse('faculty:api_schedule_events_bulk_delete'),
+            data=json.dumps({'event_ids': [event.pk]}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        delete_google_event.assert_called_once_with(connection, event)
+
+    @patch('apps.faculty.views.delete_google_event')
+    def test_single_delete_removes_google_event_when_sync_is_disabled(self, delete_google_event):
+        user = get_user_model().objects.create_user(
+            username='faculty-single-delete-sync-disabled',
+            password='test-password',
+            role='faculty',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-single-delete-sync-disabled',
+            user=user,
+            college_id='CCS',
+            sync_enabled=False,
+        )
+        connection = GoogleCalendarConnection.objects.create(
+            user=user,
+            google_user_id='google-single-delete-sync-disabled',
+            access_token='access-token',
+        )
+        event = ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Synced event',
+            event_type='busy',
+            date='2026-08-20',
+            start_time='09:00',
+            end_time='10:00',
+            google_event_id='google-event-to-delete',
+            google_calendar_id=connection.calendar_id,
+        )
+        self.client.force_login(user)
+
+        response = self.client.delete(
+            reverse('faculty:api_schedule_event_detail', args=[event.pk]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        delete_google_event.assert_called_once_with(connection, event)
+        self.assertFalse(ScheduleEvent.objects.filter(pk=event.pk).exists())
+
     @patch('apps.faculty.views.delete_google_event_instance')
     def test_remove_event_button_can_delete_only_one_recurring_occurrence(self, delete_google_event_instance):
         user = get_user_model().objects.create_user(
@@ -546,6 +623,226 @@ class FacultyViewTests(TestCase):
         self.assertIsNone(event.google_calendar_id)
         self.assertFalse(event.managed_by_facsync)
         self.assertEqual(event.sync_state, 'local')
+
+    @patch('apps.faculty.views.create_google_event')
+    @patch('apps.faculty.views.update_google_event')
+    @patch('apps.faculty.views.delete_google_event')
+    def test_editing_with_google_sync_replaces_the_previous_google_event(
+        self, delete_google_event, update_google_event, create_google_event,
+    ):
+        user = get_user_model().objects.create_user(
+            username='faculty-edit-sync-disabled',
+            password='test-password',
+            role='faculty',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-edit-sync-disabled',
+            user=user,
+            college_id='CCS',
+            sync_enabled=False,
+        )
+        connection = GoogleCalendarConnection.objects.create(
+            user=user,
+            google_user_id='google-edit-sync-disabled',
+            access_token='access-token',
+        )
+        event = ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Original title',
+            event_type='busy',
+            date='2026-08-20',
+            start_time='09:00',
+            end_time='10:00',
+            google_event_id='google-event-to-update',
+            google_calendar_id=connection.calendar_id,
+            managed_by_facsync=True,
+            sync_state='synced',
+        )
+        create_google_event.return_value = {'id': 'google-replacement-event'}
+        self.client.force_login(user)
+
+        response = self.client.put(
+            reverse('faculty:api_schedule_event_detail', args=[event.pk]),
+            data=json.dumps({
+                'title': 'Updated title',
+                'event_type': 'busy',
+                'date': '2026-08-20',
+                'start_time': '10:00',
+                'end_time': '11:00',
+                'sync_to_google': True,
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        delete_google_event.assert_called_once_with(connection, event)
+        update_google_event.assert_not_called()
+        create_google_event.assert_called_once_with(connection, event)
+        event.refresh_from_db()
+        self.assertEqual(event.title, 'Updated title')
+        self.assertEqual(event.start_time.isoformat(), '10:00:00')
+        self.assertEqual(event.google_event_id, 'google-replacement-event')
+
+    @patch('apps.faculty.views.create_google_event')
+    @patch('apps.faculty.views.delete_google_event')
+    def test_editing_recurring_weekday_moves_exclusions_and_extends_end_date(
+        self, delete_google_event, create_google_event,
+    ):
+        user = get_user_model().objects.create_user(
+            username='faculty-recurring-weekday-edit',
+            password='test-password',
+            role='faculty',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-recurring-weekday-edit',
+            user=user,
+            college_id='CCS',
+        )
+        connection = GoogleCalendarConnection.objects.create(
+            user=user,
+            google_user_id='google-recurring-weekday-edit',
+            access_token='access-token',
+        )
+        event = ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Friday class',
+            event_type='busy',
+            day_of_week='friday',
+            start_month=10,
+            end_month=10,
+            recurrence_start_date=date(2026, 10, 1),
+            recurrence_end_date=date(2026, 10, 30),
+            recurrence_excluded_dates=['2026-10-16'],
+            start_time='10:00',
+            end_time='11:00',
+            google_event_id='google-friday-class',
+            google_calendar_id=connection.calendar_id,
+            managed_by_facsync=True,
+            sync_state='synced',
+        )
+        create_google_event.return_value = {'id': 'google-saturday-class'}
+        self.client.force_login(user)
+
+        response = self.client.put(
+            reverse('faculty:api_schedule_event_detail', args=[event.pk]),
+            data=json.dumps({
+                'title': 'Saturday class',
+                'event_type': 'busy',
+                'day_of_week': 'saturday',
+                'start_date': '2026-10-01',
+                'end_date': '2026-10-30',
+                'start_time': '10:00',
+                'end_time': '11:00',
+                'sync_to_google': True,
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        event.refresh_from_db()
+        self.assertEqual(event.recurrence_end_date, date(2026, 10, 31))
+        self.assertEqual(event.recurrence_excluded_dates, ['2026-10-17'])
+        google_event = create_google_event.call_args.args[1]
+        self.assertEqual(google_event.day_of_week, 'saturday')
+        self.assertEqual(google_event.recurrence_end_date, date(2026, 10, 31))
+        self.assertEqual(google_event.recurrence_excluded_dates, ['2026-10-17'])
+
+    @patch('apps.faculty.views.create_google_event')
+    @patch('apps.faculty.views.delete_google_event_instance')
+    def test_editing_this_recurring_event_creates_one_off_exception(
+        self, delete_google_event_instance, create_google_event,
+    ):
+        user = get_user_model().objects.create_user(
+            username='faculty-edit-this-recurring',
+            password='test-password',
+            role='faculty',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-edit-this-recurring',
+            user=user,
+            college_id='CCS',
+        )
+        connection = GoogleCalendarConnection.objects.create(
+            user=user,
+            google_user_id='google-edit-this-recurring',
+            access_token='access-token',
+        )
+        event = ScheduleEvent.objects.create(
+            faculty=faculty,
+            title='Friday class',
+            event_type='busy',
+            day_of_week='friday',
+            start_month=10,
+            end_month=10,
+            recurrence_start_date=date(2026, 10, 1),
+            recurrence_end_date=date(2026, 10, 30),
+            start_time='10:00',
+            end_time='11:00',
+            google_event_id='google-friday-series',
+            google_calendar_id=connection.calendar_id,
+            managed_by_facsync=True,
+            sync_state='synced',
+        )
+        create_google_event.return_value = {'id': 'google-one-off-event'}
+        self.client.force_login(user)
+
+        invalid_response = self.client.put(
+            reverse('faculty:api_schedule_event_detail', args=[event.pk]),
+            data=json.dumps({'edit_scope': 'this', 'occurrence_date': '2026-10-15'}),
+            content_type='application/json',
+        )
+        self.assertEqual(invalid_response.status_code, 400)
+        delete_google_event_instance.assert_not_called()
+        create_google_event.assert_not_called()
+
+        response = self.client.put(
+            reverse('faculty:api_schedule_event_detail', args=[event.pk]),
+            data=json.dumps({
+                'title': 'Changed Friday class',
+                'event_type': 'busy',
+                'date': '2026-10-17',
+                'start_time': '12:00',
+                'end_time': '13:00',
+                'edit_scope': 'this',
+                'occurrence_date': '2026-10-16',
+                'sync_to_google': True,
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        delete_google_event_instance.assert_called_once_with(
+            connection, 'google-friday-series', date(2026, 10, 16),
+        )
+        edited = ScheduleEvent.objects.get(google_event_id='google-one-off-event')
+        self.assertEqual(edited.date, date(2026, 10, 17))
+        self.assertEqual(edited.recurring_parent_id, event.pk)
+        self.assertEqual(edited.original_occurrence_date, date(2026, 10, 16))
+        self.assertEqual(edited.day_of_week, '')
+        self.assertEqual(edited.start_time.isoformat(), '12:00:00')
+        event.refresh_from_db()
+        self.assertEqual(event.recurrence_excluded_dates, ['2026-10-16'])
+
+        # A later series edit includes this exception, but preserves an
+        # independently deleted occurrence.
+        event.recurrence_excluded_dates.append('2026-10-09')
+        event.save(update_fields=['recurrence_excluded_dates'])
+        create_google_event.return_value = {'id': 'google-saturday-series'}
+        with patch('apps.faculty.views.delete_google_event') as delete_google:
+            response = self.client.put(
+                reverse('faculty:api_schedule_event_detail', args=[event.pk]),
+                data=json.dumps({
+                    'day_of_week': 'saturday', 'edit_scope': 'all',
+                    'sync_to_google': True,
+                }), content_type='application/json',
+            )
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertEqual(delete_google.call_count, 2)
+        event.refresh_from_db()
+        self.assertEqual(event.day_of_week, 'saturday')
+        self.assertEqual(event.recurrence_end_date, date(2026, 10, 31))
+        self.assertEqual(event.recurrence_excluded_dates, ['2026-10-10'])
+        self.assertFalse(ScheduleEvent.objects.filter(pk=edited.pk).exists())
 
     @patch('apps.faculty.views.create_google_event')
     def test_recurring_event_stays_local_when_google_is_connected(self, create_google_event):
@@ -791,6 +1088,43 @@ class FacultyViewTests(TestCase):
         faculty.refresh_from_db()
         self.assertIsNotNone(faculty.schedule_last_updated_at)
 
+    @patch('apps.faculty.views.create_google_event')
+    def test_csv_schedule_upload_syncs_each_event_to_google(self, create_google_event):
+        faculty = self._make_csv_faculty('upload-google')
+        faculty.sync_enabled = True
+        faculty.save(update_fields=['sync_enabled'])
+        GoogleCalendarConnection.objects.create(
+            user=faculty.user,
+            google_user_id='google-upload-user',
+            access_token='access-token',
+            refresh_token='refresh-token',
+            calendar_id='primary',
+        )
+        create_google_event.side_effect = [
+            {'id': 'google-upload-1'},
+            {'id': 'google-upload-2'},
+        ]
+        upload = SimpleUploadedFile(
+            'schedule.csv',
+            b'event_title,short_description,room_location,recurring_day,start_month,end_month,start_time,end_time,status_type\n'
+            b'Introductory lecture,Introductory lecture,Room 204,Monday,8,5,09:00,10:30,Busy\n'
+            b'Office hours,Student consultations,,Monday,8,5,13:00,15:00,Busy\n',
+            content_type='text/csv',
+        )
+
+        response = self.client.post(
+            reverse('faculty:upload_schedule'),
+            {'file': upload, 'sync_to_google': 'true'},
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()['calendar_sync']['synced_count'], 2)
+        self.assertEqual(
+            list(faculty.schedule_events.values_list('google_event_id', flat=True)),
+            ['google-upload-1', 'google-upload-2'],
+        )
+        self.assertTrue(all(event.managed_by_facsync for event in faculty.schedule_events.all()))
+
     def test_invalid_csv_does_not_delete_existing_schedule(self):
         faculty = self._make_csv_faculty('invalid')
         ScheduleEvent.objects.create(
@@ -1008,7 +1342,8 @@ class FacultyViewTests(TestCase):
         self.assertEqual(consultation_event['end_time'], '11:30:00')
         self.assertIn('student-approved-calendar-test', consultation_event['title'])
 
-    def test_clear_schedule_deletes_only_uploaded_preview_events(self):
+    @patch('apps.faculty.views.delete_google_event')
+    def test_clear_schedule_deletes_only_uploaded_preview_events(self, delete_google_event):
         faculty = self._make_csv_faculty('clear')
         ScheduleEvent.objects.create(
             faculty=faculty,
@@ -1038,6 +1373,7 @@ class FacultyViewTests(TestCase):
         self.assertEqual(response.json()['deleted_count'], 1)
         self.assertTrue(faculty.schedule_events.filter(title='Keep manual event').exists())
         self.assertFalse(faculty.schedule_events.filter(title='Remove this').exists())
+        delete_google_event.assert_not_called()
 
     def test_calendar_sync_preference_requires_connection_and_can_be_disabled(self):
         user = get_user_model().objects.create_user(

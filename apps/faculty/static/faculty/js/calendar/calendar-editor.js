@@ -34,6 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const deleteEventConfirmClose = document.getElementById("deleteEventConfirmClose");
   const deleteEventConfirmCancel = document.getElementById("deleteEventConfirmCancel");
   const deleteEventConfirmYes = document.getElementById("deleteEventConfirmYes");
+  const deleteEventConfirmAll = document.getElementById("deleteEventConfirmAll");
   const scheduleCrudLoadingOverlay = document.getElementById("facultyLoadingOverlay");
   const scheduleCrudLoadingMessage = document.getElementById("facultyLoadingMessage");
   let schedulePreviewEventIds = [];
@@ -45,10 +46,13 @@ document.addEventListener("DOMContentLoaded", () => {
   let scheduleCrudLoadingCount = 0;
   let deleteEventConfirmResolver = null;
 
-  function askDeleteConfirmation(message) {
+  function askDeleteConfirmation(message, recurring = false) {
     return new Promise((resolve) => {
       deleteEventConfirmResolver = resolve;
       if (deleteEventConfirmMessage) deleteEventConfirmMessage.textContent = message;
+      deleteEventConfirmYes.textContent = recurring ? 'This event' : 'Delete';
+      deleteEventConfirmCancel.classList.toggle('hidden', recurring);
+      deleteEventConfirmAll.classList.toggle('hidden', !recurring);
       deleteEventConfirmModal?.classList.remove("hidden");
       deleteEventConfirmYes?.focus();
     });
@@ -63,6 +67,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   deleteEventConfirmYes?.addEventListener("click", () => finishDeleteConfirmation(true));
+  deleteEventConfirmAll?.addEventListener("click", () => finishDeleteConfirmation('all'));
   deleteEventConfirmCancel?.addEventListener("click", () => finishDeleteConfirmation(false));
   deleteEventConfirmClose?.addEventListener("click", () => finishDeleteConfirmation(false));
   deleteEventConfirmModal?.addEventListener("click", (event) => {
@@ -176,6 +181,13 @@ document.addEventListener("DOMContentLoaded", () => {
           ? `Google sync failed: ${data.sync_error}`
           : `Google Calendar synced · ${events.length} event${events.length === 1 ? '' : 's'}`;
         calendarSyncStatus.className = `calendar-sync-status${data.sync_error ? ' error' : ''}`;
+        if (!data.sync_error && !data.sync_performed) {
+          calendarSyncStatus.textContent = !data.calendar_connected
+            ? 'Connect Google Calendar in your profile to import events.'
+            : !data.sync_enabled
+              ? 'Google Calendar sync is disabled in your profile.'
+              : 'Schedule loaded. Click Sync to refresh Google Calendar events.';
+        }
       }
       renderCalendar();
       return data;
@@ -433,6 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("sync_to_google", String(syncToGoogle));
     if (uploadScheduleBtn) {
       uploadScheduleBtn.disabled = true;
       uploadScheduleBtn.textContent = "Uploading...";
@@ -627,9 +640,14 @@ document.addEventListener("DOMContentLoaded", () => {
     modal.classList.remove("hidden");
 
     removeBtn.onclick = () => {
-      askDeleteConfirmation(`Are you sure you want to delete "${eventData.title}"?`).then((confirmed) => {
+      askDeleteConfirmation(
+        eventData.isRecurring
+          ? `Delete this occurrence of "${eventData.title}" or all recurring events, including edited occurrences?`
+          : `Are you sure you want to delete "${eventData.title}"?`,
+        eventData.isRecurring,
+      ).then((confirmed) => {
         if (confirmed) {
-          deleteEvent(dateKey, eventData);
+          deleteEvent(dateKey, eventData, confirmed === 'all' ? 'all' : 'this');
           modal.classList.add("hidden");
         }
       });
@@ -643,12 +661,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Delete a schedule event from the API or remove it from local state.
-  async function deleteEvent(dateKey, eventToDelete) {
+  async function deleteEvent(dateKey, eventToDelete, scope = 'this') {
     showScheduleCrudLoading("Deleting schedule...");
     try {
       if (eventToDelete.id) {
         try {
-          const occurrenceQuery = eventToDelete.isRecurring && dateKey
+          const occurrenceQuery = scope === 'this' && eventToDelete.isRecurring && dateKey
             ? `?occurrence_date=${encodeURIComponent(dateKey)}`
             : '';
           const res = await fetch(`/faculty/api/events/${eventToDelete.id}/${occurrenceQuery}`, {
@@ -656,9 +674,8 @@ document.addEventListener("DOMContentLoaded", () => {
             headers: requestHeaders(),
           });
           if (!res.ok) {
-            console.error('Failed to delete event');
-            facultyFeedback?.showToast('Failed to delete event.', true);
-            return;
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'Failed to delete event.');
           }
           await fetchEventsFromApi();
           facultyFeedback?.showToast('Schedule event deleted successfully.');
@@ -666,6 +683,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (err) {
           console.error('Error deleting event', err);
           facultyFeedback?.showToast(err.message || 'Failed to delete event.', true);
+          return;
         }
       }
 
@@ -971,6 +989,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const googleCalendarConfirmNo = document.getElementById("googleCalendarConfirmNo");
   const googleCalendarConfirmClose = document.getElementById("googleCalendarConfirmClose");
   let googleCalendarConfirmResolver = null;
+  const editScopeConfirmModal = document.getElementById("editScopeConfirmModal");
+  const editScopeThis = document.getElementById("editScopeThis");
+  const editScopeAll = document.getElementById("editScopeAll");
+  const editScopeConfirmClose = document.getElementById("editScopeConfirmClose");
+  let editScopeConfirmResolver = null;
   let eventSaveInProgress = false;
 
   function closeEventEditor() {
@@ -1004,6 +1027,26 @@ document.addEventListener("DOMContentLoaded", () => {
   googleCalendarConfirmYes?.addEventListener("click", () => finishGoogleCalendarConfirmation(true));
   googleCalendarConfirmNo?.addEventListener("click", () => finishGoogleCalendarConfirmation(false));
   googleCalendarConfirmClose?.addEventListener("click", () => finishGoogleCalendarConfirmation(null));
+
+  function askEditScope() {
+    return new Promise((resolve) => {
+      editScopeConfirmResolver = resolve;
+      editScopeConfirmModal?.classList.remove("hidden");
+      editScopeAll?.focus();
+    });
+  }
+
+  function finishEditScope(scope) {
+    editScopeConfirmModal?.classList.add("hidden");
+    if (editScopeConfirmResolver) {
+      editScopeConfirmResolver(scope);
+      editScopeConfirmResolver = null;
+    }
+  }
+
+  editScopeThis?.addEventListener("click", () => finishEditScope("this"));
+  editScopeAll?.addEventListener("click", () => finishEditScope("all"));
+  editScopeConfirmClose?.addEventListener("click", () => finishEditScope(null));
 
   // Extract the month number from an HTML date or datetime value.
   function monthFromDate(value) {
@@ -1071,6 +1114,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
       addEventForm.reset();
       if (eventDayInput) eventDayInput.value = '';
+      if (eventDayInput) eventDayInput.disabled = false;
+      if (eventDayGroup) eventDayGroup.classList.remove('hidden');
       if (eventDateGroup) eventDateGroup.classList.remove("hidden");
       if (eventDateInput) {
         const now = new Date();
@@ -1174,6 +1219,8 @@ document.addEventListener("DOMContentLoaded", () => {
             start_time: timeValue(eventDetails.startTime),
             end_time: timeValue(eventDetails.endTime),
             sync_to_google: syncToGoogle,
+            edit_scope: activeEventContext.editScope || 'all',
+            occurrence_date: activeEventContext.dateKey || null,
           };
           const res = await fetch(`/faculty/api/events/${activeEventContext.eventData.id}/`, {
             method: 'PUT',
@@ -1243,12 +1290,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render cached events immediately, then refresh them from Google in the background.
   fetchEventsFromApi().then((data) => {
-    if (data?.calendar_connected) fetchEventsFromApi(true);
+    if (data?.calendar_connected && data?.sync_enabled) fetchEventsFromApi(true);
   });
 
   // Open the event form and populate it with the selected event for editing.
   function openAddEventModalForEdit() {
     if (!activeEventContext) return;
+
+    if (activeEventContext.eventData.isRecurring && !activeEventContext.editScopePrompted) {
+      askEditScope().then((editScope) => {
+        if (!editScope) return;
+        activeEventContext.editScope = editScope;
+        activeEventContext.editScopePrompted = true;
+        openAddEventModalForEdit();
+      });
+      return;
+    }
+
+    activeEventContext.editScope = activeEventContext.editScope || 'all';
 
     isEditing = true;
     const { dateKey, eventData } = activeEventContext;
@@ -1268,7 +1327,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById('eventLocation').value = eventData.location || '';
     let recurringStartDate = dateKey;
     let recurringEndDate = dateKey;
-    if (eventData.isRecurring) {
+    if (eventData.isRecurring && activeEventContext.editScope !== 'this') {
       if (eventDateGroup) eventDateGroup.classList.add('hidden');
       if (eventDateInput) eventDateInput.required = false;
       if (eventDayGroup) eventDayGroup.classList.remove('hidden');
@@ -1286,6 +1345,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (eventDateGroup) eventDateGroup.classList.remove('hidden');
     }
     if (eventDateInput) eventDateInput.value = dateKey;
+
+    eventDayInput.disabled = activeEventContext.editScope === 'this';
+    eventDayGroup.classList.toggle('hidden', activeEventContext.editScope === 'this');
 
     if (eventData.type !== 'on-leave') {
       if (eventDateGroup) eventDateGroup.style.display = "none";
