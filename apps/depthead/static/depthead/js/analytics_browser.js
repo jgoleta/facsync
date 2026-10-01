@@ -91,7 +91,7 @@
         reply.append(list, element('p', data.note));
         const source = new URL(data.source_url, window.location.origin);
         if (source.origin === window.location.origin) {
-          const link = element('a', root.dataset.sourceLabel || 'View source analytics');
+          const link = element('a', data.source_label || root.dataset.sourceLabel || 'View source analytics');
           link.href = source.href;
           reply.append(link);
         }

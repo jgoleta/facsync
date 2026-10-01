@@ -1,29 +1,37 @@
 """Deterministic presentation of existing metrics; no AI or stored conversation."""
 from django.urls import reverse
+from apps.core.department_updates import UPDATE_QUESTIONS, department_update_answer
 from . import analytics
 from .analytics_display import (
-    student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display,
+    student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display, consultation_topics_display,
 )
 from .schedule_availability import get_schedule_availability
 
 
 ANALYTICS_QUESTIONS = {
-    'peak_hour': ('Consultations', 'What is the peak consultation hour?'),
+    'daily_faculty': ('Schedules', 'Who has the most open schedule time each day?'),
+    'daily_availability': ('Schedules', 'How much schedule availability is there each day?'),
+    'consultation_topics': ('Consultations', 'What consultation topics are most frequently requested?'),
     'peak_day': ('Consultations', 'What is the peak consultation day?'),
-    'capacity': ('Consultations', 'Can we measure the supply-demand gap?'),
+    'peak_hour': ('Consultations', 'What is the peak consultation hour?'),
     'faculty_load': ('Consultations', 'Which faculty receive the most requests?'),
-    'status_frequency': ('Faculty', 'How often do faculty update their status?'),
+    'capacity': ('Consultations', 'Can we measure the supply-demand gap?'),
     'completion_rates': ('Faculty', 'What are faculty consultation completion rates?'),
     'approval_times': ('Faculty', 'How long do faculty take to approve requests?'),
     'status_availability': ('Faculty', 'What are faculty status availability rates?'),
+    'status_frequency': ('Faculty', 'How often do faculty update their status?'),
     'peak_request_period': ('Students', 'Which month had the most submitted requests?'),
     'student_frequency': ('Students', 'Which students submit the most requests?'),
-    'daily_faculty': ('Schedules', 'Who has the most open schedule time each day?'),
-    'daily_availability': ('Schedules', 'How much schedule availability is there each day?'),
+    **{key: ('Department updates', question) for key, question in UPDATE_QUESTIONS.items()},
 }
 
 
 def analytics_browser_answer(metric, college):
+    if metric not in ANALYTICS_QUESTIONS:
+        raise ValueError('Unknown analytics question')
+    if metric in UPDATE_QUESTIONS:
+        answer = department_update_answer(metric, college, 'depthead', reverse('depthead:college_settings'))
+        return dict(answer, metric=metric, question=ANALYTICS_QUESTIONS[metric][1])
     period = analytics.normalize_period()
     period_label = f'Month-to-date: {period.start_date} to {period.end_date} ({period.timezone_name})'
     source = 'peak_analytics'
@@ -51,12 +59,17 @@ def analytics_browser_answer(metric, college):
                 labels = peak['weekdays']
             lines = [f"{label}: {peak['count']} completed consultations" for label in labels]
             note = 'Based on scheduled dates and times of completed consultations. All tied peaks are shown.'
-    elif metric in ('peak_request_period', 'student_frequency'):
+    elif metric in ('peak_request_period', 'student_frequency', 'consultation_topics'):
         source = 'student_behavior'
         months, today = student_reporting_period()
         period = analytics.normalize_period(months[0], today)
         period_label = f'{period.start_date} to {period.end_date} ({period.timezone_name})'
-        if metric == 'peak_request_period':
+        if metric == 'consultation_topics':
+            summary = analytics.get_consultation_summary(analytics.get_base_consultation_queryset(college, period))
+            rows = consultation_topics_display(summary)
+            lines = [f"{row['label']}: {row['count']} requests ({row['percentage']:.2f}%)" for row in rows]
+            note = 'Topics selected when booking; all request statuses. Based on scheduled dates in this six-month range.'
+        elif metric == 'peak_request_period':
             patterns = analytics.get_request_submission_patterns(college, period)
             label, count = peak_request_month(patterns['monthly_trend'])
             lines = [f'{label}: {count} submitted requests'] if count else []

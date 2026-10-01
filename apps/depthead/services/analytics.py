@@ -250,13 +250,15 @@ def get_scheduled_consultation_patterns(consultations):
     }
 
 
-def get_request_submission_patterns(college_code, period):
+def get_request_submission_patterns(college_code, period, *, faculty=None):
     """Aggregate request creation timestamps in the explicit local timezone."""
 
     requests = get_base_consultation_queryset(college_code).filter(
         requested_at__gte=period.start_datetime,
         requested_at__lt=period.end_datetime_exclusive,
     )
+    if faculty is not None:
+        requests = requests.filter(faculty=faculty)
     hour_counts = Counter()
     weekday_counts = Counter()
     combination_counts = Counter()

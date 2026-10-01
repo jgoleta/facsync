@@ -4,6 +4,7 @@ from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
 from apps.core.models import OfficeClosure
+from apps.core.department_updates import UPDATE_QUESTIONS, department_update_answer
 from apps.depthead.services.analytics import _eligible_faculty
 from apps.depthead.services.schedule_availability import get_schedule_availability
 
@@ -12,12 +13,15 @@ QUESTIONS = {
     'today_open': 'Which faculty have the most open schedule time today?',
     'week_daily': 'Who has the most open schedule time each day this week?',
     'best_day': 'Which day this week has the most faculty availability?',
+    **UPDATE_QUESTIONS,
 }
 
 
 def availability_answer(metric, college):
     if metric not in QUESTIONS:
         raise ValueError('Unknown availability question')
+    if metric in UPDATE_QUESTIONS:
+        return department_update_answer(metric, college, 'student', reverse('students:dashboard'))
     tz = getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)
     today = timezone.localtime(timezone.now(), ZoneInfo(tz)).date()
     period = f'Today: {today} ({tz})'

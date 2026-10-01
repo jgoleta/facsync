@@ -67,7 +67,7 @@ class AnalyticsBrowserTests(TestCase):
     def test_widget_only_on_overview(self):
         response = self.client.get(reverse('depthead:admin_dashboard'))
         self.assertContains(response, 'id="analytics-browser"', count=1)
-        self.assertContains(response, 'data-metric=', count=12)
+        self.assertContains(response, 'data-metric=', count=15)
         for page in ('peak_analytics', 'faculty_trends', 'student_behavior'):
             response = self.client.get(reverse(f'depthead:{page}'))
             self.assertEqual(response.status_code, 200)
