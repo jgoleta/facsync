@@ -177,6 +177,28 @@
                         <a href="{% url 'faculty:booking_management' %}" class="secondary-button">View Walk-ins</a>
                     </div>
                 </div>
+                <div class="card-section announcement-history-section">
+                    <div class="section-heading">
+                        <div>
+                            <h2>Past Announcements</h2>
+                            <p>Keep a record of notices that are no longer active.</p>
+                        </div>
+                    </div>
+                    <div class="past-announcements-list">
+                        {% for announcement in past_announcements %}
+                        <article class="past-announcement-item">
+                            <p>{{ announcement.message }}</p>
+                            <small>
+                                {{ announcement.posted_at|date:"M d, Y" }} &middot;
+                                <span class="announcement-expired">This announcement expired</span>
+                                {{ announcement.expiry|date:"M d, Y" }}.
+                            </small>
+                        </article>
+                        {% empty %}
+                        <p class="empty-state">No past announcements.</p>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </main>
     </div>

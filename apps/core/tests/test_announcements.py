@@ -98,6 +98,17 @@ class AnnouncementTests(TestCase):
                 if expected is not None:
                     self.assertEqual({a['message'] for a in response.context['announcements']}, expected)
 
+    def test_faculty_dashboard_keeps_expired_faculty_announcements(self):
+        self.client.force_login(self.faculty)
+        response = self.client.get(reverse('faculty:dashboard'))
+
+        self.assertEqual(
+            {announcement.message for announcement in response.context['past_announcements']},
+            {'expired'},
+        )
+        self.assertContains(response, 'This announcement expired')
+        self.assertContains(response, 'expired')
+
     def test_creation_targets_notifications_and_returns_audience(self):
         self.client.force_login(self.head)
         for audience, recipients in (
