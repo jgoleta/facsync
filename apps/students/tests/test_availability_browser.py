@@ -8,6 +8,7 @@ from django.test.utils import CaptureQueriesContext
 from apps.core.models import User, OfficeClosure
 from apps.faculty.models import FacultyProfile, ScheduleEvent, StatusHistory
 from apps.students.availability_browser import QUESTIONS
+from apps.core.department_updates import UPDATE_QUESTIONS
 from apps.depthead.services.analytics_browser import ANALYTICS_QUESTIONS
 
 
@@ -38,14 +39,14 @@ class AvailabilityBrowserTests(TestCase):
                 text = response.content.decode()
                 for private in ('PRIVATE-OTHER-COLLEGE', 'PRIVATE-EVENT-TITLE', 'PRIVATE-DESCRIPTION', 'completion_rate', 'response_time'):
                     self.assertNotIn(private, text)
-                self.assertEqual(set(response.json()), {'period', 'lines', 'note', 'source_url'})
+                self.assertEqual(set(response.json()), ({'period', 'lines', 'note', 'source_url', 'source_label'} if metric in UPDATE_QUESTIONS else {'period', 'lines', 'note', 'source_url'}))
             refresh.assert_not_called()
             admin.assert_not_called()
         self.assertEqual(before, list(FacultyProfile.objects.values_list('pk', 'current_status', 'status_updated_at')))
         self.assertEqual(history, StatusHistory.objects.count())
 
     def test_rejects_all_admin_questions_and_unknown_metric(self):
-        for metric in list(ANALYTICS_QUESTIONS) + ['unknown', '', '__dict__']:
+        for metric in [key for key in ANALYTICS_QUESTIONS if key not in UPDATE_QUESTIONS] + ['unknown', '', '__dict__']:
             self.assertEqual(self.client.get(self.url, {'metric': metric}).status_code, 400)
         self.assertEqual(self.client.get(reverse('depthead:analytics_browser_api'), {'metric':'faculty_load'}).status_code, 403)
 

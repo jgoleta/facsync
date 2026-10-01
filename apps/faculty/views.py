@@ -1,3 +1,5 @@
+from .services.consultation_browser import QUESTIONS as FACULTY_BROWSER_QUESTIONS, consultation_browser_answer
+from django.views.decorators.http import require_GET
 import csv
 import io
 import json
@@ -543,6 +545,7 @@ def dashboard(request):
     )
 
     return render(request, 'faculty/dashboardFaculty.html', {
+        'analytics_questions': [{'metric': key, 'group': group, 'question': question} for key, (group, question) in FACULTY_BROWSER_QUESTIONS.items()],
         'faculty_profile': faculty_profile,
         'current_status': current_status,
         'manual_status_override': faculty_profile.manual_status_override if faculty_profile else False,
@@ -1801,3 +1804,17 @@ def api_consultation(request, request_id):
     if request.method == 'GET':
         return JsonResponse(_consultation_json(consultation))
     return HttpResponse(status=405)
+
+
+@login_required
+@role_required('faculty')
+@require_GET
+@never_cache
+def consultation_browser_api(request):
+    metric = request.GET.get('metric', '')
+    if metric not in FACULTY_BROWSER_QUESTIONS:
+        return JsonResponse({'error': 'Unknown consultation question.'}, status=400)
+    faculty = FacultyProfile.objects.filter(user=request.user).first()
+    if not faculty or not str(faculty.college_id or '').strip():
+        return JsonResponse({'error': 'Your faculty profile has no college set.'}, status=400)
+    return JsonResponse(consultation_browser_answer(metric, faculty))

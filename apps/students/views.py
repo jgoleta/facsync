@@ -18,6 +18,7 @@ from apps.faculty.models import ConsultationRequest, FacultyProfile, ScheduleEve
 from apps.faculty.services.calendar_events import serialize_consultation_event, serialize_schedule_event
 from .models import FacultyStatusSubscription
 from .availability_browser import QUESTIONS, availability_answer
+from apps.core.department_updates import UPDATE_QUESTIONS
 from django.views.decorators.http import require_GET
 from django.views.decorators.cache import never_cache
 from apps.faculty.services.google_calendar import refresh_faculty_status
@@ -106,7 +107,8 @@ def dashboard(request):
     closed_colleges = _closed_college_map()
     return render(request, 'students/dashboardStudent.html', {
         'faculty_directory': faculty_directory,
-        'availability_questions': QUESTIONS.items(),
+        'availability_questions': [(key, text) for key, text in QUESTIONS.items() if key not in UPDATE_QUESTIONS],
+        'department_questions': UPDATE_QUESTIONS.items(),
         'closed_colleges': closed_colleges,
         'announcements': get_active_announcements(request.user.college, audience='students'),
     })

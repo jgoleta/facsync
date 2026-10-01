@@ -1,6 +1,7 @@
 #analytics-browser { position: fixed; right: 0; top: 0; height: 100dvh; pointer-events: none; z-index: 1100; color: var(--text); }
 #analytics-browser [hidden] { display: none !important; }
-#analytics-chat-toggle { position: absolute; right: 0; top: 45%; writing-mode: vertical-rl; padding: 18px 10px; border: 1px solid var(--border); border-radius: 12px 0 0 12px; background: var(--accent); color: var(--text-light); cursor: pointer; font: inherit; font-size: 15px; pointer-events: auto; }
+#analytics-chat-toggle { position: fixed; right: 24px; bottom: 24px; width: 56px; height: 56px; display: grid; place-items: center; padding: 0; border: 1px solid var(--border); border-radius: 50%; background: var(--accent); color: var(--text-light); cursor: pointer; pointer-events: auto; box-shadow: 0 4px 12px var(--border); }
+@media (max-width: 600px) { #analytics-chat-toggle { right: 16px; bottom: 16px; } }
 #analytics-chat-panel { position: absolute; right: 0; top: 0; width: min(400px, 100vw); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; border-left: 1px solid var(--border); background: var(--card-bg); box-shadow: -4px 0 16px var(--border); pointer-events: auto; }
 .analytics-chat-header { display: flex; align-items: flex-start; gap: 12px; padding: 16px; background: var(--accent-soft); }
 .analytics-chat-header h2 { margin: 0; font-size: 18px; }
@@ -23,7 +24,7 @@
 body.analytics-chat-open .overview-page { container-type: inline-size; }
 @media (min-width: 1280px) {
     body.analytics-chat-open .admin-shell > .main-content { width: calc(100% - 660px); margin-right: 400px; }
-    body.student-dashboard.analytics-chat-open .page-shell { margin-right: 400px; }
+    body.student-dashboard.analytics-chat-open .page-shell, body.faculty-chat-dashboard.analytics-chat-open .page-shell { margin-right: 400px; }
     body.student-dashboard.analytics-chat-open .dashboard-container { width: calc(100% - 48px); min-width: 0; }
 }
 @container (max-width: 900px) {
@@ -36,4 +37,8 @@ body.analytics-chat-open .overview-page { container-type: inline-size; }
 }
 @media (max-width: 600px) {
     #analytics-chat-panel { width: 100vw; }
+}
+
+@media (min-width: 1280px) {
+    body.faculty-chat-dashboard.analytics-chat-open .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
 }
