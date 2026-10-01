@@ -17,6 +17,9 @@ from apps.core.colleges import get_college_label
 from apps.faculty.models import ConsultationRequest, FacultyProfile, ScheduleEvent, WalkInQueue
 from apps.faculty.services.calendar_events import serialize_consultation_event, serialize_schedule_event
 from .models import FacultyStatusSubscription
+from .availability_browser import QUESTIONS, availability_answer
+from django.views.decorators.http import require_GET
+from django.views.decorators.cache import never_cache
 from apps.faculty.services.google_calendar import refresh_faculty_status
 from apps.faculty.services.google_calendar import GoogleCalendarError, delete_consultation_event
 from apps.faculty.models import GoogleCalendarConnection
@@ -103,6 +106,7 @@ def dashboard(request):
     closed_colleges = _closed_college_map()
     return render(request, 'students/dashboardStudent.html', {
         'faculty_directory': faculty_directory,
+        'availability_questions': QUESTIONS.items(),
         'closed_colleges': closed_colleges,
         'announcements': get_active_announcements(request.user.college, audience='students'),
     })
@@ -481,3 +485,17 @@ def api_join_walk_in_queue(request):
         )
 
     return JsonResponse(_walk_in_json(queue), status=201)
+
+
+@login_required
+@role_required('student')
+@require_GET
+@never_cache
+def availability_browser_api(request):
+    college = (request.user.college or '').strip()
+    if not college:
+        return JsonResponse({'error': 'Your account has no college set.'}, status=400)
+    metric = request.GET.get('metric', '')
+    if metric not in QUESTIONS:
+        return JsonResponse({'error': 'Unknown availability question.'}, status=400)
+    return JsonResponse(availability_answer(metric, college))

@@ -6,10 +6,32 @@
   const panel = document.getElementById('analytics-chat-panel');
   const close = document.getElementById('analytics-chat-close');
   const messages = document.getElementById('analytics-chat-messages');
+  const label = root.dataset.label || 'analytics browser';
+  const narrow = window.matchMedia('(max-width: 1279px)');
+  const background = document.querySelector('.admin-shell, .page-shell');
+  let previousInert = null;
+  function layout() {
+    const open = !panel.hidden;
+    document.body.classList.toggle('analytics-chat-open', open);
+    toggle.hidden = open;
+    panel.setAttribute('aria-modal', String(open && narrow.matches));
+    if (background && open && narrow.matches) {
+      if (previousInert === null) previousInert = background.inert;
+      background.inert = true;
+    } else if (background && previousInert !== null) {
+      background.inert = previousInert;
+      previousInert = null;
+    }
+  }
+  narrow.addEventListener('change', () => {
+    layout();
+    if (!panel.hidden && narrow.matches) close.focus();
+  });
   function setOpen(open) {
     panel.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
-    toggle.setAttribute('aria-label', open ? 'Close analytics browser' : 'Open analytics browser');
+    toggle.setAttribute('aria-label', `${open ? 'Close' : 'Open'} ${label}`);
+    layout();
     (open ? close : toggle).focus();
   }
   // A restored browser page also starts a fresh conversation.
@@ -17,7 +39,8 @@
     messages.replaceChildren();
     panel.hidden = true;
     toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-label', 'Open analytics browser');
+    toggle.setAttribute('aria-label', `Open ${label}`);
+    layout();
   }
   reset();
   window.addEventListener('pageshow', reset);
@@ -25,6 +48,15 @@
   toggle.addEventListener('click', () => setOpen(panel.hidden));
   close.addEventListener('click', () => setOpen(false));
   root.addEventListener('keydown', event => {
+    if (event.key === 'Tab' && !panel.hidden && narrow.matches) {
+      const controls = Array.from(panel.querySelectorAll('button, a[href], [tabindex="0"]'));
+      const first = controls[0], last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault(); last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault(); first.focus();
+      }
+    }
     if (event.key === 'Escape' && !panel.hidden) {
       event.preventDefault();
       setOpen(false);
@@ -40,7 +72,7 @@
   root.querySelectorAll('[data-metric]').forEach(button => {
     button.addEventListener('click', async () => {
       messages.append(element('p', button.textContent, 'analytics-message sent'));
-      const reply = element('div', 'Loading analytics...', 'analytics-message received');
+      const reply = element('div', 'Loading answer...', 'analytics-message received');
       reply.setAttribute('aria-busy', 'true');
       messages.append(reply);
       scrollLatest();
@@ -59,7 +91,7 @@
         reply.append(list, element('p', data.note));
         const source = new URL(data.source_url, window.location.origin);
         if (source.origin === window.location.origin) {
-          const link = element('a', 'View source analytics');
+          const link = element('a', root.dataset.sourceLabel || 'View source analytics');
           link.href = source.href;
           reply.append(link);
         }
