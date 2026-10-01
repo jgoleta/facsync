@@ -1,0 +1,15 @@
+<div id="analytics-browser" data-endpoint="{% url 'students:availability_browser_api' %}" data-label="Faculty availability" data-source-label="View faculty directory">
+    <button type="button" id="analytics-chat-toggle" aria-label="Open faculty availability" aria-expanded="false" aria-controls="analytics-chat-panel" hidden>Faculty availability</button>
+    <section id="analytics-chat-panel" role="dialog" aria-labelledby="analytics-chat-title" hidden>
+        <header class="analytics-chat-header">
+            <div><h2 id="analytics-chat-title">Faculty availability</h2><p>{{ request.user.college_name|default:request.user.college }} &middot; Your college only</p></div>
+            <button type="button" id="analytics-chat-close" aria-label="Close faculty availability">&times;</button>
+        </header>
+        <div id="analytics-chat-messages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="Availability conversation"></div>
+        <div class="analytics-chat-questions" aria-label="Preset questions">
+            <fieldset><legend>Availability and schedules</legend>
+                {% for metric, question in availability_questions %}<button type="button" data-metric="{{ metric }}">{{ question }}</button>{% endfor %}
+            </fieldset>
+        </div>
+    </section>
+</div>

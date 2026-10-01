@@ -1,0 +1,501 @@
+diff --git a/apps/depthead/static/depthead/css/analytics_browser.css b/apps/depthead/static/depthead/css/analytics_browser.css
+index 27868ff..63e8cf5 100644
+--- a/apps/depthead/static/depthead/css/analytics_browser.css
++++ b/apps/depthead/static/depthead/css/analytics_browser.css
+@@ -1,13 +1,13 @@
+-#analytics-browser { position: fixed; right: 24px; bottom: 24px; z-index: 1100; color: var(--text); }
++#analytics-browser { position: fixed; right: 0; top: 0; height: 100dvh; pointer-events: none; z-index: 1100; color: var(--text); }
+ #analytics-browser [hidden] { display: none !important; }
+-#analytics-chat-toggle { display: grid; place-items: center; width: 56px; height: 56px; margin-left: auto; border: 1px solid var(--border); border-radius: 50%; background: var(--accent); color: var(--text-light); cursor: pointer; }
+-#analytics-chat-panel { position: absolute; right: 0; bottom: 68px; width: min(420px, calc(100vw - 32px)); height: min(650px, calc(100dvh - 120px)); display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 16px; background: var(--card-bg); box-shadow: 0 8px 24px var(--border); }
++#analytics-chat-toggle { position: absolute; right: 0; top: 45%; writing-mode: vertical-rl; padding: 18px 10px; border: 1px solid var(--border); border-radius: 12px 0 0 12px; background: var(--accent); color: var(--text-light); cursor: pointer; font: inherit; font-size: 15px; pointer-events: auto; }
++#analytics-chat-panel { position: absolute; right: 0; top: 0; width: min(400px, 100vw); height: 100dvh; display: flex; flex-direction: column; overflow: hidden; border-left: 1px solid var(--border); background: var(--card-bg); box-shadow: -4px 0 16px var(--border); pointer-events: auto; }
+ .analytics-chat-header { display: flex; align-items: flex-start; gap: 12px; padding: 16px; background: var(--accent-soft); }
+-.analytics-chat-header h2 { margin: 0; font-size: 1rem; }
+-.analytics-chat-header p { margin: 6px 0 0; font-size: .8rem; color: var(--muted); }
+-#analytics-chat-close { margin-left: auto; border: 0; background: transparent; color: var(--text); font-size: 1.5rem; cursor: pointer; min-width: 32px; min-height: 32px; }
++.analytics-chat-header h2 { margin: 0; font-size: 18px; }
++.analytics-chat-header p { margin: 6px 0 0; font-size: 14px; color: var(--muted); }
++#analytics-chat-close { margin-left: auto; border: 0; background: transparent; color: var(--text); font-size: 1.5rem; cursor: pointer; min-width: 44px; min-height: 44px; }
+ #analytics-chat-messages { flex: 1; min-height: 100px; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+-.analytics-message { max-width: 92%; padding: 12px; border-radius: 14px; margin: 0; overflow-wrap: anywhere; font-size: .875rem; line-height: 1.5; flex-shrink: 0; }
++.analytics-message { max-width: 92%; padding: 12px; border-radius: 14px; margin: 0; overflow-wrap: anywhere; font-size: 16px; line-height: 1.5; flex-shrink: 0; }
+ .analytics-message.sent { align-self: flex-end; background: var(--accent); color: var(--text-light); border-bottom-right-radius: 3px; }
+ .analytics-message.received { align-self: flex-start; background: var(--bg-main); border: 1px solid var(--border); border-bottom-left-radius: 3px; }
+ .analytics-message p { margin: 0 0 8px; }
+@@ -16,8 +16,24 @@
+ .analytics-answer-period { font-weight: 600; }
+ .analytics-chat-questions { max-height: 38%; overflow-y: auto; border-top: 1px solid var(--border); padding: 12px; }
+ .analytics-chat-questions fieldset { border: 0; margin: 0 0 12px; padding: 0; }
+-.analytics-chat-questions legend { font-size: .8rem; font-weight: 600; margin-bottom: 6px; }
+-.analytics-chat-questions button { display: block; width: 100%; text-align: left; padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); color: var(--accent); cursor: pointer; }
++.analytics-chat-questions legend { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
++.analytics-chat-questions button { font: inherit; font-size: 15px; line-height: 1.5; display: block; width: 100%; text-align: left; padding: 8px 12px; margin: 4px 0; border: 1px solid var(--border); border-radius: 12px; background: var(--card-bg); color: var(--accent); cursor: pointer; }
+ .analytics-chat-questions button:hover { background: var(--accent-soft); }
+ #analytics-browser button:focus-visible, #analytics-browser a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+-@media (max-width: 600px) { #analytics-browser { right: 16px; bottom: 16px; } }
++body.analytics-chat-open .overview-page { container-type: inline-size; }
++@media (min-width: 1280px) {
++    body.analytics-chat-open .admin-shell > .main-content { width: calc(100% - 660px); margin-right: 400px; }
++    body.student-dashboard.analytics-chat-open .page-shell { margin-right: 400px; }
++    body.student-dashboard.analytics-chat-open .dashboard-container { width: calc(100% - 48px); min-width: 0; }
++}
++@container (max-width: 900px) {
++    .overview-page .summary-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
++    .overview-page .ai-item-grid { grid-template-columns: minmax(0, 1fr); }
++    .overview-page .overview-hero { flex-wrap: wrap; }
++}
++@media (max-width: 1279px) {
++    body.analytics-chat-open { overflow: hidden; }
++}
++@media (max-width: 600px) {
++    #analytics-chat-panel { width: 100vw; }
++}
+diff --git a/apps/depthead/static/depthead/js/analytics_browser.js b/apps/depthead/static/depthead/js/analytics_browser.js
+index 2d51513..08a4940 100644
+--- a/apps/depthead/static/depthead/js/analytics_browser.js
++++ b/apps/depthead/static/depthead/js/analytics_browser.js
+@@ -6,10 +6,32 @@
+   const panel = document.getElementById('analytics-chat-panel');
+   const close = document.getElementById('analytics-chat-close');
+   const messages = document.getElementById('analytics-chat-messages');
++  const label = root.dataset.label || 'analytics browser';
++  const narrow = window.matchMedia('(max-width: 1279px)');
++  const background = document.querySelector('.admin-shell, .page-shell');
++  let previousInert = null;
++  function layout() {
++    const open = !panel.hidden;
++    document.body.classList.toggle('analytics-chat-open', open);
++    toggle.hidden = open;
++    panel.setAttribute('aria-modal', String(open && narrow.matches));
++    if (background && open && narrow.matches) {
++      if (previousInert === null) previousInert = background.inert;
++      background.inert = true;
++    } else if (background && previousInert !== null) {
++      background.inert = previousInert;
++      previousInert = null;
++    }
++  }
++  narrow.addEventListener('change', () => {
++    layout();
++    if (!panel.hidden && narrow.matches) close.focus();
++  });
+   function setOpen(open) {
+     panel.hidden = !open;
+     toggle.setAttribute('aria-expanded', String(open));
+-    toggle.setAttribute('aria-label', open ? 'Close analytics browser' : 'Open analytics browser');
++    toggle.setAttribute('aria-label', `${open ? 'Close' : 'Open'} ${label}`);
++    layout();
+     (open ? close : toggle).focus();
+   }
+   // A restored browser page also starts a fresh conversation.
+@@ -17,7 +39,8 @@
+     messages.replaceChildren();
+     panel.hidden = true;
+     toggle.setAttribute('aria-expanded', 'false');
+-    toggle.setAttribute('aria-label', 'Open analytics browser');
++    toggle.setAttribute('aria-label', `Open ${label}`);
++    layout();
+   }
+   reset();
+   window.addEventListener('pageshow', reset);
+@@ -25,6 +48,15 @@
+   toggle.addEventListener('click', () => setOpen(panel.hidden));
+   close.addEventListener('click', () => setOpen(false));
+   root.addEventListener('keydown', event => {
++    if (event.key === 'Tab' && !panel.hidden && narrow.matches) {
++      const controls = Array.from(panel.querySelectorAll('button, a[href], [tabindex="0"]'));
++      const first = controls[0], last = controls[controls.length - 1];
++      if (event.shiftKey && document.activeElement === first) {
++        event.preventDefault(); last.focus();
++      } else if (!event.shiftKey && document.activeElement === last) {
++        event.preventDefault(); first.focus();
++      }
++    }
+     if (event.key === 'Escape' && !panel.hidden) {
+       event.preventDefault();
+       setOpen(false);
+@@ -40,7 +72,7 @@
+   root.querySelectorAll('[data-metric]').forEach(button => {
+     button.addEventListener('click', async () => {
+       messages.append(element('p', button.textContent, 'analytics-message sent'));
+-      const reply = element('div', 'Loading analytics...', 'analytics-message received');
++      const reply = element('div', 'Loading answer...', 'analytics-message received');
+       reply.setAttribute('aria-busy', 'true');
+       messages.append(reply);
+       scrollLatest();
+@@ -59,7 +91,7 @@
+         reply.append(list, element('p', data.note));
+         const source = new URL(data.source_url, window.location.origin);
+         if (source.origin === window.location.origin) {
+-          const link = element('a', 'View source analytics');
++          const link = element('a', root.dataset.sourceLabel || 'View source analytics');
+           link.href = source.href;
+           reply.append(link);
+         }
+diff --git a/apps/depthead/templates/depthead/adminDashboard.html b/apps/depthead/templates/depthead/adminDashboard.html
+index 3c07f7d..aaff395 100644
+--- a/apps/depthead/templates/depthead/adminDashboard.html
++++ b/apps/depthead/templates/depthead/adminDashboard.html
+@@ -6,11 +6,11 @@
+     <meta charset="utf-8">
+     <meta name="viewport" content="width=device-width, initial-scale=1">
+     <title>FacSync | College Overview</title>
+-    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}">
+     <link rel="stylesheet" href="{% static 'css/base.css' %}">
+     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
+     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
+     <link rel="stylesheet" href="{% static 'depthead/css/admin_dashboard.css' %}?v=20260905-overview">
++    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}">
+     {% include 'components/_admin_navigation_loading.html' %}
+ </head>
+ 
+diff --git a/apps/depthead/templates/depthead/partials/analytics_browser.html b/apps/depthead/templates/depthead/partials/analytics_browser.html
+index fdd73d8..9bf7b8f 100644
+--- a/apps/depthead/templates/depthead/partials/analytics_browser.html
++++ b/apps/depthead/templates/depthead/partials/analytics_browser.html
+@@ -1,6 +1,6 @@
+ <div id="analytics-browser" data-endpoint="{% url 'depthead:analytics_browser_api' %}">
+     <button type="button" id="analytics-chat-toggle" aria-label="Open analytics browser" aria-expanded="false" aria-controls="analytics-chat-panel" hidden>
+-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 11a8 8 0 0 1-8 8H7l-5 3V11a9 9 0 0 1 19 0Z"/><path d="M7 11h10M7 7h7"/></svg>
++        Analytics
+     </button>
+     <section id="analytics-chat-panel" role="dialog" aria-labelledby="analytics-chat-title" hidden>
+         <header class="analytics-chat-header">
+diff --git a/apps/students/templates/students/dashboardStudent.html b/apps/students/templates/students/dashboardStudent.html
+index ced6bb8..33ee42c 100644
+--- a/apps/students/templates/students/dashboardStudent.html
++++ b/apps/students/templates/students/dashboardStudent.html
+@@ -11,6 +11,7 @@
+     <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20260903-status-labels">
+     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+     <link rel="stylesheet" href="{% static 'css/announcements.css' %}">
++    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}">
+ </head>
+ 
+ <body class="student-dashboard">
+@@ -80,6 +81,8 @@
+ {% url 'students:active_announcements' as announcement_fetch_url %}
+     {% include 'partials/announcementModal.html' %}
+     <script src="{% static 'js/announcements.js' %}?v=20260927-login-session"></script>
++    {% include 'students/partials/availability_browser.html' %}
++    <script src="{% static 'depthead/js/analytics_browser.js' %}" defer></script>
+ </body>
+ 
+ </html>
+diff --git a/apps/students/urls.py b/apps/students/urls.py
+index 3a776d6..f071b02 100644
+--- a/apps/students/urls.py
++++ b/apps/students/urls.py
+@@ -4,6 +4,7 @@ from . import views
+ app_name = 'students'
+ 
+ urlpatterns = [
++    path('api/availability-browser/', views.availability_browser_api, name='availability_browser_api'),
+     path('dashboard/', views.dashboard, name='dashboard'),
+     path('home/', views.home, name='home'),
+     path('view-schedule/', views.view_schedule, name='view_schedule'),
+diff --git a/apps/students/views.py b/apps/students/views.py
+index 3901ec7..0d183d1 100644
+--- a/apps/students/views.py
++++ b/apps/students/views.py
+@@ -17,6 +17,9 @@ from apps.core.colleges import get_college_label
+ from apps.faculty.models import ConsultationRequest, FacultyProfile, ScheduleEvent, WalkInQueue
+ from apps.faculty.services.calendar_events import serialize_consultation_event, serialize_schedule_event
+ from .models import FacultyStatusSubscription
++from .availability_browser import QUESTIONS, availability_answer
++from django.views.decorators.http import require_GET
++from django.views.decorators.cache import never_cache
+ from apps.faculty.services.google_calendar import refresh_faculty_status
+ from apps.faculty.services.google_calendar import GoogleCalendarError, delete_consultation_event
+ from apps.faculty.models import GoogleCalendarConnection
+@@ -103,6 +106,7 @@ def dashboard(request):
+     closed_colleges = _closed_college_map()
+     return render(request, 'students/dashboardStudent.html', {
+         'faculty_directory': faculty_directory,
++        'availability_questions': QUESTIONS.items(),
+         'closed_colleges': closed_colleges,
+         'announcements': get_active_announcements(request.user.college, audience='students'),
+     })
+@@ -481,3 +485,17 @@ def api_join_walk_in_queue(request):
+         )
+ 
+     return JsonResponse(_walk_in_json(queue), status=201)
++
++
++@login_required
++@role_required('student')
++@require_GET
++@never_cache
++def availability_browser_api(request):
++    college = (request.user.college or '').strip()
++    if not college:
++        return JsonResponse({'error': 'Your account has no college set.'}, status=400)
++    metric = request.GET.get('metric', '')
++    if metric not in QUESTIONS:
++        return JsonResponse({'error': 'Unknown availability question.'}, status=400)
++    return JsonResponse(availability_answer(metric, college))
+diff --git a/tests/analytics_browser.test.js b/tests/analytics_browser.test.js
+index 698ac3f..21fbdee 100644
+--- a/tests/analytics_browser.test.js
++++ b/tests/analytics_browser.test.js
+@@ -2,27 +2,38 @@ const test = require('node:test');
+ const assert = require('node:assert/strict');
+ const vm = require('node:vm');
+ const fs = require('node:fs');
+-function setup() {
++function setup(student = false) {
+   class Node {
+     constructor() { this.children = []; this.events = {}; this.attrs = {}; this.hidden = true; this.dataset = {}; this.textContent = ''; }
+     append(...nodes) { this.children.push(...nodes); }
+     replaceChildren(...nodes) { this.children = nodes; }
+     setAttribute(k,v) { this.attrs[k] = v; }
+     addEventListener(k,v) { this.events[k] = v; }
+-    focus() { this.focused = true; }
++    focus() { this.focused = true; document.activeElement = this; }
+   }
+   const ids = Object.fromEntries(['analytics-browser','analytics-chat-toggle','analytics-chat-panel','analytics-chat-close','analytics-chat-messages'].map(id => [id,new Node()]));
+   const button = new Node(); button.dataset.metric = 'capacity'; button.textContent = 'Capacity?';
+   ids['analytics-browser'].dataset.endpoint = '/api/analytics-browser/';
+   ids['analytics-browser'].querySelectorAll = () => [button];
++  if (student) {
++    ids['analytics-browser'].dataset.label = 'Faculty availability';
++    ids['analytics-browser'].dataset.sourceLabel = 'View faculty directory';
++    ids['analytics-browser'].dataset.endpoint = '/students/api/availability-browser/';
++    button.dataset.metric = 'available_now';
++  }
++  ids['analytics-chat-panel'].querySelectorAll = () => [ids['analytics-chat-close'], button];
+   const requests = [], windowEvents = {};
++  const classes = new Set();
++  const background = {inert:false};
++  const media = {matches:false,addEventListener:(k,v)=>windowEvents.media=v};
++  const document = {body:{classList:{toggle:(name,on)=>on?classes.add(name):classes.delete(name)}}, querySelector:()=>background, getElementById: id => ids[id], createElement: () => new Node()};
+   vm.runInNewContext(fs.readFileSync('apps/depthead/static/depthead/js/analytics_browser.js','utf8'), {
+-    document: {getElementById: id => ids[id], createElement: () => new Node()},
+-    window: {location:{origin:'https://example.test'}, addEventListener:(k,v)=>windowEvents[k]=v},
++    document,
++    window: {matchMedia:()=>media, location:{origin:'https://example.test'}, addEventListener:(k,v)=>windowEvents[k]=v},
+     URL, AbortController, setTimeout, clearTimeout,
+     fetch: (url, options) => new Promise((resolve,reject) => requests.push({url,options,resolve,reject})),
+   });
+-  return {ids,button,requests,windowEvents};
++  return {ids,button,requests,windowEvents,classes,background,media};
+ }
+ const answer = label => ({ok:true,json:async()=>({period:label,lines:['<script>literal</script>'],note:'note',source_url:'/source/'})});
+ test('repeated clicks fetch fresh data and out-of-order replies stay with their question', async()=>{
+@@ -55,3 +66,44 @@ test('toggle, Escape, focus return and page reset',()=>{
+   ids['analytics-chat-messages'].append({textContent:'old'});
+   windowEvents.pageshow(); assert.equal(ids['analytics-chat-messages'].children.length,0);
+ });
++
++test('desktop reserves panel space and mobile makes the background inert, reset restores it',()=>{
++  const {ids,classes,background,media,windowEvents}=setup();
++  ids['analytics-chat-toggle'].events.click();
++  assert.ok(classes.has('analytics-chat-open'));
++  assert.equal(ids['analytics-chat-toggle'].hidden,true);
++  assert.equal(background.inert,false);
++  media.matches=true; windowEvents.media();
++  assert.equal(background.inert,true);
++  assert.equal(ids['analytics-chat-panel'].attrs['aria-modal'],'true');
++  windowEvents.pageshow();
++  assert.equal(background.inert,false);
++  assert.equal(classes.has('analytics-chat-open'),false);
++  assert.equal(ids['analytics-chat-toggle'].hidden,false);
++});
++
++test('mobile focus wraps within panel and restores background state on close',()=>{
++  const {ids,button,media,background}=setup();
++  media.matches=true;
++  background.inert=true;
++  ids['analytics-chat-toggle'].events.click();
++  let prevented=0;
++  ids['analytics-browser'].events.keydown({key:'Tab',shiftKey:true,preventDefault(){prevented++;}});
++  assert.equal(button.focused,true);
++  ids['analytics-browser'].events.keydown({key:'Tab',shiftKey:false,preventDefault(){prevented++;}});
++  assert.equal(prevented,2);
++  ids['analytics-chat-close'].events.click();
++  assert.equal(background.inert,true);
++  assert.equal(ids['analytics-chat-toggle'].focused,true);
++});
++test('student widget uses its own endpoint and directory link, buttons remain reusable',async()=>{
++  const {ids,button,requests}=setup(true);
++  for(let i=0;i<2;i++) {
++    const pending=button.events.click();
++    assert.equal(requests[i].url.pathname,'/students/api/availability-browser/');
++    assert.equal(requests[i].url.searchParams.get('metric'),'available_now');
++    requests[i].resolve(answer('today')); await pending;
++  }
++  assert.equal(ids['analytics-chat-messages'].children[1].children[3].textContent,'View faculty directory');
++  assert.equal(button.disabled,undefined);
++});
+--- /dev/null
++++ b/apps/students/availability_browser.py
+@@ -0,0 +1,55 @@
++"""Student-only, read-only availability answers. No performance metrics or AI."""
++from zoneinfo import ZoneInfo
++from django.conf import settings
++from django.urls import reverse
++from django.utils import timezone
++from apps.core.models import OfficeClosure
++from apps.depthead.services.analytics import _eligible_faculty
++from apps.depthead.services.schedule_availability import get_schedule_availability
++
++QUESTIONS = {
++    'available_now': 'Which faculty are available right now?',
++    'today_open': 'Which faculty have the most open schedule time today?',
++    'week_daily': 'Who has the most open schedule time each day this week?',
++    'best_day': 'Which day this week has the most faculty availability?',
++}
++
++
++def availability_answer(metric, college):
++    if metric not in QUESTIONS:
++        raise ValueError('Unknown availability question')
++    tz = getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)
++    today = timezone.localtime(timezone.now(), ZoneInfo(tz)).date()
++    period = f'Today: {today} ({tz})'
++    note = 'Latest recorded status; availability may change. Check with the faculty member before visiting.'
++    closed = OfficeClosure.objects.filter(college__iexact=college, is_closed=True).exists()
++    if metric == 'available_now':
++        if closed:
++            lines = ['Your college is currently closed.']
++        else:
++            faculty = _eligible_faculty(college).filter(current_status='available').select_related('user').order_by('faculty_id')
++            lines = [p.user.get_full_name() or p.user.username for p in faculty]
++            lines = lines or ['No faculty are currently recorded as Available in your college.']
++    else:
++        data = get_schedule_availability(college, today=today)
++        period = f"This week: {data['week_start']} to {data['week_end']} ({data['timezone']})"
++        note = '8am-5pm. Ranked by total unscheduled time; all ties shown. Faculty without recorded schedules are excluded. Free time does not guarantee availability.'
++        rows = data['rows']
++        if metric == 'today_open':
++            rows = [row for row in rows if row['date'] == today]
++            period = f'Today: {today} ({tz})'
++        if metric == 'best_day':
++            note = '8am-5pm. Counts faculty with at least 60 consecutive unscheduled minutes. Faculty without recorded schedules count as fully unscheduled. All tied days are shown. Free time does not guarantee availability.'
++            best = max((row['available_count'] for row in rows), default=0)
++            lines = [f"{row['day']} ({row['date']}): {row['available_count']} of {data['faculty_count']} faculty."
++                     for row in rows if row['available_count'] == best] if best else ['No qualifying schedule availability recorded this week.']
++        else:
++            lines = [f"{row['day']} ({row['date']}): " +
++                     (f"{', '.join(row['winners'])} - {row['open_display']} per faculty."
++                      if row['winners'] else row['ranking_empty']) for row in rows]
++        if not data['faculty_count']:
++            lines = ['No active faculty in your college.']
++        if closed:
++            note = 'Your college is currently closed. These schedule estimates do not override the closure. ' + note
++    return {'period': period, 'lines': lines, 'note': note,
++            'source_url': reverse('students:dashboard')}
+--- /dev/null
++++ b/apps/students/templates/students/partials/availability_browser.html
+@@ -0,0 +1,15 @@
++<div id="analytics-browser" data-endpoint="{% url 'students:availability_browser_api' %}" data-label="Faculty availability" data-source-label="View faculty directory">
++    <button type="button" id="analytics-chat-toggle" aria-label="Open faculty availability" aria-expanded="false" aria-controls="analytics-chat-panel" hidden>Faculty availability</button>
++    <section id="analytics-chat-panel" role="dialog" aria-labelledby="analytics-chat-title" hidden>
++        <header class="analytics-chat-header">
++            <div><h2 id="analytics-chat-title">Faculty availability</h2><p>{{ request.user.college_name|default:request.user.college }} &middot; Your college only</p></div>
++            <button type="button" id="analytics-chat-close" aria-label="Close faculty availability">&times;</button>
++        </header>
++        <div id="analytics-chat-messages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="Availability conversation"></div>
++        <div class="analytics-chat-questions" aria-label="Preset questions">
++            <fieldset><legend>Availability and schedules</legend>
++                {% for metric, question in availability_questions %}<button type="button" data-metric="{{ metric }}">{{ question }}</button>{% endfor %}
++            </fieldset>
++        </div>
++    </section>
++</div>
+--- /dev/null
++++ b/apps/students/tests/test_availability_browser.py
+@@ -0,0 +1,92 @@
++from datetime import time
++from unittest.mock import patch
++from django.test import TestCase
++from django.urls import reverse
++from django.utils import timezone
++from django.db import connection
++from django.test.utils import CaptureQueriesContext
++from apps.core.models import User, OfficeClosure
++from apps.faculty.models import FacultyProfile, ScheduleEvent, StatusHistory
++from apps.students.availability_browser import QUESTIONS
++from apps.depthead.services.analytics_browser import ANALYTICS_QUESTIONS
++
++
++class AvailabilityBrowserTests(TestCase):
++    def setUp(self):
++        self.student = User.objects.create(username='student-browser', role='student', college='CCS')
++        self.client.force_login(self.student)
++        self.url = reverse('students:availability_browser_api')
++        self.faculty = []
++        for name, college in [('local-one', 'CCS'), ('local-two', 'CCS'), ('PRIVATE-OTHER-COLLEGE', 'CBA')]:
++            user = User.objects.create(username=name, role='faculty', college=college, account_status='active')
++            profile = FacultyProfile.objects.create(user=user, faculty_id=name, college_id=college, current_status='available')
++            ScheduleEvent.objects.create(faculty=profile, title='PRIVATE-EVENT-TITLE', description='PRIVATE-DESCRIPTION',
++                                         date=timezone.localdate(), start_time=time(8), end_time=time(9), event_type='busy')
++            self.faculty.append(profile)
++
++    def test_every_answer_scoped_and_read_only(self):
++        before = list(FacultyProfile.objects.values_list('pk', 'current_status', 'status_updated_at'))
++        history = StatusHistory.objects.count()
++        with patch('apps.students.views.refresh_faculty_status') as refresh, patch('apps.depthead.services.analytics_browser.analytics_browser_answer') as admin:
++            for metric in QUESTIONS:
++                with CaptureQueriesContext(connection) as queries:
++                    response = self.client.get(self.url, {'metric': metric, 'college': 'CBA'})
++                for query in queries:
++                    self.assertNotRegex(query['sql'].upper(), r'^\s*(INSERT|UPDATE|DELETE)\b')
++                self.assertEqual(response.status_code, 200)
++                self.assertIn('no-store', response['Cache-Control'])
++                text = response.content.decode()
++                for private in ('PRIVATE-OTHER-COLLEGE', 'PRIVATE-EVENT-TITLE', 'PRIVATE-DESCRIPTION', 'completion_rate', 'response_time'):
++                    self.assertNotIn(private, text)
++                self.assertEqual(set(response.json()), {'period', 'lines', 'note', 'source_url'})
++            refresh.assert_not_called()
++            admin.assert_not_called()
++        self.assertEqual(before, list(FacultyProfile.objects.values_list('pk', 'current_status', 'status_updated_at')))
++        self.assertEqual(history, StatusHistory.objects.count())
++
++    def test_rejects_all_admin_questions_and_unknown_metric(self):
++        for metric in list(ANALYTICS_QUESTIONS) + ['unknown', '', '__dict__']:
++            self.assertEqual(self.client.get(self.url, {'metric': metric}).status_code, 400)
++        self.assertEqual(self.client.get(reverse('depthead:analytics_browser_api'), {'metric':'faculty_load'}).status_code, 403)
++
++    def test_roles_missing_college_and_method(self):
++        self.assertEqual(self.client.post(self.url).status_code, 405)
++        self.student.college = ''
++        self.student.save()
++        self.assertEqual(self.client.get(self.url, {'metric':'available_now', 'college':'CCS'}).status_code, 400)
++        for role in ('faculty', 'depthead', 'superadmin'):
++            self.student.role = role
++            self.student.save()
++            self.assertEqual(self.client.get(self.url, {'metric':'available_now'}).status_code, 403)
++        self.client.logout()
++        self.assertEqual(self.client.get(self.url, {'metric':'available_now'}).status_code, 302)
++
++    def test_ties_and_repeated_requests(self):
++        for _ in range(2):
++            data = self.client.get(self.url, {'metric':'today_open'}).json()
++            self.assertIn('local-one', str(data['lines']))
++            self.assertIn('local-two', str(data['lines']))
++        data = self.client.get(self.url, {'metric':'best_day'}).json()
++        self.assertEqual(len(data['lines']), 7)
++
++    def test_closed_college_and_empty_results(self):
++        OfficeClosure.objects.create(college='CCS', is_closed=True)
++        data = self.client.get(self.url, {'metric':'available_now'}).json()
++        self.assertIn('closed', str(data['lines']))
++        self.assertNotIn('local-one', str(data['lines']))
++        self.assertIn('closed', self.client.get(self.url, {'metric':'today_open'}).json()['note'])
++        OfficeClosure.objects.all().delete()
++        User.objects.filter(role='faculty', college='CCS').update(account_status='deactivated')
++        for metric in QUESTIONS:
++            data = self.client.get(self.url, {'metric':metric}).json()
++            self.assertNotIn('local-one', str(data))
++            self.assertTrue(data['lines'])
++
++    def test_only_dashboard_contains_widget(self):
++        with patch('apps.students.views.refresh_faculty_status'):
++            response = self.client.get(reverse('students:dashboard'))
++        self.assertContains(response, self.url)
++        for question in QUESTIONS.values():
++            self.assertContains(response, question)
++        self.assertNotContains(response, 'data-metric="completion_rates"')
++        self.assertNotContains(self.client.get(reverse('students:home')), 'id="analytics-browser"')

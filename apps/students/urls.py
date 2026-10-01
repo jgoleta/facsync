@@ -4,6 +4,7 @@ from . import views
 app_name = 'students'
 
 urlpatterns = [
+    path('api/availability-browser/', views.availability_browser_api, name='availability_browser_api'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('home/', views.home, name='home'),
     path('view-schedule/', views.view_schedule, name='view_schedule'),
