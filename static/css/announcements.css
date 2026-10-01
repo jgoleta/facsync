@@ -90,6 +90,33 @@
   color: #7b8ba0;
   font-size: 0.76rem;
 }
+.past-announcements-list {
+  display: grid;
+  gap: 10px;
+  max-height: 330px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.past-announcement-item {
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+.past-announcement-item p {
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.55;
+}
+.past-announcement-item small {
+  color: #7b8ba0;
+  font-size: 0.76rem;
+}
+.announcement-expired {
+  color: #a34b4b;
+  font-weight: 700;
+}
 @media (max-width: 540px) {
   .announcement-dialog-header {
     padding: 22px 20px 18px;
