@@ -4,6 +4,7 @@ python-decouple==3.8
 python-dotenv==1.2.3
 django-allauth[socialaccount]==65.19.2
 requests==2.34.2
+Pillow==12.3.0
 PyJWT==2.13.0
 google-genai==2.22.0
 pydantic==2.13.5

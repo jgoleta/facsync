@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261002-avatars">
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -57,7 +57,7 @@
             <div class="monitoring-grid" id="monitoringGrid" data-refresh-url="{% url 'depthead:faculty_monitoring_data' %}">
                 {% for item in faculty_list %}
                 <div class="faculty-card {{ item.status_class }}">
-                    <div class="faculty-avatar">{{ item.name|first|upper }}</div>
+                    {% include 'components/_avatar.html' with photo_url=item.photo_url initials=item.name|first|upper avatar_class='faculty-avatar' %}
                     <div class="card-header">
                         <div>
                             <p class="faculty-label">Faculty member</p>
@@ -76,6 +76,7 @@
             </div>
         </main>
     </div>
-    <script src="{% static 'depthead/js/facultyMonitoring.js' %}?v=20260930-status-counts"></script>
+    <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
+    <script src="{% static 'depthead/js/facultyMonitoring.js' %}?v=20261002-avatars"></script>
 </body>
 </html>

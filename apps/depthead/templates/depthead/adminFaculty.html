@@ -2,7 +2,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261002-avatars" />
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -79,6 +79,7 @@
               <tr>
                 <td>{{ user.faculty_profile.faculty_id|default:'—' }}</td>
                 <td>
+                  {% include 'components/_avatar.html' with photo_url=user.avatar_url initials=user.avatar_initials avatar_class='fs-avatar-table' %}
                   {{ user.get_full_name|default:user.username }}
                 </td>
                 <td>{{ user.email }}</td>
@@ -292,6 +293,7 @@
       </div>
     </div>
 
+    <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
     <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20260927-google-calendar-confirmation-1"></script>
   </body>
 </html>

@@ -292,3 +292,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     console.log('Faculty dashboard script loaded.');
 });
+// Keep the announcement history compact until the faculty member expands it.
+(() => {
+  const toggle = document.getElementById('togglePastAnnouncements');
+  const list = document.getElementById('pastAnnouncementsList');
+  if (!toggle || !list) return;
+  toggle.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') !== 'true';
+    toggle.setAttribute('aria-expanded', String(expanded));
+    toggle.textContent = expanded ? 'Minimize — show latest 3' : 'Show all past announcements';
+    list.querySelectorAll('[data-past-announcement-extra]').forEach(item => {
+      item.hidden = !expanded;
+    });
+    if (!expanded) list.scrollTop = 0;
+  });
+})();

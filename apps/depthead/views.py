@@ -449,6 +449,7 @@ def faculty_monitoring(request):
         is_inactive = last_login is None or last_login < inactivity_threshold
         faculty_list.append({
             'name': profile.user.get_full_name() or profile.user.username,
+            'photo_url': profile.user.avatar_url,
             'status_label': label,
             'status_class': css_class,
             'updated_at': profile.status_updated_at,
@@ -717,6 +718,7 @@ def faculty_monitoring_data(request):
         faculty_list.append({
             'id': profile.faculty_id,
             'name': profile.user.get_full_name() or profile.user.username,
+            'photo_url': profile.user.avatar_url,
             'status_label': label,
             'status_class': css_class,
             'updated_at_iso': profile.status_updated_at.isoformat() if profile.status_updated_at else None,

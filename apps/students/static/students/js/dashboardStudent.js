@@ -221,7 +221,7 @@ function renderFacultyDirectory() {
       (faculty) => `
     <article class="card${faculty.is_college_closed ? " card-closed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-college="${escapeHtml(faculty.college)}" data-status="${escapeHtml(faculty.status)}" data-lastupdated="${escapeHtml(faculty.updated_at || "")}">
       <div class="card-left">
-        <div class="avatar" aria-hidden="true">${escapeHtml(getInitials(faculty.name))}</div>
+        <div class="avatar fs-avatar" aria-hidden="true"><span class="fs-avatar-fallback">${escapeHtml(getInitials(faculty.name))}</span>${faculty.photo_url ? `<img src="${escapeHtml(faculty.photo_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-avatar-image>` : ''}</div>
       </div>
       <div class="card-body">
         <div class="card-title">${escapeHtml(faculty.name)}</div>

@@ -1,0 +1,21 @@
+{% load static %}
+<section class="photo-editor" aria-labelledby="photo-editor-title">
+    <h2 id="photo-editor-title">Profile picture</h2>
+    <p>Your uploaded picture takes priority over your Google photo. Removing it restores your Google photo or initials.</p>
+    {% if request.user.role == 'faculty' %}
+    <p>Your picture appears in the public faculty directory. Anyone with the image link can view an uploaded picture.</p>
+    {% else %}
+    <p>Your upload is stored privately and displayed in your own account. Google photos remain hosted by Google.</p>
+    {% endif %}
+    <form data-photo-editor action="{% url 'core:profile_photo' %}" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <label for="profile-photo-file">Choose an optional picture (JPG, PNG or WebP, up to 2 MB)</label>
+        <input id="profile-photo-file" name="photo" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp">
+        <div class="photo-editor-actions">
+            <button type="submit" class="save-btn">Upload picture</button>
+            <button type="button" class="edit-btn" data-remove-photo {% if not request.user.uploaded_photo_url %}hidden{% endif %}>Remove uploaded picture</button>
+        </div>
+        <p data-photo-feedback role="status" aria-live="polite"></p>
+    </form>
+</section>
+<script src="{% static 'js/profile_photo.js' %}?v=20261002" defer></script>

@@ -127,6 +127,12 @@ GOOGLE_CALENDAR_SCOPE = config(
 GOOGLE_CALENDAR_SYNC_PAST_DAYS = config('GOOGLE_CALENDAR_SYNC_PAST_DAYS', cast=int, default=1)
 GOOGLE_CALENDAR_SYNC_FUTURE_DAYS = config('GOOGLE_CALENDAR_SYNC_FUTURE_DAYS', cast=int, default=60)
 
+# Uploads use the Storage API, not the Postgres connection. Keep the key server-only.
+SUPABASE_URL = config('SUPABASE_URL', default='').rstrip('/')
+SUPABASE_SECRET_KEY = config('SUPABASE_SECRET_KEY', default='')
+SUPABASE_FACULTY_PHOTO_BUCKET = config('SUPABASE_FACULTY_PHOTO_BUCKET', default='faculty-photos')
+SUPABASE_STUDENT_PHOTO_BUCKET = config('SUPABASE_STUDENT_PHOTO_BUCKET', default='student-photos')
+
 SITE_ID = 1
 SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000')
 

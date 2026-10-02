@@ -42,6 +42,24 @@ class User(AbstractUser):
     profile_completed = models.BooleanField(default=False)
     student_id = models.CharField(max_length=20, blank=True, null=True)
     year_level = models.CharField(max_length=1, choices=YEAR_LEVEL_CHOICES, blank=True, null=True)
+    google_photo_url = models.URLField(max_length=2048, blank=True)
+    uploaded_photo_url = models.URLField(max_length=2048, blank=True)
+
+    @property
+    def avatar_url(self):
+        """Private uploads are resolved through an owner-only view, never a public URL."""
+        from django.urls import reverse
+        from .profile_photos import safe_photo_url
+        if self.uploaded_photo_url:
+            if self.role == 'student':
+                return reverse('core:profile_photo_image', args=[self.pk])
+            return safe_photo_url(self.uploaded_photo_url)
+        return safe_photo_url(self.google_photo_url)
+
+    @property
+    def avatar_initials(self):
+        return (''.join(part[0] for part in (self.first_name, self.last_name) if part)
+                or self.username[:1] or '?').upper()
 
     @property
     def college_name(self):

@@ -6,8 +6,15 @@ from allauth.core.exceptions import ImmediateHttpResponse
 from django.shortcuts import redirect
 from django.contrib import messages
 from .models import FacultyInvite, DeptHeadInvite
+from .profile_photos import safe_photo_url
 
 class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
+
+    def save_user(self, request, sociallogin, form=None):
+        # This hook also runs after student signup and both invite activation paths.
+        if sociallogin.account.provider == 'google':
+            sociallogin.user.google_photo_url = safe_photo_url(sociallogin.account.extra_data.get('picture'))
+        return super().save_user(request, sociallogin, form)
 
     def pre_social_login(self, request, sociallogin):
         email = sociallogin.account.extra_data.get('email', '')
@@ -24,6 +31,9 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
             elif existing_user.account_status == 'deactivated':
                 messages.error(request, "Your account has been deactivated. Please contact a Super Admin.")
                 raise ImmediateHttpResponse(redirect('core:login'))
+            if sociallogin.account.provider == 'google':
+                existing_user.google_photo_url = safe_photo_url(sociallogin.account.extra_data.get('picture'))
+                existing_user.save(update_fields=['google_photo_url'])
             return
 
         #new account, check for faculty invites first

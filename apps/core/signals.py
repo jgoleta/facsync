@@ -4,6 +4,14 @@ from django.contrib import messages
 
 ALLOWED_DOMAIN = "gbox.adnu.edu.ph"  
 
+
+def cleanup_user_photo(sender, instance, using, **kwargs):
+    from django.db import transaction
+    from .profile_photos import delete_photo_safely
+    if instance.uploaded_photo_url:
+        user_id, photo_url = instance.pk, instance.uploaded_photo_url
+        transaction.on_commit(lambda: delete_photo_safely(user_id, photo_url), using=using)
+
 def google_login_domain_check(sender, request, sociallogin, **kwargs):
     email = sociallogin.account.extra_data.get('email', '')
 

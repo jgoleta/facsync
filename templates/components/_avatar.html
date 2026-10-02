@@ -1,0 +1,4 @@
+<span class="fs-avatar {{ avatar_class }}" aria-hidden="true">
+    <span class="fs-avatar-fallback">{{ initials|default:'?' }}</span>
+    {% if photo_url %}<img src="{{ photo_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-avatar-image>{% endif %}
+</span>
