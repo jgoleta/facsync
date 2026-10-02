@@ -1,0 +1,41 @@
+# Profile photo test results
+
+Baseline: 257 tests, 27 failures, 2 errors.
+After: 294 tests, 27 failures, 2 errors.
+37 new photo tests passed. Failure/error identities match exactly; no new failures.
+Migration drift check: no changes detected. JavaScript syntax checks passed.
+Frontend tests: `node --test tests/profile_photos.test.js` — 5 passed (failed-image fallback, browser validation, upload display update, removal, and storage errors).
+
+Supabase calls are mocked; live bucket access and browser appearance still need deployment smoke checks.
+
+## Existing failure/error identities
+
+- `test_all_statuses_college_scope_and_scheduled_boundaries (apps.depthead.tests.test_consultation_topics.Consultati onTopicsTests.test_all_statuses_college_scope_and_scheduled_boundaries)`
+- `test_approving_consultation_creates_google_event (apps.faculty.tests.test_views.FacultyViewTests.test_approving_consultation_creates_google_event)`
+- `test_booking_page_renders (apps.faculty.tests.test_views.FacultyViewTests.test_booking_page_renders)`
+- `test_bulk_delete_removes_google_events_when_sync_is_disabled (apps.faculty.tests.test_views.FacultyViewTests.test_bulk_delete_removes_google_events_when_sync_is_disabled)`
+- `test_calendar_failure_preserves_request (apps.students.tests.test_consultation_deletion.ConsultationDeletionTests.test_calendar_failure_preserves_request)`
+- `test_calendar_sync_preference_requires_connection_and_can_be_disabled (apps.faculty.tests.test_views.FacultyViewTests.test_calendar_sync_preference_requires_connection_and_can_be_disabled)`
+- `test_consultation_summary_status_distribution (apps.depthead.tests.test_analytics.CollegeAnalyticsTests.test_consultation_summary_status_distribution)`
+- `test_csv_none_day_creates_time_only_month_range (apps.faculty.tests.test_views.FacultyViewTests.test_csv_none_day_creates_time_only_month_range)`
+- `test_dashboard_page_renders (apps.faculty.tests.test_views.FacultyViewTests.test_dashboard_page_renders)`
+- `test_expired_manual_status_defaults_to_available (apps.faculty.tests.test_views.FacultyViewTests.test_expired_manual_status_defaults_to_available)`
+- `test_faculty_can_notify_and_complete_walk_in_student (apps.faculty.tests.test_views.FacultyViewTests.test_faculty_can_notify_and_complete_walk_in_student)`
+- `test_faculty_can_toggle_walk_in_availability (apps.faculty.tests.test_views.FacultyViewTests.test_faculty_can_toggle_walk_in_availability)`
+- `test_faculty_sees_cancellation_decisions_and_consultation_type (apps.students.tests.test_cancellation.Cancellatio nTests.test_faculty_sees_cancellation_decisions_and_consultation_type) (consultation_type='face_to_face')`
+- `test_faculty_sees_cancellation_decisions_and_consultation_type (apps.students.tests.test_cancellation.Cancellatio nTests.test_faculty_sees_cancellation_decisions_and_consultation_type) (consultation_type='online')`
+- `test_linked_calendar_event_removed (apps.students.tests.test_consultation_deletion.ConsultationDeletionTests.test_linked_calendar_event_removed)`
+- `test_manual_status_can_be_cleared_back_to_calendar_status (apps.faculty.tests.test_views.FacultyViewTests.test_manual_status_can_be_cleared_back_to_calendar_status)`
+- `test_owner_can_delete_each_status_and_request_disappears (apps.students.tests.test_consultation_deletion.Consulta tionDeletionTests.test_owner_can_delete_each_status_and_request_disappears) (status='approved')`
+- `test_owner_can_delete_each_status_and_request_disappears (apps.students.tests.test_consultation_deletion.Consulta tionDeletionTests.test_owner_can_delete_each_status_and_request_disappears) (status='cancellation_requested')`
+- `test_profile_page_renders (apps.faculty.tests.test_views.FacultyViewTests.test_profile_page_renders)`
+- `test_profile_updates_editable_fields (apps.faculty.tests.test_views.FacultyViewTests.test_profile_updates_editable_fields)`
+- `test_recurring_event_stays_local_when_google_is_connected (apps.faculty.tests.test_views.FacultyViewTests.test_recurring_event_stays_local_when_google_is_connected)`
+- `test_recurring_google_payload_counts_every_matching_weekday (apps.faculty.tests.test_views.FacultyViewTests.test_recurring_google_payload_counts_every_matching_weekday)`
+- `test_reschedule_and_cancel_update_and_delete_google_event (apps.faculty.tests.test_views.FacultyViewTests.test_reschedule_and_cancel_update_and_delete_google_event)`
+- `test_schedule_page_renders (apps.faculty.tests.test_views.FacultyViewTests.test_schedule_page_renders)`
+- `test_schedule_template_download_has_canonical_csv_headers (apps.faculty.tests.test_views.FacultyViewTests.test_schedule_template_download_has_canonical_csv_headers)`
+- `test_status_is_derived_from_an_active_system_calendar_event (apps.faculty.tests.test_views.FacultyViewTests.test_status_is_derived_from_an_active_system_calendar_event)`
+- `test_status_update_persists_status_note_and_history (apps.faculty.tests.test_views.FacultyViewTests.test_status_update_persists_status_note_and_history)`
+- `test_student_consultation_list_includes_completed_and_excludes_declined_requests (apps.students.tests.test_views. StudentScheduleTests.test_student_consultation_list_includes_completed_and_excludes_declined_requests)`
+- `test_student_schedule_api_returns_faculty_events (apps.students.tests.test_views.StudentScheduleTests.test_student_schedule_api_returns_faculty_events)`
