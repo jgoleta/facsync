@@ -1,9 +1,12 @@
 from django.urls import path
 from . import views
+from . import photo_views
 
 app_name = 'core'
 
 urlpatterns = [
+    path('account/photo/', photo_views.profile_photo, name='profile_photo'),
+    path('account/photo/<int:user_id>/', photo_views.profile_photo_image, name='profile_photo_image'),
     path('announcements/active/', views.active_announcements, name='active_announcements'),
     path('', views.landing_page, name='landing'),
     path('terms-of-service/', views.terms_of_service, name='terms_of_service'),

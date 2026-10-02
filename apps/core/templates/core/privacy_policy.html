@@ -27,7 +27,7 @@
         </header>
         <main class="legal-content">
             <h1>Privacy Policy</h1>
-            <p class="legal-updated">Last updated: <time datetime="2026-09-27">September 27, 2026</time></p>
+            <p class="legal-updated">Last updated: <time datetime="2026-10-02">October 2, 2026</time></p>
 
             <section aria-labelledby="about">
                 <h2 id="about">1. About FacSync</h2>
@@ -42,6 +42,9 @@
                     address, Google account identifier and profile information returned by Google, which may include a
                     profile-picture URL and email verification information. We use this information to identify your
                     account and provide access to FacSync. FacSync does not receive your Google password.</p>
+                <p>We save the Google profile-picture URL supplied during sign-in and refresh it on later Google
+                    sign-ins. Students and faculty may upload an optional profile picture instead. Uploaded pictures
+                    are stored in Supabase Storage; account records contain their image URLs, not the image files.</p>
                 <p>We also store information provided through registration and normal use: your username, role, college
                     affiliation and account status; student ID and year level where applicable; faculty ID, office
                     location and biography; consultation requests, agendas, messages and faculty notes; schedules;
@@ -56,9 +59,14 @@
                 <p>We use this information to operate accounts, display faculty availability and schedules, arrange
                     consultations, manage walk-in queues, deliver notifications, support college administration and
                     generate operational analytics.</p>
-                <p>Faculty names, college affiliations, availability, status notes and update times are visible on the
+                <p>Faculty names, profile pictures, college affiliations, availability, status notes and update times are visible on the
                     public availability dashboard. Signed-in students can view faculty schedules. Consultation and queue
                     information is used by the participants and administrative features that support these services.</p>
+                <p>Faculty uploads are public images: anyone with their image link can view them. Student uploads
+                    are stored in a private bucket and displayed in the student's own account. FacSync checks account
+                    ownership before issuing a viewing link that lasts one minute; anyone who obtains that temporary
+                    link can use it until it expires. Google profile photos remain hosted by Google and are not made
+                    private by FacSync's upload settings.</p>
                 <p>FacSync does not sell Google user data, share it with advertisers or use it for advertising. The
                     project uses it for the account, scheduling, communication and analytics functions described here.
                     Service providers process information as described below.</p>
@@ -100,7 +108,7 @@
                     deployment, so users should not assume these submissions are excluded from Google's product or model
                     improvement. See the <a href="https://ai.google.dev/gemini-api/terms">Gemini API terms</a>.</p>
                 <p><strong>Vercel and Supabase:</strong> Vercel hosts the application, and Supabase provides database
-                    storage. These providers process application traffic and stored records as needed to operate the
+                    storage and profile-image storage. These providers process application traffic, uploaded images and stored records as needed to operate the
                     service.</p>
             </section>
             <section aria-labelledby="retention">
@@ -109,6 +117,10 @@
                     college records. These records remain in the system until removed through available application
                     functions or by an administrator. Deactivating an account preserves its records. An announcement's
                     expiry controls its display rather than deleting the stored record.</p>
+                <p>You can remove an uploaded picture from your profile to return to your Google photo or initials.
+                    FacSync requests deletion of its stored upload when it is replaced, removed, or the account is
+                    deleted. Storage errors may require administrator cleanup, and cached copies or provider backups
+                    may remain temporarily. Removing an upload does not delete your Google profile photo.</p>
                 <p>You may request account removal through your College Head, the FacSync Super Admin or <a
                         href="mailto:facsync@gmail.com">facsync@gmail.com</a>. Account deletion can also remove related
                     records. It does not automatically remove emails already delivered or events retained in Google

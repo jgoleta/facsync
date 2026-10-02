@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20260916-account-contrast">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261002-avatars">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
@@ -185,9 +185,12 @@
                             <p>Keep a record of notices that are no longer active.</p>
                         </div>
                     </div>
-                    <div class="past-announcements-list">
+                    {% if past_announcements|length > 3 %}
+                    <button type="button" class="secondary-button" id="togglePastAnnouncements" aria-expanded="false" aria-controls="pastAnnouncementsList" style="margin-bottom: 10px;">Show all past announcements</button>
+                    {% endif %}
+                    <div class="past-announcements-list" id="pastAnnouncementsList">
                         {% for announcement in past_announcements %}
-                        <article class="past-announcement-item">
+                        <article class="past-announcement-item"{% if forloop.counter > 3 %} data-past-announcement-extra hidden{% endif %}>
                             <p>{{ announcement.message }}</p>
                             <small>
                                 {{ announcement.posted_at|date:"M d, Y" }} &middot;
@@ -250,7 +253,7 @@
     </div>
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20260930-cancellation-decision"></script>
+    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20261002-announcement-toggle"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 {% url 'faculty:active_announcements' as announcement_fetch_url %}
     {% include 'partials/announcementModal.html' %}

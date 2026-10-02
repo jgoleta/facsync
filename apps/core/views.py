@@ -81,6 +81,7 @@ def dashboard_public(request):
         faculty_cards.append({
             'id': profile.faculty_id,
             'name': profile.user.get_full_name() or profile.user.username,
+            'photo_url': profile.user.avatar_url,
             'college_name': get_college_label(profile.college_id),
             'data_status': data_status,
             'status_class': status_class,

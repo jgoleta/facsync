@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20260903-single-row-nav">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261002-avatars">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Public Dashboard</title>
@@ -80,10 +80,13 @@
                     data-college="{{ card.college_name }}" data-status="{{ card.data_status }}"
                     data-lastupdated="{{ card.last_updated_iso }}">
                     <div class="card-left">
-                        <svg class="avatar" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <span class="avatar fs-avatar" aria-hidden="true">
+                        <svg class="fs-avatar-fallback" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="12" cy="8" r="3.2" fill="#e6eefc" />
                             <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#e6eefc" />
                         </svg>
+                        {% if card.photo_url %}<img src="{{ card.photo_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-avatar-image>{% endif %}
+                        </span>
                     </div>
                     <div class="card-body">
                         <div class="card-title">{{ card.name }}</div>
@@ -103,7 +106,8 @@
         </main>
     </div>
     
-    <script src="{% static 'students/js/dashboardStudent.js' %}"></script>
+    <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
+    <script src="{% static 'students/js/dashboardStudent.js' %}?v=20261002-avatars"></script>
 {% url 'core:active_announcements' as announcement_fetch_url %}
     {% include 'partials/announcementModal.html' %}
     <script src="{% static 'js/announcements.js' %}?v=20260927-login-session"></script>

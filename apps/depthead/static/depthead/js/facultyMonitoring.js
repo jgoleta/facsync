@@ -37,7 +37,7 @@ function escapeHtml(value) {
 function renderFacultyCard(item) {
   return `
     <div class="faculty-card ${escapeHtml(item.status_class)}">
-      <div class="faculty-avatar">${escapeHtml((item.name || "?").charAt(0).toUpperCase())}</div>
+      <div class="faculty-avatar fs-avatar" aria-hidden="true"><span class="fs-avatar-fallback">${escapeHtml((item.name || "?").charAt(0).toUpperCase())}</span>${item.photo_url ? `<img src="${escapeHtml(item.photo_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-avatar-image>` : ''}</div>
       <div class="card-header">
         <div>
           <p class="faculty-label">Faculty member</p>

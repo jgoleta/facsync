@@ -2,7 +2,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+  <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261002-avatars" />
   <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}" />
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -86,7 +86,7 @@
               {% for user in active_faculty %}
               <tr class="faculty-row" data-college="{{ user.college|default:'' }}">
                 <td>{{ user.faculty_profile.faculty_id|default:'—' }}</td>
-                <td>{{ user.get_full_name|default:user.username }}</td>
+                <td>{% include 'components/_avatar.html' with photo_url=user.avatar_url initials=user.avatar_initials avatar_class='fs-avatar-table' %} {{ user.get_full_name|default:user.username }}</td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.college_name|default:'—' }}</td>
                 <td>{{ user.faculty_profile.office_location|default:'—' }}</td>
@@ -126,6 +126,7 @@
 
   <div id="crudLoadingModal" class="loading-overlay"><div class="crud-loading-card"><div class="loading-spinner"></div><p id="crudLoadingMessage">Processing request...</p></div></div>
   <script src="{% static 'js/announcements.js' %}"></script>
+  <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
   <script src="{% static 'superadmin/js/manageFaculty.js' %}?v=20260905-faculty-directory"></script>
 </body>
 </html>

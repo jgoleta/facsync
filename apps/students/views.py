@@ -87,6 +87,7 @@ def _faculty_directory(closed_college_codes=None, student=None):
         directory.append({
             'faculty_id': faculty.faculty_id,
             'name': faculty.user.get_full_name() or faculty.user.username,
+            'photo_url': faculty.user.avatar_url,
             'college': faculty.college_name,
             'status': faculty.current_status,
             'note': 'College closed' if faculty.college_id in closed_college_codes else faculty.status_note,
@@ -112,6 +113,14 @@ def dashboard(request):
         'closed_colleges': closed_colleges,
         'announcements': get_active_announcements(request.user.college, audience='students'),
     })
+
+
+@login_required
+@role_required('student')
+@require_GET
+@never_cache
+def profile(request):
+    return render(request, 'students/profile.html')
 
 @login_required
 @role_required('student')

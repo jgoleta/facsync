@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20260916-account-contrast">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261002-avatars">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Student Dashboard - Faculty</title>
@@ -24,6 +24,7 @@
             <nav class="nav-links">
                 {% include 'components/_notification_nav.html' %}
                 <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
+                <a href="{% url 'students:profile' %}" class="nav-btn"{% if request.resolver_match.url_name == 'profile' %} aria-current="page"{% endif %}>Profile</a>
                 <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
             </nav>
         </header>
@@ -76,7 +77,7 @@
     {{ closed_colleges|json_script:"closed-colleges" }}
 
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
-    <script src="{% static 'students/js/dashboardStudent.js' %}?v=20260903-status-labels"></script>
+    <script src="{% static 'students/js/dashboardStudent.js' %}?v=20261002-avatars"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 {% url 'students:active_announcements' as announcement_fetch_url %}
     {% include 'partials/announcementModal.html' %}
