@@ -21,9 +21,7 @@
             </a>
             <nav class="nav-links">
                 {% include 'components/_notification_nav.html' %}
-                <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
-                <a href="{% url 'students:profile' %}" class="nav-btn"{% if request.resolver_match.url_name == 'profile' %} aria-current="page"{% endif %}>Profile</a>
-                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+                {% include 'components/_account_nav.html' %}
             </nav>
         </header>
 

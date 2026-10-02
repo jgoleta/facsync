@@ -23,8 +23,7 @@
             </a>
             <nav class="nav-links">
                 {% include 'components/_notification_nav.html' %}
-                <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
-                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+                {% include 'components/_account_nav.html' %}
             </nav>
         </header>
 
@@ -111,7 +110,10 @@
                                     {% if consultation.start_time %} at {{ consultation.start_time|time:"g:i A" }}{% endif %}
                                     {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
                                 </p>
-                                <p class="student-name"><strong>Name:</strong> {{ consultation.user.get_full_name|default:consultation.user.username }}</p>
+                                <div class="student-identity">
+                                    {% include 'components/_avatar.html' with photo_url=consultation.user.avatar_url initials=consultation.user.avatar_initials avatar_class='student-avatar' %}
+                                    <p class="student-name"><strong>Name:</strong> {{ consultation.user.get_full_name|default:consultation.user.username }}</p>
+                                </div>
                                 <p class="request-agenda"><strong>Agenda:</strong> {{ consultation.get_agenda_display }}</p>
                                 <p class="request-type"><strong>Consultation Type:</strong>
                                     {% if consultation.consultation_type == 'online' %}Online{% else %}Face-to-Face{% endif %}
@@ -254,6 +256,7 @@
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
     <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20261002-announcement-toggle"></script>
+    <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 {% url 'faculty:active_announcements' as announcement_fetch_url %}
     {% include 'partials/announcementModal.html' %}

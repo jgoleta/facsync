@@ -16,6 +16,15 @@
     return String(value).split("T").pop().slice(0, 5);
   }
 
+  function formatTime(value) {
+    if (!value) return "";
+    const [hourValue, minuteValue] = String(value).split(":").map(Number);
+    if (Number.isNaN(hourValue) || Number.isNaN(minuteValue)) return value;
+    const period = hourValue >= 12 ? "PM" : "AM";
+    const hour = hourValue % 12 || 12;
+    return `${hour}:${String(minuteValue).padStart(2, "0")} ${period}`;
+  }
+
   function normalizeEvent(event) {
     return {
       id: event.id,
@@ -109,14 +118,15 @@
 
   function activityLabel(event, monthName, day) {
     const time = event.startTime && event.endTime
-      ? `${event.startTime} - ${event.endTime}`
-      : event.startTime || event.endTime || "All day";
+      ? `${formatTime(event.startTime)} - ${formatTime(event.endTime)}`
+      : formatTime(event.startTime || event.endTime) || "All day";
     return `${event.title} • ${monthName} ${day} • ${time}`;
   }
 
   window.FacSyncCalendar = Object.freeze({
     activityLabel,
     buildSchedule,
+    formatTime,
     normalizeEvent,
   });
 }(window));
