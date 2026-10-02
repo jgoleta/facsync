@@ -21,8 +21,7 @@
             </a>
             <nav class="nav-links" aria-label="Account navigation">
                 {% include 'components/_notification_nav.html' %}
-                <a href="{% url 'faculty:profile' %}" class="nav-btn active" aria-current="page">Profile</a>
-                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+                {% include 'components/_account_nav.html' %}
             </nav>
         </header>
 

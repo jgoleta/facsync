@@ -261,7 +261,10 @@ let activeEventContext = null;
 
 function formatEventTime(eventData) {
   if (!eventData.startTime && !eventData.endTime) return "All day";
-  return `${eventData.startTime || ""}${eventData.endTime ? ` - ${eventData.endTime}` : ""}`;
+  const formatTime = window.FacSyncCalendar.formatTime;
+  const startTime = formatTime(eventData.startTime);
+  const endTime = formatTime(eventData.endTime);
+  return `${startTime}${endTime ? ` - ${endTime}` : ""}`;
 }
 
 function escapeHtml(value) {
@@ -418,11 +421,7 @@ function renderCalendar() {
         const item = document.createElement("div");
         item.className = "slot-item";
         item.classList.add(`slot-type-${event.type || "busy"}`);
-        const eventTime =
-          event.startTime && event.endTime
-            ? `${event.startTime} - ${event.endTime}`
-            : "All day";
-        item.innerHTML = `<strong>${escapeHtml(event.title)}</strong>${eventTime}`;
+        item.innerHTML = `<strong>${escapeHtml(event.title)}</strong>${formatEventTime(event)}`;
         item.addEventListener("click", () => openEventModal(event, dateKey));
 
         if (!event.startTime || !event.endTime) {

@@ -89,6 +89,73 @@ body {
   transform: translateY(-1px);
 }
 
+.account-nav-menu {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.account-nav-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  padding: 9px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-light);
+  cursor: pointer;
+}
+
+.account-nav-toggle:hover,
+.account-nav-toggle:focus-visible {
+  background: var(--primary);
+  outline: none;
+}
+
+.account-nav-toggle svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  transition: transform 0.2s ease;
+}
+
+.account-nav-toggle[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
+.account-nav-actions {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  min-width: 130px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(0, 30, 64, 0.2);
+}
+
+.account-nav-actions[hidden] {
+  display: none;
+}
+
+.account-nav-actions .nav-btn {
+  width: 100%;
+  box-sizing: border-box;
+  color: var(--primary-dark);
+}
+
+.account-nav-actions .nav-btn:hover {
+  background: var(--accent-soft);
+}
+
 .btn,
 .btn-primary,
 .btn-secondary,
@@ -347,7 +414,7 @@ input:checked + .slider:before {
     min-width: 0;
     margin-left: auto;
     flex-wrap: nowrap;
-    overflow-x: auto;
+    overflow: visible;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
     -webkit-overflow-scrolling: touch;
