@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
     <link rel="stylesheet" href="{% static 'depthead/css/admin_dashboard.css' %}?v=20260905-overview">
-    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}">
+    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}?v=20261003-conversational">
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -158,7 +158,7 @@
         </main>
     </div>
     {% include 'depthead/partials/analytics_browser.html' %}
-    <script src="{% static 'depthead/js/analytics_browser.js' %}" defer></script>
+    <script src="{% static 'depthead/js/analytics_browser.js' %}?v=20261003-conversational" defer></script>
     <script src="{% static 'depthead/js/ai_insights.js' %}?v=20260905-filter" defer></script>
 </body>
 </html>

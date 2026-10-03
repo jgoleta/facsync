@@ -85,10 +85,25 @@
         if (!response.ok) throw new Error('Request failed');
         const data = await response.json();
         if (!Array.isArray(data.lines)) throw new Error('Invalid response');
-        reply.replaceChildren(element('p', data.period, 'analytics-answer-period'));
-        const list = document.createElement('ul');
-        data.lines.forEach(line => list.append(element('li', line)));
-        reply.append(list, element('p', data.note));
+        reply.replaceChildren();
+        if (data.period) reply.append(element('p', data.period, 'analytics-answer-period'));
+        if (Array.isArray(data.announcements) && data.announcements.length) {
+          data.announcements.forEach(item => {
+            const block = element('section', '', 'analytics-announcement');
+            block.append(element('p', item.message, 'analytics-announcement-message'));
+            if (Array.isArray(item.details)) {
+              item.details.forEach(detail => block.append(element('p', detail, 'analytics-announcement-detail')));
+            }
+            reply.append(block);
+          });
+        } else if (data.presentation === 'paragraphs') {
+          data.lines.forEach(line => reply.append(element('p', line)));
+        } else {
+          const list = document.createElement('ul');
+          data.lines.forEach(line => list.append(element('li', line)));
+          reply.append(list);
+        }
+        if (data.note) reply.append(element('p', data.note, 'analytics-answer-note'));
         const source = new URL(data.source_url, window.location.origin);
         if (source.origin === window.location.origin) {
           const link = element('a', data.source_label || root.dataset.sourceLabel || 'View source analytics');

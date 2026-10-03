@@ -13,7 +13,19 @@ from .analytics import _eligible_faculty
 
 WORK_START = time(8)
 WORK_END = time(17)
-MIN_FREE_MINUTES = 60
+MIN_FREE_MINUTES = 120
+
+# Shared explanation for charts, helpers and AI context; this is not a live status.
+SCHEDULE_COUNT_NOTE = (
+    'Counts faculty with at least two consecutive hours free between 8 AM and 5 PM. '
+    'Faculty without recorded schedules count as fully unscheduled. '
+    'This does not confirm actual availability or specifically exclude lunch breaks.'
+)
+SCHEDULE_RANK_NOTE = (
+    'These totals cover 8 AM–5 PM. All ties are included. '
+    'Faculty without recorded schedules are excluded. '
+    'Open schedule time does not guarantee availability; check with the faculty member before visiting.'
+)
 
 
 def _occurs_on(event, day):
@@ -108,6 +120,7 @@ def get_schedule_availability(college_code, *, today=None):
     return {
         'rows': rows,
         'faculty_count': len(faculty),
+        'minimum_free_minutes': MIN_FREE_MINUTES,
         'week_start': week_start,
         'week_end': week_start + timedelta(days=6),
         'timezone': timezone_name,
