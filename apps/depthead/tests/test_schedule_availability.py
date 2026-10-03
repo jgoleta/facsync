@@ -76,19 +76,19 @@ class ScheduleAvailabilityTests(TestCase):
     def test_overlaps_clipping_and_exact_threshold(self):
         faculty = self.faculty('Teacher')
         self.event(faculty, start_time=time(6), end_time=time(12))
-        self.event(faculty, start_time=time(10), end_time=time(16))
+        self.event(faculty, start_time=time(10), end_time=time(15))
         self.event(faculty, start_time=time(17), end_time=time(19))
         row = self.summary()['rows'][0]
-        self.assertEqual(row['open_minutes'], 60)
+        self.assertEqual(row['open_minutes'], 120)
         self.assertEqual(row['availability_percent'], 100)
-        self.event(faculty, start_time=time(16), end_time=time(16, 1))
+        self.event(faculty, start_time=time(15), end_time=time(15, 1))
         self.assertEqual(self.summary()['rows'][0]['availability_percent'], 0)
 
     def test_fragmented_free_time_does_not_meet_threshold(self):
         faculty = self.faculty('Teacher')
-        self.event(faculty, start_time=time(8, 30), end_time=time(16, 30))
+        self.event(faculty, start_time=time(9), end_time=time(16))
         row = self.summary()['rows'][0]
-        self.assertEqual(row['open_minutes'], 60)
+        self.assertEqual(row['open_minutes'], 120)
         self.assertEqual(row['availability_percent'], 0)
 
     def test_all_day_and_overnight_spillover(self):

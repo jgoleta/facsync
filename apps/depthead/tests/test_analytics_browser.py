@@ -30,7 +30,7 @@ class AnalyticsBrowserTests(TestCase):
             ConsultationRequest.objects.create(request_id=college, faculty=faculty, user=self.head,
                                                date=timezone.localdate(), status='completed')
         response = self.client.get(self.url, {'metric': 'faculty_load', 'college': 'CBA'})
-        self.assertEqual(response.json()['lines'], ['CCS: 1 requests'])
+        self.assertEqual(response.json()['lines'], ['CCS — 1 request'])
 
     def test_validation_and_access(self):
         self.assertEqual(self.client.get(self.url, {'metric': 'unknown'}).status_code, 400)
@@ -55,7 +55,7 @@ class AnalyticsBrowserTests(TestCase):
 
     def test_capacity_honestly_unavailable(self):
         answer = self.client.get(self.url, {'metric': 'capacity'}).json()
-        self.assertIn('not currently measurable', answer['lines'][0])
+        self.assertIn('cannot reliably measure', answer['lines'][0])
 
     @patch('apps.depthead.views.analytics_browser_answer', side_effect=RuntimeError('offline'))
     def test_error_returns_friendly_json(self, answer):

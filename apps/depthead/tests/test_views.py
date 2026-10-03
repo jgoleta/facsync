@@ -171,9 +171,9 @@ class DeptheadViewTests(TestCase):
             {
                 'title': 'Best days for department events or retreats',
                 'description': (
-                    'Monday (Sep 14) have the highest recorded faculty availability this week '
-                    '(100% or 1 of 1 faculty). These days are best '
-                    'for planning department events or retreats.'
+                    'Monday (Sep 14) have the highest share of faculty with at least two consecutive hours of open schedule time this week '
+                    '(100% or 1 of 1 faculty). These are schedule-based planning estimates, '
+                    'not confirmed availability. Faculty without recorded schedules count as fully unscheduled.'
                 ),
             },
         )

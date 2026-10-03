@@ -39,7 +39,7 @@ class AvailabilityBrowserTests(TestCase):
                 text = response.content.decode()
                 for private in ('PRIVATE-OTHER-COLLEGE', 'PRIVATE-EVENT-TITLE', 'PRIVATE-DESCRIPTION', 'completion_rate', 'response_time'):
                     self.assertNotIn(private, text)
-                self.assertEqual(set(response.json()), ({'period', 'lines', 'note', 'source_url', 'source_label'} if metric in UPDATE_QUESTIONS else {'period', 'lines', 'note', 'source_url'}))
+                self.assertEqual(set(response.json()), {'period', 'lines', 'note', 'source_url', 'source_label', 'presentation'})
             refresh.assert_not_called()
             admin.assert_not_called()
         self.assertEqual(before, list(FacultyProfile.objects.values_list('pk', 'current_status', 'status_updated_at')))
