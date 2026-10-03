@@ -181,7 +181,10 @@ present walk-in timing proxies as exact service duration.
 
 The schedule_availability section contains anonymous Django aggregates derived
 from faculty schedules and synced calendar events. Use its daily availability
-ratios for planning-window insights, but do not request or infer faculty
+ratios for planning-window insights. A qualifying gap is at least two consecutive
+hours between 8 AM and 5 PM; faculty without recorded schedules count as fully
+unscheduled. These estimates do not confirm availability or specifically exclude
+lunch breaks. Do not request or infer faculty
 identities, event titles, descriptions, or other raw schedule details.
 
 Respect every data-quality warning. When confidence is low, use cautious phrases

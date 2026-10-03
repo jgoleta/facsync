@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260930-cancellation-actions">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     <link rel="stylesheet" href="{% static 'css/announcements.css' %}?v=20260917-faculty-announcement-ui">
-    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}">
+    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}?v=20261003-conversational">
 </head>
 
 <body class="faculty-chat-dashboard">
@@ -75,7 +75,7 @@
                     </div>
                 </div>
 
-                <div class="card-section">
+                <div class="card-section" id="consultation-requests">
                     <div class="consultation-header">
                         <div>
                             <h2>Consultation Requests</h2>
@@ -262,7 +262,7 @@
     {% include 'partials/announcementModal.html' %}
     <script src="{% static 'js/announcements.js' %}?v=20260927-login-session"></script>
     {% include 'faculty/partials/consultation_browser.html' %}
-    <script src="{% static 'depthead/js/analytics_browser.js' %}" defer></script>
+    <script src="{% static 'depthead/js/analytics_browser.js' %}?v=20261003-conversational" defer></script>
 </body>
 
 </html>
