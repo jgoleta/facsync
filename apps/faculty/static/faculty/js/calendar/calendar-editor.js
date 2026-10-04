@@ -158,9 +158,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Local-only mode must never ask the user about Google Calendar.
   let calendarSyncEnabled = false;
 
+  let initialScheduleLoad = true;
+
   // Fetch schedule events, normalize them, and refresh the calendar display.
-  async function fetchEventsFromApi(sync = false) {
-    showScheduleCrudLoading(sync ? "Syncing Google Calendar..." : "Loading schedule...");
+  async function fetchEventsFromApi(sync = false, background = false) {
+    const initial = initialScheduleLoad;
+    initialScheduleLoad = false;
+    const finishCalendar = initial ? window.facultyInitialLoading?.(document.querySelector('.calendar-wrapper'), 'schedule', 'calendar') : null;
+    const finishActivities = initial ? window.facultyInitialLoading?.(document.querySelector('.legend-card'), 'activities', 'queue') : null;
+    if (!initial && !background) showScheduleCrudLoading(sync ? "Syncing Google Calendar..." : "Loading schedule...");
     try {
       const res = await fetch(`/faculty/api/events/${sync ? '?sync=1' : ''}`);
       if (!res.ok) {
@@ -193,9 +199,15 @@ document.addEventListener("DOMContentLoaded", () => {
       return data;
     } catch (err) {
       console.error('Failed to fetch events', err);
+      if (calendarSyncStatus) {
+        calendarSyncStatus.textContent = 'Unable to load schedule. Please try Sync again.';
+        calendarSyncStatus.className = 'calendar-sync-status error';
+      }
       return null;
     } finally {
-      hideScheduleCrudLoading();
+      finishCalendar?.();
+      finishActivities?.();
+      if (!initial && !background) hideScheduleCrudLoading();
     }
   }
 
@@ -1290,7 +1302,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render cached events immediately, then refresh them from Google in the background.
   fetchEventsFromApi().then((data) => {
-    if (data?.calendar_connected && data?.sync_enabled) fetchEventsFromApi(true);
+    if (data?.calendar_connected && data?.sync_enabled) fetchEventsFromApi(true, true);
   });
 
   // Open the event form and populate it with the selected event for editing.

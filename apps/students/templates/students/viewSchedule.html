@@ -9,6 +9,7 @@
     <title>FacSync | View Faculty Schedule</title>
     <link rel="stylesheet" href="{% static 'css/shared_schedule.css' %}?v=20260902-queue-without-estimate">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+    {% include 'components/_student_navigation_loading.html' %}
 </head>
 
 <body data-faculty-id="{{ selected_faculty.faculty_id|default:'' }}"
@@ -196,7 +197,7 @@
 
     <script src="{% static 'js/calendar/calendar-core.js' %}?v=20260910-month-navigation"></script>
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
-    <script src="{% static 'students/js/calendar/faculty-calendar-viewer.js' %}?v=20260910-sunday-first"></script>
+    <script src="{% static 'students/js/calendar/faculty-calendar-viewer.js' %}?v=20261004-loading"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 
