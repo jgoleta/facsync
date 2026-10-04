@@ -1,8 +1,13 @@
 {% extends "emails/base_email.html" %}
-{% block heading %}{{ faculty_name }} is now {{ status_label }}{% endblock %}
+{% block heading %}{% if legacy_message %}{{ legacy_subject }}{% elif recorded_at %}{{ faculty_name }} changed status to {{ status_label }}{% else %}{{ faculty_name }} is now {{ status_label }}{% endif %}{% endblock %}
 {% block body %}
+{% if legacy_message %}
+{{ legacy_message|linebreaks }}
+{% else %}
 <p>Hi {{ student_name }},</p>
-<p><strong>{{ faculty_name }}</strong>, a faculty member you're following on FacSync, is now <strong>{{status_label}}</strong>.</p>
+<p><strong>{{ faculty_name }}</strong>, a faculty member you're following on FacSync, {% if recorded_at %}changed status to{% else %}is now{% endif %} <strong>{{status_label}}</strong>.</p>
+{% if recorded_at %}<p>Recorded at: {{ recorded_at }}</p>{% endif %}
+{% endif %}
 {% endblock %}
 {% block button %}
 <tr>

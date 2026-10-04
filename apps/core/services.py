@@ -66,18 +66,30 @@ def notify_faculty_status_subscribers(faculty, status, *, history=None, deferred
         from apps.faculty.models import StatusEmailDelivery
         if history is None:
             raise ValueError('A status transition is required for deferred delivery.')
-        StatusEmailDelivery.objects.bulk_create([
-            StatusEmailDelivery(
+        deliveries = []
+        from zoneinfo import ZoneInfo
+        recorded_at = timezone.localtime(history.changed_at, ZoneInfo(settings.GOOGLE_CALENDAR_TIME_ZONE)).strftime('%B %d, %Y at %I:%M %p (%Z)')
+        for subscription in subscriptions:
+            if not subscription.student.email:
+                continue
+            subject = f"{faculty_name}: status changed to {status_label}"[:255]
+            context = {
+                'student_name': subscription.student.get_full_name() or subscription.student.username,
+                'faculty_name': faculty_name, 'status_label': status_label,
+                'url': url, 'recorded_at': recorded_at,
+                'site_url': settings.SITE_URL.rstrip('/'),
+            }
+            html_body = render_to_string('emails/faculty_status_update.html', context)
+            body = (f"Hi {context['student_name']},\n\n"
+                    f"{faculty_name} changed status to {status_label}.\n"
+                    f"Recorded at: {recorded_at}.\n\n"
+                    f"View their schedule: {settings.SITE_URL.rstrip('/')}{url}")
+            deliveries.append(StatusEmailDelivery(
                 history=history, recipient=subscription.student,
-                email=subscription.student.email,
-                subject=f"{faculty_name}: status changed to {status_label}"[:255],
-                body=(f"Hi {subscription.student.get_full_name() or subscription.student.username},\n\n"
-                      f"{faculty_name}, a faculty member you're following on FacSync, changed status to {status_label}.\n"
-                      f"Recorded at: {history.changed_at.isoformat()}.\n\n"
-                      f"View their schedule: {url}"),
-            )
-            for subscription in subscriptions if subscription.student.email
-        ])
+                email=subscription.student.email, subject=subject,
+                body=body, html_body=html_body,
+            ))
+        StatusEmailDelivery.objects.bulk_create(deliveries)
     else:
         # After commit, still within the triggering request; no background thread.
         from django.db import transaction

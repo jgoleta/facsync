@@ -9,7 +9,8 @@ from django.conf import settings
 from django.db import connection, transaction
 from django.db.models import Q
 from django.utils import timezone
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 from apps.core.email_backends import BrevoEmailBackend
 from apps.students.models import FacultyStatusSubscription
@@ -47,15 +48,29 @@ def submit_batch(deliveries):
     """One HTTPS call, one private recipient per version. Never log payloads."""
     backend = BrevoEmailBackend()
     try:
-        payloads = [backend._payload(EmailMessage(
-            row.subject, row.body, settings.DEFAULT_FROM_EMAIL, [row.email],
-        )) for row in deliveries]
+        payloads = []
+        for row in deliveries:
+            body = row.body
+            html_body = row.html_body
+            if not html_body:
+                # Older pending deliveries retain their original message; wrap
+                # escaped text in the same branding without resending completed rows.
+                url = f'/student/view-schedule/?faculty_id={row.history.faculty_id}'
+                body = body.replace(f'View their schedule: {url}', f"View their schedule: {settings.SITE_URL.rstrip('/')}{url}")
+                html_body = render_to_string('emails/faculty_status_update.html', {
+                    'legacy_message': body, 'legacy_subject': row.subject,
+                    'url': url, 'site_url': settings.SITE_URL.rstrip('/'),
+                })
+            message = EmailMultiAlternatives(row.subject, body, settings.DEFAULT_FROM_EMAIL, [row.email])
+            message.attach_alternative(html_body, 'text/html')
+            payloads.append(backend._payload(message))
     except Exception:
         return 'failed', 'invalid_message'
     first = payloads[0]
     payload = {
         'sender': first['sender'], 'subject': first['subject'],
         'textContent': first['textContent'],
+        'htmlContent': first['htmlContent'],
         'messageVersions': [{k: v for k, v in item.items() if k != 'sender'} for item in payloads],
     }
     try:
