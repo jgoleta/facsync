@@ -588,12 +588,13 @@ def active_announcements(request):
 @login_required
 @role_required('faculty')
 @csrf_protect
+@transaction.atomic
 def update_status(request):
     """Save a faculty member's manual status and append a status-history record."""
     if request.method != 'POST':
         return HttpResponse(status=405)
 
-    faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
+    faculty_profile = FacultyProfile.objects.select_for_update().filter(user=request.user).first()
     if faculty_profile is None:
         return JsonResponse({'error': 'Faculty profile not found.'}, status=404)
 
@@ -635,7 +636,7 @@ def update_status(request):
     faculty_profile.save(update_fields=[
         'manual_status', 'manual_status_override', 'manual_status_expires_at', 'status_note',
     ])
-    effective_status = refresh_faculty_status(faculty_profile)
+    effective_status = refresh_faculty_status(faculty_profile, immediate_email=True)
     faculty_profile.refresh_from_db()
 
     return JsonResponse({

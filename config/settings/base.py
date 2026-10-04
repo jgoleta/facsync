@@ -187,6 +187,9 @@ SOCIALACCOUNT_ADAPTER = 'apps.core.adapters.FacSyncSocialAdapter'
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 BREVO_API_KEY = config('BREVO_API_KEY', default='')
 BREVO_BATCH_SIZE = config('BREVO_BATCH_SIZE', default=100, cast=int)
+# Enable only after migrating and configuring the external scheduled POST.
+AUTOMATIC_STATUS_EMAIL_QUEUE_ENABLED = config('AUTOMATIC_STATUS_EMAIL_QUEUE_ENABLED', default=False, cast=bool)
+STATUS_SCHEDULER_SECRET = config('STATUS_SCHEDULER_SECRET', default='')
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
 EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
 EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)

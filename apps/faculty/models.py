@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from apps.core.colleges import get_college_label
 
 
@@ -100,6 +101,40 @@ class StatusHistory(models.Model):
     def __str__(self):
         """Describe the faculty status-history entry."""
         return f"{self.faculty} status changed from {self.status} at {self.changed_at}"
+
+
+class StatusEmailDelivery(models.Model):
+    """One recipient's automatic-status email, tied to a recorded transition."""
+
+    history = models.ForeignKey(StatusHistory, on_delete=models.CASCADE, related_name='email_deliveries')
+    recipient = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    email = models.EmailField()
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    state = models.CharField(max_length=16, default='pending', choices=[
+        ('pending', 'Pending'), ('sending', 'Sending'), ('accepted', 'Accepted by Brevo'),
+        ('failed', 'Failed'), ('unknown', 'Outcome unknown'), ('cancelled', 'Cancelled'),
+    ])
+    attempts = models.PositiveSmallIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now)
+    claimed_at = models.DateTimeField(null=True, blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    reason = models.CharField(max_length=40, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['history', 'recipient'], name='unique_status_email_recipient')]
+        indexes = [models.Index(fields=['state', 'next_attempt_at'], name='status_email_pending_idx')]
+
+
+class StatusSchedulerState(models.Model):
+    """Database-backed lease and rotating cursor, shared by Vercel instances."""
+
+    name = models.CharField(max_length=32, primary_key=True)
+    lease_token = models.CharField(max_length=64, blank=True)
+    lease_until = models.DateTimeField(null=True, blank=True)
+    faculty_cursor = models.CharField(max_length=64, blank=True)
+    last_finished_at = models.DateTimeField(null=True, blank=True)
 
 
 class ScheduleEvent(models.Model):
