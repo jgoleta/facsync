@@ -111,6 +111,7 @@ class StatusEmailDelivery(models.Model):
     email = models.EmailField()
     subject = models.CharField(max_length=255)
     body = models.TextField()
+    html_body = models.TextField(blank=True, default="")
     state = models.CharField(max_length=16, default='pending', choices=[
         ('pending', 'Pending'), ('sending', 'Sending'), ('accepted', 'Accepted by Brevo'),
         ('failed', 'Failed'), ('unknown', 'Outcome unknown'), ('cancelled', 'Cancelled'),
