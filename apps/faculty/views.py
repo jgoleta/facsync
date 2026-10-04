@@ -9,6 +9,7 @@ from datetime import date, datetime, time, timedelta
 from django.contrib.auth.decorators import login_required
 from apps.core.decorators import role_required
 from django.db import transaction
+from django.db.models import Count, Q
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
@@ -528,6 +529,11 @@ def dashboard(request):
         status='completed',
     ).select_related('user').order_by('-date', '-start_time')
     today = timezone.localdate()
+    consultation_counts = faculty_consultations.aggregate(
+        pending=Count('request_id', filter=Q(status='pending')),
+        approved=Count('request_id', filter=Q(status__in=['approved', 'cancellation_requested'])),
+        today=Count('request_id', filter=Q(date=today) & ~Q(status__in=['declined', 'cancelled'])),
+    )
     current_status = faculty_profile.current_status if faculty_profile else 'not_set'
     status_css_class = {
         'not_set': 'not-set',
@@ -538,11 +544,22 @@ def dashboard(request):
         'unavailable': 'unavailable',
     }.get(current_status, 'not-set')
     status_label = dict(FacultyProfile.STATUS_CHOICES).get(current_status, 'Not Set')
-    past_announcements = CollegeAnnouncement.objects.filter(
+    announcement_cutoff = timezone.now()
+    college_announcements = CollegeAnnouncement.objects.filter(
         college__iexact=request.user.college,
         audience__in=('faculty', 'both'),
-        expiry__lte=timezone.now(),
     )
+    announcements = []
+    past_announcements = []
+    for announcement in college_announcements:
+        if announcement.expiry <= announcement_cutoff:
+            past_announcements.append(announcement)
+        elif request.user.college:
+            announcements.append({
+                'college': announcement.get_college_display(),
+                'message': announcement.message,
+                'posted_at': announcement.posted_at.strftime('%b %d, %Y'),
+            })
 
     return render(request, 'faculty/dashboardFaculty.html', {
         'analytics_questions': [{'metric': key, 'group': group, 'question': question} for key, (group, question) in FACULTY_BROWSER_QUESTIONS.items()],
@@ -554,12 +571,10 @@ def dashboard(request):
         'status_label': status_label,
         'consultation_requests': consultation_requests,
         'completed_consultations': completed_consultations,
-        'pending_consultation_count': faculty_consultations.filter(status='pending').count(),
-        'approved_consultation_count': faculty_consultations.filter(status__in=['approved', 'cancellation_requested']).count(),
-        'consultations_today_count': faculty_consultations.filter(date=today).exclude(
-            status__in={'declined', 'cancelled'},
-        ).count(),
-        'announcements': get_active_announcements(request.user.college, audience='faculty'),
+        'pending_consultation_count': consultation_counts['pending'],
+        'approved_consultation_count': consultation_counts['approved'],
+        'consultations_today_count': consultation_counts['today'],
+        'announcements': announcements,
         'past_announcements': past_announcements,
     })
 

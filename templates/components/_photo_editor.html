@@ -1,12 +1,7 @@
 {% load static %}
 <section class="photo-editor" aria-labelledby="photo-editor-title">
     <h2 id="photo-editor-title">Profile picture</h2>
-    <p>Your uploaded picture takes priority over your Google photo. Removing it restores your Google photo or initials.</p>
-    {% if request.user.role == 'faculty' %}
-    <p>Your picture appears in the public faculty directory. Anyone with the image link can view an uploaded picture.</p>
-    {% else %}
-    <p>Your upload is stored privately and displayed in your own account. Google photos remain hosted by Google.</p>
-    {% endif %}
+    <p>Without an uploaded picture, your Google photo is used by default, or your initials if unavailable.</p>
     <form data-photo-editor action="{% url 'core:profile_photo' %}" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <label for="profile-photo-file">Choose an optional picture (JPG, PNG or WebP, up to 2 MB)</label>
