@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 from django.urls import reverse
 from django.utils import timezone
 from apps.core.services import notify_faculty_status_subscribers
@@ -786,10 +786,8 @@ def sync_google_calendar(user):
         error_text = str(exc)
         connection.last_sync_error = error_text
         connection.save(update_fields=['last_sync_error', 'updated_at'])
-        faculty.current_status = faculty.manual_status
         if any(marker in error_text.casefold() for marker in ('401', 'authorization has expired', 'invalid_grant')):
-            faculty.sync_enabled = False
-            faculty.save(update_fields=['current_status', 'sync_enabled'])
+            FacultyProfile.objects.filter(pk=faculty.pk).update(current_status=models.F('manual_status'), sync_enabled=False)
             ConsultationRequest.objects.filter(
                 faculty=faculty,
                 google_calendar_id=connection.calendar_id,
@@ -800,11 +798,22 @@ def sync_google_calendar(user):
             )
             connection.delete()
         else:
-            faculty.save(update_fields=['current_status'])
+            FacultyProfile.objects.filter(pk=faculty.pk).update(current_status=models.F('manual_status'))
         raise
 
 
-def refresh_faculty_status(faculty, google_events=None):
+def refresh_faculty_status(faculty, google_events=None, *, immediate_email=False):
+    """Serialize transitions across page requests and scheduled checks."""
+    with transaction.atomic():
+        locked = FacultyProfile.objects.select_for_update().get(pk=faculty.pk)
+        result = _refresh_faculty_status_locked(locked, google_events, immediate_email=immediate_email)
+        for field in ('current_status', 'status_updated_at', 'manual_status',
+                      'manual_status_override', 'manual_status_expires_at', 'status_note'):
+            setattr(faculty, field, getattr(locked, field))
+        return result
+
+
+def _refresh_faculty_status_locked(faculty, google_events=None, *, immediate_email=False):
     """Derive status from local, synced, and approved consultation records."""
     # A temporary manual status always falls back to Not Set when its
     # deadline passes. Keeping the resulting Not Set status as a manual
@@ -930,13 +939,16 @@ def refresh_faculty_status(faculty, google_events=None):
         faculty.current_status = next_status
         faculty.status_updated_at = changed_at
         faculty.save(update_fields=['current_status', 'status_updated_at'])
-        StatusHistory.objects.create(
+        history = StatusHistory.objects.create(
             history_id=secrets.token_hex(16),
             faculty=faculty,
             status=next_status,
             changed_at=changed_at,
         )
-        notify_faculty_status_subscribers(faculty, next_status)
+        notify_faculty_status_subscribers(
+            faculty, next_status, history=history,
+            deferred=getattr(settings, 'AUTOMATIC_STATUS_EMAIL_QUEUE_ENABLED', False) and not immediate_email,
+        )
     return next_status
 
 

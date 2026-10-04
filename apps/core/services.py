@@ -40,7 +40,7 @@ def notify_college_users(college, notification_type, title, message, url='', exc
     ])
 
 
-def notify_faculty_status_subscribers(faculty, status):
+def notify_faculty_status_subscribers(faculty, status, *, history=None, deferred=False):
     """Create an in-app notification and send an email for students following a faculty member."""
     from apps.students.models import FacultyStatusSubscription
 
@@ -62,12 +62,33 @@ def notify_faculty_status_subscribers(faculty, status):
         for subscription in subscriptions
     ])
 
-    for subscription in subscriptions:
-        if subscription.student.email:
-            try:
-                send_faculty_status_email(subscription.student, faculty_name, status_label, url)
-            except Exception:
-                pass  #change status regardless if the email notification is successful or not
+    if deferred:
+        from apps.faculty.models import StatusEmailDelivery
+        if history is None:
+            raise ValueError('A status transition is required for deferred delivery.')
+        StatusEmailDelivery.objects.bulk_create([
+            StatusEmailDelivery(
+                history=history, recipient=subscription.student,
+                email=subscription.student.email,
+                subject=f"{faculty_name}: status changed to {status_label}"[:255],
+                body=(f"Hi {subscription.student.get_full_name() or subscription.student.username},\n\n"
+                      f"{faculty_name}, a faculty member you're following on FacSync, changed status to {status_label}.\n"
+                      f"Recorded at: {history.changed_at.isoformat()}.\n\n"
+                      f"View their schedule: {url}"),
+            )
+            for subscription in subscriptions if subscription.student.email
+        ])
+    else:
+        # After commit, still within the triggering request; no background thread.
+        from django.db import transaction
+        recipients = [subscription.student for subscription in subscriptions if subscription.student.email]
+        def send_immediate():
+            for student in recipients:
+                try:
+                    send_faculty_status_email(student, faculty_name, status_label, url)
+                except Exception:
+                    logging.getLogger(__name__).warning('Immediate status email failed.')
+        transaction.on_commit(send_immediate)
 
     return notifications
 
