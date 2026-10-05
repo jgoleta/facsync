@@ -977,7 +977,6 @@ def api_faculty_walk_ins(request):
 
 
 @login_required
-@role_required('faculty')
 @csrf_protect
 def api_walk_in_detail(request, queue_id):
     """Allow a faculty member to manage a queue entry or a student to cancel it."""

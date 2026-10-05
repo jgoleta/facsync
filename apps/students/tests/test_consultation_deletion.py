@@ -19,8 +19,10 @@ class ConsultationDeletionTests(TestCase):
         self.url = reverse('students:api_delete_consultation', args=[self.request.pk])
         self.client.force_login(self.student)
 
-    def test_owner_can_delete_each_status_and_request_disappears(self):
+    def test_owner_can_delete_deletable_statuses_and_request_disappears(self):
         for status, _ in ConsultationRequest.STATUS_CHOICES:
+            if status == 'pending':
+                continue
             with self.subTest(status=status):
                 self.request.status = status
                 self.request.save()
@@ -28,6 +30,16 @@ class ConsultationDeletionTests(TestCase):
                 self.assertFalse(ConsultationRequest.objects.filter(pk=self.request.pk).exists())
         self.assertNotContains(self.client.get(reverse('students:consultation_requests')), 'deletion-test')
         self.assertEqual(self.client.delete(self.url).status_code, 404)
+
+    def test_owner_cannot_delete_pending_request(self):
+        self.request.status = 'pending'
+        self.request.save(update_fields=['status'])
+
+        response = self.client.delete(self.url)
+
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(response.json()['error'], 'Pending consultation requests cannot be deleted.')
+        self.assertTrue(ConsultationRequest.objects.filter(pk=self.request.pk).exists())
 
     def test_other_student_cannot_delete(self):
         other = get_user_model().objects.create_user(username='other', role='student')
@@ -52,8 +64,10 @@ class ConsultationDeletionTests(TestCase):
         client.force_login(self.student)
         self.assertEqual(client.delete(self.url).status_code, 403)
         response = client.get(reverse('students:consultation_requests'))
-        self.assertContains(response, 'Delete request')
+        self.assertNotContains(response, 'Delete request')
         token = client.cookies['csrftoken'].value
+        self.request.status = 'declined'
+        self.request.save(update_fields=['status'])
         self.assertEqual(client.delete(self.url, HTTP_X_CSRFTOKEN=token).status_code, 204)
 
     def link_calendar(self):

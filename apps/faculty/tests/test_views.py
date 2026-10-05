@@ -104,6 +104,27 @@ class FacultyViewTests(TestCase):
         self.assertEqual(queue.status, 'completed')
         self.assertIsNotNone(queue.served_at)
 
+    def test_student_can_cancel_own_walk_in_queue_entry(self):
+        _faculty_user, student, faculty = self._make_faculty_and_student('student-cancel')
+        queue = WalkInQueue.objects.create(
+            queue_id='walk-in-student-cancel',
+            faculty=faculty,
+            user=student,
+            position=1,
+            joined_at=timezone.now(),
+        )
+        self.client.force_login(student)
+
+        response = self.client.post(
+            reverse('faculty:api_walk_in_detail', args=[queue.queue_id]),
+            data='{"action":"cancel"}',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        queue.refresh_from_db()
+        self.assertEqual(queue.status, 'cancelled')
+
     def test_dashboard_page_renders(self):
         user = get_user_model().objects.create_user(
             username='faculty-dashboard-test',

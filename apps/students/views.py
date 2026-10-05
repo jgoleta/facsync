@@ -198,6 +198,11 @@ def api_delete_consultation(request, request_id):
             ConsultationRequest.objects.select_for_update(),
             request_id=request_id, user=request.user,
         )
+        if consultation.status == 'pending':
+            return JsonResponse(
+                {'error': 'Pending consultation requests cannot be deleted.'},
+                status=409,
+            )
         if consultation.status in {'approved', 'cancellation_requested'}:
             return JsonResponse(
                 {'error': 'Approved consultations must be cancelled by faculty approval of a cancellation request.'},

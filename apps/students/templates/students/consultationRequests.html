@@ -58,7 +58,7 @@
                     <li class="request-item" data-request-id="{{ consultation.request_id }}" data-status="{{ consultation.status }}">
                         <div class="request-status">
                             <span class="status-badge status-{{ consultation.status }}">{{ consultation.get_status_display }}</span>
-                            {% if consultation.status != 'approved' and consultation.status != 'cancellation_requested' %}<button type="button" class="delete-request-btn" aria-label="Delete request with {{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}" title="Delete request" data-delete-url="{% url 'students:api_delete_consultation' consultation.request_id %}">
+                            {% if consultation.status != 'pending' and consultation.status != 'approved' and consultation.status != 'cancellation_requested' %}<button type="button" class="delete-request-btn" aria-label="Delete request with {{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}" title="Delete request" data-delete-url="{% url 'students:api_delete_consultation' consultation.request_id %}">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                                     <path d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M5 6l1 14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-14M10 10v7M14 10v7" />
                                 </svg>
