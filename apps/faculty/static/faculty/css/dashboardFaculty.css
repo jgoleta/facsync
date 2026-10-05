@@ -435,6 +435,27 @@ h2 {
     color: var(--primary-dark);
 }
 
+.student-identity {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.student-identity .student-name {
+    margin: 0;
+}
+
+.student-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #e7f0ff;
+    color: #153b72;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
 .request-info .request-time {
     display: block;
     width: fit-content;

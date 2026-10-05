@@ -4,6 +4,7 @@ from django.utils.dateparse import parse_datetime
 from django.utils.timesince import timesince
 from apps.faculty.models import FacultyProfile, ConsultationRequest
 from .analytics import normalize_period
+from .schedule_availability import MIN_FREE_MINUTES, SCHEDULE_COUNT_NOTE
 
 
 def student_reporting_period():
@@ -146,6 +147,9 @@ def schedule_availability_ai_summary(schedule_availability):
         'week_start': schedule_availability['week_start'].isoformat(),
         'week_end': schedule_availability['week_end'].isoformat(),
         'faculty_count': schedule_availability['faculty_count'],
+        'minimum_free_minutes': MIN_FREE_MINUTES,
+        'working_hours': '8 AM–5 PM',
+        'interpretation': SCHEDULE_COUNT_NOTE,
         'daily': [
             {
                 'day': row['day'],
@@ -178,9 +182,9 @@ def most_available_days_recommendation(schedule_availability):
     return {
         'title': 'Best days for department events or retreats',
         'description': (
-            f"{day_text} have the highest recorded faculty availability this week "
+            f"{day_text} have the highest share of faculty with at least two consecutive hours of open schedule time this week "
             f"({highest_rate}% or {best_days[0]['available_count']} of "
-            f"{schedule_availability['faculty_count']} faculty). These days are best "
-            "for planning department events or retreats."
+            f"{schedule_availability['faculty_count']} faculty). These are schedule-based planning estimates, "
+            "not confirmed availability. Faculty without recorded schedules count as fully unscheduled."
         ),
     }

@@ -1,0 +1,11 @@
+{% load static %}
+<link rel="stylesheet" href="{% static 'faculty/css/loading.css' %}?v=20261004">
+<script id="faculty-navigation-destinations" type="application/json">
+{
+  "{% url 'faculty:dashboard' %}": ["Dashboard", "dashboard"],
+  "{% url 'faculty:schedule' %}": ["Schedule", "calendar"],
+  "{% url 'faculty:booking_management' %}": ["Walk-ins", "queue"],
+  "{% url 'faculty:profile' %}": ["Profile", "profile"]
+}
+</script>
+<script src="{% static 'faculty/js/loading.js' %}?v=20261004"></script>

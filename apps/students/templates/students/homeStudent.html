@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}">
     <link rel="stylesheet" href="{% static 'students/css/homeStudent.css' %}?v=20260903-right-quick-actions">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+    {% include 'components/_student_navigation_loading.html' %}
 </head>
 
 <body>
@@ -21,9 +22,7 @@
             </a>
             <nav class="nav-links">
                 {% include 'components/_notification_nav.html' %}
-                <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
-                <a href="{% url 'students:profile' %}" class="nav-btn"{% if request.resolver_match.url_name == 'profile' %} aria-current="page"{% endif %}>Profile</a>
-                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+                {% include 'components/_account_nav.html' %}
             </nav>
         </header>
 

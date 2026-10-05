@@ -196,6 +196,29 @@ table td:first-child {
     line-height: 1.5;
 }
 
+.student-behavior-grid > .peak-submission-card,
+.student-behavior-grid > .student-frequency-card {
+    align-self: start;
+}
+
+.student-frequency-scroll {
+    max-height: 260px;
+    overflow: auto;
+    scrollbar-gutter: stable;
+}
+
+.student-frequency-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--bg-card, #fff);
+}
+
+.student-frequency-scroll:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
+
 @media (min-width: 1200px) {
     .student-behavior-grid {
         grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);

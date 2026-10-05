@@ -9,6 +9,7 @@
     <title>FacSync | Booking Management</title>
     <link rel="stylesheet" href="{% static 'faculty/css/bookingManagement.css' %}?v=20260819-responsive">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
+    {% include 'components/_faculty_navigation_loading.html' %}
 </head>
 
 <body>
@@ -21,8 +22,7 @@
             </a>
             <nav class="nav-links">
                 {% include 'components/_notification_nav.html' %}
-                <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
-                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+                {% include 'components/_account_nav.html' %}
             </nav>
         </header>
 
@@ -92,7 +92,7 @@
     </div>
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'faculty/js/bookingManagement.js' %}?v=20260827-feedback"></script>
+    <script src="{% static 'faculty/js/bookingManagement.js' %}?v=20261004-loading"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 

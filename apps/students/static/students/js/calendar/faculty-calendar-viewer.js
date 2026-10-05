@@ -234,12 +234,17 @@ const facultySchedule = {
   schedule: [],
 };
 
+let initialScheduleLoad = true;
 async function loadFacultySchedule() {
   if (!facultyId) {
     renderCalendar();
     return;
   }
 
+  const initial = initialScheduleLoad;
+  initialScheduleLoad = false;
+  const finishCalendar = initial ? window.pageInitialLoading?.(document.querySelector('.calendar-wrapper'), 'schedule', 'calendar') : null;
+  const finishActivities = initial ? window.pageInitialLoading?.(document.querySelector('.legend-card'), 'activities', 'queue') : null;
   try {
     const response = await fetch(
       `/student/api/schedule-events/?faculty_id=${encodeURIComponent(facultyId)}`,
@@ -252,8 +257,15 @@ async function loadFacultySchedule() {
     renderCalendar();
   } catch (error) {
     console.error("Failed to load faculty schedule", error);
-    facultySchedule.schedule = [];
-    renderCalendar();
+    if (initial) {
+      const message = document.createElement('p');
+      message.setAttribute('role', 'status');
+      message.textContent = 'Unable to load schedule. Please refresh the page to try again.';
+      calendarGrid.replaceChildren(message);
+    }
+  } finally {
+    finishCalendar?.();
+    finishActivities?.();
   }
 }
 
@@ -261,7 +273,10 @@ let activeEventContext = null;
 
 function formatEventTime(eventData) {
   if (!eventData.startTime && !eventData.endTime) return "All day";
-  return `${eventData.startTime || ""}${eventData.endTime ? ` - ${eventData.endTime}` : ""}`;
+  const formatTime = window.FacSyncCalendar.formatTime;
+  const startTime = formatTime(eventData.startTime);
+  const endTime = formatTime(eventData.endTime);
+  return `${startTime}${endTime ? ` - ${endTime}` : ""}`;
 }
 
 function escapeHtml(value) {
@@ -418,11 +433,7 @@ function renderCalendar() {
         const item = document.createElement("div");
         item.className = "slot-item";
         item.classList.add(`slot-type-${event.type || "busy"}`);
-        const eventTime =
-          event.startTime && event.endTime
-            ? `${event.startTime} - ${event.endTime}`
-            : "All day";
-        item.innerHTML = `<strong>${escapeHtml(event.title)}</strong>${eventTime}`;
+        item.innerHTML = `<strong>${escapeHtml(event.title)}</strong>${formatEventTime(event)}`;
         item.addEventListener("click", () => openEventModal(event, dateKey));
 
         if (!event.startTime || !event.endTime) {

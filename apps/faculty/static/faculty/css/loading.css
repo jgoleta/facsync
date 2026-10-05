@@ -1,0 +1,13 @@
+.faculty-skeleton { padding: 20px; background: #f7faff; color: #16213e; border-radius: 14px; }
+.faculty-skeleton p { margin: 0 0 16px; }
+.faculty-skeleton-shapes { display: grid; gap: 16px; }
+.faculty-skeleton-shape { height: 68px; border-radius: 10px; background: #dfe7f2; animation: faculty-loading-pulse 1.4s ease-in-out infinite alternate; }
+.faculty-skeleton-calendar .faculty-skeleton-shapes { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.faculty-skeleton-dashboard .faculty-skeleton-shapes, .faculty-skeleton-profile .faculty-skeleton-shapes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.faculty-skeleton-dashboard .faculty-skeleton-shape, .faculty-skeleton-profile .faculty-skeleton-shape { height: 130px; }
+.faculty-transition { position: fixed; z-index: 40; overflow: auto; border-radius: 0; }
+.faculty-loading-region { position: relative; min-height: 340px; }
+.faculty-loading-region > .faculty-skeleton { position: absolute; inset: 0; z-index: 5; overflow: hidden; }
+@keyframes faculty-loading-pulse { from { opacity: .5; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .faculty-skeleton-shape { animation: none; } }
+@media (max-width: 600px) { .faculty-skeleton-shape { height: 48px; } }

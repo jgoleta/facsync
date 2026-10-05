@@ -1,0 +1,18 @@
+{% load static %}
+<div class="account-nav-menu">
+    <button type="button" id="accountNavToggle" class="account-nav-toggle" aria-label="Open account menu" aria-expanded="false" aria-controls="accountNavActions">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+            <path d="m7 9 5 5 5-5" />
+        </svg>
+    </button>
+    <div id="accountNavActions" class="account-nav-actions" hidden>
+        {% if request.user.role == 'student' %}
+        <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
+        <a href="{% url 'students:profile' %}" class="nav-btn">Profile</a>
+        {% elif request.user.role == 'faculty' %}
+        <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
+        {% endif %}
+        <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+    </div>
+</div>
+<script src="{% static 'js/account-nav.js' %}?v=20261002"></script>

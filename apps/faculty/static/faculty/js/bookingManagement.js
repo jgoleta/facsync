@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const queueCountLarge = document.getElementById('queueCountLarge');
     const lastUpdated = document.getElementById('lastUpdated');
 
+    let initialQueueLoad = true;
+
     // Retrieve the CSRF token required by walk-in queue requests.
     function getCsrfToken() {
         const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
@@ -65,7 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Load the walk-in queue and refresh the availability summary.
     async function loadQueue(showLoading = false) {
-        if (showLoading) facultyFeedback?.showLoading('Loading walk-in queue...');
+        const initial = initialQueueLoad;
+        initialQueueLoad = false;
+        const finishInitial = initial ? window.facultyInitialLoading?.(document.querySelector('.queue-card'), 'walk-in queue', 'queue') : null;
+        if (showLoading && !initial) facultyFeedback?.showLoading('Loading walk-in queue...');
         try {
             const response = await fetch('/faculty/api/walk-ins/');
             const data = await response.json();
@@ -88,7 +93,8 @@ document.addEventListener('DOMContentLoaded', () => {
             queueList.innerHTML = '<li class="queue-item empty-state"><p>Unable to load the queue.</p></li>';
             if (showLoading) facultyFeedback?.showToast(error.message, true);
         } finally {
-            if (showLoading) facultyFeedback?.hideLoading();
+            finishInitial?.();
+            if (showLoading && !initial) facultyFeedback?.hideLoading();
         }
     }
 

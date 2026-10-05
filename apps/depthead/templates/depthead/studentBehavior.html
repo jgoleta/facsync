@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Student Behavior</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}?v=20261005-frequency-scroll">
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -74,14 +74,16 @@
                     </table>
                 </div>
 
-                <div class="table-card">
+                <div class="table-card peak-submission-card">
                     <h3>Peak Request Submission Month</h3>
                     <p class="peak-period-display">{{ peak_period_label }}</p>
                     <p class="chart-caption">{{ peak_period_count }} requests</p>
                 </div>
             
-                <div class="table-card">
-                    <h3>Student Request Frequency</h3>
+                <div class="table-card student-frequency-card">
+                    <h3 id="student-frequency-heading">Student Request Frequency</h3>
+                    <p class="chart-caption">Requests submitted {{ topics_period_start|date:"M j, Y" }} &ndash; {{ topics_period_end|date:"M j, Y" }} &middot; All statuses</p>
+                    <div class="student-frequency-scroll" role="region" aria-labelledby="student-frequency-heading" tabindex="0">
                     <table>
                         <thead>
                             <tr>
@@ -104,6 +106,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
+                    </div>
                 </div>
 
             </div>

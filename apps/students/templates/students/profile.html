@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261002-photo-editor">
     <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}">
+    {% include 'components/_student_navigation_loading.html' %}
 </head>
 <body>
     <div class="page-shell">
@@ -15,9 +16,7 @@
             <a href="{% url 'students:home' %}" class="brand"><span class="brand-mark">F</span><span>FacSync</span></a>
             <nav class="nav-links" aria-label="Account navigation">
                 {% include 'components/_notification_nav.html' %}
-                <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
-                <a href="{% url 'students:profile' %}" class="nav-btn"{% if request.resolver_match.url_name == 'profile' %} aria-current="page"{% endif %}>Profile</a>
-                <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+                {% include 'components/_account_nav.html' %}
             </nav>
         </header>
         <main class="profile-shell">
