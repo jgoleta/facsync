@@ -151,6 +151,15 @@ class CollegeAnnouncement(models.Model):
         return f"{self.get_college_display()}: {self.message[:40]}"
 
 
+class DemoDataBatch(models.Model):
+    """Exact ownership manifest for reversible, explicitly approved demo seeds."""
+
+    key = models.SlugField(max_length=40, unique=True)
+    college = models.ForeignKey(College, on_delete=models.PROTECT)
+    manifest = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class Notification(models.Model):
     TYPE_CHOICES = [
         ('consultation_request', 'Consultation request'),
