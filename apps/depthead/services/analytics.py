@@ -849,8 +849,12 @@ def get_faculty_trends(
         )
     }
     responses_by_faculty = defaultdict(list)
-    for faculty_id, requested_at, approved_at in consultations.filter(
-        approved_at__isnull=False,
+    # Approval activity belongs to the period in which approval was recorded,
+    # independently of the appointment dates used by completion rates above.
+    for faculty_id, requested_at, approved_at in get_base_consultation_queryset(college_code).filter(
+        faculty_id__in=faculty_ids,
+        approved_at__gte=period.start_datetime,
+        approved_at__lt=period.end_datetime_exclusive,
     ).values_list('faculty_id', 'requested_at', 'approved_at'):
         duration_hours = (approved_at - requested_at).total_seconds() / 3600
         if duration_hours >= 0:

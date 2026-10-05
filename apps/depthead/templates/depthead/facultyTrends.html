@@ -113,7 +113,7 @@
 
                 <section class="table-card" aria-labelledby="faculty-detail-title">
                     <h2 id="faculty-detail-title">Faculty activity and consultations</h2>
-                    <p class="chart-caption">Status activity: last 7 days. Consultations: month-to-date ({{ consultation_start|date:"M j" }} &ndash; {{ consultation_end|date:"M j, Y" }}), based on scheduled consultation dates.</p>
+                    <p class="chart-caption">Status activity: last 7 days. Consultations: month-to-date ({{ consultation_start|date:"M j" }} &ndash; {{ consultation_end|date:"M j, Y" }}). Completion rate uses scheduled consultation dates; average approval time uses approval dates.</p>
                     <div class="table-scroll" tabindex="0" role="region" aria-label="Faculty activity and consultation details">
                         <table class="faculty-detail-table">
                             <thead>
@@ -133,7 +133,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="chart-note">Last recorded update can predate the reporting window. Approval time includes requests with a recorded approval.</p>
+                    <p class="chart-note">Last recorded update can predate the reporting window. Average approval time measures submission to approval for approvals recorded in this period, including future appointments.</p>
                 </section>
             </div>
         </main>
