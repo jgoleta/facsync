@@ -115,6 +115,39 @@ def normalize_period(
     )
 
 
+def current_week_period():
+    today = timezone.now().astimezone(ZoneInfo(DEFAULT_ANALYTICS_TIMEZONE)).date()
+    monday = today - timedelta(days=today.weekday())
+    return normalize_period(monday, monday + timedelta(days=6))
+
+
+def get_hourly_availability_snapshot(college_code):
+    """Read persisted statuses and appointments; never refresh status or Calendar."""
+    if not str(college_code or '').strip():
+        raise ValueError('college_code is required.')
+    now = timezone.now().astimezone(ZoneInfo(DEFAULT_ANALYTICS_TIMEZONE))
+    start = now.replace(minute=0, second=0, microsecond=0)
+    end = start + timedelta(hours=1)
+    names = [profile.user.get_full_name() or profile.user.username
+             for profile in _eligible_faculty(college_code).filter(
+                 current_status='available', user__is_active=True,
+             ).select_related('user').order_by('user__first_name', 'user__last_name', 'faculty_id')]
+    counts = Counter()
+    for row in get_base_consultation_queryset(college_code).filter(
+        date=start.date(), status__in=['approved', 'pending'],
+        start_time__isnull=False, end_time__isnull=False,
+    ).only('date', 'start_time', 'end_time', 'status'):
+        appointment_start = datetime.combine(row.date, row.start_time, tzinfo=start.tzinfo)
+        appointment_end = datetime.combine(row.date, row.end_time, tzinfo=start.tzinfo)
+        if appointment_start < end and appointment_end > start:
+            counts[row.status] += 1
+    return {
+        'period_label': f"Today, {start.strftime('%B')} {start.day} \u00b7 {start.strftime('%I:%M %p').lstrip('0')}\u2013{end.strftime('%I:%M %p').lstrip('0')} \u00b7 {DEFAULT_ANALYTICS_TIMEZONE}",
+        'available_count': len(names), 'available_names': names,
+        'approved_count': counts['approved'], 'pending_count': counts['pending'],
+    }
+
+
 def _percentage(numerator, denominator):
     if not denominator:
         return None
@@ -826,18 +859,20 @@ def get_faculty_trends(
     start_date=None,
     end_date=None,
     timezone_name=DEFAULT_ANALYTICS_TIMEZONE,
+    *, status_period=False,
 ):
     """Return centralized per-faculty trend data for the existing trends page."""
 
     period = normalize_period(start_date, end_date, timezone_name)
     status_window_end = min(period.end_datetime_exclusive, period.generated_at)
-    status_window_start = status_window_end - timedelta(days=7)
+    status_window_start = period.start_datetime if status_period else status_window_end - timedelta(days=7)
+    elapsed_days = max((status_window_end - status_window_start).total_seconds() / 86400, 0)
     history_for_faculty = StatusHistory.objects.filter(faculty_id=OuterRef('faculty_id'))
     faculty = list(_eligible_faculty(college_code).annotate(
         carry_status=Subquery(history_for_faculty.filter(
             changed_at__lt=status_window_start,
         ).order_by('-changed_at').values('status')[:1]),
-        latest_change=Subquery(history_for_faculty.order_by('-changed_at').values('changed_at')[:1]),
+        latest_change=Subquery((history_for_faculty.filter(changed_at__gte=status_window_start, changed_at__lt=status_window_end) if status_period else history_for_faculty).order_by('-changed_at').values('changed_at')[:1]),
     ).order_by('faculty_id'))
     faculty_ids = [profile.faculty_id for profile in faculty]
     consultations = get_base_consultation_queryset(college_code, period).filter(faculty_id__in=faculty_ids)
@@ -880,7 +915,7 @@ def get_faculty_trends(
         items.append({
             "faculty_key": f"faculty:{profile.faculty_id}",
             "status_updates_last_7_days": status_update_count,
-            "updates_per_day": round(status_update_count / 7, 1),
+            "updates_per_day": round(status_update_count / elapsed_days, 1) if elapsed_days else 0,
             "last_update_at": (
                 profile.latest_change.isoformat() if profile.latest_change else None
             ),

@@ -27,8 +27,8 @@
                 <div class="trends-chart-pair">
                     <section class="chart-card" aria-labelledby="history-chart-title">
                         <h2 id="history-chart-title">Status availability by faculty</h2>
-                        <p class="chart-caption">Time in the Available status, based on recorded status history.</p>
-                        <p class="period-label">Last 7 days</p>
+                        <p class="chart-caption">Time recorded as Available from Monday up to now. Future hours are not counted.</p>
+                        <p class="period-label">This week: {{ consultation_start|date:"M j" }} &ndash; {{ consultation_end|date:"M j, Y" }} &middot; Asia/Manila</p>
                         <div class="history-chart-scroll" tabindex="0" role="region" aria-label="Faculty status availability">
                             <ul class="bar-chart">
                                 {% for bar in chart_bars %}
@@ -44,7 +44,6 @@
                             </ul>
                         </div>
                         <div class="bar-axis" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
-                        <p class="chart-note">Tiny positive rates use a minimum-width marker. Labels show the calculated percentage.</p>
                     </section>
                     <section class="chart-card" aria-labelledby="schedule-chart-title">
                         <h2 id="schedule-chart-title">College-wide availability by day</h2>
@@ -113,11 +112,12 @@
 
                 <section class="table-card" aria-labelledby="faculty-detail-title">
                     <h2 id="faculty-detail-title">Faculty activity and consultations</h2>
-                    <p class="chart-caption">Status activity: last 7 days. Consultations: month-to-date ({{ consultation_start|date:"M j" }} &ndash; {{ consultation_end|date:"M j, Y" }}). Completion rate uses scheduled consultation dates; average approval time uses approval dates.</p>
+                    <p class="chart-caption">This week: {{ consultation_start|date:"M j" }} &ndash; {{ consultation_end|date:"M j, Y" }} &middot; Asia/Manila. Status updates count from Monday up to now. Completion uses appointments this week; approval time uses requests approved this week.</p>
+                    <p class="chart-note">Updates/day uses the time elapsed this week. Upcoming appointments are not completed yet.</p>
                     <div class="table-scroll" tabindex="0" role="region" aria-label="Faculty activity and consultation details">
                         <table class="faculty-detail-table">
                             <thead>
-                                <tr><th scope="col" rowspan="2">Faculty</th><th scope="colgroup" colspan="2">Status activity &middot; Last 7 days</th><th scope="colgroup" colspan="2" class="consultation-column consultation-divider">Consultations &middot; Month-to-date</th></tr>
+                                <tr><th scope="col" rowspan="2">Faculty</th><th scope="colgroup" colspan="2">Status activity &middot; This week</th><th scope="colgroup" colspan="2" class="consultation-column consultation-divider">Consultations &middot; This week</th></tr>
                                 <tr><th scope="col">Last recorded update</th><th scope="col">Updates/day</th><th scope="col" class="consultation-column consultation-divider">Completion rate</th><th scope="col" class="consultation-column">Avg. time to approval</th></tr>
                             </thead>
                             <tbody>
@@ -133,7 +133,6 @@
                             </tbody>
                         </table>
                     </div>
-                    <p class="chart-note">Last recorded update can predate the reporting window. Average approval time measures submission to approval for approvals recorded in this period, including future appointments.</p>
                 </section>
             </div>
         </main>
