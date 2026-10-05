@@ -405,9 +405,10 @@ def student_behavior(request):
     polyline_str = " ".join(f"{p['x']},{p['y']}" for p in line_points)
 
     peak_period_label, peak_period_count = peak_request_month(analytics['request_patterns']['monthly_trend'])
-    consultations_qs = get_base_consultation_queryset(
-        college_code,
-        normalize_period(month_starts[0], today),
+    request_period = normalize_period(month_starts[0], today)
+    consultations_qs = get_base_consultation_queryset(college_code).filter(
+        requested_at__gte=request_period.start_datetime,
+        requested_at__lt=request_period.end_datetime_exclusive,
     )
     student_frequency = get_student_request_frequency_display(consultations_qs)
 
