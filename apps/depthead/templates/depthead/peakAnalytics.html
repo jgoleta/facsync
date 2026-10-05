@@ -21,11 +21,13 @@
             <header class="main-header">
                 <h1>Peak Consultation Analytics ({{ request.user.college_name }})</h1>
                 <p>Analyze consultation volume and demand.</p>
+                <p class="chart-caption">This week: {{ reporting_start|date:"M j, Y" }} &ndash; {{ reporting_end|date:"M j, Y" }} ({{ reporting_timezone }}). Based on scheduled consultation dates.</p>
             </header>
 
             <div class="analytics-grid">
                 <div class="chart-card">
                     <h3>Completed Consultations by Scheduled Hour</h3>
+                    <p class="chart-caption">{{ reporting_start|date:"M j" }} &ndash; {{ reporting_end|date:"M j, Y" }} &middot; Completed only, grouped by scheduled start hour.</p>
                     <div class="chart-graphic" role="img" aria-label="Consultation volume by hour chart">
                         <svg viewBox="0 0 560 190" xmlns="http://www.w3.org/2000/svg">
                             <g stroke="#eef2f7" stroke-width="1">
@@ -58,6 +60,7 @@
                 
                 <div class="chart-card">
                     <h3>Completed Consultations by Scheduled Day</h3>
+                    <p class="chart-caption">{{ reporting_start|date:"M j" }} &ndash; {{ reporting_end|date:"M j, Y" }} &middot; Completed only, grouped by weekday across this period.</p>
                     <div class="pie-chart-wrapper">
                         <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" class="pie-svg">
                             {% for slice in pie_slices %}
@@ -78,17 +81,20 @@
                     </div>
                     <p class="chart-caption">Peak scheduled day: {{ peak_day_label }} ({{ peak_day_count }} completed)</p>
                 </div>
-                <div class="chart-card ratio-card">
-                    <h3>Capacity Analytics</h3>
-                    <div class="ratio-display">
-                        <span class="ratio-value">Not available</span>
-                    </div>
-                    <div class="ratio-labels">
-                        <span>True supply-demand gap and utilization require explicit consultation slots and operating hours.</span>
-                    </div>
-                </div>
+                <section class="chart-card" id="hourly-availability" data-url="{% url 'depthead:hourly_availability' %}">
+                    <h3>Faculty availability and consultations</h3>
+                    <p class="chart-caption" data-hourly="period_label">{{ hourly_snapshot.period_label }}</p>
+                    <ul>
+                        <li><strong>Available now:</strong> <span data-hourly="available">{{ hourly_snapshot.available_count }} faculty{% if hourly_snapshot.available_names %} &mdash; {{ hourly_snapshot.available_names|join:", " }}{% endif %}</span></li>
+                        <li><strong>Approved consultations overlapping this hour:</strong> <span data-hourly="approved_count">{{ hourly_snapshot.approved_count }}</span></li>
+                        <li><strong>Pending requests overlapping this hour:</strong> <span data-hourly="pending_count">{{ hourly_snapshot.pending_count }}</span></li>
+                    </ul>
+                    <p class="chart-caption">Uses recorded statuses and appointments for this hour. Refreshes every minute.</p>
+                    <p class="chart-caption" data-hourly-error hidden>Could not refresh. Showing the last update; retrying shortly.</p>
+                </section>
                 <div class="table-card">
                     <h3>Faculty Consultation Load Distribution</h3>
+                    <p class="chart-caption">{{ reporting_start|date:"M j" }} &ndash; {{ reporting_end|date:"M j, Y" }} &middot; All request statuses, ranked by scheduled consultation count. Top 5 faculty.</p>
                     <table>
                         <thead>
                             <tr>
@@ -115,5 +121,6 @@
             </div>
         </main>
     </div>
+    <script src="{% static 'depthead/js/hourly_availability.js' %}" defer></script>
 </body>
 </html>

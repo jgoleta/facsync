@@ -32,6 +32,8 @@ from .services.analytics import (
     get_faculty_trends,
     get_student_request_frequency_display,
     normalize_period,
+    current_week_period,
+    get_hourly_availability_snapshot,
 )
 from .services.schedule_availability import get_schedule_availability
 
@@ -530,7 +532,8 @@ WEEKDAY_LABELS = {
 @role_required('depthead')
 def peak_analytics(request):
     college_code = request.user.college
-    analytics = get_college_analytics(college_code)
+    week = current_week_period()
+    analytics = get_college_analytics(college_code, week.start_date, week.end_date)
     patterns = analytics['consultation_patterns']
     hourly_data = {
         row['hour']: row['count'] for row in patterns['hourly_distribution']
@@ -598,6 +601,9 @@ def peak_analytics(request):
         })
 
     return render(request, 'depthead/peakAnalytics.html', {
+        'reporting_start': date.fromisoformat(analytics['period']['start_date']),
+        'reporting_end': date.fromisoformat(analytics['period']['end_date']),
+        'reporting_timezone': analytics['period']['timezone'],
         'hourly_data': hourly_data,
         'chart_bars': chart_bars,
         'peak_hour_label': peak_hour_label,
@@ -605,7 +611,7 @@ def peak_analytics(request):
         'peak_day_label': peak_day_label,
         'peak_day_count': peak_day_count,
         'pie_slices': pie_slices, 
-        'capacity': analytics['capacity'],
+        'hourly_snapshot': get_hourly_availability_snapshot(college_code),
         'load_distribution': load_distribution_list,
         'analysis_period': analytics['period'],
     })
@@ -614,8 +620,12 @@ def peak_analytics(request):
 @role_required('depthead')
 def faculty_trends(request):
     college_code = request.user.college
-    analytics = get_faculty_trends(college_code)
+    week = current_week_period()
+    analytics = get_faculty_trends(college_code, week.start_date, week.end_date, status_period=True)
     trends = faculty_trends_display(analytics)
+    for row in trends:
+        if row["last_update_display"] == "No data":
+            row["last_update_display"] = "No updates this week"
 
     # Preserve fractional rates; CSS gives tiny positive values a visible marker.
     chart_bars = []
@@ -757,3 +767,13 @@ def analytics_browser_api(request):
     except Exception:
         logger.exception('Unable to load analytics browser metric %s', metric)
         return JsonResponse({'error': "Sorry, I couldn't load that right now."}, status=500)
+
+
+@login_required
+@role_required('depthead')
+@require_GET
+@never_cache
+def hourly_availability(request):
+    if not request.user.college:
+        return JsonResponse({'error': 'No college assigned.'}, status=400)
+    return JsonResponse(get_hourly_availability_snapshot(request.user.college))
