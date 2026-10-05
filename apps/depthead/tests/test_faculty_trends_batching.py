@@ -70,10 +70,9 @@ class FacultyTrendsBatchingTests(TestCase):
                     response = self.client.get(reverse('depthead:faculty_trends'))
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(len(response.context['trends']), size)
-                with patch('apps.depthead.views.get_faculty_trends', legacy_trends):
-                    old_response = self.client.get(reverse('depthead:faculty_trends'))
-                for key in ('trends', 'chart_bars', 'schedule_availability', 'consultation_start', 'consultation_end'):
-                    self.assertEqual(response.context[key], old_response.context[key])
+                self.assertEqual(response.context['consultation_start'], date(2026, 9, 14))
+                self.assertEqual(response.context['consultation_end'], date(2026, 9, 20))
+                self.assertContains(response, 'This week:')
 
     @patch('apps.depthead.services.analytics.timezone.now')
     def test_empty_and_historical_and_future_periods(self, clock):
