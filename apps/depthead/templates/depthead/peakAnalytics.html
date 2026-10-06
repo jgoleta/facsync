@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Peak Analytics</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}?v=20261006-peak-layout">
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -24,7 +24,7 @@
                 <p class="chart-caption">This week: {{ reporting_start|date:"M j, Y" }} &ndash; {{ reporting_end|date:"M j, Y" }} ({{ reporting_timezone }}). Based on scheduled consultation dates.</p>
             </header>
 
-            <div class="analytics-grid">
+            <div class="analytics-grid peak-analytics-grid">
                 <div class="chart-card">
                     <h3>Completed Consultations by Scheduled Hour</h3>
                     <p class="chart-caption">{{ reporting_start|date:"M j" }} &ndash; {{ reporting_end|date:"M j, Y" }} &middot; Completed only, grouped by scheduled start hour.</p>
@@ -56,6 +56,33 @@
                         </svg>
                     </div>
                     <p class="chart-caption">Peak scheduled hour: {{ peak_hour_label }} ({{ peak_hour_count }} completed)</p>
+                </div>
+
+                <div class="table-card">
+                    <h3>Faculty Consultation Load Distribution</h3>
+                    <p class="chart-caption">{{ reporting_start|date:"M j" }} &ndash; {{ reporting_end|date:"M j, Y" }} &middot; All request statuses, ranked by scheduled consultation count. Top 5 faculty.</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Faculty Name</th>
+                                <th>Requests</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for faculty in load_distribution %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>{{ faculty.name }}</td>
+                                <td>{{ faculty.count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="empty-state">No consultation data yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
                 
                 <div class="chart-card">
@@ -92,32 +119,7 @@
                     <p class="chart-caption">Uses recorded statuses and appointments for this hour. Refreshes every minute.</p>
                     <p class="chart-caption" data-hourly-error hidden>Could not refresh. Showing the last update; retrying shortly.</p>
                 </section>
-                <div class="table-card">
-                    <h3>Faculty Consultation Load Distribution</h3>
-                    <p class="chart-caption">{{ reporting_start|date:"M j" }} &ndash; {{ reporting_end|date:"M j, Y" }} &middot; All request statuses, ranked by scheduled consultation count. Top 5 faculty.</p>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Rank</th>
-                                <th>Faculty Name</th>
-                                <th>Requests</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for faculty in load_distribution %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>{{ faculty.name }}</td>
-                                <td>{{ faculty.count }}</td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="3" class="empty-state">No consultation data yet.</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+
             </div>
         </main>
     </div>

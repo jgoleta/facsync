@@ -230,3 +230,22 @@ table td:first-child {
         grid-template-columns: minmax(0, 1fr);
     }
 }
+
+/* Peak analytics: a wider hourly chart beside the faculty load table. */
+.peak-analytics-grid > .chart-card,
+.peak-analytics-grid > .table-card {
+    min-width: 0;
+}
+.peak-analytics-grid table th,
+.peak-analytics-grid table td {
+    padding: 10px 8px;
+    overflow-wrap: anywhere;
+}
+@media (min-width: 1024px) {
+    .analytics-grid.peak-analytics-grid {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    }
+    .analytics-grid.peak-analytics-grid > .chart-card:first-child {
+        grid-column: auto;
+    }
+}
