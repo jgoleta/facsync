@@ -5,9 +5,6 @@ document.addEventListener("DOMContentLoaded", () => {
   );
   const collegeViewHeader = document.getElementById("college-view-header");
   const collegeSummaryCards = document.getElementById("college-summary-cards");
-  const collegeInsightsPanel = document.getElementById(
-    "college-insights-panel",
-  );
 
   let collegeData = {};
   const dataEl = document.getElementById("college-data");
@@ -22,7 +19,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  if (collegeInsightsPanel) collegeInsightsPanel.remove();
+  collegeSelector.value = "";
+  collegeViewContainer.hidden = true;
 
   collegeSelector.addEventListener("change", () => {
     const selectedCollege = collegeSelector.value;
@@ -46,9 +44,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
 
-      collegeViewContainer.classList.remove("hidden");
+      collegeViewContainer.hidden = false;
     } else {
-      collegeViewContainer.classList.add("hidden");
+      collegeViewContainer.hidden = true;
+      collegeViewHeader.textContent = "";
+      collegeSummaryCards.replaceChildren();
     }
   });
 });
