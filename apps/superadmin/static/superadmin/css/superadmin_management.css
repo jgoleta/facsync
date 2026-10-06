@@ -31,7 +31,7 @@
 }
 
 .college-head-palette .nav-item.active {
-  background: var(--primary);
+  background: rgba(96, 165, 250, 0.16);
   border-left-color: var(--primary);
   color: #ffffff;
 }
