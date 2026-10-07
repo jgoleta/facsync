@@ -110,6 +110,8 @@
                 </div>
                 <section class="chart-card" id="hourly-availability" data-url="{% url 'depthead:hourly_availability' %}">
                     <h3>Faculty availability and consultations</h3>
+                    <p class="chart-caption" data-hourly-closed{% if hourly_snapshot.is_working_hours %} hidden{% endif %}>Outside working hours. This summary is available from 9 AM to 5 PM (Asia/Manila).</p>
+                    <div data-hourly-content{% if not hourly_snapshot.is_working_hours %} hidden{% endif %}>
                     <p class="chart-caption" data-hourly="period_label">{{ hourly_snapshot.period_label }}</p>
                     <ul>
                         <li><strong>Available now:</strong> <span data-hourly="available">{{ hourly_snapshot.available_count }} faculty{% if hourly_snapshot.available_names %} &mdash; {{ hourly_snapshot.available_names|join:", " }}{% endif %}</span></li>
@@ -117,12 +119,13 @@
                         <li><strong>Pending requests overlapping this hour:</strong> <span data-hourly="pending_count">{{ hourly_snapshot.pending_count }}</span></li>
                     </ul>
                     <p class="chart-caption">Uses recorded statuses and appointments for this hour. Refreshes every minute.</p>
+                    </div>
                     <p class="chart-caption" data-hourly-error hidden>Could not refresh. Showing the last update; retrying shortly.</p>
                 </section>
 
             </div>
         </main>
     </div>
-    <script src="{% static 'depthead/js/hourly_availability.js' %}" defer></script>
+    <script src="{% static 'depthead/js/hourly_availability.js' %}?v=20261007-hours" defer></script>
 </body>
 </html>

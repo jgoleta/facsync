@@ -13,6 +13,8 @@
             });
             if (!response.ok || response.redirected) throw new Error('Refresh failed');
             const data = await response.json();
+            card.querySelector('[data-hourly-content]').hidden = !data.is_working_hours;
+            card.querySelector('[data-hourly-closed]').hidden = data.is_working_hours;
             const values = {
                 period_label: data.period_label,
                 available: `${data.available_count} faculty${data.available_names.length ? ' — ' + data.available_names.join(', ') : ''}`,

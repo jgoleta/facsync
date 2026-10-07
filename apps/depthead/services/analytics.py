@@ -126,6 +126,12 @@ def get_hourly_availability_snapshot(college_code):
     if not str(college_code or '').strip():
         raise ValueError('college_code is required.')
     now = timezone.now().astimezone(ZoneInfo(DEFAULT_ANALYTICS_TIMEZONE))
+    if not 9 <= now.hour < 17:
+        return {
+            'is_working_hours': False, 'period_label': '',
+            'available_count': 0, 'available_names': [],
+            'approved_count': 0, 'pending_count': 0,
+        }
     start = now.replace(minute=0, second=0, microsecond=0)
     end = start + timedelta(hours=1)
     names = [profile.user.get_full_name() or profile.user.username
@@ -142,6 +148,7 @@ def get_hourly_availability_snapshot(college_code):
         if appointment_start < end and appointment_end > start:
             counts[row.status] += 1
     return {
+        'is_working_hours': True,
         'period_label': f"Today, {start.strftime('%B')} {start.day} \u00b7 {start.strftime('%I:%M %p').lstrip('0')}\u2013{end.strftime('%I:%M %p').lstrip('0')} \u00b7 {DEFAULT_ANALYTICS_TIMEZONE}",
         'available_count': len(names), 'available_names': names,
         'approved_count': counts['approved'], 'pending_count': counts['pending'],
