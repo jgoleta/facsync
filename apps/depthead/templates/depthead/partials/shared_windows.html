@@ -1,0 +1,40 @@
+<section class="chart-card shared-window-card" aria-labelledby="shared-window-title">
+    <h2 id="shared-window-title">Best Shared Time Window</h2>
+    <p class="period-label">This week: {{ planning.week_start|date:"M j" }} &ndash; {{ planning.week_end|date:"M j, Y" }} &middot; Monday&ndash;Friday</p>
+    <p class="chart-caption">Working hours: 8 AM&ndash;5 PM &middot; {{ planning.timezone }}</p>
+    <form method="get" class="shared-window-form">
+        <div><label for="{{ planner_form.date.id_for_label }}">Date</label>{{ planner_form.date }}{{ planner_form.date.errors }}</div>
+        <div><label for="{{ planner_form.duration.id_for_label }}">Duration</label>{{ planner_form.duration }}{{ planner_form.duration.errors }}</div>
+        {{ planner_form.non_field_errors }}
+        <button type="submit">Find best times</button>
+    </form>
+    {% if planner_result %}
+    <h3 class="shared-window-result-title">Best times for {{ planner_result.date|date:"l, M j" }}</h3>
+    <p class="chart-caption">{{ planner_result.faculty_count }} active faculty &middot; {{ planner_result.duration_minutes }}-minute event</p>
+    {% if planner_result.message %}<p class="chart-note" role="status">{{ planner_result.message }}</p>{% endif %}
+    <div class="shared-window-results">
+    {% for window in planner_result.windows %}
+    <article class="shared-window-result">
+        {% if window.start == window.latest_start %}
+        <h4>{{ window.start|date:"g:i A" }}&ndash;{{ window.end|date:"g:i A" }}</h4>
+        {% else %}
+        <h4>Start between {{ window.start|date:"g:i A" }} and {{ window.latest_start|date:"g:i A" }}</h4>
+        <p class="chart-caption">Any 15-minute start in this range, for the selected duration.</p>
+        {% endif %}
+        <p class="shared-window-counts"><strong>{{ window.free_count }} free</strong> &middot; {{ window.conflict_count }} conflict &middot; {{ window.unknown_count }} unknown</p>
+        <details>
+            <summary>View faculty</summary>
+            <h5>Free &mdash; no recorded conflict</h5>
+            <ul>{% for faculty in window.free %}<li>{{ faculty.name }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+            <h5>Conflict</h5>
+            <ul>{% for faculty in window.conflict %}<li>{{ faculty.name }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+            <h5>Unknown &mdash; no schedule data for this day</h5>
+            <ul>{% for faculty in window.unknown %}<li>{{ faculty.name }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+        </details>
+    </article>
+    {% endfor %}
+    </div>
+    {% endif %}
+    <p class="chart-note">Based on recorded schedules and approved consultations. Unknown faculty are excluded from the free count. All equally best times are shown, earliest first.</p>
+    <p class="chart-note">Free means no recorded conflict; attendance is not confirmed. Calendar imports may be incomplete or outdated. Live manual statuses are not future commitments. Lunch is not automatically excluded.</p>
+</section>

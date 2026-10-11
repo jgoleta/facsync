@@ -8,14 +8,13 @@ from apps.core.department_updates import UPDATE_QUESTIONS, department_update_ans
 from apps.core.chat_presentation import answer, date_label, date_range, duration
 from apps.depthead.services.analytics import _eligible_faculty
 from apps.depthead.services.schedule_availability import (
-    get_schedule_availability, SCHEDULE_COUNT_NOTE, SCHEDULE_RANK_NOTE,
+    get_schedule_availability, SCHEDULE_RANK_NOTE,
 )
 
 QUESTIONS = {
     'available_now': 'Which faculty are available right now?',
     'today_open': 'Which faculty have the most open schedule time today?',
     'week_daily': 'Who has the most open schedule time each day this week?',
-    'best_day': 'Which day this week has the most faculty with at least two consecutive hours of open schedule time?',
     **UPDATE_QUESTIONS,
 }
 
@@ -59,14 +58,6 @@ def availability_answer(metric, college):
             value = (f"{', '.join(row['winners'])} — {duration(row['open_minutes'])}" + (' each' if len(row['winners']) > 1 else '')
                      if row['winners'] else ('No recorded schedules to compare' if row['ranking_empty'] == 'No recorded schedules' else 'No open schedule time'))
             lines.append(f"{row['day']}, {date_label(row['date'])}: {value}")
-    else:
-        intro = f'These days have the most faculty with at least two consecutive hours of open schedule time this week, {week}:'
-        note = SCHEDULE_COUNT_NOTE + ' All tied days are shown.'
-        best = max((row['available_count'] for row in rows), default=0)
-        lines = [f"{row['day']}, {date_label(row['date'])} — {row['available_count']} of {data['faculty_count']} faculty"
-                 for row in rows if row['available_count'] == best] if best else []
-        if data['faculty_count']:
-            empty = 'No faculty have a recorded schedule gap of at least two consecutive hours between 8 AM and 5 PM this week.'
     if not data['faculty_count']:
         lines = []
     if closed:

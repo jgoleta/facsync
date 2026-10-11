@@ -21,6 +21,10 @@ from apps.faculty.models import (
     StatusHistory,
 )
 
+from .schedule_conflicts import (
+    eligible_schedule_events, schedule_intervals, occurrence_interval,
+)
+
 
 GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -835,100 +839,44 @@ def _refresh_faculty_status_locked(faculty, google_events=None, *, immediate_ema
         ZoneInfo(getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)),
     )
     active_status = None
-    calendar_events = ScheduleEvent.objects.filter(
-        faculty=faculty,
-    ).filter(
-        models.Q(date=now.date())
-        | models.Q(start_month__isnull=False)
-        | models.Q(date__isnull=True)
-    ).filter(
-        # Local events are always part of the system calendar. Synced Google
-        # events count while their latest local copy is still in sync.
-        models.Q(google_event_id__isnull=True)
-        | models.Q(managed_by_facsync=True)
-        | models.Q(sync_state='synced')
-    )
-
+    calendar_events = eligible_schedule_events().filter(faculty=faculty)
     status_priority = {'busy': 1, 'virtual_only': 2, 'on_leave': 3}
+    local_now = now.replace(tzinfo=None)
 
-    def consider_event(
-        event_date,
-        start_time,
-        end_time,
-        candidate,
-        recurring_day=None,
-        start_month=None,
-        end_month=None,
-        recurrence_start_date=None,
-        recurrence_end_date=None,
-    ):
+    def consider_interval(interval, candidate):
         nonlocal active_status
-        if event_date is None or start_month is not None:
-            if end_month is None:
-                return
-            month_is_active = (
-                start_month <= now.month <= end_month
-                if start_month <= end_month
-                else now.month >= start_month or now.month <= end_month
-            )
-            if not month_is_active:
-                return
-            if recurrence_start_date and now.date() < recurrence_start_date:
-                return
-            if recurrence_end_date and now.date() > recurrence_end_date:
-                return
-            if recurring_day and recurring_day != now.strftime('%A').casefold():
-                return
-            event_date = now.date()
-        elif event_date != now.date():
-            return
-        if start_time is None:
-            is_active = True
-        else:
-            start = datetime.combine(event_date, start_time)
-            end = datetime.combine(event_date, end_time or start_time)
-            if end <= start:
-                end += timedelta(days=1)
-            is_active = start <= now.replace(tzinfo=None) < end
-        if is_active and (active_status is None or status_priority[candidate] > status_priority[active_status]):
+        start, end = interval
+        if start <= local_now < end and (
+            active_status is None or status_priority[candidate] > status_priority[active_status]
+        ):
             active_status = candidate
 
-    for event in calendar_events:
-        candidate = 'on_leave' if event.event_type == 'on-leave' else (
-            'virtual_only' if event.event_type == 'virtual' else 'busy'
-        )
-        consider_event(
-            event.date,
-            event.start_time,
-            event.end_time,
-            candidate,
-            event.day_of_week,
-            event.start_month,
-            event.end_month,
-            event.recurrence_start_date,
-            event.recurrence_end_date,
+    def event_status(event_type):
+        return 'on_leave' if event_type == 'on-leave' else (
+            'virtual_only' if event_type == 'virtual' else 'busy'
         )
 
-    # Approved system consultations occupy the calendar even when their
-    # Google event has not been synchronized yet.
+    for event in calendar_events:
+        for interval in schedule_intervals(event, now.date()):
+            consider_interval(interval, event_status(event.event_type))
+
+    # Approved consultations remain commitments even before calendar sync.
     for consultation in ConsultationRequest.objects.filter(
-        faculty=faculty,
-        date=now.date(),
+        faculty=faculty, date__in=[now.date() - timedelta(days=1), now.date()],
         status__in=['approved', 'cancellation_requested'],
     ):
-        consider_event(consultation.date, consultation.start_time, consultation.end_time, 'busy')
+        consider_interval(occurrence_interval(
+            consultation.date, consultation.start_time, consultation.end_time,
+        ), 'busy')
 
-    # During a sync, include the fresh Google response immediately as well as
-    # the reconciled local records, so status does not wait for another read.
     for item in google_events or []:
         if item.get('status') == 'cancelled' or item.get('transparency') == 'transparent':
             continue
         values = _google_event_values(item)
         if values:
-            candidate = 'on_leave' if values['event_type'] == 'on-leave' else (
-                'virtual_only' if values['event_type'] == 'virtual' else 'busy'
-            )
-            consider_event(values['date'], values['start_time'], values['end_time'], candidate)
+            consider_interval(occurrence_interval(
+                values['date'], values['start_time'], values['end_time'],
+            ), event_status(values['event_type']))
 
     # Auto-update mode has no status when there is no active calendar event.
     # Do not reuse the previous manual status as that makes an expired event

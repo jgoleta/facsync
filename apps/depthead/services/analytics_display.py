@@ -4,7 +4,7 @@ from django.utils.dateparse import parse_datetime
 from django.utils.timesince import timesince
 from apps.faculty.models import FacultyProfile, ConsultationRequest
 from .analytics import normalize_period
-from .schedule_availability import MIN_FREE_MINUTES, SCHEDULE_COUNT_NOTE
+from .schedule_availability import SCHEDULE_RANK_NOTE
 
 
 def student_reporting_period():
@@ -141,50 +141,16 @@ def most_available_faculty_recommendation(schedule_availability):
 
 
 def schedule_availability_ai_summary(schedule_availability):
-    """Return anonymous schedule aggregates that are safe to send to Gemini."""
-
+    """Anonymous ranking context; no removed daily percentage metric."""
     return {
         'week_start': schedule_availability['week_start'].isoformat(),
         'week_end': schedule_availability['week_end'].isoformat(),
         'faculty_count': schedule_availability['faculty_count'],
-        'minimum_free_minutes': MIN_FREE_MINUTES,
-        'working_hours': '8 AM–5 PM',
-        'interpretation': SCHEDULE_COUNT_NOTE,
+        'working_hours': '8 AM to 5 PM',
+        'interpretation': SCHEDULE_RANK_NOTE,
         'daily': [
-            {
-                'day': row['day'],
-                'date': row['date'].isoformat(),
-                'available_count': row['available_count'],
-                'faculty_count': schedule_availability['faculty_count'],
-                'availability_percent': row['availability_percent'],
-            }
+            {'day': row['day'], 'date': row['date'].isoformat(),
+             'highest_open_minutes': row.get('open_minutes', 0)}
             for row in schedule_availability.get('rows', [])
         ],
-    }
-
-
-def most_available_days_recommendation(schedule_availability):
-    """Recommend the current week's days with the highest faculty availability."""
-
-    rows = [
-        row for row in schedule_availability.get('rows', [])
-        if row.get('availability_percent') is not None
-    ]
-    if not rows or not schedule_availability.get('faculty_count'):
-        return None
-
-    highest_rate = max(row['availability_percent'] for row in rows)
-    best_days = [row for row in rows if row['availability_percent'] == highest_rate]
-    day_text = ', '.join(
-        f"{row['day']} ({row['date'].strftime('%b')} {row['date'].day})"
-        for row in best_days
-    )
-    return {
-        'title': 'Best days for department events or retreats',
-        'description': (
-            f"{day_text} have the highest share of faculty with at least two consecutive hours of open schedule time this week "
-            f"({highest_rate}% or {best_days[0]['available_count']} of "
-            f"{schedule_availability['faculty_count']} faculty). These are schedule-based planning estimates, "
-            "not confirmed availability. Faculty without recorded schedules count as fully unscheduled."
-        ),
     }
