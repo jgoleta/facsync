@@ -1,10 +1,23 @@
 from django import forms
 from apps.core.models import FacultyInvite, OfficeClosure
 from .services.shared_windows import DURATION_CHOICES
+from datetime import timedelta
+
+
+class WeekDaySelect(forms.Select):
+    def __init__(self, *, disabled_dates, **kwargs):
+        super().__init__(**kwargs)
+        self.disabled_dates = disabled_dates
+
+    def create_option(self, name, value, label, selected, index, subindex=None, attrs=None):
+        option = super().create_option(name, value, label, selected, index, subindex, attrs)
+        if str(value) in self.disabled_dates:
+            option['attrs']['disabled'] = True
+        return option
 
 
 class SharedWindowForm(forms.Form):
-    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+    date = forms.DateField()
     duration = forms.TypedChoiceField(choices=DURATION_CHOICES, coerce=int)
 
     def __init__(self, *args, week, **kwargs):
@@ -12,9 +25,10 @@ class SharedWindowForm(forms.Form):
         self.week = week
         self.fields['date'].initial = week['today'] if not week['ended'] else week['week_end']
         self.fields['duration'].initial = 120
-        self.fields['date'].widget.attrs.update(
-            min=(week['week_start'] if week['ended'] else week['today']).isoformat(),
-            max=week['week_end'].isoformat(),
+        days = [week['week_start'] + timedelta(days=offset) for offset in range(5)]
+        self.fields['date'].widget = WeekDaySelect(
+            choices=[(day.isoformat(), f'{day:%a}, {day:%b} {day.day}') for day in days],
+            disabled_dates={day.isoformat() for day in days if day < week['today'] and not week['ended']},
         )
 
     def clean_date(self):

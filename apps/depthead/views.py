@@ -2,6 +2,7 @@ import csv
 import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 from apps.core.decorators import role_required
 from apps.core.models import User, FacultyInvite, OfficeClosure, CollegeAnnouncement, College
@@ -47,6 +48,35 @@ from .services.analytics_display import (
 from .services.analytics_browser import ANALYTICS_QUESTIONS, analytics_browser_answer
 
 logger = logging.getLogger(__name__)
+
+
+def _shared_window_context(request):
+    planning = planning_week()
+    planner_form = SharedWindowForm(request.GET if request.GET else None, week=planning)
+    planner_result = None
+    if not request.GET:
+        day = planning['week_end'] if planning['ended'] else planning['today']
+        planner_result = find_shared_windows(request.user.college, day, 120, now=planning['now'])
+    elif planner_form.is_valid():
+        planner_result = find_shared_windows(
+            request.user.college, planner_form.cleaned_data['date'],
+            planner_form.cleaned_data['duration'], now=planning['now'],
+        )
+    return {'planning': planning, 'planner_form': planner_form, 'planner_result': planner_result}
+
+
+@login_required
+@role_required('depthead')
+@require_GET
+@never_cache
+def shared_windows_api(request):
+    if not str(request.user.college or '').strip():
+        return JsonResponse({'error': 'Your account has no college assigned.'}, status=400)
+    context = _shared_window_context(request)
+    valid = not context['planner_form'].is_bound or not context['planner_form'].errors
+    return JsonResponse({
+        'html': render_to_string('depthead/partials/shared_windows_content.html', context, request=request),
+    }, status=200 if valid else 400)
 
 
 @login_required
@@ -637,24 +667,13 @@ def faculty_trends(request):
             'has_data': rate is not None,
         })
 
-    planning = planning_week()
-    planner_form = SharedWindowForm(request.GET if request.GET else None, week=planning)
-    planner_result = None
-    if not request.GET and not planning['ended']:
-        planner_result = find_shared_windows(college_code, planning['today'], 120, now=planning['now'])
-    elif request.GET and planner_form.is_valid():
-        planner_result = find_shared_windows(
-            college_code, planner_form.cleaned_data['date'],
-            planner_form.cleaned_data['duration'], now=planning['now'],
-        )
+    planner_context = _shared_window_context(request)
 
     return render(request, 'depthead/facultyTrends.html', {
         'trends': trends,
         'chart_bars': chart_bars,
         'schedule_availability': get_schedule_availability(college_code),
-        'planning': planning,
-        'planner_form': planner_form,
-        'planner_result': planner_result,
+        **planner_context,
         'consultation_start': date.fromisoformat(analytics['consultation_period']['start_date']),
         'consultation_end': date.fromisoformat(analytics['consultation_period']['end_date']),
     })

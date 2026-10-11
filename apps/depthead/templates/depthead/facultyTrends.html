@@ -25,6 +25,7 @@
 
             <div class="trends-layout">
                 <div class="trends-chart-pair">
+                    {% include 'depthead/partials/shared_windows.html' %}
                     <section class="chart-card" aria-labelledby="history-chart-title">
                         <h2 id="history-chart-title">Status availability by faculty</h2>
                         <p class="chart-caption">Time recorded as Available from Monday up to now. Future hours are not counted.</p>
@@ -45,7 +46,6 @@
                         </div>
                         <div class="bar-axis" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
                     </section>
-                    {% include 'depthead/partials/shared_windows.html' %}
                 </div>
                 <div class="table-card">
                     <div class="daily-winners-heading">
@@ -105,5 +105,6 @@
         </main>
     </div>
     <script src="{% static 'depthead/js/faculty_trends.js' %}" defer></script>
+    <script src="{% static 'depthead/js/shared_windows.js' %}" defer></script>
 </body>
 </html>

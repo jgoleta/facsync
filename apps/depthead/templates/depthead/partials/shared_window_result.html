@@ -1,0 +1,23 @@
+<article class="shared-window-result" id="shared-window-panel-{{ forloop.counter }}" aria-labelledby="shared-window-button-{{ forloop.counter }}"{% if not forloop.first %} hidden{% endif %}>
+    <h4 class="shared-window-summary">{% if window.start == window.latest_start %}{{ window.start|date:"g:i A" }}&ndash;{{ window.end|date:"g:i A" }}{% else %}Start {{ window.start|date:"g:i A" }}&ndash;{{ window.latest_start|date:"g:i A" }}{% endif %} &middot; {{ window.free_count }} of {{ planner_result.faculty_count }} faculty free based on recorded schedules</h4>
+    <div class="shared-window-bar" role="img" aria-label="{{ window.free_count }} free, {{ window.conflict_count }} conflict, {{ window.unknown_count }} unknown out of {{ planner_result.faculty_count }} faculty">
+        <span class="shared-window-bar-free" style="flex-grow: {{ window.free_count }};"></span>
+        <span class="shared-window-bar-conflict" style="flex-grow: {{ window.conflict_count }};"></span>
+        <span class="shared-window-bar-unknown" style="flex-grow: {{ window.unknown_count }};"></span>
+    </div>
+    <p class="shared-window-counts"><strong>{{ window.free_count }} free</strong> &middot; {{ window.conflict_count }} conflict &middot; {{ window.unknown_count }} unknown</p>
+    <div class="shared-window-faculty">
+      <div>
+        <h5>Free &mdash; no recorded conflict</h5>
+        <ul>{% for faculty in window.free %}<li>{{ faculty.name }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+      </div>
+      <div>
+        <h5>Conflict</h5>
+        <ul>{% for faculty in window.conflict %}<li>{{ faculty.name }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+      </div>
+      <div>
+        <h5>Unknown &mdash; no schedule data for this day</h5>
+        <ul>{% for faculty in window.unknown %}<li>{{ faculty.name }}</li>{% empty %}<li>None</li>{% endfor %}</ul>
+      </div>
+    </div>
+</article>
