@@ -65,8 +65,8 @@ class FacultyTrendsBatchingTests(TestCase):
                 self.assertEqual(actual, expected)
                 self.assertEqual(len(actual['items']), size)
                 # Includes real session and authenticated-user lookups. The
-                # live profiler excludes the session lookup, so expects eight.
-                with self.assertNumQueries(9):
+                # planner adds three SELECTs, including the weekend review.
+                with self.assertNumQueries(12):
                     response = self.client.get(reverse('depthead:faculty_trends'))
                 self.assertEqual(response.status_code, 200)
                 self.assertEqual(len(response.context['trends']), size)

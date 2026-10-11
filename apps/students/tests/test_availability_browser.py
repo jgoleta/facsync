@@ -67,7 +67,7 @@ class AvailabilityBrowserTests(TestCase):
             data = self.client.get(self.url, {'metric':'today_open'}).json()
             self.assertIn('local-one', str(data['lines']))
             self.assertIn('local-two', str(data['lines']))
-        data = self.client.get(self.url, {'metric':'best_day'}).json()
+        data = self.client.get(self.url, {'metric':'week_daily'}).json()
         self.assertEqual(len(data['lines']), 7)
 
     def test_closed_college_and_empty_results(self):

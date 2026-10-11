@@ -49,7 +49,7 @@ class AnalyticsBrowserTests(TestCase):
         schedules.return_value = {'week_start': '2026-09-14', 'week_end': '2026-09-20',
                                  'timezone': 'Asia/Manila', 'faculty_count': 0, 'rows': []}
         for _ in range(2):
-            self.assertEqual(self.client.get(self.url, {'metric': 'daily_availability'}).status_code, 200)
+            self.assertEqual(self.client.get(self.url, {'metric': 'daily_faculty'}).status_code, 200)
         self.assertEqual(schedules.call_count, 2)
         schedules.assert_called_with('CCS')
 
@@ -67,7 +67,8 @@ class AnalyticsBrowserTests(TestCase):
     def test_widget_only_on_overview(self):
         response = self.client.get(reverse('depthead:admin_dashboard'))
         self.assertContains(response, 'id="analytics-browser"', count=1)
-        self.assertContains(response, 'data-metric=', count=15)
+        self.assertContains(response, 'data-metric=', count=len(ANALYTICS_QUESTIONS))
+        self.assertNotContains(response, 'data-metric="daily_availability"')
         for page in ('peak_analytics', 'faculty_trends', 'student_behavior'):
             response = self.client.get(reverse(f'depthead:{page}'))
             self.assertEqual(response.status_code, 200)
