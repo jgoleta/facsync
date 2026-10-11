@@ -6,12 +6,11 @@ from . import analytics
 from .analytics_display import (
     student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display, consultation_topics_display,
 )
-from .schedule_availability import get_schedule_availability, SCHEDULE_COUNT_NOTE, SCHEDULE_RANK_NOTE
+from .schedule_availability import get_schedule_availability, SCHEDULE_RANK_NOTE
 
 
 ANALYTICS_QUESTIONS = {
     'daily_faculty': ('Schedules', 'Which faculty have the most open schedule time each day this week?'),
-    'daily_availability': ('Schedules', 'How many faculty have at least two consecutive hours of open schedule time each day this week?'),
     'consultation_topics': ('Consultations', 'What consultation topics are most frequently requested?'),
     'peak_day': ('Consultations', 'Which weekday has the most completed consultations?'),
     'peak_hour': ('Consultations', 'What is the peak consultation hour?'),
@@ -92,22 +91,18 @@ def analytics_browser_answer(metric, college):
             lines = [f"{row['name']} — {quantity(row['count'], 'request')}" for row in rows]
             note = 'Up to ten students are shown. Counts include all request statuses and are based on scheduled consultation dates.'
             empty = f'No students have consultation requests scheduled in your college for {dates}.'
-    elif metric in ('daily_faculty', 'daily_availability'):
+    elif metric == 'daily_faculty':
         source = 'faculty_trends'
         data = get_schedule_availability(college)
         week = date_range(data['week_start'], data['week_end'])
-        intro = (f'Here are the faculty in your college with the most open schedule time each day this week, {week}:'
-                 if metric == 'daily_faculty' else f'Here is the schedule-based availability in your college for {week}:')
+        intro = f'Here are the faculty in your college with the most open schedule time each day this week, {week}:'
         if data['faculty_count']:
             for row in data['rows']:
                 label = f"{row['day']}, {date_label(row['date'])}"
-                if metric == 'daily_faculty':
-                    value = (f"{', '.join(row['winners'])} — {duration(row['open_minutes'])}" + (' each' if len(row['winners']) > 1 else '')
-                             if row['winners'] else ('No recorded schedules to compare' if row['ranking_empty'] == 'No recorded schedules' else 'No open schedule time'))
-                else:
-                    value = f"{row['available_count']} of {data['faculty_count']} faculty ({row['availability_percent']}%)"
+                value = (f"{', '.join(row['winners'])} - {duration(row['open_minutes'])}" + (' each' if len(row['winners']) > 1 else '')
+                         if row['winners'] else ('No recorded schedules to compare' if row['ranking_empty'] == 'No recorded schedules' else 'No open schedule time'))
                 lines.append(f'{label}: {value}')
-        note = SCHEDULE_RANK_NOTE if metric == 'daily_faculty' else SCHEDULE_COUNT_NOTE
+        note = SCHEDULE_RANK_NOTE
         empty = 'There are no active faculty in your college to compare.'
     else:
         source = 'faculty_trends'

@@ -1,0 +1,33 @@
+<h2 id="shared-window-title">Best Shared Time Window</h2>
+<p class="period-label">{% if planning.ended %}Latest week{% else %}This week{% endif %}: {{ planning.week_start|date:"M j" }} &ndash; {{ planning.week_end|date:"M j, Y" }} &middot; Monday&ndash;Friday</p>
+<p class="chart-caption">Working hours: 8 AM&ndash;5 PM &middot; {{ planning.timezone }}</p>
+<form method="get" class="shared-window-form">
+    <div><label for="{{ planner_form.date.id_for_label }}">Day</label>{{ planner_form.date }}{{ planner_form.date.errors }}</div>
+    <div><label for="{{ planner_form.duration.id_for_label }}">Duration</label>{{ planner_form.duration }}{{ planner_form.duration.errors }}</div>
+    {{ planner_form.non_field_errors }}
+    <button type="submit">Find best times</button>
+</form>
+<p class="shared-window-loading chart-caption" role="status" hidden><span class="shared-window-spinner" aria-hidden="true"></span> Finding best times&hellip;</p>
+<p class="shared-window-error chart-note" role="alert" hidden></p>
+<div class="shared-window-output">
+{% if planner_result %}
+    <h3 class="shared-window-result-title">Best times for {{ planner_result.date|date:"l, M j" }}</h3>
+    {% if planner_result.message %}<p class="chart-note" role="status">{{ planner_result.message }}</p>{% endif %}
+    <div class="shared-window-results">
+        <div class="shared-window-tabs" aria-label="Best time windows">
+        {% for window in planner_result.windows %}
+            <button type="button" id="shared-window-button-{{ forloop.counter }}" aria-controls="shared-window-panel-{{ forloop.counter }}" aria-pressed="{% if forloop.first %}true{% else %}false{% endif %}">Start {{ window.start|date:"g:i A" }}{% if window.start != window.latest_start %}&ndash;{{ window.latest_start|date:"g:i A" }}{% endif %}</button>
+        {% endfor %}
+        </div>
+        {% for window in planner_result.windows %}
+            {% include 'depthead/partials/shared_window_result.html' %}
+        {% endfor %}
+    </div>
+{% endif %}
+</div>
+<p class="chart-note">Based on recorded schedules; free means no recorded conflict, not confirmed attendance.</p>
+<div class="shared-window-help">
+    <h3>How is this calculated?</h3>
+    <p class="chart-note">We check 15-minute start times between 8 AM and 5 PM for your selected duration, using recorded schedules and approved consultations. Equally best windows appear earliest first.</p>
+    <p class="chart-note">Unknown means no schedule data exists for that day and no commitment conflicts with the window.</p>
+</div>
