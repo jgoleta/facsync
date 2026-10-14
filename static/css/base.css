@@ -581,9 +581,16 @@ input:checked + .slider:before {
 }
 .notification-nav .account-identity {
   color: #f8fafc;
-  max-width: clamp(90px, 15vw, 220px);
-  white-space: normal;
+  min-width: 0;
+  max-width: clamp(48px, 15vw, 220px);
+  white-space: nowrap;
   margin-right: 10px;
+}
+.notification-nav .account-identity > span:last-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .sidebar .sidebar-footer > .account-identity {
   display: block;
