@@ -1,5 +1,10 @@
 /* Canonical FacSync theme, layout, navigation, and button primitives. */
 
+/* Scale rem-based typography smoothly across phones, tablets, and desktops. */
+html {
+  font-size: clamp(14px, calc(12px + 0.25vw), 16px);
+}
+
 :root {
   --accent: #0b74de;
   --accent-soft: #eaf4ff;
@@ -154,6 +159,17 @@ body {
 
 .account-nav-actions .nav-btn:hover {
   background: var(--accent-soft);
+}
+
+.account-nav-actions .logout-btn {
+  color: #b42318;
+  background: #fff1f0;
+}
+
+.account-nav-actions .logout-btn:hover,
+.account-nav-actions .logout-btn:focus-visible {
+  color: #fff;
+  background: #d92d20;
 }
 
 .btn,

@@ -12,7 +12,7 @@
         {% elif request.user.role == 'faculty' %}
         <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
         {% endif %}
-        <a href="{% url 'account_logout' %}" class="nav-btn">Logout</a>
+        <a href="{% url 'account_logout' %}" class="nav-btn logout-btn">Logout</a>
     </div>
 </div>
 <script src="{% static 'js/account-nav.js' %}?v=20261002"></script>

@@ -155,11 +155,14 @@ def api_schedule_events(request):
     calendar_events = [serialize_schedule_event(event) for event in events]
     approved_consultations = ConsultationRequest.objects.filter(
         faculty=faculty,
-        user=request.user,
         status__in=['approved', 'cancellation_requested'],
     ).select_related('faculty__user').order_by('date', 'start_time')
     calendar_events.extend(
-        serialize_consultation_event(consultation, viewer='student')
+        serialize_consultation_event(
+            consultation,
+            viewer='student',
+            include_student_message=consultation.user_id == request.user.id,
+        )
         for consultation in approved_consultations
     )
     calendar_events.sort(key=lambda event: (event['date'] or '', event['start_time'] or ''))
@@ -230,26 +233,55 @@ def api_delete_consultation(request, request_id):
 @require_http_methods(['POST'])
 @csrf_protect
 def api_request_consultation_cancellation(request, request_id):
-    """Ask the assigned faculty member to cancel an approved consultation."""
+    """Cancel an owned pending or approved consultation immediately."""
     with transaction.atomic():
         consultation = get_object_or_404(
             ConsultationRequest.objects.select_for_update().select_related('faculty__user'),
             request_id=request_id, user=request.user,
         )
-        if consultation.status != 'approved':
+        if consultation.status not in {'pending', 'approved'}:
             return JsonResponse(
-                {'error': 'Only an approved consultation can have a cancellation request.'},
+                {'error': 'Only a pending or approved consultation can be cancelled.'},
                 status=409,
             )
-        consultation.status = 'cancellation_requested'
-        consultation.save(update_fields=['status'])
+
+        if consultation.status == 'approved' and consultation.google_event_id:
+            connection = GoogleCalendarConnection.objects.filter(
+                user_id=consultation.faculty.user_id,
+            ).first()
+            if not connection or (
+                consultation.google_calendar_id
+                and consultation.google_calendar_id != connection.calendar_id
+            ):
+                return JsonResponse(
+                    {'error': 'The faculty calendar must be reconnected before this consultation can be cancelled.'},
+                    status=409,
+                )
+            try:
+                delete_consultation_event(connection, consultation)
+            except GoogleCalendarError:
+                return JsonResponse(
+                    {'error': 'Unable to remove the calendar appointment. Please try again later.'},
+                    status=502,
+                )
+            consultation.google_event_id = None
+            consultation.google_calendar_id = None
+            consultation.calendar_sync_status = 'not_configured'
+            consultation.calendar_sync_error = ''
+            consultation.last_calendar_sync_at = None
+
+        consultation.status = 'cancelled'
+        consultation.save(update_fields=[
+            'status', 'google_event_id', 'google_calendar_id',
+            'calendar_sync_status', 'calendar_sync_error', 'last_calendar_sync_at',
+        ])
 
     create_notification(
         recipient=consultation.faculty.user,
         notification_type='consultation_request',
-        title='Cancellation request received',
+        title='Consultation request cancelled',
         message=(
-            f'{request.user.get_full_name() or request.user.username} requested cancellation of '
+            f'{request.user.get_full_name() or request.user.username} cancelled '
             f'the consultation on {consultation.date.strftime("%B %d, %Y")}.'
         ),
         url='/faculty/dashboard/',

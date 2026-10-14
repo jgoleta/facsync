@@ -7,7 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusMessage = document.getElementById('statusMessage');
     const statusExpiresAt = document.getElementById('statusExpiresAt');
     const liveStatusIndicator = document.getElementById('liveStatusIndicator');
-    const liveStatusIcon = document.getElementById('liveStatusIcon');
     const liveStatusLabel = document.getElementById('liveStatusLabel');
     const liveStatusNote = document.getElementById('liveStatusNote');
     const statusFeedback = document.getElementById('statusFeedback');
@@ -18,14 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const completedModal = document.getElementById('completedConsultationsModal');
     const openCompletedModalButton = document.getElementById('openCompletedConsultations');
     const closeCompletedModalButton = document.getElementById('closeCompletedConsultations');
-    const statusIcons = {
-        'not_set': '—',
-        available: '✓',
-        busy: '◷',
-        virtual: '⌁',
-        'on-leave': '☕',
-        unavailable: '×',
-    };
     let selectedStatus = document.querySelector('.status-btn.active')?.dataset.status || 'not_set';
 
     if (statusExpiresAt?.dataset.currentExpiry) {
@@ -60,7 +51,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         selectedStatus = buttonStatus;
         liveStatusIndicator.className = `status-indicator ${data.status_css_class}`;
-        if (liveStatusIcon) liveStatusIcon.textContent = statusIcons[buttonStatus];
         liveStatusLabel.textContent = data.label;
         liveStatusNote.textContent = data.note || 'No status note set.';
         if (statusModeLabel) {
@@ -165,8 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    if (liveStatusIcon) liveStatusIcon.textContent = statusIcons[selectedStatus];
-
     refreshConsultationsButton?.addEventListener('click', () => {
         refreshConsultationsButton.disabled = true;
         refreshConsultationsButton.classList.add('is-refreshing');
@@ -255,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const requestId = item.dataset.requestId;
                 const note = item.querySelector('textarea')?.value || '';
                 if (!requestId) return;
+                if (button.dataset.action === 'cancelled' && !window.confirm('Cancel this approved consultation?')) return;
 
                 const decidingCancellation = item.dataset.status === 'cancellation_requested';
                 const actionButtons = item.querySelectorAll('[data-action]');
@@ -275,7 +264,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (['completed', 'declined', 'cancelled'].includes(data.status)) {
                         item.remove();
                     }
-                    facultyFeedback?.showToast(decidingCancellation
+                    facultyFeedback?.showToast(button.dataset.action === 'cancelled' && !decidingCancellation
+                        ? 'Consultation cancelled successfully.'
+                        : decidingCancellation
                         ? (data.status === 'cancelled'
                             ? 'Cancellation accepted. The appointment is cancelled.'
                             : 'Cancellation declined. The appointment remains scheduled.')

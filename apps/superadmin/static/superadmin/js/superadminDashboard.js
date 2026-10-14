@@ -30,18 +30,18 @@ document.addEventListener("DOMContentLoaded", () => {
       collegeViewHeader.textContent = `${data.name} Overview`;
 
       collegeSummaryCards.innerHTML = `
-                <div class="card">
-                    <h3>Total Consultations</h3>
-                    <p class="stat">${data.total_consultations}</p>
-                </div>
-                <div class="card">
-                    <h3>Registered Faculty</h3>
-                    <p class="stat">${data.active_faculty}</p>
-                </div>
-                <div class="card">
-                    <h3>Availability Rate</h3>
-                    <p class="stat">${data.availability_rate}%</p>
-                </div>
+        <article class="overview-stat-card consultations-card">
+          <div class="stat-icon" aria-hidden="true">Q</div>
+          <div><p class="stat-label">Total Consultations</p><p class="stat">${data.total_consultations}</p><p class="stat-caption">Requests recorded</p></div>
+        </article>
+        <article class="overview-stat-card faculty-card">
+          <div class="stat-icon" aria-hidden="true">F</div>
+          <div><p class="stat-label">Registered Faculty</p><p class="stat">${data.active_faculty}</p><p class="stat-caption">Faculty profiles</p></div>
+        </article>
+        <article class="overview-stat-card colleges-card">
+          <div class="stat-icon" aria-hidden="true">A</div>
+          <div><p class="stat-label">Availability Rate</p><p class="stat">${data.availability_rate}%</p><p class="stat-caption">Faculty available now</p></div>
+        </article>
             `;
 
       collegeViewContainer.hidden = false;

@@ -25,52 +25,57 @@ class CancellationTests(TestCase):
         self.client.force_login(self.student)
         response = self.client.post(self.student_url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()['status'], 'cancellation_requested')
+        self.assertEqual(response.json()['status'], 'cancelled')
 
     def decide(self, status):
         self.client.force_login(self.teacher)
         return self.client.post(self.faculty_url, {'status': status}, content_type='application/json')
 
-    def test_acceptance_updates_student_and_removes_faculty_card(self):
+    def test_student_cancellation_removes_faculty_card_immediately(self):
         self.request_cancellation()
-        self.assertEqual(self.decide('cancelled').status_code, 200)
         self.consultation.refresh_from_db()
         self.assertEqual(self.consultation.status, 'cancelled')
         self.assertNotContains(self.client.get(reverse('faculty:dashboard')), 'data-request-id="cancel-test"')
         self.client.force_login(self.student)
         self.assertContains(self.client.get(reverse('students:consultation_requests')), 'Cancelled')
 
-    def test_faculty_sees_cancellation_decisions_and_consultation_type(self):
+    def test_student_can_cancel_pending_request_immediately(self):
+        self.consultation.status = 'pending'
+        self.consultation.save(update_fields=['status'])
+
+        self.client.force_login(self.student)
+        response = self.client.post(self.student_url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'cancelled')
+        self.consultation.refresh_from_db()
+        self.assertEqual(self.consultation.status, 'cancelled')
+
+    def test_faculty_does_not_see_cancellation_decision_controls(self):
         self.request_cancellation()
         self.client.force_login(self.teacher)
-        for value, label in [('online', 'Online'), ('face_to_face', 'Face-to-Face')]:
-            with self.subTest(consultation_type=value):
-                self.consultation.consultation_type = value
-                self.consultation.save(update_fields=['consultation_type'])
-                response = self.client.get(reverse('faculty:dashboard'))
-                self.assertContains(response, 'Cancellation Requested')
-                self.assertContains(response, 'Accept Cancellation Request')
-                self.assertContains(response, 'Decline Cancellation Request')
-                self.assertContains(response, f'<p class="request-type"><strong>Consultation Type:</strong> {label}</p>', html=True)
+        response = self.client.get(reverse('faculty:dashboard'))
+        self.assertNotContains(response, 'data-request-id="cancel-test"')
+        self.assertNotContains(response, 'Accept Cancellation Request')
+        self.assertNotContains(response, 'Decline Cancellation Request')
 
     @patch('apps.faculty.views.create_consultation_event')
-    def test_rejection_keeps_appointment_and_restores_student_button(self, create_event):
+    def test_cancelled_request_does_not_restore_student_button(self, create_event):
         self.request_cancellation()
-        self.assertEqual(self.decide('approved').status_code, 200)
         create_event.assert_not_called()
         self.client.force_login(self.student)
-        self.assertContains(self.client.get(reverse('students:consultation_requests')), 'Request Cancellation')
+        self.assertNotContains(self.client.get(reverse('students:consultation_requests')), 'Cancel Consultation')
 
-    @patch('apps.faculty.views.delete_consultation_event', side_effect=GoogleCalendarError('offline'))
+    @patch('apps.students.views.delete_consultation_event', side_effect=GoogleCalendarError('offline'))
     def test_failed_calendar_removal_preserves_request_for_retry(self, delete_event):
         GoogleCalendarConnection.objects.create(user=self.teacher, access_token='test', calendar_id='primary')
         self.consultation.google_event_id = 'event-test'
         self.consultation.google_calendar_id = 'primary'
         self.consultation.save()
-        self.request_cancellation()
-        self.assertEqual(self.decide('cancelled').status_code, 502)
+        self.client.force_login(self.student)
+        self.assertEqual(self.client.post(self.student_url).status_code, 502)
         self.consultation.refresh_from_db()
-        self.assertEqual(self.consultation.status, 'cancellation_requested')
+        self.assertEqual(self.consultation.status, 'approved')
         self.assertEqual(self.consultation.google_event_id, 'event-test')
 
     def test_student_cannot_accept_or_cancel_another_students_request(self):
@@ -82,11 +87,10 @@ class CancellationTests(TestCase):
 
     def test_cancelled_request_cannot_be_restored_by_stale_reject_button(self):
         self.request_cancellation()
-        self.assertEqual(self.decide('cancelled').status_code, 200)
         self.assertEqual(self.decide('approved').status_code, 409)
 
-    def test_cancellation_pending_remains_on_calendar(self):
+    def test_cancelled_consultation_is_removed_from_calendar_feed(self):
         self.request_cancellation()
         response = self.client.get(reverse('students:api_schedule_events'), {'faculty_id': self.faculty.pk})
         self.assertEqual(response.status_code, 200)
-        self.assertIn('consultation:cancel-test', [event['id'] for event in response.json()['events']])
+        self.assertNotIn('consultation:cancel-test', [event['id'] for event in response.json()['events']])

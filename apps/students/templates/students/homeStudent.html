@@ -27,6 +27,18 @@
         </header>
 
         <main class="container">
+            <section class="announcement-banner">
+                <div class="announcement-icon">!</div>
+                <div>
+                    <p class="announcement-title">Today's Announcement</p>
+                    {% if college_announcement %}
+                    <p class="announcement-text">{{ college_announcement.message }}</p>
+                    {% else %}
+                    <p class="announcement-text">There are no announcements for your college today.</p>
+                    {% endif %}
+                </div>
+            </section>
+
             <section class="page-intro">
                 <div class="intro-copy">
                     <p class="eyebrow">Student Portal</p>
@@ -46,18 +58,6 @@
                         </div>
                         {% if student_college %}<small class="summary-college">{{ student_college }}</small>{% endif %}
                     </div>
-                </div>
-            </section>
-
-            <section class="announcement-banner">
-                <div class="announcement-icon">!</div>
-                <div>
-                    <p class="announcement-title">Today's Announcement</p>
-                    {% if college_announcement %}
-                    <p class="announcement-text">{{ college_announcement.message }}</p>
-                    {% else %}
-                    <p class="announcement-text">There are no announcements for your college today.</p>
-                    {% endif %}
                 </div>
             </section>
 

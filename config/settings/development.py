@@ -2,11 +2,11 @@
 
 from .base import *  # noqa: F403
 
-# Reuse healthy connections in persistent workers; threaded runserver may
-# still close them when its request threads finish.
+# Close the connection after each request in runserver so reloads and request
+# threads do not exhaust the Supabase session pooler's limited client slots.
 DATABASES = {
     **DATABASES,
-    'default': {**DATABASES['default'], 'CONN_MAX_AGE': 60, 'CONN_HEALTH_CHECKS': True},
+    'default': {**DATABASES['default'], 'CONN_MAX_AGE': 0, 'CONN_HEALTH_CHECKS': True},
 }
 
 INSTALLED_APPS = [*INSTALLED_APPS, 'debug_toolbar']

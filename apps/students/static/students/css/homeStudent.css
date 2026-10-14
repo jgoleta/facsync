@@ -15,7 +15,7 @@ body {
 }
 
 .container {
-  width: min(1180px, calc(100% - 32px));
+  width: 90%;
   margin: 0 auto;
   padding: 24px 0 48px;
 }

@@ -7,10 +7,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20260930-cancellation-actions">
+    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20261014-legend-width">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     <link rel="stylesheet" href="{% static 'css/announcements.css' %}?v=20260917-faculty-announcement-ui">
-    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}?v=20261003-conversational">
+    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}?v=20261014-modal">
     {% include 'components/_faculty_navigation_loading.html' %}
 </head>
 
@@ -44,11 +44,11 @@
                         </div>
                     </div>
                     <div class="status-buttons">
-                        <button class="status-btn available {% if current_status == 'available' %}active{% endif %}" data-status="available" aria-pressed="{% if current_status == 'available' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">✓</span><span>Available</span></button>
-                        <button class="status-btn busy {% if current_status == 'busy' %}active{% endif %}" data-status="busy" aria-pressed="{% if current_status == 'busy' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">◷</span><span>Busy</span></button>
-                        <button class="status-btn virtual {% if current_status == 'virtual_only' %}active{% endif %}" data-status="virtual" aria-pressed="{% if current_status == 'virtual_only' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">⌁</span><span>Virtual Only</span></button>
-                        <button class="status-btn on-leave {% if current_status == 'on_leave' %}active{% endif %}" data-status="on-leave" aria-pressed="{% if current_status == 'on_leave' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">☕</span><span>On Leave</span></button>
-                        <button class="status-btn unavailable {% if current_status == 'unavailable' %}active{% endif %}" data-status="unavailable" aria-pressed="{% if current_status == 'unavailable' %}true{% else %}false{% endif %}"><span class="status-icon" aria-hidden="true">×</span><span>Unavailable</span></button>
+                        <button class="status-btn available {% if current_status == 'available' %}active{% endif %}" data-status="available" aria-pressed="{% if current_status == 'available' %}true{% else %}false{% endif %}"><span>Available</span></button>
+                        <button class="status-btn busy {% if current_status == 'busy' %}active{% endif %}" data-status="busy" aria-pressed="{% if current_status == 'busy' %}true{% else %}false{% endif %}"><span>Busy</span></button>
+                        <button class="status-btn virtual {% if current_status == 'virtual_only' %}active{% endif %}" data-status="virtual" aria-pressed="{% if current_status == 'virtual_only' %}true{% else %}false{% endif %}"><span>Virtual Only</span></button>
+                        <button class="status-btn on-leave {% if current_status == 'on_leave' %}active{% endif %}" data-status="on-leave" aria-pressed="{% if current_status == 'on_leave' %}true{% else %}false{% endif %}"><span>On Leave</span></button>
+                        <button class="status-btn unavailable {% if current_status == 'unavailable' %}active{% endif %}" data-status="unavailable" aria-pressed="{% if current_status == 'unavailable' %}true{% else %}false{% endif %}"><span>Unavailable</span></button>
                     </div>
                     <div class="status-note">
                         <label for="statusMessage">Set a status note</label>
@@ -137,6 +137,7 @@
                                     <button type="button" class="btn-decline" data-action="declined">Decline</button>
                                     {% elif consultation.status == 'approved' %}
                                     <button type="button" class="btn-approve" data-action="completed">Mark as Completed</button>
+                                    <button type="button" class="btn-decline" data-action="cancelled">Cancel Consultation</button>
                                     {% endif %}
                                 </div>
                             </div>
@@ -153,7 +154,6 @@
                     <span class="eyebrow">Visible to students</span>
                     <h2>Your Live Status</h2>
                     <div id="liveStatusIndicator" class="status-indicator {{ status_css_class }}">
-                        <span id="liveStatusIcon" class="status-icon" aria-hidden="true"></span>
                         <span id="liveStatusLabel">{{ status_label }}</span>
                     </div>
                     <p id="liveStatusNote" class="status-note-display">{{ faculty_profile.status_note|default:'No status note set.' }}</p>
@@ -263,7 +263,7 @@
     {% include 'partials/announcementModal.html' %}
     <script src="{% static 'js/announcements.js' %}?v=20260927-login-session"></script>
     {% include 'faculty/partials/consultation_browser.html' %}
-    <script src="{% static 'depthead/js/analytics_browser.js' %}?v=20261003-conversational" defer></script>
+    <script src="{% static 'depthead/js/analytics_browser.js' %}?v=20261014-modal" defer></script>
 </body>
 
 </html>

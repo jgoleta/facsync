@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Super Admin Dashboard</title>
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}?v=20261006-sidebar" />
-    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_dashboard.css' %}" />
+    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_dashboard.css' %}?v=20261014-overview" />
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -52,31 +52,50 @@
         </aside>
 
         <main class="main-content">
-            <header class="main-header">
-                <h1>System-Wide Overview</h1>
-                <p>Top-level view of the entire FacSync system.</p>
+            <header class="main-header dashboard-hero">
+                <div>
+                    <p class="overview-kicker">Platform administration</p>
+                    <h1>System-Wide Overview</h1>
+                    <p>Monitor the health and reach of your entire FacSync system.</p>
+                </div>
+                <span class="admin-identity-badge">Super Admin</span>
             </header>
 
             <div class="content-grid">
-                                <div class="summary-cards">
-                                    <div class="card">
-                                        <h3>Total Colleges</h3>
-                                        <p class="stat">{{ total_colleges }}</p>
-                                    </div>
-                                    <div class="card">
-                                        <h3>Total Faculty</h3>
-                                        <p class="stat">{{ total_faculty }}</p>
-                                    </div>
-                                    <div class="card">
-                                        <h3>Total Consultations</h3>
-                                        <p class="stat">{{ total_consultations }}</p>
-                                    </div>
-                                </div>
+                <section class="overview-section" aria-labelledby="system-metrics-title">
+                    <div class="section-heading">
+                        <div>
+                            <p class="section-kicker">At a glance</p>
+                            <h2 id="system-metrics-title">System metrics</h2>
+                        </div>
+                        <span class="section-caption">Live totals</span>
+                    </div>
+                    <div class="summary-cards">
+                        <article class="overview-stat-card colleges-card">
+                            <div class="stat-icon" aria-hidden="true">C</div>
+                            <div><p class="stat-label">Total Colleges</p><p class="stat">{{ total_colleges }}</p><p class="stat-caption">Registered institutions</p></div>
+                        </article>
+                        <article class="overview-stat-card faculty-card">
+                            <div class="stat-icon" aria-hidden="true">F</div>
+                            <div><p class="stat-label">Active Faculty</p><p class="stat">{{ total_faculty }}</p><p class="stat-caption">Across all colleges</p></div>
+                        </article>
+                        <article class="overview-stat-card consultations-card">
+                            <div class="stat-icon" aria-hidden="true">Q</div>
+                            <div><p class="stat-label">Total Consultations</p><p class="stat">{{ total_consultations }}</p><p class="stat-caption">Requests recorded</p></div>
+                        </article>
+                    </div>
+                </section>
 
 
-                <div class="drill-down-panel">
-                    <h2>Drill-Down View</h2>
-                    <p>Select a college to view its reports and analytics.</p>
+                <section class="drill-down-panel" aria-labelledby="drill-down-title">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="section-kicker">Explore the network</p>
+                            <h2 id="drill-down-title">College drill-down</h2>
+                        </div>
+                        <span class="panel-icon" aria-hidden="true">↗</span>
+                    </div>
+                    <p>Select a college to view its reports, faculty coverage, and consultation activity.</p>
                     <div class="form-group">
                         <label for="college-selector">Select College</label>
                                                 <select id="college-selector">
@@ -86,18 +105,22 @@
                                                     {% endfor %}
                                                 </select>
                     </div>
-                </div>
+                </section>
 
-                <div id="college-view-container" hidden>
-                    <header class="main-header">
-                        <h1 id="college-view-header"></h1>
+                <section id="college-view-container" class="college-view" hidden aria-live="polite">
+                    <header class="college-view-header">
+                        <div>
+                            <p class="section-kicker">Selected college</p>
+                            <h2 id="college-view-header"></h2>
+                        </div>
+                        <span class="section-caption">Overview</span>
                     </header>
                     <div class="summary-cards" id="college-summary-cards"></div>
-                </div>
+                </section>
             </div>
         </main>
     </div>
         {{ college_data_json|json_script:"college-data" }}
-        <script src="{% static 'superadmin/js/superadminDashboard.js' %}?v=20261006-selection"></script>
+        <script src="{% static 'superadmin/js/superadminDashboard.js' %}?v=20261014-overview"></script>
 </body>
 </html>

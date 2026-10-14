@@ -208,6 +208,33 @@ class StudentScheduleTests(TestCase):
             'end_time': '14:00:00',
         }, response.json()['events'])
 
+    def test_student_schedule_api_includes_other_students_approved_consultations_as_busy(self):
+        other_student = get_user_model().objects.create_user(
+            username='other-schedule-student',
+            password='test-password',
+            role='student',
+        )
+        ConsultationRequest.objects.create(
+            request_id='other-approved-consultation',
+            user=other_student,
+            faculty=self.faculty,
+            date='2026-08-22',
+            start_time='14:00',
+            end_time='15:00',
+            status='approved',
+            student_message='Private student message.',
+        )
+        self.client.force_login(self.student)
+
+        response = self.client.get(
+            reverse('students:api_schedule_events'),
+            {'faculty_id': self.faculty.faculty_id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        event = next(event for event in response.json()['events'] if event['request_id'] == 'other-approved-consultation')
+        self.assertEqual(event['description'], 'Faculty consultation appointment.')
+
     def test_student_consultation_list_includes_completed_and_excludes_declined_requests(self):
         for request_id, status in (
             ('completed-consultation', 'completed'),

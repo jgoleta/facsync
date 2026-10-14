@@ -7,15 +7,15 @@
   const close = document.getElementById('analytics-chat-close');
   const messages = document.getElementById('analytics-chat-messages');
   const label = root.dataset.label || 'analytics browser';
-  const narrow = window.matchMedia('(max-width: 1279px)');
   const background = document.querySelector('.admin-shell, .page-shell');
   let previousInert = null;
   function layout() {
     const open = !panel.hidden;
+    root.classList.toggle('is-open', open);
     document.body.classList.toggle('analytics-chat-open', open);
     toggle.hidden = open;
-    panel.setAttribute('aria-modal', String(open && narrow.matches));
-    if (background && open && narrow.matches) {
+    panel.setAttribute('aria-modal', String(open));
+    if (background && open) {
       if (previousInert === null) previousInert = background.inert;
       background.inert = true;
     } else if (background && previousInert !== null) {
@@ -23,10 +23,6 @@
       previousInert = null;
     }
   }
-  narrow.addEventListener('change', () => {
-    layout();
-    if (!panel.hidden && narrow.matches) close.focus();
-  });
   function setOpen(open) {
     panel.hidden = !open;
     toggle.setAttribute('aria-expanded', String(open));
@@ -47,8 +43,11 @@
   toggle.hidden = false;
   toggle.addEventListener('click', () => setOpen(panel.hidden));
   close.addEventListener('click', () => setOpen(false));
+  root.addEventListener('click', event => {
+    if (event.target === root) setOpen(false);
+  });
   root.addEventListener('keydown', event => {
-    if (event.key === 'Tab' && !panel.hidden && narrow.matches) {
+    if (event.key === 'Tab' && !panel.hidden) {
       const controls = Array.from(panel.querySelectorAll('button, a[href], [tabindex="0"]'));
       const first = controls[0], last = controls[controls.length - 1];
       if (event.shiftKey && document.activeElement === first) {

@@ -6,10 +6,10 @@ document.addEventListener('DOMContentLoaded', () => {
     requestList?.addEventListener('click', async (event) => {
         const cancellationButton = event.target.closest('.request-cancellation-btn');
         if (cancellationButton && !cancellationButton.disabled) {
-            if (!window.confirm('Send a cancellation request to the faculty member?')) return;
+            if (!window.confirm('Cancel this consultation immediately?')) return;
             cancellationButton.disabled = true;
             const feedback = window.studentFeedback;
-            feedback?.showLoading('Requesting consultation cancellation...');
+            feedback?.showLoading('Cancelling consultation...');
             try {
                 const cookie = document.cookie.split('; ').find(value => value.startsWith('csrftoken='));
                 const response = await fetch(cancellationButton.dataset.cancellationUrl, {
@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.querySelector('.status-badge').textContent = data.status_label;
                 item.querySelector('.status-badge').className = `status-badge status-${data.status}`;
                 cancellationButton.remove();
-                feedback?.showToast('Cancellation request sent to faculty.');
+                feedback?.showToast('Consultation cancelled.');
                 applyFilter();
             } catch (error) {
                 feedback?.showToast(error.message, true);

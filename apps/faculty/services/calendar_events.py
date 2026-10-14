@@ -42,7 +42,7 @@ def serialize_schedule_event(event, include_sync_metadata=False, human_status=Fa
     return payload
 
 
-def serialize_consultation_event(consultation, viewer='student'):
+def serialize_consultation_event(consultation, viewer='student', include_student_message=True):
     """Serialize an approved consultation for the requested calendar viewer."""
     if viewer == 'faculty':
         participant_name = consultation.user.get_full_name() or consultation.user.username
@@ -53,7 +53,11 @@ def serialize_consultation_event(consultation, viewer='student'):
         'id': f'consultation:{consultation.request_id}',
         'request_id': consultation.request_id,
         'title': f'Consultation with {participant_name}',
-        'description': consultation.student_message or 'Approved student consultation.',
+        'description': (
+            consultation.student_message or 'Approved student consultation.'
+            if include_student_message
+            else 'Faculty consultation appointment.'
+        ),
         'location': consultation.faculty.office_location,
         'status': 'Consultation',
         'event_type': 'busy',
