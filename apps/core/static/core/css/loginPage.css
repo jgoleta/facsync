@@ -327,6 +327,10 @@ body {
     transform 0.2s ease;
 }
 
+.btn-secondary .google-logo {
+  flex: 0 0 auto;
+}
+
 .btn-secondary:hover {
   background: var(--surface);
   border-color: var(--accent-light);

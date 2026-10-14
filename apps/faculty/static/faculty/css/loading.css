@@ -1,4 +1,6 @@
 .faculty-skeleton { padding: 20px; background: #f7faff; color: #16213e; border-radius: 14px; }
+.faculty-navigation-shell .page-shell { padding-top: 72px; }
+.faculty-navigation-shell .page-shell > .topbar { position: fixed; inset: 0 0 auto; z-index: 1000; width: 100%; }
 .faculty-skeleton p { margin: 0 0 16px; }
 .faculty-skeleton-shapes { display: grid; gap: 16px; }
 .faculty-skeleton-shape { height: 68px; border-radius: 10px; background: #dfe7f2; animation: faculty-loading-pulse 1.4s ease-in-out infinite alternate; }
@@ -11,3 +13,150 @@
 @keyframes faculty-loading-pulse { from { opacity: .5; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .faculty-skeleton-shape { animation: none; } }
 @media (max-width: 600px) { .faculty-skeleton-shape { height: 48px; } }
+@media (max-width: 640px) { .faculty-navigation-shell .page-shell { padding-top: 66px; } }
+@media (max-width: 380px) { .faculty-navigation-shell .page-shell { padding-top: 112px; } }
+
+/* Detailed transition placeholders match the faculty page columns. */
+.faculty-transition { box-sizing: border-box; overflow: hidden; overscroll-behavior: none; padding: 0; background: #f3f7fc; }
+.faculty-transition .faculty-skeleton-layout { display: grid; width: 100%; height: 100%; align-content: start; align-items: start; gap: 16px; overflow: hidden; }
+.faculty-transition .schedule-page { grid-template-columns: minmax(0, 1.8fr) minmax(250px, .8fr); padding: 0 20px; }
+.faculty-transition .faculty-skeleton-schedule-card, .faculty-transition .faculty-skeleton-activities-card, .faculty-transition .faculty-skeleton-welcome, .faculty-transition .faculty-skeleton-status-panel, .faculty-transition .faculty-skeleton-requests-panel, .faculty-transition .faculty-skeleton-dashboard-aside { min-width: 0; overflow: hidden; border: 1px solid #dce6f2; border-radius: 17px; background: #fff; box-shadow: 0 8px 24px rgba(30, 60, 100, .05); }
+.faculty-transition .faculty-skeleton-shape { height: 12px; min-height: 0; border-radius: 6px; background: #e5edf6; }
+.faculty-transition .eyebrow { width: 100px; height: 8px; }
+.faculty-transition .title { width: min(320px, 76%); height: 25px; }
+.faculty-transition .subtitle { width: min(420px, 90%); height: 9px; }
+.faculty-transition .faculty-skeleton-schedule-card { display: grid; height: 100%; min-height: 0; grid-template-rows: auto auto minmax(0, 1fr); padding: 18px; }
+.faculty-transition .faculty-skeleton-schedule-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.faculty-transition .faculty-skeleton-heading-copy { display: grid; flex: 1; gap: 7px; min-width: 0; }
+.faculty-transition .faculty-skeleton-calendar-controls { display: flex; gap: 7px; }
+.faculty-transition .faculty-skeleton-calendar-controls .faculty-skeleton-shape { width: 38px; height: 29px; border-radius: 999px; }
+.faculty-transition .faculty-skeleton-calendar-controls .sync { width: 58px; }
+.faculty-transition .faculty-skeleton-calendar-controls .select { width: 100px; }
+.faculty-transition .faculty-skeleton-view-tabs { display: flex; gap: 7px; margin: 14px 0 12px; }
+.faculty-transition .faculty-skeleton-view-tabs .faculty-skeleton-shape { width: 67px; height: 29px; border-radius: 999px; }
+.faculty-transition .faculty-skeleton-view-tabs .active { background: #b9d7f7; }
+.faculty-transition .faculty-skeleton-calendar-grid { display: grid; min-height: 0; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-template-rows: repeat(6, minmax(0, 1fr)); gap: 7px; overflow: hidden; }
+.faculty-transition .faculty-skeleton-day { display: flex; min-width: 0; min-height: 0; flex-direction: column; gap: 6px; overflow: hidden; padding: 6px; border: 1px solid #dbe5f2; border-radius: 9px; background: #fbfdff; }
+.faculty-transition .faculty-skeleton-day .day-label { width: 56%; height: 10px; }
+.faculty-transition .faculty-skeleton-event { display: grid; gap: 4px; padding: 5px 4px; border: 1px solid #e1eaf5; border-left: 3px solid #5ba1f3; border-radius: 5px; background: #f6faff; }
+.faculty-transition .faculty-skeleton-event .faculty-skeleton-shape { height: 5px; }
+.faculty-transition .faculty-skeleton-event .short { width: 62%; }
+.faculty-transition .faculty-skeleton-event.event-1 { border-left-color: #ffbc45; }
+.faculty-transition .faculty-skeleton-event.event-2 { border-left-color: #f2767e; }
+.faculty-transition .faculty-skeleton-event.secondary { border-left-color: #91b9ee; }
+.faculty-transition .faculty-skeleton-activities-card { display: flex; height: 100%; min-height: 0; flex-direction: column; }
+.faculty-transition .faculty-skeleton-activities-heading { display: grid; gap: 7px; padding: 18px 16px 14px; border-bottom: 1px solid #e3ebf5; }
+.faculty-transition .faculty-skeleton-activities-heading .sidebar-title { width: 75%; height: 17px; }
+.faculty-transition .faculty-skeleton-activities-heading .subtitle { width: 95%; }
+.faculty-transition .faculty-skeleton-activities-list { display: grid; gap: 7px; overflow: hidden; padding: 12px 14px; }
+.faculty-transition .faculty-skeleton-activity { display: grid; grid-template-columns: 7px minmax(0, 1fr); align-items: center; gap: 8px; min-height: 34px; padding: 6px 8px; border: 1px solid #e0e8f2; border-radius: 8px; }
+.faculty-transition .activity-dot { width: 7px; height: 7px; border-radius: 50%; background: #5b9ef0; }
+.faculty-transition .activity-line { width: 95%; height: 8px; }
+.faculty-transition .activity-line.medium { width: 75%; }
+.faculty-transition .faculty-skeleton-activities-actions { display: grid; gap: 7px; margin-top: auto; padding: 10px 14px 14px; border-top: 1px solid #e3ebf5; }
+.faculty-transition .faculty-skeleton-activities-actions .faculty-skeleton-shape { height: 31px; border: 1px solid #dbe5f2; border-radius: 8px; background: #fff; }
+.faculty-transition .faculty-skeleton-activities-actions .link { width: 62%; height: 8px; justify-self: center; border: 0; }
+
+.faculty-transition .dashboard-page { grid-template-columns: minmax(0, 7fr) minmax(280px, 3fr); gap: 20px; }
+.faculty-transition .faculty-skeleton-dashboard-main { display: grid; min-width: 0; align-content: start; gap: 16px; }
+.faculty-transition .faculty-skeleton-welcome { display: grid; gap: 8px; padding: 25px; background: linear-gradient(125deg, #eef6ff, #fff 65%); }
+.faculty-transition .welcome-title { width: min(440px, 75%); height: 27px; }
+.faculty-transition .faculty-skeleton-status-panel, .faculty-transition .faculty-skeleton-requests-panel { padding: 18px 20px; }
+.faculty-transition .section-title { width: 200px; height: 16px; }
+.faculty-transition .section-copy { width: 60%; height: 9px; margin-top: 7px; }
+.faculty-transition .faculty-skeleton-statuses { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
+.faculty-transition .faculty-skeleton-statuses .faculty-skeleton-shape { height: 60px; border: 1px solid #e2e8f0; border-radius: 9px; background: #edf2f7; }
+.faculty-transition .faculty-skeleton-statuses .status-available { background: #d7efdf; }
+.faculty-transition .faculty-skeleton-statuses .status-busy { background: #fff0df; }
+.faculty-transition .faculty-skeleton-statuses .status-virtual { background: #e1f4f7; }
+.faculty-transition .faculty-skeleton-statuses .status-leave { background: #eceff2; }
+.faculty-transition .faculty-skeleton-statuses .status-unavailable { background: #f8dfe2; }
+.faculty-transition .faculty-skeleton-inputs { display: grid; gap: 9px; }
+.faculty-transition .faculty-skeleton-inputs .faculty-skeleton-shape { height: 34px; border: 1px solid #dce5ef; border-radius: 7px; background: #fff; }
+.faculty-transition .faculty-skeleton-status-mode { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; padding: 9px; border: 1px dashed #dce5ef; border-radius: 8px; }
+.faculty-transition .faculty-skeleton-status-mode .faculty-skeleton-shape:first-child { width: 43%; height: 8px; }
+.faculty-transition .faculty-skeleton-status-mode .mode-button { width: 120px; height: 24px; border-radius: 999px; }
+.faculty-transition .update-button { width: 125px; height: 32px; justify-self: end; margin-top: 9px; border-radius: 7px; }
+.faculty-transition .requests-heading { display: flex; align-items: center; justify-content: space-between; }
+.faculty-transition .count-pill { width: 75px; height: 21px; border-radius: 999px; }
+.faculty-transition .request-filters { display: flex; gap: 7px; margin: 12px 0; }
+.faculty-transition .request-filters .faculty-skeleton-shape { width: 72px; height: 22px; border-radius: 7px; }
+.faculty-transition .faculty-skeleton-request { display: grid; grid-template-columns: minmax(0, 1fr) 105px; gap: 12px; margin-top: 8px; padding: 12px; border: 1px solid #e2e9f1; border-radius: 10px; background: #fcfdff; }
+.faculty-transition .request-copy, .faculty-transition .request-actions { display: grid; align-content: center; gap: 7px; }
+.faculty-transition .request-copy .faculty-skeleton-shape { width: 78%; height: 8px; }
+.faculty-transition .request-copy .medium { width: 58%; }
+.faculty-transition .request-copy .short { width: 38%; }
+.faculty-transition .request-actions { gap: 6px; }
+.faculty-transition .request-actions .faculty-skeleton-shape { height: 23px; border-radius: 6px; }
+.faculty-transition .faculty-skeleton-dashboard-aside { display: grid; align-content: start; }
+.faculty-transition .aside-section { display: grid; gap: 9px; padding: 18px; border-bottom: 1px solid #e0e8f2; }
+.faculty-transition .aside-section:last-child { border: 0; }
+.faculty-transition .aside-copy { width: 75%; height: 9px; }
+.faculty-transition .aside-copy.short { width: 55%; }
+.faculty-transition .status-badge { width: 82px; height: 29px; border-radius: 999px; background: #ccebd6; }
+.faculty-transition .faculty-skeleton-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.faculty-transition .faculty-skeleton-metric { display: grid; justify-items: center; gap: 6px; padding: 9px 3px; border-radius: 9px; background: #f3f7fc; }
+.faculty-transition .metric-value { width: 23px; height: 15px; }
+.faculty-transition .metric-label { width: 85%; height: 7px; }
+.faculty-transition .aside-links { gap: 7px; }
+.faculty-transition .aside-links .faculty-skeleton-shape, .faculty-transition .aside-button { width: 100%; height: 32px; border: 1px solid #d9e4f2; border-radius: 7px; background: #fff; }
+.faculty-transition .faculty-skeleton-shape { animation: faculty-loading-pulse 1.4s ease-in-out infinite alternate; }
+.faculty-transition > p[role="status"] { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.faculty-transition .profile-page { grid-template-rows: auto minmax(0, 1fr); gap: 20px; }
+.faculty-transition .faculty-skeleton-profile-header, .faculty-transition .faculty-skeleton-personal-card, .faculty-transition .integration-card, .faculty-transition .shortcuts-card { min-width: 0; overflow: hidden; border: 1px solid #dbe5f1; border-radius: 18px; background: #fff; box-shadow: 0 8px 24px rgba(30, 60, 100, .05); }
+.faculty-transition .faculty-skeleton-profile-header { display: flex; min-height: 124px; align-items: center; justify-content: space-between; gap: 20px; padding: 24px; }
+.faculty-transition .profile-header-copy { display: grid; gap: 9px; }
+.faculty-transition .profile-title { width: 180px; height: 30px; }
+.faculty-transition .account-badge { width: 100px; height: 25px; border: 1px solid #c9dcfa; border-radius: 999px; background: #eff6ff; }
+.faculty-transition .faculty-skeleton-profile-grid { display: grid; min-height: 0; grid-template-columns: minmax(0, 7fr) minmax(280px, 3fr); align-items: start; gap: 16px; overflow: hidden; }
+.faculty-transition .faculty-skeleton-personal-card { display: grid; gap: 20px; padding: 22px; }
+.faculty-transition .profile-identity { display: flex; align-items: center; gap: 14px; margin: -22px -22px 0; padding: 20px 22px; border-bottom: 1px solid #dbe5f1; background: #f8fafc; }
+.faculty-transition .profile-avatar { width: 62px; height: 62px; flex: 0 0 62px; border-radius: 50%; }
+.faculty-transition .identity-copy { display: grid; flex: 1; gap: 7px; }
+.faculty-transition .identity-copy .eyebrow { width: 90px; }
+.faculty-transition .identity-name { width: min(260px, 75%); height: 17px; }
+.faculty-transition .identity-college { width: 190px; height: 9px; }
+.faculty-transition .photo-section { display: grid; gap: 9px; padding-bottom: 14px; border-bottom: 1px solid #dbe5f1; }
+.faculty-transition .photo-section .section-title, .faculty-transition .biography-section .section-title { width: 125px; }
+.faculty-transition .photo-section .section-copy { width: 92%; margin-top: 0; }
+.faculty-transition .file-field { width: min(350px, 100%); height: 38px; border: 1px solid #dbe5f1; border-radius: 8px; background: #f8fbff; }
+.faculty-transition .upload-button { width: 92px; height: 29px; border-radius: 7px; background: #b7d3fa; }
+.faculty-transition .personal-details { display: grid; gap: 13px; }
+.faculty-transition .details-heading { display: flex; align-items: end; justify-content: space-between; gap: 12px; }
+.faculty-transition .details-heading-copy { display: grid; gap: 7px; }
+.faculty-transition .details-caption { width: 190px; height: 8px; }
+.faculty-transition .profile-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.faculty-transition .faculty-skeleton-profile-field { display: grid; gap: 7px; padding: 11px; border: 1px solid #e1e9f2; border-radius: 10px; background: #fcfdff; }
+.faculty-transition .field-label { width: 54px; height: 8px; }
+.faculty-transition .field-value { display: flex; align-items: center; height: 26px; padding: 5px; border-radius: 5px; background: #f1f5fa; }
+.faculty-transition .field-value .faculty-skeleton-shape { width: 75%; height: 9px; }
+.faculty-transition .field-value .medium { width: 55%; }
+.faculty-transition .biography-section { display: grid; gap: 9px; padding-top: 14px; border-top: 1px solid #dbe5f1; }
+.faculty-transition .biography-section .section-copy { width: 70%; margin-top: 0; }
+.faculty-transition .biography-line { width: 96%; height: 9px; }
+.faculty-transition .biography-line.medium { width: 84%; }
+.faculty-transition .biography-line.short { width: 67%; }
+.faculty-transition .faculty-skeleton-profile-aside { display: grid; align-content: start; gap: 16px; }
+.faculty-transition .integration-card, .faculty-transition .shortcuts-card { display: grid; gap: 12px; padding: 18px; }
+.faculty-transition .aside-heading { display: grid; gap: 7px; }
+.faculty-transition .aside-heading .section-title { width: 130px; }
+.faculty-transition .calendar-connection { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 10px; border: 1px solid #dfe8f3; border-radius: 10px; background: #fcfdff; }
+.faculty-transition .calendar-icon { width: 25px; height: 25px; border-radius: 5px; background: #d2e4ff; }
+.faculty-transition .connection-copy { display: grid; gap: 6px; }
+.faculty-transition .connection-copy .faculty-skeleton-shape { width: 95px; height: 9px; }
+.faculty-transition .connection-copy .connection-status { width: 65px; height: 7px; }
+.faculty-transition .connect-button { width: 70px; height: 25px; border: 1px solid #f7caca; border-radius: 7px; background: #fff5f5; }
+.faculty-transition .faculty-skeleton-sync-option { display: grid; gap: 8px; padding: 11px; border: 1px solid #dfe8f3; border-radius: 10px; }
+.faculty-transition .sync-copy { display: grid; gap: 6px; }
+.faculty-transition .sync-copy .faculty-skeleton-shape { width: 120px; height: 9px; }
+.faculty-transition .sync-copy .short { width: 88%; }
+.faculty-transition .toggle { width: 32px; height: 17px; justify-self: end; border-radius: 999px; background: #b8d2f7; }
+.faculty-transition .faculty-skeleton-shortcut { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 33px; padding: 8px 10px; border: 1px solid #dfe8f3; border-radius: 8px; background: #fcfdff; }
+.faculty-transition .faculty-skeleton-shortcut .faculty-skeleton-shape:first-child { width: 65%; height: 9px; }
+.faculty-transition .faculty-skeleton-shortcut .arrow { width: 10px; height: 8px; }
+@media (max-width: 960px) { .faculty-transition .faculty-skeleton-profile-grid { grid-template-columns: minmax(0, 1fr); } .faculty-transition .faculty-skeleton-profile-aside { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 680px) { .faculty-transition .faculty-skeleton-profile-header { min-height: 0; align-items: flex-start; flex-direction: column; padding: 18px; } .faculty-transition .faculty-skeleton-personal-card { padding: 16px; } .faculty-transition .profile-identity { margin: -16px -16px 0; padding: 16px; } .faculty-transition .faculty-skeleton-profile-aside { grid-template-columns: minmax(0, 1fr); } .faculty-transition .details-heading { align-items: flex-start; flex-direction: column; } .faculty-transition .details-caption { width: 80%; } }
+@media (max-width: 1050px) { .faculty-transition .dashboard-page { grid-template-columns: minmax(0, 1fr); } .faculty-transition .faculty-skeleton-dashboard-aside { grid-template-columns: repeat(3, minmax(0, 1fr)); } .faculty-transition .aside-section { border-right: 1px solid #e0e8f2; border-bottom: 0; } .faculty-transition .aside-section:last-child { display: none; } }
+@media (max-width: 900px) { .faculty-transition .schedule-page { grid-template-columns: minmax(0, 1fr); } .faculty-transition .faculty-skeleton-activities-card { display: none; } }
+@media (max-width: 760px) { .faculty-transition .dashboard-page { gap: 12px; } .faculty-transition .faculty-skeleton-dashboard-aside { grid-template-columns: minmax(0, 1fr); } .faculty-transition .aside-section { border-right: 0; border-bottom: 1px solid #e0e8f2; } .faculty-transition .aside-section:last-child { display: grid; } }
+@media (max-width: 560px) { .faculty-transition .schedule-page { padding: 0 12px; } .faculty-transition .faculty-skeleton-schedule-card { padding: 12px; } .faculty-transition .faculty-skeleton-schedule-heading { align-items: flex-start; flex-direction: column; } .faculty-transition .faculty-skeleton-calendar-controls { width: 100%; } .faculty-transition .faculty-skeleton-calendar-controls .select { flex: 1; } .faculty-transition .faculty-skeleton-calendar-grid { gap: 3px; } .faculty-transition .faculty-skeleton-day { padding: 4px; } .faculty-transition .faculty-skeleton-status-panel, .faculty-transition .faculty-skeleton-requests-panel { padding: 14px; } .faculty-transition .faculty-skeleton-statuses { grid-template-columns: repeat(2, minmax(0, 1fr)); } .faculty-transition .faculty-skeleton-statuses .faculty-skeleton-shape:last-child { grid-column: 1 / -1; } .faculty-transition .faculty-skeleton-request { grid-template-columns: minmax(0, 1fr); } .faculty-transition .request-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
