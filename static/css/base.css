@@ -72,6 +72,42 @@ body {
   color: white;
 }
 
+.brand-mark.brand-mark-image {
+  position: relative;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  isolation: isolate;
+}
+
+.brand-mark.brand-mark-image > img {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.brand-mark.brand-mark-image > img.is-loaded {
+  visibility: visible;
+}
+
+.brand-mark-placeholder {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  pointer-events: none;
+}
+
 .nav-links {
   display: flex;
   gap: 10px;
