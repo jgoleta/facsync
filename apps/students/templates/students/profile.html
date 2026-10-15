@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FacSync | My Profile</title>
-    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261002-photo-editor">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261015-brand-logo">
     <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}">
     {% include 'components/_student_navigation_loading.html' %}
@@ -13,7 +13,7 @@
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="{% url 'students:home' %}" class="brand"><span class="brand-mark">F</span><span>FacSync</span></a>
+            <a href="{% url 'students:home' %}" class="brand"><span class="brand-mark brand-mark-image"><img src="https://i.imgur.com/MFtx6rV.png" alt="" onload="this.classList.add('is-loaded')" onerror="this.remove()"><span class="brand-mark-placeholder" aria-hidden="true">F</span></span><span>FacSync</span></a>
             <nav class="nav-links" aria-label="Account navigation">
                 {% include 'components/_notification_nav.html' %}
                 {% include 'components/_account_nav.html' %}

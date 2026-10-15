@@ -113,17 +113,23 @@ body {
 .brand-mark {
   width: 48px;
   height: 48px;
-  border-radius: 14px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
-  background: linear-gradient(180deg, #2563eb 0%, #1e40af 100%);
-  color: white;
-  font-weight: 800;
-  font-size: 1rem;
+  overflow: hidden;
+  background: #fff;
   transition:
     transform 0.3s ease,
     box-shadow 0.3s ease;
   box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+}
+
+.brand-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
 }
 
 .brand-mark:hover {
@@ -415,8 +421,6 @@ body {
   .brand-mark {
     width: 40px;
     height: 40px;
-    border-radius: 12px;
-    font-size: 0.95rem;
   }
 
   .form-header h1 {
