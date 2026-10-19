@@ -1,0 +1,778 @@
+.faculty-transition.student-transition {
+  box-sizing: border-box;
+  padding: 0;
+  background: var(--page-bg, var(--text-light));
+  color: var(--text);
+}
+
+.faculty-transition.student-transition .faculty-skeleton-shape {
+  flex: 0 0 auto;
+}
+
+.faculty-transition.student-transition .student-home-layout {
+  display: grid;
+  width: 100%;
+  align-content: start;
+  gap: 22px;
+  padding: 24px 5% 48px;
+}
+
+.student-home-announcement,
+.student-home-intro,
+.student-home-services,
+.student-home-actions,
+.student-home-summary,
+.student-home-service-card,
+.student-home-action-card,
+.student-availability-panel,
+.student-faculty-card,
+.student-requests-panel,
+.student-request-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--text-light);
+}
+
+.student-home-announcement {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 18px;
+  min-height: 94px;
+  padding: 20px 28px;
+}
+
+.student-home-announcement .announcement-icon,
+.student-home-summary .summary-chip,
+.student-home-service-card .service-icon,
+.student-home-action-card .action-icon,
+.student-faculty-card .faculty-avatar,
+.student-request-card .request-avatar {
+  border-radius: 12px;
+  background: var(--accent-soft);
+}
+
+.student-home-announcement .announcement-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.student-home-announcement-copy,
+.student-home-intro-copy,
+.student-home-summary,
+.student-home-service-copy,
+.student-home-service-details,
+.student-home-services-heading,
+.student-home-actions-heading,
+.student-home-action-card,
+.student-home-action-heading,
+.student-home-action-footer,
+.student-dashboard-hero,
+.student-dashboard-heading,
+.student-dashboard-control,
+.student-faculty-card,
+.student-faculty-name-copy,
+.student-faculty-status,
+.student-requests-intro-copy,
+.student-requests-heading,
+.student-requests-filter,
+.student-request-info,
+.student-request-faculty,
+.student-request-faculty-copy {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.student-home-announcement .announcement-title {
+  width: 170px;
+  height: 9px;
+}
+
+.student-home-announcement .announcement-text {
+  width: min(580px, 90%);
+  height: 11px;
+}
+
+.student-home-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  align-items: center;
+  gap: 24px;
+  min-height: 292px;
+  padding: 36px;
+}
+
+.student-home-intro-copy {
+  max-width: 52ch;
+  gap: 14px;
+}
+
+.student-transition .eyebrow {
+  width: 110px;
+  height: 8px;
+}
+
+.student-home-intro-copy .welcome-title {
+  width: min(450px, 85%);
+  height: 34px;
+}
+
+.student-home-intro-copy .intro-text {
+  width: 95%;
+  height: 11px;
+}
+
+.student-home-intro-copy .intro-text.medium {
+  width: 74%;
+}
+
+.student-home-summary {
+  align-content: start;
+  gap: 12px;
+  min-height: 220px;
+  padding: 24px;
+  border-radius: 24px;
+  background: var(--accent-soft);
+}
+
+.student-home-summary .summary-chip {
+  width: 122px;
+  height: 25px;
+  margin-bottom: 8px;
+}
+
+.student-home-stat {
+  display: grid;
+  gap: 7px;
+  padding: 8px 0 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.student-home-stat:last-of-type {
+  border-bottom: 0;
+}
+
+.student-home-stat .stat-value {
+  width: 54px;
+  height: 27px;
+}
+
+.student-home-stat .stat-label {
+  width: 72%;
+  height: 9px;
+}
+
+.student-home-summary .summary-college {
+  width: 62%;
+  height: 8px;
+  margin-top: 2px;
+}
+
+.faculty-transition.student-transition .student-home-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
+  grid-template-areas: "services actions";
+  align-items: start;
+  gap: 22px;
+}
+
+.student-home-services,
+.student-home-actions {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  padding: 28px;
+  border-radius: 24px;
+}
+
+.student-home-services {
+  grid-area: services;
+}
+
+.student-home-actions {
+  grid-area: actions;
+}
+
+.student-home-services-heading,
+.student-home-actions-heading {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.student-home-services-heading .section-title,
+.student-home-actions-heading .section-title {
+  width: 145px;
+  height: 15px;
+}
+
+.student-home-services-heading .section-copy,
+.student-home-actions-heading .section-copy {
+  width: 82%;
+  height: 9px;
+}
+
+.student-home-services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.student-home-service-card {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  min-height: 195px;
+  padding: 20px;
+  border-radius: 18px;
+}
+
+.student-home-service-heading,
+.student-home-action-heading,
+.student-request-faculty {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.student-home-service-card .service-icon,
+.student-home-action-card .action-icon {
+  width: 38px;
+  height: 38px;
+}
+
+.student-home-service-copy {
+  flex: 1;
+  padding-top: 2px;
+}
+
+.student-home-service-copy .service-title {
+  width: 78%;
+  height: 11px;
+}
+
+.student-home-service-copy .service-subtitle {
+  width: 92%;
+  height: 8px;
+}
+
+.student-home-service-details {
+  gap: 7px;
+}
+
+.student-home-service-details .service-detail-label {
+  width: 48px;
+  height: 7px;
+}
+
+.student-home-service-details .service-detail-value {
+  width: 86%;
+  height: 8px;
+  margin-bottom: 4px;
+}
+
+.student-home-service-card .service-link {
+  width: 68%;
+  height: 9px;
+  margin-top: auto;
+}
+
+.student-home-actions {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.student-home-action-card {
+  min-height: 200px;
+  padding: 24px;
+  border-radius: 22px;
+  background: var(--accent-soft);
+}
+
+.student-home-action-card .action-title {
+  width: 68%;
+  height: 13px;
+  align-self: center;
+}
+
+.student-home-action-card .action-copy {
+  width: 95%;
+  height: 9px;
+  margin-top: 4px;
+}
+
+.student-home-action-card .action-copy.medium {
+  width: 72%;
+  margin-top: 0;
+}
+
+.student-home-action-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+}
+
+.student-home-action-footer .action-link {
+  width: 96px;
+  height: 9px;
+}
+
+.student-home-action-footer .action-arrow {
+  width: 12px;
+  height: 12px;
+}
+
+.faculty-transition.student-transition .student-dashboard-layout {
+  display: grid;
+  width: min(1440px, calc(100% - 48px));
+  align-content: start;
+  gap: 28px;
+  margin: 0 auto;
+  padding: 38px 0 64px;
+}
+
+.student-dashboard-hero {
+  gap: 14px;
+}
+
+.student-dashboard-hero .hero-copy {
+  width: min(600px, 88%);
+  height: 12px;
+}
+
+.student-dashboard-hero .hero-copy.medium {
+  width: min(500px, 72%);
+}
+
+.student-availability-panel {
+  display: grid;
+  gap: 24px;
+  padding: 26px;
+  border-radius: 24px;
+}
+
+.student-dashboard-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 0;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.student-dashboard-heading {
+  min-width: 210px;
+}
+
+.student-dashboard-heading .section-title {
+  width: 220px;
+  height: 17px;
+}
+
+.student-dashboard-heading .section-copy {
+  width: 250px;
+  max-width: 100%;
+  height: 9px;
+}
+
+.student-dashboard-controls {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.9fr) auto minmax(190px, 1fr);
+  align-items: end;
+  gap: 12px;
+  width: min(100%, 620px);
+}
+
+.student-dashboard-control {
+  gap: 7px;
+}
+
+.student-dashboard-control .control-label {
+  width: 66px;
+  height: 8px;
+}
+
+.student-dashboard-control .control-input {
+  width: 100%;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--text-light);
+}
+
+.student-dashboard-toggle {
+  display: flex;
+  align-items: center;
+  align-self: end;
+  gap: 9px;
+  min-height: 42px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.student-dashboard-toggle .toggle-track {
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--border);
+}
+
+.student-dashboard-toggle .toggle-label {
+  width: 82px;
+  height: 9px;
+}
+
+.student-faculty-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.student-faculty-card {
+  display: grid;
+  min-height: 224px;
+  align-content: start;
+  gap: 13px;
+  padding: 22px 20px 18px 24px;
+  border-radius: 17px;
+}
+
+.student-faculty-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.student-faculty-card .faculty-avatar,
+.student-request-card .request-avatar {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+}
+
+.student-faculty-name-copy {
+  flex: 1;
+  gap: 7px;
+  padding-top: 3px;
+}
+
+.student-faculty-name-copy .faculty-name {
+  width: 82%;
+  height: 10px;
+}
+
+.student-faculty-name-copy .faculty-college {
+  width: 66%;
+  height: 8px;
+}
+
+.student-faculty-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.student-faculty-status .status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.student-faculty-status .status-label {
+  width: 76px;
+  height: 9px;
+}
+
+.student-faculty-card .faculty-note {
+  width: 90%;
+  height: 8px;
+  margin-left: 16px;
+}
+
+.student-faculty-card .faculty-meta {
+  width: 82%;
+  height: 7px;
+  margin-top: 2px;
+}
+
+.student-faculty-card .faculty-action {
+  width: 100%;
+  height: 38px;
+  margin-top: 7px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+}
+
+.faculty-transition.student-transition .student-requests-layout {
+  display: grid;
+  width: min(1200px, calc(100% - 32px));
+  align-content: start;
+  gap: 24px;
+  margin: 0 auto;
+  padding-bottom: 32px;
+}
+
+.student-requests-intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.student-requests-intro-copy .requests-title {
+  width: min(380px, 88%);
+  height: 28px;
+}
+
+.student-requests-intro-copy .requests-description {
+  width: min(460px, 90%);
+  height: 10px;
+}
+
+.student-requests-intro .return-button {
+  width: 150px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 10px;
+  background: var(--primary);
+}
+
+.student-requests-panel {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+  border-radius: 18px;
+}
+
+.student-requests-toolbar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 0;
+}
+
+.student-requests-heading .section-title {
+  width: 120px;
+  height: 17px;
+}
+
+.student-requests-heading .request-count {
+  width: 82px;
+  height: 9px;
+}
+
+.student-requests-filter {
+  gap: 7px;
+}
+
+.student-requests-filter .control-label {
+  width: 120px;
+  height: 8px;
+}
+
+.student-requests-filter .control-input {
+  width: 180px;
+  height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--text-light);
+}
+
+.student-requests-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+.student-request-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-height: 170px;
+  padding: 20px;
+  border-radius: 14px;
+  background: var(--text-light);
+}
+
+.student-request-status {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+.student-request-status .request-status-badge {
+  width: 82px;
+  height: 25px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+}
+
+.student-request-status .request-status-action {
+  width: 96px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.student-request-info {
+  min-width: 0;
+  flex: 1 1 auto;
+  gap: 9px;
+}
+
+.student-request-faculty {
+  align-items: center;
+}
+
+.student-request-faculty-copy {
+  gap: 6px;
+}
+
+.student-request-faculty-copy .faculty-label {
+  width: 80px;
+  height: 7px;
+}
+
+.student-request-faculty-copy .faculty-name {
+  width: 140px;
+  max-width: 100%;
+  height: 11px;
+}
+
+.student-request-info .appointment-label {
+  width: 76px;
+  height: 7px;
+}
+
+.student-request-info .appointment-value {
+  width: 82%;
+  height: 9px;
+}
+
+.student-request-info .request-type {
+  width: 62%;
+  height: 8px;
+}
+
+.student-request-info .request-message {
+  width: 90%;
+  height: 8px;
+  margin-top: 4px;
+}
+
+.student-request-card .request-id {
+  width: 60px;
+  height: 8px;
+  flex: 0 0 60px;
+}
+
+@media (max-width: 900px) {
+  .faculty-transition.student-transition .student-home-content {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "actions"
+      "services";
+  }
+
+  .student-dashboard-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .student-dashboard-controls {
+    width: 100%;
+  }
+}
+
+@media (max-width: 767px) {
+  .student-requests-intro {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .student-requests-intro .return-button {
+    width: 100%;
+  }
+
+  .student-requests-panel {
+    padding: 16px;
+  }
+
+  .student-request-card {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .student-request-status {
+    display: flex;
+    align-items: center;
+  }
+}
+
+@media (max-width: 720px) {
+  .student-home-intro {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    padding: 24px;
+  }
+
+  .student-home-services-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .faculty-transition.student-transition .student-dashboard-layout {
+    width: min(100% - 24px, 560px);
+    gap: 20px;
+    padding-top: 26px;
+  }
+
+  .student-faculty-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .faculty-transition.student-transition .student-home-layout {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .student-home-intro,
+  .student-home-services,
+  .student-home-actions {
+    padding: 20px;
+  }
+
+  .student-home-announcement {
+    padding: 18px;
+  }
+}
+
+@media (min-width: 768px) {
+  .student-requests-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1200px) {
+  .student-requests-toolbar {
+    align-items: center;
+    flex-direction: row;
+  }
+
+  .student-requests-heading {
+    margin-right: auto;
+  }
+
+  .student-requests-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

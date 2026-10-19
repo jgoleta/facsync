@@ -1,12 +1,13 @@
 {% load static %}
 <link rel="stylesheet" href="{% static 'faculty/css/loading.css' %}?v=20261004">
+<link rel="stylesheet" href="{% static 'students/css/studentLoading.css' %}?v=20261019">
 <script id="student-navigation-destinations" type="application/json">
 {
-  "{% url 'students:home' %}": ["Home", "dashboard"],
-  "{% url 'students:dashboard' %}": ["Faculty directory", "dashboard"],
+  "{% url 'students:home' %}": ["Home", "student-home"],
+  "{% url 'students:dashboard' %}": ["Faculty directory", "student-dashboard"],
   "{% url 'students:view_schedule' %}": ["Faculty schedule", "calendar"],
-  "{% url 'students:consultation_requests' %}": ["Consultation requests", "queue"],
+  "{% url 'students:consultation_requests' %}": ["Consultation requests", "student-requests"],
   "{% url 'students:profile' %}": ["Profile", "profile"]
 }
 </script>
-<script src="{% static 'faculty/js/loading.js' %}?v=20261004-students"></script>
+<script src="{% static 'faculty/js/loading.js' %}?v=20261019-student-skeletons"></script>

@@ -73,6 +73,74 @@
       ])
     ]);
   }
+  function studentHomePage() {
+    const services = Array.from({ length: 4 }, () => block('student-home-service-card', [
+      block('student-home-service-heading', [shape('service-icon'), block('student-home-service-copy', [shape('service-title'), shape('service-subtitle')])]),
+      block('student-home-service-details', [shape('service-detail-label'), shape('service-detail-value'), shape('service-detail-label'), shape('service-detail-value')]),
+      shape('service-link')
+    ]));
+    const actions = Array.from({ length: 2 }, () => block('student-home-action-card', [
+      block('student-home-action-heading', [shape('action-icon'), shape('action-title')]),
+      block('action-copy'),
+      block('action-copy medium'),
+      block('student-home-action-footer', [shape('action-link'), shape('action-arrow')])
+    ]));
+    const stats = Array.from({ length: 2 }, () => block('student-home-stat', [shape('stat-value'), shape('stat-label')]));
+    return block('student-home-layout', [
+      block('student-home-announcement', [shape('announcement-icon'), block('student-home-announcement-copy', [shape('announcement-title'), shape('announcement-text')])]),
+      block('student-home-intro', [
+        block('student-home-intro-copy', [shape('eyebrow'), shape('welcome-title'), shape('intro-text'), shape('intro-text medium')]),
+        block('student-home-summary', [shape('summary-chip'), ...stats, shape('summary-college')])
+      ]),
+      block('student-home-content', [
+        block('student-home-services', [block('student-home-services-heading', [shape('section-title'), shape('section-copy')]), block('student-home-services-grid', services)]),
+        block('student-home-actions', [block('student-home-actions-heading', [shape('section-title'), shape('section-copy')]), ...actions])
+      ])
+    ]);
+  }
+  function studentDashboardPage() {
+    const facultyCards = Array.from({ length: 4 }, () => block('student-faculty-card', [
+      block('student-faculty-identity', [shape('faculty-avatar'), block('student-faculty-name-copy', [shape('faculty-name'), shape('faculty-college')])]),
+      block('student-faculty-status', [shape('status-dot'), shape('status-label')]),
+      shape('faculty-note'),
+      shape('faculty-meta'),
+      shape('faculty-action')
+    ]));
+    return block('student-dashboard-layout', [
+      block('student-dashboard-hero', [shape('eyebrow'), shape('hero-copy'), shape('hero-copy medium')]),
+      block('student-availability-panel', [
+        block('student-dashboard-toolbar', [
+          block('student-dashboard-heading', [shape('section-title'), shape('section-copy')]),
+          block('student-dashboard-controls', [
+            block('student-dashboard-control', [shape('control-label'), shape('control-input')]),
+            block('student-dashboard-toggle', [shape('toggle-track'), shape('toggle-label')]),
+            block('student-dashboard-control', [shape('control-label'), shape('control-input')])
+          ])
+        ]),
+        block('student-faculty-grid', facultyCards)
+      ])
+    ]);
+  }
+  function studentRequestsPage() {
+    const requests = Array.from({ length: 4 }, () => block('student-request-card', [
+      block('student-request-status', [shape('request-status-badge'), shape('request-status-action')]),
+      block('student-request-info', [
+        block('student-request-faculty', [shape('request-avatar'), block('student-request-faculty-copy', [shape('faculty-label'), shape('faculty-name')])]),
+        shape('appointment-label'),
+        shape('appointment-value'),
+        shape('request-type'),
+        shape('request-message')
+      ]),
+      shape('request-id')
+    ]));
+    return block('student-requests-layout', [
+      block('student-requests-intro', [block('student-requests-intro-copy', [shape('eyebrow'), shape('requests-title'), shape('requests-description')]), shape('return-button')]),
+      block('student-requests-panel', [
+        block('student-requests-toolbar', [block('student-requests-heading', [shape('section-title'), shape('request-count')]), block('student-requests-filter', [shape('control-label'), shape('control-input')])]),
+        block('student-requests-grid', requests)
+      ])
+    ]);
+  }
   function skeleton(title, type, fullPage = false) {
     const box = document.createElement('section');
     box.className = `faculty-skeleton faculty-skeleton-${type}`;
@@ -80,7 +148,7 @@
     status.setAttribute('role', 'status');
     status.textContent = `Loading ${title}…`;
     box.append(status);
-    const layout = fullPage && type === 'calendar' ? schedulePage() : fullPage && type === 'dashboard' ? dashboardPage() : fullPage && type === 'profile' ? profilePage() : (() => {
+    const layout = fullPage && type === 'calendar' ? schedulePage() : fullPage && type === 'dashboard' ? dashboardPage() : fullPage && type === 'profile' ? profilePage() : fullPage && type === 'student-home' ? studentHomePage() : fullPage && type === 'student-dashboard' ? studentDashboardPage() : fullPage && type === 'student-requests' ? studentRequestsPage() : (() => {
       const shapes = document.createElement('div');
       shapes.className = 'faculty-skeleton-shapes';
       for (let i = 0; i < (type === 'calendar' ? 35 : 4); i++) {
@@ -92,6 +160,7 @@
     })();
     layout.setAttribute('aria-hidden', 'true');
     box.append(layout);
+    if (type.startsWith('student-')) box.classList.add('student-transition');
     return box;
   }
   window.facultyInitialLoading = window.pageInitialLoading = (region, title, type) => {
