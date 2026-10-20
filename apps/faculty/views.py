@@ -133,6 +133,7 @@ def _event_values(payload, existing=None):
         raise ValueError('Invalid day of week')
 
     def parse_month(value, field_name):
+        """Convert a month value to an integer and validate its range."""
         if value in (None, ''):
             return None
         try:
@@ -236,6 +237,7 @@ def _event_values(payload, existing=None):
 
 
 def _event_json(event):
+    """Serialize a schedule event with synchronization and human-readable status data."""
     return serialize_schedule_event(event, include_sync_metadata=True, human_status=True)
 
 
@@ -276,6 +278,7 @@ def _adjust_recurring_edit(event, values):
 
 
 def _consultation_event_json(consultation):
+    """Serialize a consultation as a faculty-facing calendar event."""
     return serialize_consultation_event(consultation, viewer='faculty')
 
 
@@ -496,6 +499,7 @@ def _parse_older_schedule_csv(csv_rows):
 
 
 def _schedule_csv_row(event):
+    """Convert a schedule event into the structure used by schedule CSV exports."""
     return {
         'OFFERING_ID': event.offering_id,
         'SUBJ_CODE': event.subject_code,
@@ -582,6 +586,7 @@ def dashboard(request):
 @login_required
 @role_required('faculty')
 def active_announcements(request):
+    """Return active announcements for the signed-in faculty member as JSON."""
     return JsonResponse({'announcements': get_active_announcements(request.user.college, audience='faculty')})
 
 
@@ -1826,6 +1831,7 @@ def api_consultation(request, request_id):
 @require_GET
 @never_cache
 def consultation_browser_api(request):
+    """Answer a faculty consultation-analytics question using the requested metric."""
     metric = request.GET.get('metric', '')
     if metric not in FACULTY_BROWSER_QUESTIONS:
         return JsonResponse({'error': 'Unknown consultation question.'}, status=400)
