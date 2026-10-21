@@ -334,6 +334,13 @@ function openEventModal(eventData, dateKey) {
   timeEl.textContent = formatEventTime(eventData);
   descriptionEl.textContent =
     eventData.description || "No description provided.";
+  if (eventData.isConsultation) {
+    descriptionEl.classList.add("consultation-note");
+    descriptionEl.setAttribute("data-note-clamp", "");
+    window.FacSyncConsultationNotes?.refresh(descriptionEl);
+  } else {
+    window.FacSyncConsultationNotes?.clearClamp(descriptionEl);
+  }
   modal.classList.remove("hidden");
 }
 

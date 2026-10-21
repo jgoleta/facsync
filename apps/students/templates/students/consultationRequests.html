@@ -8,6 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Consultations</title>
     <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}?v=20260930-cancellation-fix">
+    <link rel="stylesheet" href="{% static 'css/consultation_notes.css' %}?v=20261021-consultation-notes">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     {% include 'components/_student_navigation_loading.html' %}
 </head>
@@ -80,8 +81,8 @@
                                 {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
                             </p>
                             <p class="request-mode"><strong>Type:</strong> {{ consultation.get_consultation_type_display }}</p>
-                            {% if consultation.student_message %}<p class="request-message"><strong>Your Message:</strong> {{ consultation.student_message }}</p>{% endif %}
-                            {% if consultation.faculty_note %}<p class="faculty-note"><strong>Faculty Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
+                            {% if consultation.student_message %}<p class="request-message consultation-note" data-note-clamp><strong>Your Message:</strong> {{ consultation.student_message }}</p>{% endif %}
+                            {% if consultation.faculty_note %}<p class="faculty-note consultation-note" data-note-clamp><strong>Faculty Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
                         </div>
                         <p class="request-id"><span>Request ID</span> {{ consultation.request_id }}</p>
                     </li>
@@ -93,6 +94,7 @@
         </main>
     </div>
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
+    <script src="{% static 'js/consultation_notes.js' %}?v=20261021-consultation-notes"></script>
     <script src="{% static 'students/js/consultationRequests.js' %}?v=20260930-cancellation-fix"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>

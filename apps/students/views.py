@@ -23,6 +23,10 @@ from django.views.decorators.http import require_GET
 from django.views.decorators.cache import never_cache
 from apps.faculty.services.google_calendar import refresh_faculty_status
 from apps.faculty.services.google_calendar import GoogleCalendarError, delete_consultation_event
+from apps.faculty.constants import (
+    CONSULTATION_NOTE_LIMIT_ERROR,
+    CONSULTATION_NOTE_MAX_LENGTH,
+)
 from apps.faculty.models import GoogleCalendarConnection
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -134,6 +138,7 @@ def view_schedule(request):
     return render(request, 'students/viewSchedule.html', {
         'selected_faculty': faculty,
         'college_closure': closure,
+        'consultation_note_max_length': CONSULTATION_NOTE_MAX_LENGTH,
         'is_subscribed': bool(
             faculty and FacultyStatusSubscription.objects.filter(
                 student=request.user,
@@ -330,6 +335,10 @@ def api_consultation_requests(request):
     except (TypeError, ValueError, KeyError) as exc:
         return JsonResponse({'error': 'A valid faculty, date, and start time are required.'}, status=400)
 
+    student_message = str(payload.get('message') or '').strip()
+    if len(student_message) > CONSULTATION_NOTE_MAX_LENGTH:
+        return JsonResponse({'error': CONSULTATION_NOTE_LIMIT_ERROR}, status=400)
+
     faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id)
     refresh_faculty_status(faculty)
     if faculty.current_status == 'on_leave':
@@ -365,7 +374,7 @@ def api_consultation_requests(request):
         end_time=end_time,
         agenda=agenda,
         consultation_type=consultation_type,
-        student_message=str(payload.get('message') or '').strip(),
+        student_message=student_message,
     )
     create_notification(
         recipient=faculty.user,

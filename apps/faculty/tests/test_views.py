@@ -32,6 +32,97 @@ class FacultyViewTests(TestCase):
         )
         return faculty_user, student, faculty
 
+    def _make_consultation_note_fixture(self, suffix):
+        faculty_user = get_user_model().objects.create_user(
+            username=f'faculty-note-{suffix}',
+            password='test-password',
+            role='faculty',
+        )
+        student = get_user_model().objects.create_user(
+            username=f'student-note-{suffix}',
+            password='test-password',
+            role='student',
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id=f'faculty-note-{suffix}',
+            user=faculty_user,
+            college_id='CCS',
+        )
+        consultation = ConsultationRequest.objects.create(
+            request_id=f'consultation-note-{suffix}',
+            user=student,
+            faculty=faculty,
+            date=timezone.localdate(),
+            status='pending',
+        )
+        self.client.force_login(faculty_user)
+        return consultation
+
+    def test_faculty_consultation_note_accepts_200_characters(self):
+        consultation = self._make_consultation_note_fixture('200')
+        note = 'x' * 200
+
+        response = self.client.post(
+            reverse('faculty:api_consultation', args=[consultation.request_id]),
+            data=json.dumps({'status': 'approved', 'faculty_note': note}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        consultation.refresh_from_db()
+        self.assertEqual(consultation.faculty_note, note)
+
+    def test_faculty_consultation_note_rejects_201_characters(self):
+        consultation = self._make_consultation_note_fixture('201')
+
+        response = self.client.post(
+            reverse('faculty:api_consultation', args=[consultation.request_id]),
+            data=json.dumps({'status': 'approved', 'faculty_note': 'x' * 201}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error'], 'Note must be 200 characters or fewer.')
+        consultation.refresh_from_db()
+        self.assertEqual(consultation.status, 'pending')
+
+    def test_whitespace_only_faculty_note_is_saved_as_empty(self):
+        consultation = self._make_consultation_note_fixture('whitespace')
+
+        response = self.client.post(
+            reverse('faculty:api_consultation', args=[consultation.request_id]),
+            data=json.dumps({'status': 'approved', 'faculty_note': '  \n '}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        consultation.refresh_from_db()
+        self.assertEqual(consultation.faculty_note, '')
+
+    def test_existing_long_consultation_notes_render_on_faculty_dashboard(self):
+        consultation = self._make_consultation_note_fixture('existing-long')
+        consultation.student_message = 'unbroken' * 100
+        consultation.faculty_note = 'another-unbroken' * 100
+        consultation.save(update_fields=['student_message', 'faculty_note', 'status'])
+        ConsultationRequest.objects.create(
+            request_id='consultation-note-existing-completed',
+            user=consultation.user,
+            faculty=consultation.faculty,
+            date=timezone.localdate(),
+            status='completed',
+            student_message=consultation.student_message,
+            faculty_note=consultation.faculty_note,
+        )
+
+        response = self.client.get(reverse('faculty:dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, consultation.student_message)
+        self.assertContains(response, consultation.faculty_note)
+        self.assertContains(response, 'data-note-clamp')
+        self.assertContains(response, 'maxlength="200"')
+        self.assertContains(response, '0/200')
+
     def test_faculty_can_toggle_walk_in_availability(self):
         faculty_user, _student, faculty = self._make_faculty_and_student('toggle')
         self.client.force_login(faculty_user)

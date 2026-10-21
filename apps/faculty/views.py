@@ -53,6 +53,7 @@ from .models import (
     ScheduleEvent,
     WalkInQueue,
 )
+from .constants import CONSULTATION_NOTE_LIMIT_ERROR, CONSULTATION_NOTE_MAX_LENGTH
 
 
 SCHEDULE_CSV_HEADERS = [
@@ -568,6 +569,7 @@ def dashboard(request):
     return render(request, 'faculty/dashboardFaculty.html', {
         'analytics_questions': [{'metric': key, 'group': group, 'question': question} for key, (group, question) in FACULTY_BROWSER_QUESTIONS.items()],
         'faculty_profile': faculty_profile,
+        'consultation_note_max_length': CONSULTATION_NOTE_MAX_LENGTH,
         'current_status': current_status,
         'manual_status_override': faculty_profile.manual_status_override if faculty_profile else False,
         'manual_status_expires_at': faculty_profile.manual_status_expires_at.isoformat() if faculty_profile and faculty_profile.manual_status_expires_at else '',
@@ -1680,6 +1682,9 @@ def api_consultation(request, request_id):
         allowed_statuses = {'approved', 'declined', 'cancelled', 'completed'}
         if new_status not in allowed_statuses:
             return JsonResponse({'error': 'Invalid consultation status.'}, status=400)
+        faculty_note = str(payload.get('faculty_note') or '').strip()
+        if len(faculty_note) > CONSULTATION_NOTE_MAX_LENGTH:
+            return JsonResponse({'error': CONSULTATION_NOTE_LIMIT_ERROR}, status=400)
         old_status = consultation.status
         allowed_transitions = {
             'pending': {'approved', 'declined', 'cancelled'},
@@ -1705,7 +1710,7 @@ def api_consultation(request, request_id):
         if new_status == 'approved' and not consultation.approved_at:
             consultation.approved_at = timezone.now()
         if 'faculty_note' in payload:
-            consultation.faculty_note = str(payload.get('faculty_note') or '').strip()
+            consultation.faculty_note = faculty_note
 
         if new_status == 'approved' and not rejecting_cancellation:
             consultation.calendar_sync_status = 'not_configured'

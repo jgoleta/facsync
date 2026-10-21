@@ -8,6 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
     <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20261014-legend-width">
+    <link rel="stylesheet" href="{% static 'css/consultation_notes.css' %}?v=20261021-consultation-notes">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     <link rel="stylesheet" href="{% static 'css/announcements.css' %}?v=20260917-faculty-announcement-ui">
     <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}?v=20261014-modal">
@@ -119,7 +120,7 @@
                                 <p class="request-type"><strong>Consultation Type:</strong>
                                     {% if consultation.consultation_type == 'online' %}Online{% else %}Face-to-Face{% endif %}
                                 </p>
-                                <p class="request-message"><strong>Message:</strong> {{ consultation.student_message|default:"No message provided." }}</p>
+                                <p class="request-message consultation-note" data-note-clamp><strong>Message:</strong> {{ consultation.student_message|default:"No message provided." }}</p>
                                 {% if consultation.status == 'cancellation_requested' or consultation.get_status_display == 'Cancellation Requested' %}
                                 <p class="faculty-note">The student requested cancellation. Accept to cancel the appointment, or decline to keep it scheduled.</p>
                                 <div class="action-buttons">
@@ -129,8 +130,8 @@
                                 {% endif %}
                             </div>
                             <div class="request-actions">
-                                {% if consultation.faculty_note %}<p class="faculty-note"><strong>Your Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
-                                {% if consultation.status == 'pending' or consultation.status == 'cancellation_requested' or consultation.get_status_display == 'Cancellation Requested' %}<textarea placeholder="Add an optional note..."></textarea>{% endif %}
+                                {% if consultation.faculty_note %}<p class="faculty-note consultation-note" data-note-clamp><strong>Your Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
+                                {% if consultation.status == 'pending' or consultation.status == 'cancellation_requested' or consultation.get_status_display == 'Cancellation Requested' %}<div class="consultation-note-input"><textarea maxlength="{{ consultation_note_max_length }}" data-note-input placeholder="Add an optional note..."></textarea><span class="consultation-note-counter" data-note-counter aria-live="polite">0/{{ consultation_note_max_length }}</span></div>{% endif %}
                                 <div class="action-buttons">
                                     {% if consultation.status == 'pending' %}
                                     <button type="button" class="btn-approve" data-action="approved">Approve</button>
@@ -242,10 +243,10 @@
                         {% if consultation.consultation_type == 'online' %}Online{% else %}Face-to-Face{% endif %}
                     </p>
                     {% if consultation.student_message %}
-                    <p class="completed-message"><strong>Message:</strong> {{ consultation.student_message }}</p>
+                    <p class="completed-message consultation-note" data-note-clamp><strong>Message:</strong> {{ consultation.student_message }}</p>
                     {% endif %}
                     {% if consultation.faculty_note %}
-                    <p class="completed-note"><strong>Your note:</strong> {{ consultation.faculty_note }}</p>
+                    <p class="completed-note consultation-note" data-note-clamp><strong>Your note:</strong> {{ consultation.faculty_note }}</p>
                     {% endif %}
                 </li>
                 {% empty %}
@@ -256,6 +257,7 @@
     </div>
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
+    <script src="{% static 'js/consultation_notes.js' %}?v=20261021-consultation-notes"></script>
     <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20261002-announcement-toggle"></script>
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
