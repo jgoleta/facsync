@@ -11,11 +11,13 @@
     saturday: 6,
   };
 
+  // Converts a date/time value into the calendar's five-character HH:MM format.
   function timeValue(value) {
     if (!value) return null;
     return String(value).split("T").pop().slice(0, 5);
   }
 
+  // Formats a 24-hour time value as a user-friendly 12-hour time with AM/PM.
   function formatTime(value) {
     if (!value) return "";
     const [hourValue, minuteValue] = String(value).split(":").map(Number);
@@ -25,6 +27,7 @@
     return `${hour}:${String(minuteValue).padStart(2, "0")} ${period}`;
   }
 
+  // Maps an API event into the consistent shape used by the calendar UI.
   function normalizeEvent(event) {
     return {
       id: event.id,
@@ -47,16 +50,19 @@
     };
   }
 
+  // Creates a local YYYY-MM-DD key without introducing UTC date shifts.
   function localDateKey(value) {
     return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
   }
 
+  // Checks whether a month falls within a normal or year-spanning month range.
   function monthIsIncluded(month, startMonth, endMonth) {
     if (!startMonth || !endMonth) return true;
     if (startMonth <= endMonth) return month >= startMonth && month <= endMonth;
     return month >= startMonth || month <= endMonth;
   }
 
+  // Generates the visible date keys for a recurring event around the reference month.
   function recurringDateKeys(
     dayOfWeek,
     startMonth,
@@ -83,6 +89,7 @@
     return dates;
   }
 
+  // Returns either the recurring occurrence dates or the date of a one-time event.
   function eventDateKeys(event, referenceDate) {
     if (event.isRecurring) {
       return recurringDateKeys(
@@ -98,6 +105,7 @@
     return event.date ? [String(event.date).split("T")[0]] : [];
   }
 
+  // Groups events by date, sorts events within each date, and sorts the date groups.
   function buildSchedule(events, referenceDate = new Date()) {
     const byDate = {};
     (events || []).forEach((rawEvent) => {
@@ -116,6 +124,7 @@
       .sort((a, b) => new Date(a.date) - new Date(b.date));
   }
 
+  // Builds accessible text describing an event's title, date, and time.
   function activityLabel(event, monthName, day) {
     const time = event.startTime && event.endTime
       ? `${formatTime(event.startTime)} - ${formatTime(event.endTime)}`

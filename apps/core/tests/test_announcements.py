@@ -45,13 +45,13 @@ class AnnouncementTests(TestCase):
                 self.client.force_login(user)
                 self.assertEqual(self.messages_at(route), expected)
 
-    def test_public_endpoint_is_both_only_across_colleges_for_every_visitor(self):
+    def test_public_endpoint_does_not_expose_announcements_to_any_visitor(self):
         for user in (None, self.student, self.faculty):
             with self.subTest(user=user):
                 self.client.logout()
                 if user:
                     self.client.force_login(user)
-                self.assertEqual(self.messages_at('core:active_announcements'), {'both', 'other-college'})
+                self.assertEqual(self.messages_at('core:active_announcements'), set())
 
     def test_role_endpoints_require_correct_role(self):
         for route in ('students:active_announcements', 'faculty:active_announcements'):
@@ -92,10 +92,13 @@ class AnnouncementTests(TestCase):
                 if user:
                     self.client.force_login(user)
                 response = self.client.get(reverse(route))
-                self.assertContains(response, 'id="announcementModal"')
-                self.assertContains(response, f'data-fetch-url="{reverse(endpoint)}"')
-                self.assertContains(response, 'js/announcements.js')
-                if expected is not None:
+                if route == 'core:dashboard_public':
+                    self.assertNotContains(response, 'id="announcementModal"')
+                    self.assertNotContains(response, 'js/announcements.js')
+                else:
+                    self.assertContains(response, 'id="announcementModal"')
+                    self.assertContains(response, f'data-fetch-url="{reverse(endpoint)}"')
+                    self.assertContains(response, 'js/announcements.js')
                     self.assertEqual({a['message'] for a in response.context['announcements']}, expected)
 
     def test_faculty_dashboard_keeps_expired_faculty_announcements(self):

@@ -15,8 +15,8 @@ from .models import Notification
 from apps.core.colleges import get_college_label
 
 def active_announcements(request):
-    from .services import get_active_announcements
-    return JsonResponse({'announcements': get_active_announcements(audience='both')})
+    """Keep college announcements unavailable to visitors of the public dashboard."""
+    return JsonResponse({'announcements': []})
 
 
 def landing_page(request):

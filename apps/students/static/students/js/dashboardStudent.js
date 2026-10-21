@@ -229,7 +229,7 @@ function renderFacultyDirectory() {
         <button type="button" class="card-notify${faculty.is_subscribed ? " subscribed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-subscribed="${faculty.is_subscribed ? "true" : "false"}" aria-label="${faculty.is_subscribed ? "Stop receiving notifications for this faculty member" : "Receive notifications when this faculty member's status changes"}" title="${faculty.is_subscribed ? "Notifications enabled — click to unsubscribe" : "Notify me when this faculty member's status changes"}">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 22a2 2 0 0 0 2.2-1.7H9.8A2.3 2.3 0 0 0 12 22Zm7-5.4-1.4-1.7V10a5.6 5.6 0 0 0-4.4-5.5V3.8a1.2 1.2 0 1 0-2.4 0v.7A5.6 5.6 0 0 0 6.4 10v4.9L5 16.6v1h14v-1Z"/></svg>
         </button>
-        <div class="status-row"><span class="status-badge status-${faculty.status}" aria-hidden="true"></span>
+         <div class="status-row"><span class="status-badge status-${faculty.status}" aria-hidden="true"></span>
           <span class="status-label">${escapeHtml(getStatusLabel(faculty.status))}</span>
           <span class="status-note">${escapeHtml(faculty.walk_ins_enabled ? "Accepting walk-ins" : faculty.note || "Walk-ins unavailable")}</span>
         </div>
@@ -291,4 +291,8 @@ searchInput.addEventListener("input", () => {
 
 // Init
 loadCardsFromDOM();
-window.setInterval(refreshFacultyDirectory, 10000);
+// The public dashboard uses server-rendered cards and cannot access the
+// student-only faculty status endpoint. Keep background polling for students.
+if (!document.body.classList.contains("public-dashboard")) {
+  window.setInterval(refreshFacultyDirectory, 10000);
+}
