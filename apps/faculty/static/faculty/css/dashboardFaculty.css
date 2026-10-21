@@ -400,6 +400,7 @@ h2 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 16px;
+  align-items: start;
 }
 
 .request-item {
@@ -427,6 +428,12 @@ h2 {
 .request-info,
 .request-actions {
     min-width: 0;
+}
+
+.request-info,
+.request-actions,
+.request-item {
+    overflow-wrap: anywhere;
 }
 
 .request-info .student-name {
@@ -1240,6 +1247,11 @@ h2 {
 .completed-consultation-item .completed-message,
 .completed-consultation-item .completed-note {
   overflow-wrap: anywhere;
+}
+
+.completed-consultation-item,
+.completed-consultation-item > * {
+  min-width: 0;
 }
 
 .consultation-status.status-completed {

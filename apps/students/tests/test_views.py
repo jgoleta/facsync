@@ -75,6 +75,8 @@ class StudentScheduleTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Schedule Faculty')
+        self.assertContains(response, 'maxlength="200"')
+        self.assertContains(response, '0/200')
 
     def test_consultation_booking_requires_and_saves_agenda(self):
         self.client.force_login(self.student)
@@ -96,6 +98,76 @@ class StudentScheduleTests(TestCase):
         consultation = ConsultationRequest.objects.get()
         self.assertEqual(consultation.agenda, 'project_consultation')
         self.assertEqual(response.json()['agenda_label'], 'Project Consultation')
+
+    def test_consultation_booking_accepts_a_200_character_message(self):
+        self.client.force_login(self.student)
+        note = 'x' * 200
+        response = self.client.post(
+            reverse('students:api_consultation_requests'),
+            data=json.dumps({
+                'faculty_id': self.faculty.faculty_id,
+                'date': date.today().isoformat(),
+                'start_time': '10:00',
+                'agenda': 'project_consultation',
+                'message': note,
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(ConsultationRequest.objects.get().student_message, note)
+
+    def test_consultation_booking_rejects_a_201_character_message(self):
+        self.client.force_login(self.student)
+        response = self.client.post(
+            reverse('students:api_consultation_requests'),
+            data=json.dumps({
+                'faculty_id': self.faculty.faculty_id,
+                'date': date.today().isoformat(),
+                'start_time': '10:00',
+                'agenda': 'project_consultation',
+                'message': 'x' * 201,
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()['error'], 'Note must be 200 characters or fewer.')
+        self.assertFalse(ConsultationRequest.objects.exists())
+
+    def test_whitespace_only_consultation_message_is_saved_as_empty(self):
+        self.client.force_login(self.student)
+        response = self.client.post(
+            reverse('students:api_consultation_requests'),
+            data=json.dumps({
+                'faculty_id': self.faculty.faculty_id,
+                'date': date.today().isoformat(),
+                'start_time': '10:00',
+                'agenda': 'project_consultation',
+                'message': '   \n  ',
+            }),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(ConsultationRequest.objects.get().student_message, '')
+
+    def test_existing_long_consultation_notes_render_on_student_requests_page(self):
+        note = 'unbroken' * 100
+        ConsultationRequest.objects.create(
+            request_id='long-student-note',
+            user=self.student,
+            faculty=self.faculty,
+            date=date.today(),
+            student_message=note,
+        )
+        self.client.force_login(self.student)
+
+        response = self.client.get(reverse('students:consultation_requests'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, note)
+        self.assertContains(response, 'data-note-clamp')
 
     def test_consultation_booking_rejects_invalid_agenda(self):
         self.client.force_login(self.student)

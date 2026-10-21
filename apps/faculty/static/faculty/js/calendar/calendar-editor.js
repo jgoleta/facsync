@@ -646,6 +646,13 @@ document.addEventListener("DOMContentLoaded", () => {
     typeEl.className = `event-detail-type type-${eventData.type || "busy"}`;
     timeEl.textContent = formatEventTime(eventData);
     descriptionEl.textContent = eventData.description || "No description provided.";
+    if (eventData.isConsultation) {
+      descriptionEl.classList.add("consultation-note");
+      descriptionEl.setAttribute("data-note-clamp", "");
+      window.FacSyncConsultationNotes?.refresh(descriptionEl);
+    } else {
+      window.FacSyncConsultationNotes?.clearClamp(descriptionEl);
+    }
     if (locationEl) locationEl.textContent = eventData.location || "Not specified.";
     if (editBtn) editBtn.style.display = eventData.isConsultation ? "none" : "";
     removeBtn.style.display = eventData.isConsultation ? "none" : "";
