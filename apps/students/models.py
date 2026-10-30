@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 from apps.faculty.models import StatusHistory as FacultyStatusHistory
 from apps.faculty.models import WalkInQueue as FacultyWalkInQueue
+from apps.core.school_scope import SchoolScopedModel
 
 
 class StudentWalkInQueue(FacultyWalkInQueue):
@@ -20,7 +21,7 @@ class StudentStatusHistory(FacultyStatusHistory):
         verbose_name_plural = 'Student Status Histories'
 
 
-class FacultyStatusSubscription(models.Model):
+class FacultyStatusSubscription(SchoolScopedModel):
     student = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

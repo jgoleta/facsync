@@ -1,0 +1,22 @@
+{% extends 'systemadmin/base.html' %}
+{% block action %}<a class="btn-primary" href="{% url 'systemadmin:school_add' %}">+ Add School</a>{% endblock %}
+{% block content %}
+<section class="management-table-wrapper">
+    <div class="management-table-header"><div><p class="section-kicker">Institution directory</p><h2>Registered Schools</h2></div></div>
+    <div class="table-scroll"><table>
+        <thead><tr><th>School</th><th>Code</th><th>Email domains</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>{% for school in schools %}<tr>
+            <td>{{ school.name }}</td><td>{{ school.code }}</td>
+            <td>{% for domain in school.domains.all %}<span class="domain-item">{{ domain.domain }}</span>{% empty %}<span class="system-hint">No domain assigned</span>{% endfor %}</td>
+            <td><span class="system-status">{% if school.is_active %}Active{% else %}Suspended{% endif %}</span></td>
+            <td><div class="system-actions">
+                <a class="btn-secondary" href="{% url 'systemadmin:school_edit' school.pk %}">Edit</a>
+                <form method="post" action="{% url 'systemadmin:school_status' school.pk %}" {% if school.is_active %}data-confirm="Suspend {{ school.name }}? Its users will lose access until you reactivate the school."{% endif %}>
+                    {% csrf_token %}
+                    {% if school.is_active %}<button class="btn-secondary" name="action" value="suspend">Suspend</button>{% else %}<button class="btn-primary" name="action" value="reactivate">Reactivate</button>{% endif %}
+                </form>
+            </div></td>
+        </tr>{% empty %}<tr><td colspan="5" class="empty-state">No schools registered yet. Add a school to get started.</td></tr>{% endfor %}</tbody>
+    </table></div>
+</section>
+{% endblock %}

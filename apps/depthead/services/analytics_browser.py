@@ -1,4 +1,6 @@
 """Deterministic presentation of existing metrics; no AI or stored conversation."""
+
+from apps.core.school_scope import school_service, current_school
 from django.urls import reverse
 from apps.core.chat_presentation import answer, date_label, date_range, duration, hour_range, quantity
 from apps.core.department_updates import UPDATE_QUESTIONS, department_update_answer
@@ -26,6 +28,7 @@ ANALYTICS_QUESTIONS = {
 }
 
 
+@school_service
 def analytics_browser_answer(metric, college):
     if metric not in ANALYTICS_QUESTIONS:
         raise ValueError('Unknown analytics question')

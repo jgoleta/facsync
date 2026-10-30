@@ -152,6 +152,11 @@ activemq-data/
 
 # Environments
 .env
+.env.staging
+.env.staging.tmp
+.env.rehearsal*
+!.env.rehearsal.example
+.staging-backups/
 .envrc
 .venv
 env/

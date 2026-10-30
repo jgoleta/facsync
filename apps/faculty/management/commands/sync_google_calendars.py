@@ -14,6 +14,7 @@ class Command(BaseCommand):
         """Poll every enabled faculty calendar and report successful/failed syncs."""
         connections = GoogleCalendarConnection.objects.filter(
             user__faculty_profile__sync_enabled=True,
+            user__school__is_active=True,
         ).select_related('user')
         success = 0
         failures = 0

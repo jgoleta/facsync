@@ -1,0 +1,37 @@
+{% extends 'systemadmin/base.html' %}
+{% block action %}<a class="btn-primary" href="{% url 'systemadmin:invite_add' %}">+ Invite Super Admin</a>{% endblock %}
+{% block content %}
+<section class="management-table-wrapper">
+    <div class="management-table-header"><div><p class="section-kicker">Administrative directory</p><h2>Super Admin Accounts</h2></div></div>
+    <div class="table-scroll"><table>
+        <thead><tr><th>Name</th><th>Email</th><th>School</th><th>Account status</th><th>Actions</th></tr></thead>
+        <tbody>{% for admin in administrators %}<tr>
+            <td>{{ admin.get_full_name|default:admin.username }}</td><td>{{ admin.email }}</td>
+            <td>{{ admin.school.name|default:'Unassigned' }}{% if admin.school and not admin.school.is_active %} (suspended){% endif %}</td>
+            <td>{% if not admin.is_active %}Deactivated{% else %}{{ admin.get_account_status_display }}{% endif %}</td>
+            <td><div class="system-actions">
+                <a class="btn-secondary" href="{% url 'systemadmin:superadmin_edit' admin.pk %}">Edit</a>
+                {% if admin.school %}<form method="post" action="{% url 'systemadmin:superadmin_status' admin.pk %}" data-confirm="Change access for {{ admin.email }}?">
+                    {% csrf_token %}
+                    {% if admin.account_status == 'active' and admin.is_active %}<button class="btn-secondary" name="action" value="deactivate">Deactivate</button>{% else %}<button class="btn-primary" name="action" value="reactivate">Reactivate</button>{% endif %}
+                </form>{% endif %}
+            </div></td>
+        </tr>{% empty %}<tr><td colspan="5" class="empty-state">No Super Admin accounts yet. Invite one to a school.</td></tr>{% endfor %}</tbody>
+    </table></div>
+</section>
+<section class="management-table-wrapper">
+    <div class="management-table-header"><div><p class="section-kicker">Awaiting first login</p><h2>Super Admin Invitations</h2></div></div>
+    <div class="table-scroll"><table>
+        <thead><tr><th>Email</th><th>School</th><th>Invited</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>{% for invite in invitations %}<tr>
+            <td>{{ invite.email }}</td><td>{{ invite.school.name }}{% if not invite.school.is_active %} (suspended){% endif %}</td>
+            <td>{{ invite.created_at|date:'M j, Y' }}</td><td>{% if invite.is_active %}Pending login{% else %}Deactivated{% endif %}</td>
+            <td><div class="system-actions">
+                <a class="btn-secondary" href="{% url 'systemadmin:invite_edit' invite.pk %}">Edit</a>
+                {% if invite.is_active and invite.school.is_active %}<form method="post" action="{% url 'systemadmin:invite_resend' invite.pk %}">{% csrf_token %}<button class="btn-secondary">Resend email</button></form>{% endif %}
+                <form method="post" action="{% url 'systemadmin:invite_status' invite.pk %}">{% csrf_token %}{% if invite.is_active %}<button class="btn-secondary" name="action" value="deactivate">Deactivate</button>{% else %}<button class="btn-secondary" name="action" value="reactivate">Reactivate</button>{% endif %}</form>
+            </div></td>
+        </tr>{% empty %}<tr><td colspan="5" class="empty-state">No pending invitations.</td></tr>{% endfor %}</tbody>
+    </table></div>
+</section>
+{% endblock %}

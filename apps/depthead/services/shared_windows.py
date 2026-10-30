@@ -1,4 +1,6 @@
 """Read-only, college-scoped meeting planning for the current working week."""
+
+from apps.core.school_scope import school_service, current_school
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -28,6 +30,7 @@ def planning_week(now=None):
     }
 
 
+@school_service
 def find_shared_windows(college_code, day, duration_minutes, *, now=None):
     week = planning_week(now)
     if (not week['week_start'] <= day <= week['week_end']

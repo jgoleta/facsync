@@ -1,4 +1,6 @@
 """Student-only, read-only availability answers. No performance metrics or AI."""
+
+from apps.core.school_scope import school_service, current_school
 from zoneinfo import ZoneInfo
 from django.conf import settings
 from django.urls import reverse
@@ -19,6 +21,7 @@ QUESTIONS = {
 }
 
 
+@school_service
 def availability_answer(metric, college):
     if metric not in QUESTIONS:
         raise ValueError('Unknown availability question')

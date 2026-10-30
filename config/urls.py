@@ -26,6 +26,7 @@ urlpatterns = [
     path('faculty/', include('apps.faculty.urls')),
     path('depthead/', include('apps.depthead.urls')),
     path('superadmin/', include('apps.superadmin.urls')),
+    path('systemadmin/', include('apps.systemadmin.urls')),
 ]
 
 # The app check also keeps these URLs out of production/test settings, even

@@ -23,14 +23,14 @@
             {% if messages %}
             {% for message in messages %}
             {% if forloop.last %}
-            <p style="color: red;">{{ message }}</p>
+            <p role="alert" style="color: var(--danger);">{{ message }}</p>
             {% endif %}
             {% endfor %}
             {% endif %}
             
             <div class="form-header">
                 <h1>Create your account</h1>
-                <p>Register as a student to get started</p>
+                <p>Register with your school’s .edu.ph Google account to get started.</p>
             </div>
 
             <div class="role-selection">

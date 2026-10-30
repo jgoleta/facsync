@@ -14,7 +14,7 @@ from django.db import connections, transaction
 from django.db.models.deletion import Collector
 from django.utils import timezone
 
-from apps.core.models import College, User, DemoDataBatch
+from apps.core.models import College, User, DemoDataBatch, School
 from apps.faculty.models import FacultyProfile, ConsultationRequest, StatusHistory, ScheduleEvent, WalkInQueue
 
 
@@ -43,7 +43,7 @@ def build_plan(college, batch, now, seed):
         plan['core.User'].append(dict(
             username=username, email=f'{username}@example.invalid',
             first_name='Demo', last_name=f'{"Faculty" if faculty else "Student"} {number:02d}',
-            role='faculty' if faculty else 'student', college=college.code,
+            role='faculty' if faculty else 'student', college=college.code, school_id=college.school_id,
             account_status='active', is_active=True, profile_completed=True,
             is_staff=False, is_superuser=False,
             student_id=None if faculty else f'DEMO-{batch[:8]}-{number:02d}',
@@ -149,6 +149,7 @@ class Command(BaseCommand):
     requires_migrations_checks = False
 
     def add_arguments(self, parser):
+        parser.add_argument('--school', help='Required school code for new demo batches')
         parser.add_argument('--college', help='Exact existing college code or name')
         parser.add_argument('--batch', default='defense-demo')
         parser.add_argument('--seed', type=int, default=20261005)
@@ -184,9 +185,14 @@ class Command(BaseCommand):
                 return
             if not options['college']:
                 raise CommandError('--college is required.')
-            matches = College.objects.using(alias).filter(name__iexact=options['college'])
+            if not options['school']:
+                raise CommandError('--school is required; college codes are not globally unique.')
+            school = School.objects.using(alias).filter(code__iexact=options['school'], is_active=True).first()
+            if school is None:
+                raise CommandError('Choose an existing active school.')
+            matches = College.objects.using(alias).filter(school=school, name__iexact=options['college'])
             if not matches.exists():
-                matches = College.objects.using(alias).filter(code__iexact=options['college'])
+                matches = College.objects.using(alias).filter(school=school, code__iexact=options['college'])
             if matches.count() != 1:
                 raise CommandError('Specify exactly one existing College name or code.')
             college = matches.get()
@@ -252,7 +258,7 @@ class Command(BaseCommand):
             created[model._meta.label] = records
         return created
 
-    def undo(self, alias, key, dry):
+    def undo(self, alias, key, dry, models=MODELS):
         batches = DemoDataBatch.objects.using(alias)
         if not dry:
             batches = batches.select_for_update()
@@ -263,7 +269,7 @@ class Command(BaseCommand):
         records = []
         for label, snapshots in batch.manifest.items():
             model = apps.get_model(label)
-            if model not in MODELS:
+            if model not in models:
                 raise CommandError('Unexpected manifest model; undo refused.')
             query = model.objects.using(alias).filter(pk__in=snapshots)
             if not dry:
@@ -274,7 +280,7 @@ class Command(BaseCommand):
             owned[model] = set(str(r.pk) for r in rows)
             records.extend(rows)
         collector = Collector(using=alias)
-        for model in MODELS:
+        for model in models:
             collector.collect([r for r in records if type(r) is model])
         def verify(model, rows):
             if any(str(r.pk) not in owned.get(model, set()) for r in rows):
