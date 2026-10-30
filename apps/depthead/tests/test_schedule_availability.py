@@ -2,7 +2,8 @@ from datetime import date, datetime, time, timezone
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase, override_settings
+from apps.core.tests.school_case import SchoolTestCase as TestCase
+from django.test import override_settings
 from django.urls import reverse
 
 from apps.depthead.services.schedule_availability import get_schedule_availability

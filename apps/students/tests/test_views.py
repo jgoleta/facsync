@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from apps.core.tests.school_case import SchoolTestCase as TestCase
 from django.urls import reverse
 from django.utils import timezone
 from datetime import date, timedelta

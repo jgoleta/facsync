@@ -1,6 +1,6 @@
 from unittest.mock import Mock, patch
 
-from django.test import TestCase
+from apps.core.tests.school_case import SchoolTestCase as TestCase
 from django.urls import reverse
 
 from apps.core.models import User

@@ -3,7 +3,7 @@ from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from apps.core.tests.school_case import SchoolTestCase as TestCase
 
 from apps.core.models import College
 from apps.faculty.models import ConsultationRequest, FacultyProfile, StatusHistory, WalkInQueue

@@ -1,0 +1,356 @@
+{
+  "date": "2026-10-30",
+  "settings": "config.settings.test",
+  "database": "in-memory SQLite",
+  "suite": {
+    "tests": 391,
+    "failures": 39,
+    "errors": 9,
+    "seconds": 64.712,
+    "distinct_failing_methods": 45
+  },
+  "exact_names_subtests_outcomes_match": "docs/test-baselines/student-registration-phase.json",
+  "source_log": "test-diagnosis-baseline.log",
+  "source_log_sha256": "86b83dfd991a8360cb671050418f4c966a811b9ae4e8e058c1eb5abbca7b931c",
+  "application_files_changed": false,
+  "remote_databases_touched": false,
+  "experiments": [
+    {
+      "name": "correct_faculty_roles_only",
+      "tests": 18,
+      "passes": 10,
+      "failures": 6,
+      "errors": 2,
+      "note": "Schedule-page role fixed but missing-link assertion then fails."
+    },
+    {
+      "name": "correct_cancellation_faculty_login",
+      "tests": 1,
+      "passes": 1
+    },
+    {
+      "name": "refresh_recurrence_time_fixture",
+      "tests": 1,
+      "passes": 1
+    },
+    {
+      "name": "compare_bulk_delete_call_before_model_mutation",
+      "tests": 1,
+      "passes": 1
+    },
+    {
+      "name": "allow_current_chatbot_and_calendar_schema_additions",
+      "tests": 2,
+      "passes": 2
+    },
+    {
+      "name": "calendar_delete_with_terminal_status",
+      "tests": 4,
+      "passes": 4
+    },
+    {
+      "name": "capture_page_queries_bypass_only_budget_assertions",
+      "tests": 2,
+      "passes": 1,
+      "errors": 2,
+      "note": "Two subtest errors expose frozen helper status_period signature mismatch."
+    },
+    {
+      "name": "supply_realistic_recurring_google_mock",
+      "tests": 1,
+      "failures": 1,
+      "errors": 0,
+      "note": "Reveals old local-only expectation, no longer a mock-insert error."
+    }
+  ],
+  "failing_cases": [
+    {
+      "outcome": "ERROR",
+      "test": "apps.depthead.tests.test_schedule_availability.ScheduleAvailabilityTests.test_fragmented_free_time_does_not_meet_threshold",
+      "subtest": "",
+      "diagnosis": "Removed availability percentage/chart"
+    },
+    {
+      "outcome": "ERROR",
+      "test": "apps.depthead.tests.test_schedule_availability.ScheduleAvailabilityTests.test_no_records_excluded_from_ranking_but_included_in_percentage",
+      "subtest": "",
+      "diagnosis": "Removed availability percentage/chart"
+    },
+    {
+      "outcome": "ERROR",
+      "test": "apps.depthead.tests.test_schedule_availability.ScheduleAvailabilityTests.test_only_unscheduled_faculty_and_empty_college",
+      "subtest": "",
+      "diagnosis": "Removed availability percentage/chart"
+    },
+    {
+      "outcome": "ERROR",
+      "test": "apps.depthead.tests.test_schedule_availability.ScheduleAvailabilityTests.test_overlaps_clipping_and_exact_threshold",
+      "subtest": "",
+      "diagnosis": "Removed availability percentage/chart"
+    },
+    {
+      "outcome": "ERROR",
+      "test": "apps.depthead.tests.test_schedule_availability.ScheduleAvailabilityTests.test_recurring_and_dated_events_bucket_by_actual_occurrence",
+      "subtest": "",
+      "diagnosis": "Removed availability percentage/chart"
+    },
+    {
+      "outcome": "ERROR",
+      "test": "apps.depthead.tests.test_schedule_availability.ScheduleAvailabilityTests.test_stale_external_events_do_not_occupy_time_or_qualify_for_ranking",
+      "subtest": "",
+      "diagnosis": "Removed availability percentage/chart"
+    },
+    {
+      "outcome": "ERROR",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_recurring_event_stays_local_when_google_is_connected",
+      "subtest": "",
+      "diagnosis": "Old recurrence policy and unconfigured mock"
+    },
+    {
+      "outcome": "ERROR",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_recurring_google_payload_counts_every_matching_weekday",
+      "subtest": "",
+      "diagnosis": "String time fixture"
+    },
+    {
+      "outcome": "ERROR",
+      "test": "apps.students.tests.test_availability_browser.AvailabilityBrowserTests.test_ties_and_repeated_requests",
+      "subtest": "",
+      "diagnosis": "Removed student chatbot metric"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_analytics.CollegeAnalyticsTests.test_consultation_summary_status_distribution",
+      "subtest": "",
+      "diagnosis": "Six-status fixture versus five-status assertion"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_analytics_browser.AnalyticsBrowserTests.test_capacity_honestly_unavailable",
+      "subtest": "",
+      "diagnosis": "Old College Head chatbot contract"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_analytics_browser.AnalyticsBrowserTests.test_repeated_fetch_reuses_schedule_service_each_time",
+      "subtest": "",
+      "diagnosis": "Old College Head chatbot contract"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_analytics_browser.AnalyticsBrowserTests.test_scope_ignores_client_college",
+      "subtest": "",
+      "diagnosis": "Old College Head chatbot contract"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_analytics_browser.AnalyticsBrowserTests.test_widget_only_on_overview",
+      "subtest": "",
+      "diagnosis": "Old College Head chatbot contract"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_college_analytics_batching.CollegeAnalyticsBatchingTests.test_all_browser_answers_match_frozen_public_helpers",
+      "subtest": "(metric='approval_times')",
+      "diagnosis": "Approval-date population versus appointment-date population"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_college_analytics_batching.CollegeAnalyticsBatchingTests.test_fixed_query_budget_and_complete_page_parity_at_three_and_fifteen",
+      "subtest": "(page='peak_analytics', faculty_count=3)",
+      "diagnosis": "Fixed page queries: hourly snapshot"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_college_analytics_batching.CollegeAnalyticsBatchingTests.test_fixed_query_budget_and_complete_page_parity_at_three_and_fifteen",
+      "subtest": "(page='peak_analytics', faculty_count=15)",
+      "diagnosis": "Fixed page queries: hourly snapshot"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_consultation_topics.ConsultationTopicsTests.test_all_statuses_college_scope_and_scheduled_boundaries",
+      "subtest": "",
+      "diagnosis": "Six-status fixture versus five-status assertion"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_faculty_trends_batching.FacultyTrendsBatchingTests.test_output_parity_and_fixed_page_queries_at_three_and_fifteen",
+      "subtest": "(faculty_count=3)",
+      "diagnosis": "Fixed page queries plus incompatible frozen helper"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_faculty_trends_batching.FacultyTrendsBatchingTests.test_output_parity_and_fixed_page_queries_at_three_and_fifteen",
+      "subtest": "(faculty_count=15)",
+      "diagnosis": "Fixed page queries plus incompatible frozen helper"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_schedule_availability.ScheduleAvailabilityTests.test_charts_distinguish_tiny_zero_and_missing_rates",
+      "subtest": "",
+      "diagnosis": "Removed availability percentage/chart"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_schedule_availability.ScheduleAvailabilityTests.test_schedule_chart_renders_zero_as_zero_height",
+      "subtest": "",
+      "diagnosis": "Removed availability percentage/chart"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_schedule_availability.ScheduleAvailabilityTests.test_view_renders_tables_and_caveat",
+      "subtest": "",
+      "diagnosis": "Removed availability percentage/chart"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.depthead.tests.test_views.DeptheadViewTests.test_ai_endpoint_adds_local_daily_faculty_recommendation",
+      "subtest": "",
+      "diagnosis": "Old AI recommendation expectation"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_approving_consultation_creates_google_event",
+      "subtest": "",
+      "diagnosis": "Missing Faculty role in fixture"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_booking_page_renders",
+      "subtest": "",
+      "diagnosis": "Missing Faculty role in fixture"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_bulk_delete_removes_google_events_when_sync_is_disabled",
+      "subtest": "",
+      "diagnosis": "Deleted model mutates mock argument"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_calendar_sync_preference_requires_connection_and_can_be_disabled",
+      "subtest": "",
+      "diagnosis": "Missing Faculty role in fixture"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_csv_none_day_creates_time_only_month_range",
+      "subtest": "",
+      "diagnosis": "Legacy time-only CSV compatibility gap"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_dashboard_page_renders",
+      "subtest": "",
+      "diagnosis": "Missing Faculty role in fixture"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_expired_manual_status_defaults_to_available",
+      "subtest": "",
+      "diagnosis": "Explicit Not Set fallback policy"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_faculty_can_toggle_walk_in_availability",
+      "subtest": "",
+      "diagnosis": "Missing Faculty role in fixture"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_manual_status_can_be_cleared_back_to_calendar_status",
+      "subtest": "",
+      "diagnosis": "Missing Faculty role in fixture"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_profile_page_renders",
+      "subtest": "",
+      "diagnosis": "Missing Faculty role in fixture"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_profile_updates_editable_fields",
+      "subtest": "",
+      "diagnosis": "Missing Faculty role in fixture"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_reschedule_and_cancel_update_and_delete_google_event",
+      "subtest": "",
+      "diagnosis": "Missing Faculty role in fixture"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_schedule_page_renders",
+      "subtest": "",
+      "diagnosis": "Faculty role plus navigation assertion"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_schedule_template_download_has_canonical_csv_headers",
+      "subtest": "",
+      "diagnosis": "Old CSV template header"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_status_is_derived_from_an_active_system_calendar_event",
+      "subtest": "",
+      "diagnosis": "Explicit Not Set fallback policy"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.faculty.tests.test_views.FacultyViewTests.test_status_update_persists_status_note_and_history",
+      "subtest": "",
+      "diagnosis": "Missing Faculty role in fixture"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.students.tests.test_availability_browser.AvailabilityBrowserTests.test_every_answer_scoped_and_read_only",
+      "subtest": "",
+      "diagnosis": "Expanded student chatbot schema"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.students.tests.test_cancellation.CancellationTests.test_student_cancellation_removes_faculty_card_immediately",
+      "subtest": "",
+      "diagnosis": "Wrong login for faculty-card check"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.students.tests.test_consultation_deletion.ConsultationDeletionTests.test_calendar_failure_preserves_request",
+      "subtest": "",
+      "diagnosis": "Approved fixture never reaches calendar operation"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.students.tests.test_consultation_deletion.ConsultationDeletionTests.test_linked_calendar_event_removed",
+      "subtest": "",
+      "diagnosis": "Approved fixture never reaches calendar operation"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.students.tests.test_consultation_deletion.ConsultationDeletionTests.test_owner_can_delete_deletable_statuses_and_request_disappears",
+      "subtest": "(status='approved')",
+      "diagnosis": "Active requests deliberately protected from deletion"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.students.tests.test_consultation_deletion.ConsultationDeletionTests.test_owner_can_delete_deletable_statuses_and_request_disappears",
+      "subtest": "(status='cancellation_requested')",
+      "diagnosis": "Active requests deliberately protected from deletion"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.students.tests.test_views.StudentScheduleTests.test_student_consultation_list_includes_completed_and_excludes_declined_requests",
+      "subtest": "",
+      "diagnosis": "Declined history now displayed"
+    },
+    {
+      "outcome": "FAIL",
+      "test": "apps.students.tests.test_views.StudentScheduleTests.test_student_schedule_api_returns_faculty_events",
+      "subtest": "",
+      "diagnosis": "Expanded calendar response schema"
+    }
+  ]
+}

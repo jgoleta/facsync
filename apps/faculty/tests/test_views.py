@@ -2,7 +2,7 @@ import json
 from datetime import date, timedelta
 from zoneinfo import ZoneInfo
 
-from django.test import TestCase
+from apps.core.tests.school_case import SchoolTestCase as TestCase
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.contrib.auth import get_user_model

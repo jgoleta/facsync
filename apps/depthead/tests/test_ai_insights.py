@@ -4,7 +4,8 @@ import json
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from django.test import TestCase, override_settings
+from apps.core.tests.school_case import SchoolTestCase as TestCase
+from django.test import override_settings
 from django.utils import timezone
 
 from apps.depthead.models import CollegeAIInsight

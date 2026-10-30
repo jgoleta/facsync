@@ -2,7 +2,8 @@ from datetime import timedelta
 
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
-from django.test import TestCase, TransactionTestCase
+from apps.core.tests.school_case import SchoolTestCase as TestCase
+from django.test import TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 
@@ -93,6 +94,9 @@ class AnnouncementTests(TestCase):
                     self.client.force_login(user)
                 response = self.client.get(reverse(route))
                 if route == 'core:dashboard_public':
+                    self.assertEqual(response.status_code, 302)
+                    self.client.force_login(self.student)
+                    response = self.client.get(reverse(route))
                     self.assertNotContains(response, 'id="announcementModal"')
                     self.assertNotContains(response, 'js/announcements.js')
                 else:

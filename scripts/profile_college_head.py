@@ -19,7 +19,7 @@ from apps.faculty.models import FacultyProfile
 from debug_toolbar.panels.sql.panel import SQLPanel, _similar_query_key, _duplicate_query_key
 
 account = sys.argv[1] if len(sys.argv)>1 else 'testdepthead'
-user = User.objects.get(username=account, role='depthead')
+user = User.objects.get(username=account, role='depthead', school__is_active=True)
 # Exercise normal database-session middleware without persisting a login.
 # SessionStore.load returns the authenticated test identity in memory only.
 session_data = {SESSION_KEY: str(user.pk), BACKEND_SESSION_KEY: 'django.contrib.auth.backends.ModelBackend', HASH_SESSION_KEY: user.get_session_auth_hash()}
@@ -38,7 +38,7 @@ def collect(self, request, response):
         duplicate_repeats=sum(n-1 for n in duplicate.values() if n>1),
         slowest=[{'ms':round(q['duration'],3),'sql':q['raw_sql']} for q in sorted(queries,key=lambda q:q['duration'],reverse=True)[:5]],
         similar_patterns=[{'count':n,'sql':sql} for sql,n in similar.most_common() if n>1]))
-report={'account':account,'college':user.college,'active_faculty':FacultyProfile.objects.filter(college_id__iexact=user.college,user__role='faculty',user__account_status='active').count(),'session_note':'In-memory authenticated session; normal middleware and live DB. Session lookup itself excluded.','pages':[]}
+report={'account':account,'college':user.college,'active_faculty':FacultyProfile.objects.filter(user__school_id=user.school_id,college_id__iexact=user.college,user__role='faculty',user__account_status='active').count(),'session_note':'In-memory authenticated session; normal middleware and live DB. Session lookup itself excluded.','pages':[]}
 with patch.object(SessionStore,'load',return_value=session_data), patch.object(SQLPanel,'generate_stats',collect):
     for page in ('admin_dashboard','peak_analytics','faculty_trends','student_behavior'):
         for run in range(1,3):

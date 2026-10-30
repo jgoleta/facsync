@@ -2,7 +2,8 @@ from unittest.mock import MagicMock, patch
 
 import requests
 from django.core.mail import EmailMultiAlternatives
-from django.test import SimpleTestCase, TestCase, override_settings
+from apps.core.tests.school_case import SchoolTestCase as TestCase
+from django.test import SimpleTestCase, override_settings
 
 from apps.core.email_backends import BatchSendResult, BrevoEmailBackend, BrevoEmailError
 from apps.core.models import CollegeAnnouncement, OfficeClosure, User

@@ -1,7 +1,8 @@
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from apps.core.tests.school_case import SchoolTestCase as TestCase
+from django.test import Client
 from django.urls import reverse
 
 from apps.faculty.models import ConsultationRequest, FacultyProfile, GoogleCalendarConnection

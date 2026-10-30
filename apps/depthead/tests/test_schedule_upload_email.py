@@ -4,7 +4,8 @@ from unittest.mock import patch
 
 from django.core import mail
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from apps.core.tests.school_case import SchoolTestCase as TestCase
+from django.test import override_settings
 from django.urls import reverse
 
 from apps.core.models import User

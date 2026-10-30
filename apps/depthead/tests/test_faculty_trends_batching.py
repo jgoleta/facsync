@@ -1,7 +1,7 @@
 from datetime import datetime, date, timedelta, timezone
 from unittest.mock import patch
 
-from django.test import TestCase
+from apps.core.tests.school_case import SchoolTestCase as TestCase
 from django.urls import reverse
 
 from apps.core.models import User

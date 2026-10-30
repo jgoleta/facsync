@@ -36,17 +36,17 @@ def read_only(execute, sql, params, many, context):
 def main():
     with connection.execute_wrapper(read_only):
         roster_counts = {
-            row['college_id'].casefold(): row['total']
+            (row['user__school_id'], row['college_id'].casefold()): row['total']
             for row in FacultyProfile.objects.filter(user__role='faculty', user__account_status='active')
-            .values('college_id').annotate(total=Count('pk'))
+            .values('user__school_id', 'college_id').annotate(total=Count('pk'))
         }
-        heads = list(User.objects.filter(role='depthead', account_status='active').exclude(college=''))
-        user = max(heads, key=lambda head: roster_counts.get(head.college.casefold(), 0), default=None)
+        heads = list(User.objects.filter(role='depthead', account_status='active', school__is_active=True).exclude(college=''))
+        user = max(heads, key=lambda head: roster_counts.get((head.school_id, head.college.casefold()), 0), default=None)
         if user is None:
             raise RuntimeError('No active College Head account exists for profiling.')
         week = planning_week()
         day = week['week_end'] if week['ended'] else week['today']
-        faculty = _eligible_faculty(user.college)
+        faculty = _eligible_faculty(user.college, school=user.school)
         roster_count = faculty.count()
         event_count = eligible_schedule_events().filter(faculty__in=faculty).count()
         session = {SESSION_KEY: str(user.pk),

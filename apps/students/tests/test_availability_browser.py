@@ -1,6 +1,6 @@
 from datetime import time
 from unittest.mock import patch
-from django.test import TestCase
+from apps.core.tests.school_case import SchoolTestCase as TestCase
 from django.urls import reverse
 from django.utils import timezone
 from django.db import connection

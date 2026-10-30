@@ -1,5 +1,5 @@
 from unittest.mock import patch
-from django.test import TestCase
+from apps.core.tests.school_case import SchoolTestCase as TestCase
 from django.core import mail
 from apps.core.models import User, CollegeAnnouncement, OfficeClosure
 from apps.core.services import send_announcement_email_to_faculty, send_closure_email_to_faculty

@@ -7,11 +7,13 @@ from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import DatabaseError
-from django.test import Client, RequestFactory, SimpleTestCase, TestCase, override_settings
+from apps.core.tests.school_case import SchoolTestCase as TestCase
+from django.test import Client, RequestFactory, SimpleTestCase, override_settings
 from django.urls import reverse
 
 from apps.core.adapters import FacSyncSocialAdapter
-from apps.core.models import DeptHeadInvite, FacultyInvite, User
+from apps.core.models import DeptHeadInvite, FacultyInvite, SchoolDomain, User
+from apps.core.school_scope import school_scope
 from apps.core.profile_photos import (
     MAX_PHOTO_BYTES, PhotoStorage, PhotoStorageError, normalize_photo, safe_photo_url,
 )
@@ -215,18 +217,21 @@ class PhotoAccountTests(TestCase):
         self.assertEqual(self.user.uploaded_photo_url, UPLOAD)
 
     def test_student_and_invited_roles_capture_google_photo_at_signup(self):
+        with school_scope(None):
+            actor = User.objects.create_user(username='photo-domain-operator', role='systemadmin')
+        SchoolDomain(school=self.school, domain='adnu.edu.ph').save(actor=actor)
         for role in ['student', 'faculty', 'depthead']:
             with self.subTest(role=role):
-                email = f'{role}@example.com'
+                email = f'{role}@adnu.edu.ph' if role == 'student' else f'{role}@example.com'
                 request = RequestFactory().get('/')
                 request.session = {'registration_role': 'student'} if role == 'student' else {}
                 if role == 'faculty':
                     FacultyInvite.objects.create(email=email, college='CCS')
                 if role == 'depthead':
                     DeptHeadInvite.objects.create(email=email, college='CCS')
-                user = User(username=f'new-{role}')
+                user = User(username=f'new-{role}', school=self.school)
                 login = SimpleNamespace(is_existing=False, user=user,
-                                        account=SimpleNamespace(provider='google', extra_data={'email': email, 'picture': GOOGLE}))
+                                        account=SimpleNamespace(provider='google', extra_data={'email': email, 'email_verified': True, 'picture': GOOGLE}))
                 adapter = FacSyncSocialAdapter()
                 adapter.pre_social_login(request, login)
                 def persist(request, sociallogin, form):
@@ -239,8 +244,11 @@ class PhotoAccountTests(TestCase):
                 self.assertEqual(user.google_photo_url, GOOGLE)
 
     def test_missing_google_photo_does_not_block_signup(self):
-        user = User(username='without-photo', role='student')
-        login = SimpleNamespace(user=user, account=SimpleNamespace(provider='google', extra_data={}))
+        with school_scope(None):
+            actor = User.objects.create_user(username='no-photo-domain-operator', role='systemadmin')
+        SchoolDomain(school=self.school, domain='adnu.edu.ph').save(actor=actor)
+        user = User(username='without-photo', email='without-photo@adnu.edu.ph', role='student', school=self.school)
+        login = SimpleNamespace(user=user, account=SimpleNamespace(provider='google', extra_data={'email':user.email,'email_verified':True}))
         with patch.object(DefaultSocialAccountAdapter, 'save_user', return_value=user):
             self.assertIs(FacSyncSocialAdapter().save_user(RequestFactory().get('/'), login), user)
         self.assertEqual(user.google_photo_url, '')
@@ -326,6 +334,7 @@ class PhotoDisplayTests(TestCase):
             with self.subTest(expected=expected):
                 self.faculty.uploaded_photo_url, self.faculty.google_photo_url = uploaded, google
                 self.faculty.save()
+                self.client.force_login(self.student)
                 response = self.client.get(reverse('core:dashboard_public'))
                 self.assertEqual(response.context['faculty_cards'][0]['photo_url'], expected)
                 if expected:

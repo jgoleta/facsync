@@ -2,11 +2,13 @@ from allauth.core.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.models import SocialAccount, SocialLogin
 from django.contrib.messages import get_messages
 from django.contrib.messages.storage.fallback import FallbackStorage
-from django.test import RequestFactory, TestCase
+from apps.core.tests.school_case import SchoolTestCase as TestCase
+from django.test import RequestFactory
 from django.urls import reverse
 
 from apps.core.adapters import FacSyncSocialAdapter
-from apps.core.models import DeptHeadInvite, FacultyInvite, User
+from apps.core.models import DeptHeadInvite, FacultyInvite, SchoolDomain, User
+from apps.core.school_scope import school_scope
 
 
 class RegistrationTests(TestCase):
@@ -47,10 +49,15 @@ class RegistrationTests(TestCase):
         self.assertEqual(self.client.session['registration_role'], 'student')
 
     def test_student_adapter_registration_remains_active(self):
-        request, sociallogin = self.make_login(role='student')
+        with school_scope(None):
+            actor = User.objects.create_user(username='domain-operator', role='systemadmin')
+        SchoolDomain(school=self.school, domain='adnu.edu.ph').save(actor=actor)
+        request, sociallogin = self.make_login(role='student', user=User(email='new@adnu.edu.ph'))
+        sociallogin.account.extra_data['email_verified'] = True
         FacSyncSocialAdapter().pre_social_login(request, sociallogin)
         self.assertEqual(sociallogin.user.role, 'student')
         self.assertEqual(sociallogin.user.account_status, 'active')
+        self.assertEqual(sociallogin.user.school_id, self.school.pk)
         self.assertNotIn('registration_role', request.session)
 
     def test_stale_faculty_session_is_rejected_with_specific_message(self):
@@ -96,7 +103,11 @@ class RegistrationTests(TestCase):
                     self.assertEqual(sociallogin.user.college, 'CCS')
                     if role == 'depthead':
                         self.assertEqual(sociallogin.user.title, 'dean')
-                    self.assertFalse(model.objects.filter(pk=invite.pk).exists())
+                    # Invite consumption happens atomically with successful save,
+                    # not during the earlier pre-login role-selection hook.
+                    self.assertTrue(model.objects.filter(pk=invite.pk, used=False).exists())
+                    self.assertEqual(sociallogin.user.school_id, self.school.pk)
+                    invite.delete()
                     self.assertNotIn('registration_role', request.session)
                     self.assertEqual(list(get_messages(request)), [])
 
