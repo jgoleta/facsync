@@ -8,6 +8,7 @@ from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.urls import reverse
+from .school_scope import school_service, require_school
 
 
 def create_notification(recipient, notification_type, title, message, url=''):
@@ -20,6 +21,7 @@ def create_notification(recipient, notification_type, title, message, url=''):
     )
 
 
+@school_service
 def notify_college_users(college, notification_type, title, message, url='', exclude_user_id=None, roles=('student', 'faculty')):
     recipients = User.objects.filter(
         college=college,
@@ -45,10 +47,13 @@ def notify_faculty_status_subscribers(faculty, status, *, history=None, deferred
     from apps.students.models import FacultyStatusSubscription
 
     status_label = dict(faculty.STATUS_CHOICES).get(status, status)
+    school = require_school(faculty.user.school)
     faculty_name = faculty.user.get_full_name() or faculty.user.username
     url = f'/student/view-schedule/?faculty_id={faculty.faculty_id}'
     subscriptions = FacultyStatusSubscription.objects.filter(
         faculty=faculty,
+        student__school_id=school.pk, student__school__is_active=True,
+        student__is_active=True, student__account_status='active', student__role='student',
     ).select_related('student')
 
     notifications = Notification.objects.bulk_create([
@@ -114,6 +119,7 @@ def send_faculty_status_email(student, faculty_name, status_label, url):
         settings.DEFAULT_FROM_EMAIL, [student.email], fail_silently=True,
     )
 
+@school_service
 def active_announcement_queryset(college=None, *, audience='both'):
     audiences = {'faculty': ('faculty', 'both'), 'students': ('students', 'both'), 'both': ('both',)}
     qs = CollegeAnnouncement.objects.filter(
@@ -126,6 +132,7 @@ def active_announcement_queryset(college=None, *, audience='both'):
     return qs
 
 
+@school_service
 def get_active_announcements(college=None, *, audience='both'):
     qs = active_announcement_queryset(college, audience=audience)
     return [
@@ -153,6 +160,9 @@ def _send_html_email(subject, template_name, context, recipient_list, fail_silen
 
 def send_schedule_uploaded_email(faculty_user, uploaded_events, uploaded_by):
     """Notify the recipient about only the newly saved College Head upload."""
+    school = require_school(faculty_user.school)
+    if uploaded_by.school_id != school.pk:
+        raise ValueError('A schedule upload must stay within the sender’s school.')
     email = (faculty_user.email or '').strip()
     if not email:
         return False
@@ -232,6 +242,7 @@ def send_depthead_deactivated_email(user):
 logger = logging.getLogger(__name__)
 
 
+@school_service
 def _email_college_faculty(college, subject, template, context):
     if not college:
         return
@@ -278,6 +289,7 @@ def send_announcement_email_to_faculty(announcement):
     _email_college_faculty(
         announcement.college, 'New college announcement', 'college_announcement.html',
         {'message': announcement.message, 'expiry': announcement.expiry},
+        school=announcement.school,
     )
 
 
@@ -287,4 +299,5 @@ def send_closure_email_to_faculty(closure):
     _email_college_faculty(
         closure.college, 'College closed for new consultation requests', 'college_closure.html',
         {'reason': closure.reason, 'closure_start': closure.closure_start, 'closure_end': closure.closure_end},
+        school=closure.school,
     )

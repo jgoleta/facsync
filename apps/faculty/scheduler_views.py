@@ -8,6 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from .services.status_scheduler import run_status_scheduler
+from apps.core.school_scope import school_scope
 
 
 @csrf_exempt  # Machine endpoint: authenticated by a separate bearer secret, never cookies.
@@ -23,7 +24,9 @@ def automatic_status(request):
     if not settings.BREVO_API_KEY or not settings.DEFAULT_FROM_EMAIL:
         return JsonResponse({'error': 'Status email transport is not configured'}, status=503)
     try:
-        result = run_status_scheduler()
+        # Bearer-authorized maintenance is independent of any incidental cookie.
+        with school_scope(None):
+            result = run_status_scheduler()
         failed = result.get('check_errors') or result.get('email_failed') or result.get('email_unknown')
         return JsonResponse(result, status=503 if failed else 200)
     except Exception:

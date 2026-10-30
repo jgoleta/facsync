@@ -1,6 +1,8 @@
 
 from __future__ import annotations
 
+from apps.core.school_scope import school_service, current_school
+
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
@@ -121,6 +123,7 @@ def current_week_period():
     return normalize_period(monday, monday + timedelta(days=6))
 
 
+@school_service
 def get_hourly_availability_snapshot(college_code):
     """Read persisted statuses and appointments; never refresh status or Calendar."""
     if not str(college_code or '').strip():
@@ -174,6 +177,7 @@ def _status_keys(choices):
     return [value for value, _label in choices]
 
 
+@school_service
 def get_base_consultation_queryset(college_code, period=None):
     """Return the canonical college-scoped consultation queryset."""
 
@@ -290,6 +294,7 @@ def get_scheduled_consultation_patterns(consultations):
     }
 
 
+@school_service
 def get_request_submission_patterns(college_code, period, *, faculty=None):
     """Aggregate request creation timestamps in the explicit local timezone."""
 
@@ -356,6 +361,7 @@ def get_request_submission_patterns(college_code, period, *, faculty=None):
     }
 
 
+@school_service
 def _eligible_faculty(college_code):
     return FacultyProfile.objects.filter(
         user__role="faculty",
@@ -364,6 +370,7 @@ def _eligible_faculty(college_code):
     )
 
 
+@school_service
 def get_current_availability(college_code, *, faculty=None):
     """Return the persisted current-status snapshot for active faculty."""
 
@@ -440,6 +447,7 @@ def _integrate_status_history(carry_status, rows, window_start, window_end):
     }
 
 
+@school_service
 def _availability_history(college_code, period):
     """Fetch the roster with carry-in states, then all in-window history."""
     carry = StatusHistory.objects.filter(
@@ -458,6 +466,7 @@ def _availability_history(college_code, period):
     return faculty, history
 
 
+@school_service
 def get_historical_availability_proxy(college_code, period, *, snapshot=None):
     """Return a faculty-time-weighted status-history availability proxy."""
 
@@ -605,6 +614,7 @@ def _average_minutes(durations):
     )
 
 
+@school_service
 def get_walk_in_analytics(college_code, period):
     """Return college-scoped walk-in volume and explicitly labeled timing proxies."""
 
@@ -701,6 +711,7 @@ def get_walk_in_analytics(college_code, period):
     }
 
 
+@school_service
 def get_trends(college_code, period, *, current_rows=None):
     """Compare equal-duration scheduled-date periods and return monthly counts."""
 
@@ -861,6 +872,7 @@ def get_data_quality(
     }
 
 
+@school_service
 def get_faculty_trends(
     college_code,
     start_date=None,
@@ -953,6 +965,7 @@ def get_faculty_trends(
     }
 
 
+@school_service
 def get_college_analytics(
     college_code,
     start_date=None,

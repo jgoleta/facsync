@@ -44,10 +44,12 @@ def edit_depthead(request, user_id):
         new_title = request.POST.get('title')
         new_status = request.POST.get('account_status')
 
-        if new_role not in dict(User.ROLE_CHOICES):
+        if new_role not in {'student', 'faculty', 'depthead'}:
             return JsonResponse({'success': False, 'error': 'Invalid role selected.'}, status=400)
         if new_status not in ('active', 'deactivated'):
             return JsonResponse({'success': False, 'error': 'Invalid account status selected.'}, status=400)
+        if new_title not in dict(User.TITLE_CHOICES) or not College.objects.filter(code__iexact=new_college).exists():
+            return JsonResponse({'success': False, 'error': 'Choose a valid title and a college in your school.'}, status=400)
 
         was_active = depthead.account_status == 'active'
         depthead.role = new_role
@@ -134,7 +136,7 @@ def manage_admins(request):
         'depthead_accounts': depthead_accounts,
         'college_choices': get_college_choices(),
         'dept_head_form': DeptHeadInviteForm(),
-        'role_choices': User.ROLE_CHOICES,
+        'role_choices': [choice for choice in User.ROLE_CHOICES if choice[0] in {'student', 'faculty', 'depthead'}],
         'title_choices': User.TITLE_CHOICES,
     })
 
@@ -154,6 +156,7 @@ def manage_faculty(request):
     })
 
 @login_required
+@role_required('superadmin')
 def manage_students(request):
     student_accounts = User.objects.filter(role='student')
     return render(request, 'superadmin/manageStudents.html', {
@@ -162,6 +165,7 @@ def manage_students(request):
 
 
 @login_required
+@role_required('superadmin')
 def remove_student_superadmin(request, user_id):
     student_user = get_object_or_404(User, id=user_id, role='student')
     if request.method == 'POST':

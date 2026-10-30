@@ -1,5 +1,8 @@
 """Preset answers restricted to the authenticated faculty member's own records."""
+
+from apps.core.school_scope import school_service, current_school
 from django.urls import reverse
+from django.core.exceptions import PermissionDenied
 from apps.core.chat_presentation import answer, date_range, hour_range, quantity
 from apps.core.department_updates import UPDATE_QUESTIONS, department_update_answer
 from apps.depthead.services import analytics
@@ -17,7 +20,10 @@ QUESTIONS = {
 }
 
 
+@school_service
 def consultation_browser_answer(metric, faculty):
+    if faculty.user.school_id != current_school().pk:
+        raise PermissionDenied('The faculty profile belongs to another school.')
     if metric not in QUESTIONS:
         raise ValueError('Unknown consultation question')
     college = faculty.college_id

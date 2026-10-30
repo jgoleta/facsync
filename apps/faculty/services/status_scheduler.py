@@ -123,6 +123,9 @@ def claim_deliveries():
                 and row.recipient.role == 'student' and row.recipient.email == row.email
                 and faculty_user.is_active and faculty_user.account_status == 'active'
                 and faculty_user.role == 'faculty'
+                and faculty_user.school_id is not None
+                and row.recipient.school_id == faculty_user.school_id
+                and faculty_user.school.is_active
                 and (row.recipient_id, row.history.faculty_id) in subscriptions
             )
             if not valid:
@@ -131,7 +134,9 @@ def claim_deliveries():
                 row.state, row.claimed_at = 'sending', now
                 row.attempts += 1
                 claimed.append(row)
-        StatusEmailDelivery.objects.bulk_update(rows, ['state', 'reason', 'finished_at', 'claimed_at', 'attempts'])
+        # State-only maintenance must also cancel legacy-corrupt recipient links;
+        # do not re-save or approve those ownership relationships while rejecting.
+        StatusEmailDelivery._base_manager.bulk_update(rows, ['state', 'reason', 'finished_at', 'claimed_at', 'attempts'])
         return claimed
 
 
@@ -145,6 +150,7 @@ def run_status_scheduler():
         cursor = StatusSchedulerState.objects.get(pk='automatic-status').faculty_cursor
         eligible = FacultyProfile.objects.filter(
             user__role='faculty', user__account_status='active', user__is_active=True,
+            user__school__is_active=True,
         ).filter(Q(manual_status_override=False) | Q(manual_status_expires_at__lte=timezone.now()))
         profiles = list(eligible.filter(pk__gt=cursor).order_by('pk')[:MAX_FACULTY])
         if not profiles:

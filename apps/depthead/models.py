@@ -1,10 +1,12 @@
 from django.db import models
+from apps.core.school_scope import SchoolScopedModel
 
 
-class CollegeAIInsight(models.Model):
+class CollegeAIInsight(SchoolScopedModel):
     """Persisted Gemini interpretation for one college analytics scope."""
 
-    college_code = models.CharField(max_length=100, unique=True)
+    school = models.ForeignKey('core.School', on_delete=models.PROTECT, null=True, blank=True, related_name='ai_insights')
+    college_code = models.CharField(max_length=100)
     analytics_hash = models.CharField(max_length=64)
     insights = models.JSONField()
     model_name = models.CharField(max_length=100)
@@ -15,6 +17,7 @@ class CollegeAIInsight(models.Model):
 
     class Meta:
         ordering = ("college_code",)
+        constraints = [models.UniqueConstraint(models.functions.Lower('college_code'), models.F('school'), name='insight_school_college_unique')]
 
     def __str__(self):
         return f"{self.college_code} AI insights"

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from apps.core.school_scope import school_service, current_school
+
 from copy import deepcopy
 from datetime import date, datetime, timedelta
 import hashlib
@@ -452,6 +454,7 @@ def _safe_stored_result(record, stale=False):
         return None
 
 
+@school_service
 def get_stored_ai_insights(college_code, include_stale=False):
     """Return a validated persisted insight without calculating analytics."""
 
@@ -470,11 +473,15 @@ def get_stored_ai_insights(college_code, include_stale=False):
     return deepcopy(result) if result is not None else None
 
 
+@school_service
 def generate_ai_insights(analytics, force_refresh=False):
     """Return a weekly persisted Gemini interpretation of canonical analytics."""
 
     try:
+        if analytics.get('scope', {}).get('school_code', current_school().code) != current_school().code:
+            raise ValueError('Analytics payload belongs to another school.')
         sanitized = sanitize_analytics_for_ai(analytics)
+        sanitized.setdefault('scope', {})['school_code'] = current_school().code
         serialized = _serialized_payload(sanitized)
         analytics_hash = _analytics_hash(serialized)
         college_code = str(
@@ -538,8 +545,9 @@ def generate_ai_insights(analytics, force_refresh=False):
             "source": "gemini",
         }
         CollegeAIInsight.objects.update_or_create(
-            college_code=college_code,
+            college_code__iexact=college_code,
             defaults={
+                "college_code": college_code,
                 "analytics_hash": analytics_hash,
                 "insights": result,
                 "model_name": model_name,

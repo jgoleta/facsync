@@ -65,7 +65,7 @@ def _closed_college_map():
 def _faculty_for_schedule(request):
     faculty_id = request.GET.get('faculty_id')
     faculty_name = (request.GET.get('faculty') or '').strip()
-    faculty = FacultyProfile.objects.select_related('user').filter(faculty_id=faculty_id).first() if faculty_id else None
+    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id) if faculty_id else None
     if faculty is None and faculty_name:
         faculty = FacultyProfile.objects.select_related('user').filter(
             user__first_name__iexact=faculty_name,

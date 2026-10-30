@@ -1,4 +1,6 @@
 """Read-only department notices, restricted by college and recipient role."""
+
+from apps.core.school_scope import school_service, current_school
 from django.utils import timezone
 from .models import CollegeAnnouncement, OfficeClosure
 from .chat_presentation import answer, date_label
@@ -9,6 +11,7 @@ UPDATE_QUESTIONS = {
 }
 
 
+@school_service
 def department_update_answer(metric, college, role, source_url):
     if metric not in UPDATE_QUESTIONS or role not in ('student', 'faculty', 'depthead'):
         raise ValueError('Unsupported department update')

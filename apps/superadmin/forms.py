@@ -1,22 +1,21 @@
 from django import forms
 from apps.core.colleges import get_college_choices
 from apps.core.models import DeptHeadInvite, FacultyInvite, User
+from apps.core.invitations import validate_invite_identity
+from apps.core.school_forms import SchoolBoundModelForm
 
-class DeptHeadInviteForm(forms.ModelForm):
+class DeptHeadInviteForm(SchoolBoundModelForm):
     college = forms.ChoiceField(choices=get_college_choices)
     title = forms.ChoiceField(choices=User.TITLE_CHOICES, required=True)
 
     class Meta:
         model = DeptHeadInvite
-        fields = ['email', 'college']
+        fields = ['email', 'college', 'title']
 
     def clean_email(self):
-        email = self.cleaned_data['email']
-        if DeptHeadInvite.objects.filter(email__iexact=email, used=False).exists():
-            raise forms.ValidationError("This email already has a pending College Head invite.")
-        return email
+        return validate_invite_identity(self.cleaned_data['email'], instance=self.instance)
 
-class FacultySuperInviteForm(forms.ModelForm):
+class FacultySuperInviteForm(SchoolBoundModelForm):
     college = forms.ChoiceField(choices=[])
 
     class Meta:
@@ -28,7 +27,4 @@ class FacultySuperInviteForm(forms.ModelForm):
         self.fields['college'].choices = get_college_choices()
 
     def clean_email(self):
-        email = self.cleaned_data['email']
-        if FacultyInvite.objects.filter(email__iexact=email, used=False).exists():
-            raise forms.ValidationError("This email already has a pending invite.")
-        return email
+        return validate_invite_identity(self.cleaned_data['email'], instance=self.instance)

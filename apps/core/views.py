@@ -13,6 +13,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from .models import Notification
 from apps.core.colleges import get_college_label
+from .decorators import role_required
+from django.views.decorators.cache import never_cache
 
 def active_announcements(request):
     """Keep college announcements unavailable to visitors of the public dashboard."""
@@ -52,6 +54,8 @@ STATUS_NOTE_DEFAULTS = {
     'unavailable': 'Unavailable',
 }
 
+@login_required
+@never_cache
 def dashboard_public(request):
 
     closures = OfficeClosure.objects.filter(is_closed=True)
@@ -157,6 +161,9 @@ def register_student(request):
 def post_login_redirect(request):
     user = request.user
 
+    if user.role == 'systemadmin':
+        return redirect('systemadmin:manage_schools')
+
     if not user.profile_completed:
         if user.role == 'student':
             return redirect('core:student_profile_setup')
@@ -175,6 +182,7 @@ def post_login_redirect(request):
     return redirect('core:landing')
 
 @login_required
+@role_required('student')
 def student_profile_setup(request):
     if request.method == 'POST':
         form = StudentProfileForm(request.POST, instance=request.user)
@@ -189,6 +197,7 @@ def student_profile_setup(request):
     return render(request, 'core/studentProfileSetup.html', {'form': form})
 
 @login_required
+@role_required('faculty')
 def faculty_profile_setup(request):
     if request.method == 'POST':
         form = FacultyProfileSetupForm(request.POST)
@@ -208,6 +217,7 @@ def faculty_profile_setup(request):
     return render(request, 'core/facultyProfileSetup.html', {'form': form})
 
 @login_required
+@role_required('systemadmin')
 def dev_login_as(request, user_id):
     if not settings.DEBUG:
         raise Http404()

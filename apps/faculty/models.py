@@ -2,9 +2,10 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 from apps.core.colleges import get_college_label
+from apps.core.school_scope import SchoolScopedModel
 
 
-class FacultyProfile(models.Model):
+class FacultyProfile(SchoolScopedModel):
     STATUS_CHOICES = [
         ('not_set', 'Not Set'),
         ('available', 'Available'),
@@ -50,7 +51,7 @@ class FacultyProfile(models.Model):
         return f"{self.user.get_full_name() or self.user.username} ({self.faculty_id})"
 
 
-class GoogleCalendarConnection(models.Model):
+class GoogleCalendarConnection(SchoolScopedModel):
     """OAuth credentials used to synchronize one faculty member's calendar."""
 
     user = models.OneToOneField(
@@ -73,7 +74,7 @@ class GoogleCalendarConnection(models.Model):
         return f"Google Calendar for {self.user}"
 
 
-class StatusHistory(models.Model):
+class StatusHistory(SchoolScopedModel):
     STATUS_CHOICES = [
         ('not_set', 'Not Set'),
         ('available', 'Available'),
@@ -103,7 +104,7 @@ class StatusHistory(models.Model):
         return f"{self.faculty} status changed from {self.status} at {self.changed_at}"
 
 
-class StatusEmailDelivery(models.Model):
+class StatusEmailDelivery(SchoolScopedModel):
     """One recipient's automatic-status email, tied to a recorded transition."""
 
     history = models.ForeignKey(StatusHistory, on_delete=models.CASCADE, related_name='email_deliveries')
@@ -138,7 +139,7 @@ class StatusSchedulerState(models.Model):
     last_finished_at = models.DateTimeField(null=True, blank=True)
 
 
-class ScheduleEvent(models.Model):
+class ScheduleEvent(SchoolScopedModel):
     WEEKDAY_CHOICES = [
         ('monday', 'Monday'),
         ('tuesday', 'Tuesday'),
@@ -201,7 +202,7 @@ class ScheduleEvent(models.Model):
         return f"{self.title} — {self.faculty} on {self.date}"
 
 
-class ConsultationRequest(models.Model):
+class ConsultationRequest(SchoolScopedModel):
     CONSULTATION_TYPE_CHOICES = [
         ('face_to_face', 'Face-to-Face'),
         ('online', 'Online'),
@@ -266,7 +267,7 @@ class ConsultationRequest(models.Model):
         return f"Consultation request {self.request_id} for {self.faculty} on {self.date}"
 
 
-class WalkInQueue(models.Model):
+class WalkInQueue(SchoolScopedModel):
     QUEUE_STATUS_CHOICES = [
         ('waiting', 'Waiting'),
         ('called', 'Called to Office'),

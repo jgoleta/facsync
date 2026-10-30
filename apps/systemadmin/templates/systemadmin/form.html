@@ -1,0 +1,22 @@
+{% extends 'systemadmin/base.html' %}
+{% block content %}
+<section class="management-table-wrapper system-form-card">
+    <form method="post" class="system-form">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}<div class="system-field">
+            {{ field.label_tag }}{{ field }}
+            {% if field.help_text %}<p class="system-hint" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</p>{% endif %}
+            {{ field.errors }}
+        </div>{% endfor %}
+        {% if tab == 'superadmins' and not form.school %}<p class="system-hint">The sign-in email and school remain attached to this account. Invite a new account for a different school.</p>{% endif %}
+        <div class="system-actions"><button type="submit" class="btn-primary">{% if 'Invite' in title %}Send Invitation{% else %}Save Changes{% endif %}</button><a class="btn-secondary" href="{% url back %}">Cancel</a></div>
+    </form>
+</section>
+{% if school %}<section class="management-table-wrapper">
+    <div class="management-table-header"><h2>Recent changes</h2></div>
+    <div class="table-scroll"><table><thead><tr><th>When</th><th>Changed by</th><th>Field</th><th>Previous value</th><th>New value</th></tr></thead>
+        <tbody>{% for change in changes %}<tr><td>{{ change.changed_at|date:'M j, Y H:i' }}</td><td>{{ change.actor_label }}</td><td>{{ change.get_field_display }}</td><td>{{ change.old_value|default_if_none:'—' }}</td><td>{{ change.new_value }}</td></tr>{% empty %}<tr><td colspan="5">No changes recorded yet.</td></tr>{% endfor %}</tbody>
+    </table></div>
+</section>{% endif %}
+{% endblock %}

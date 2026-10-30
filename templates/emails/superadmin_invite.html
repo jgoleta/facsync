@@ -1,0 +1,7 @@
+{% extends "emails/base_email.html" %}
+{% block heading %}You’re invited to manage {{ school.name }}{% endblock %}
+{% block body %}
+<p>You have been invited as a <strong>Super Admin</strong> for <strong>{{ school.name }} ({{ school.code }})</strong> on FacSync.</p>
+<p>Sign in with Google using the email address that received this invitation. Your account will activate on your first login.</p>
+<p>Activate your Super Admin account: <a href="{{ site_url }}/login/">{{ site_url }}/login/</a></p>
+{% endblock %}

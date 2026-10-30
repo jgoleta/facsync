@@ -1,4 +1,5 @@
 """College labels shared by forms, views, and API responses."""
+from .school_scope import school_service
 
 
 COLLEGE_CHOICES = [
@@ -28,6 +29,7 @@ def get_college_label(value):
         'CCS': 'College of Computer Studies',
     }.get(college.upper(), college))
 
+@school_service
 def get_college_choices():
     from apps.core.models import College
     return [(d.code, d.name) for d in College.objects.all().order_by('name')]

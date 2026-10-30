@@ -1,0 +1,31 @@
+/* Extend the existing admin layout using the shared theme variables only. */
+.systemadmin-area { background: var(--bg-main); }
+.systemadmin-area a.btn-primary,
+.systemadmin-area a.btn-secondary { display: inline-block; text-decoration: none; text-align: center; }
+.system-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); }
+.system-tabs a { padding: 12px 18px; text-decoration: none; color: var(--text-secondary); border-bottom: 3px solid transparent; }
+.system-tabs a[aria-current="page"] { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+.system-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.system-actions form { margin: 0; }
+.systemadmin-area .management-table-wrapper { margin-bottom: 24px; }
+.system-form-card { max-width: 720px; }
+.system-form { display: grid; gap: 20px; }
+.system-field { display: grid; gap: 8px; }
+.system-field label { font-weight: 600; color: var(--text-primary); }
+.system-field input, .system-field textarea, .system-field select { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font: inherit; color: var(--text-primary); background: var(--card-bg); }
+.system-field input:disabled { color: var(--text-secondary); background: var(--bg-main); }
+.system-field textarea { resize: vertical; }
+.system-hint { margin: 0; font-size: .9rem; color: var(--text-secondary); }
+.system-message { padding: 14px 18px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--accent-soft); color: var(--text-primary); }
+.system-form .errorlist { margin: 0; padding-left: 20px; color: var(--danger); }
+.system-status { font-weight: 600; color: var(--text-primary); }
+.domain-item { display: block; }
+.systemadmin-area :focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+@media (max-width: 760px) {
+  .systemadmin-area .main-header.with-action { align-items: flex-start; flex-direction: column; gap: 16px; }
+  .systemadmin-area .sidebar { width: 100%; }
+  .systemadmin-area .admin-shell { flex-direction: column; }
+  .systemadmin-area .main-content { padding: 20px; }
+  .systemadmin-area .sidebar-nav { display: flex; flex-wrap: wrap; }
+  .systemadmin-area .sidebar-account { padding: 12px 20px; }
+}

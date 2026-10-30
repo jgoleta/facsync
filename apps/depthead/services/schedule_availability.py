@@ -1,5 +1,7 @@
 """Read-only availability inferred from recorded schedule gaps."""
 
+from apps.core.school_scope import school_service, current_school
+
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -41,6 +43,7 @@ def _open_minutes(events, day):
     return sum(gaps)
 
 
+@school_service
 def get_schedule_availability(college_code, *, today=None):
     """Summarize the current local week for active faculty in one college.
 

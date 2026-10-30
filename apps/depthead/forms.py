@@ -2,6 +2,7 @@ from django import forms
 from apps.core.models import FacultyInvite, OfficeClosure
 from .services.shared_windows import DURATION_CHOICES
 from datetime import timedelta
+from apps.core.school_forms import SchoolBoundModelForm
 
 
 class WeekDaySelect(forms.Select):
@@ -38,18 +39,16 @@ class SharedWindowForm(forms.Form):
             raise forms.ValidationError('Choose a remaining Monday–Friday date in the current week.')
         return day
 
-class FacultyInviteForm(forms.ModelForm):
+class FacultyInviteForm(SchoolBoundModelForm):
     class Meta:
         model = FacultyInvite
         fields = ['email']
 
     def clean_email(self):
-        email = self.cleaned_data['email']
-        if FacultyInvite.objects.filter(email__iexact=email, used=False).exists():
-            raise forms.ValidationError("This email already has a pending invite.")
-        return email
+        from apps.core.invitations import validate_invite_identity
+        return validate_invite_identity(self.cleaned_data['email'], instance=self.instance)
 
-class OfficeClosureForm(forms.ModelForm):
+class OfficeClosureForm(SchoolBoundModelForm):
     class Meta:
         model = OfficeClosure
         fields = ['is_closed', 'reason', 'closure_start', 'closure_end']
