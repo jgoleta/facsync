@@ -300,6 +300,42 @@ h2 {
   color: var(--danger);
 }
 
+.daily-check-in-modal {
+  width: min(92vw, 500px);
+  padding: 32px;
+  text-align: center;
+}
+
+.daily-check-in-modal h2 {
+  margin: 8px 0 10px;
+}
+
+.daily-check-in-modal > p:not(.status-feedback) {
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.daily-check-in-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: #eaf2ff;
+  color: var(--primary);
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.daily-check-in-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+}
+
 .setting-item {
   display: flex;
   justify-content: space-between;

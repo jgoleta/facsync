@@ -31,5 +31,6 @@ urlpatterns = [
     path('adminFaculty/<str:faculty_id>/schedule/delete/', views.delete_faculty_schedule, name='delete_faculty_schedule'),
     path('announcements/create/', views.create_announcement, name='create_announcement'),
     path('college/edit-description/', views.edit_college_description, name='edit_college_description'),
+    path('college/schedule-template/', views.save_schedule_template, name='save_schedule_template'),
     path('faculty-monitoring/data/', views.faculty_monitoring_data, name='faculty_monitoring_data'),
 ]

@@ -19,7 +19,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.cache import never_cache
-from apps.core.models import CollegeAnnouncement
+from apps.core.models import College, CollegeAnnouncement
 from apps.core.services import create_notification, get_active_announcements
 from django.http import JsonResponse
 from django.utils import timezone
@@ -46,6 +46,7 @@ from .services.calendar_events import (
     serialize_consultation_event,
     serialize_schedule_event,
 )
+from .services.schedule_duplicates import schedule_event_duplicate, schedule_event_key
 from .models import (
     ConsultationRequest,
     FacultyProfile,
@@ -60,6 +61,25 @@ SCHEDULE_CSV_HEADERS = [
     'OFFERING_ID', 'SUBJ_CODE', 'SECTION', 'SUBJECT_TITLE', 'UNITS',
     'LECTURE', 'LAB', 'RECURRING_DAY', 'DAYFROM', 'DAYTO', 'TIMEFROM', 'TIMETO', 'ROOM',
 ]
+SCHEDULE_TEMPLATE_FIELDS = [
+    ('OFFERING_ID', 'Offering ID'),
+    ('SUBJ_CODE', 'Subject Code'),
+    ('SECTION', 'Section'),
+    ('SUBJECT_TITLE', 'Subject Title'),
+    ('UNITS', 'Units'),
+    ('LECTURE', 'Lecture'),
+    ('LAB', 'Lab'),
+    ('RECURRING_DAY', 'Recurring Day'),
+    ('DAYFROM', 'Date From'),
+    ('DAYTO', 'Date To'),
+    ('TIMEFROM', 'Time From'),
+    ('TIMETO', 'Time To'),
+    ('ROOM', 'Room'),
+]
+SCHEDULE_REQUIRED_FIELDS = {
+    'OFFERING_ID', 'SUBJ_CODE', 'SECTION', 'SUBJECT_TITLE',
+    'DAYFROM', 'DAYTO', 'TIMEFROM', 'TIMETO',
+}
 LEGACY_SCHEDULE_CSV_HEADERS = [header for header in SCHEDULE_CSV_HEADERS if header != 'RECURRING_DAY']
 OLDER_SCHEDULE_CSV_HEADERS = [
     'event_title', 'short_description', 'room_location', 'recurring_day',
@@ -87,6 +107,7 @@ SCHEDULE_STATUS_TYPES = {
 }
 SCHEDULE_TIME_RE = re.compile(r'^([01]\d|2[0-3]):([0-5]\d)$')
 SCHEDULE_DATE_FORMATS = ('%Y-%m-%d', '%m/%d/%Y', '%m-%d-%Y', '%B %d, %Y', '%b %d, %Y')
+DAILY_CHECK_IN_NOTE = 'Automatic check-in: Faculty member will not be at the office today.'
 
 
 def _parse_schedule_date(value):
@@ -288,7 +309,35 @@ def _csv_error(row_number, message):
     return f'Row {row_number}: {message}'
 
 
-def _parse_schedule_csv(uploaded_file):
+def schedule_template_headers(template=None):
+    """Return the configured display headers in canonical field order."""
+    return [column['label'] for column in schedule_template_columns(template)]
+
+
+def schedule_template_columns(template=None):
+    """Return the ordered, editable columns for a college's schedule CSV."""
+    template = template or {}
+    configured = template.get('columns') if isinstance(template, dict) else None
+    if not isinstance(configured, list) or not configured:
+        labels = template if isinstance(template, dict) else {}
+        configured = [
+            {'key': field, 'label': str(labels.get(field, field)).strip() or field}
+            for field in SCHEDULE_CSV_HEADERS
+        ]
+    columns = []
+    for item in configured:
+        if not isinstance(item, dict):
+            continue
+        key = str(item.get('key', '')).strip().upper()
+        label = str(item.get('label', '')).strip()
+        if key and label and key not in {column['key'] for column in columns}:
+            columns.append({'key': key, 'label': label})
+    return columns or [
+        {'key': field, 'label': field} for field in SCHEDULE_CSV_HEADERS
+    ]
+
+
+def _parse_schedule_csv(uploaded_file, template=None):
     """Parse and validate a complete schedule CSV before anything is saved."""
     if not uploaded_file or not getattr(uploaded_file, 'name', '').lower().endswith('.csv'):
         raise ValueError('Please upload a CSV file with a .csv extension.')
@@ -308,13 +357,19 @@ def _parse_schedule_csv(uploaded_file):
         csv_rows = list(reader)
     except csv.Error as exc:
         raise ValueError(f'Unable to read the CSV file: {exc}') from exc
+    columns = schedule_template_columns(template)
+    expected_headers = [column['label'] for column in columns]
     if headers == OLDER_SCHEDULE_CSV_HEADERS:
         return _parse_older_schedule_csv(csv_rows)
-    if headers not in (SCHEDULE_CSV_HEADERS, LEGACY_SCHEDULE_CSV_HEADERS):
-        expected = ', '.join(SCHEDULE_CSV_HEADERS)
+    if headers not in (SCHEDULE_CSV_HEADERS, LEGACY_SCHEDULE_CSV_HEADERS, expected_headers):
+        expected = ', '.join(expected_headers)
         actual = ', '.join(headers or []) or 'none'
         raise ValueError(f'Invalid CSV headers. Expected: {expected}. Found: {actual}.')
 
+    header_map = (
+        {column['key']: header for column, header in zip(columns, headers)}
+        if headers == expected_headers else {field: field for field in SCHEDULE_CSV_HEADERS}
+    )
     parsed = []
     errors = []
     intervals_by_day = {}
@@ -329,10 +384,17 @@ def _parse_schedule_csv(uploaded_file):
             errors.append(_csv_error(row_number, f'File exceeds the {SCHEDULE_CSV_MAX_ROWS}-row limit.'))
             break
 
-        values = {key: (value or '').strip() for key, value in row.items() if key in SCHEDULE_CSV_HEADERS}
+        values = {field: '' for field in SCHEDULE_CSV_HEADERS}
+        extra_attributes = {}
+        for field, source in header_map.items():
+            value = (row.get(source) or '').strip()
+            if field in values:
+                values[field] = value
+            elif field.startswith('CUSTOM_'):
+                extra_attributes[field[7:]] = value
+        values['extra_attributes'] = extra_attributes
         values.setdefault('RECURRING_DAY', '')
-        required_headers = LEGACY_SCHEDULE_CSV_HEADERS if headers == LEGACY_SCHEDULE_CSV_HEADERS else SCHEDULE_CSV_HEADERS
-        missing = [key for key in required_headers if key != 'ROOM' and not values.get(key)]
+        missing = [key for key in SCHEDULE_REQUIRED_FIELDS if not values.get(key)]
         if missing:
             errors.append(_csv_error(row_number, f'Missing required value(s): {", ".join(missing)}.'))
             continue
@@ -501,7 +563,7 @@ def _parse_older_schedule_csv(csv_rows):
 
 def _schedule_csv_row(event):
     """Convert a schedule event into the structure used by schedule CSV exports."""
-    return {
+    row = {
         'OFFERING_ID': event.offering_id,
         'SUBJ_CODE': event.subject_code,
         'SECTION': event.section,
@@ -516,6 +578,8 @@ def _schedule_csv_row(event):
         'TIMETO': event.end_time.strftime('%H:%M') if event.end_time else '',
         'ROOM': event.location,
     }
+    row.update({f'CUSTOM_{key}': value for key, value in (event.extra_attributes or {}).items()})
+    return row
 
 
 @login_required
@@ -582,6 +646,9 @@ def dashboard(request):
         'consultations_today_count': consultation_counts['today'],
         'announcements': announcements,
         'past_announcements': past_announcements,
+        'daily_checkin_required': bool(
+            faculty_profile and faculty_profile.daily_check_in_date != today
+        ),
     })
 
 
@@ -590,6 +657,62 @@ def dashboard(request):
 def active_announcements(request):
     """Return active announcements for the signed-in faculty member as JSON."""
     return JsonResponse({'announcements': get_active_announcements(request.user.college, audience='faculty')})
+
+
+@login_required
+@role_required('faculty')
+@csrf_protect
+@transaction.atomic
+def daily_check_in(request):
+    """Record today's office check-in and apply an automatic absence status."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    faculty = FacultyProfile.objects.select_for_update().filter(user=request.user).first()
+    if faculty is None:
+        return JsonResponse({'error': 'Faculty profile not found.'}, status=404)
+    try:
+        payload = _json_body(request)
+    except ValueError as exc:
+        return HttpResponseBadRequest(str(exc))
+
+    answer = payload.get('at_office')
+    if not isinstance(answer, bool):
+        return JsonResponse({'error': 'at_office must be true or false.'}, status=400)
+
+    today = timezone.localdate()
+    faculty.daily_check_in_date = today
+    faculty.daily_check_in_at_office = answer
+    if not answer:
+        tomorrow = today + timedelta(days=1)
+        expires_at = timezone.make_aware(datetime.combine(tomorrow, time.min))
+        faculty.manual_status = 'unavailable'
+        faculty.manual_status_override = True
+        faculty.manual_status_expires_at = expires_at
+        faculty.status_note = DAILY_CHECK_IN_NOTE
+    elif faculty.status_note == DAILY_CHECK_IN_NOTE:
+        faculty.manual_status = 'not_set'
+        faculty.manual_status_override = False
+        faculty.manual_status_expires_at = None
+        faculty.status_note = ''
+    faculty.save(update_fields=[
+        'daily_check_in_date', 'daily_check_in_at_office', 'manual_status',
+        'manual_status_override', 'manual_status_expires_at', 'status_note',
+    ])
+    effective_status = refresh_faculty_status(faculty, immediate_email=True)
+    faculty.refresh_from_db()
+    status_css_class = {
+        'not_set': 'not-set', 'available': 'available', 'busy': 'busy',
+        'virtual_only': 'virtual', 'on_leave': 'on-leave', 'unavailable': 'unavailable',
+    }[effective_status]
+    return JsonResponse({
+        'at_office': answer,
+        'status': effective_status,
+        'status_css_class': status_css_class,
+        'label': dict(FacultyProfile.STATUS_CHOICES)[effective_status],
+        'note': faculty.status_note,
+        'manual_override': faculty.manual_status_override,
+        'expires_at': faculty.manual_status_expires_at.isoformat() if faculty.manual_status_expires_at else None,
+    })
 
 
 @login_required
@@ -719,13 +842,22 @@ def schedule(request):
 @login_required
 @role_required('faculty')
 def schedule_template(request):
-    """Download the canonical UTF-8 schedule CSV template."""
+    """Download the signed-in faculty member's college CSV template."""
+    faculty = _faculty_for_request(request)
+    college = College.objects.filter(code__iexact=faculty.college_id).first() if faculty else None
+    template = college.schedule_template if college else None
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename=schedule_template.csv'
     writer = csv.writer(response)
-    writer.writerow(SCHEDULE_CSV_HEADERS)
-    writer.writerow(['OFFERING-001', 'CS101', 'A', 'Introduction to Computing', '3', '3', '0', 'Monday', '2026-08-17', '2026-12-15', '10:30', '12:00', 'Room 204'])
-    writer.writerow(['OFFERING-002', 'CS102', 'A', 'Data Structures', '3', '3', '0', 'Tuesday', '2026-08-18', '2026-12-15', '13:00', '15:00', 'Room 204'])
+    columns = schedule_template_columns(template)
+    writer.writerow([column['label'] for column in columns])
+    sample = {
+        'OFFERING_ID': 'OFFERING-001', 'SUBJ_CODE': 'CS101', 'SECTION': 'A',
+        'SUBJECT_TITLE': 'Introduction to Computing', 'UNITS': '3', 'LECTURE': '3',
+        'LAB': '0', 'RECURRING_DAY': 'Monday', 'DAYFROM': '2026-08-17',
+        'DAYTO': '2026-12-15', 'TIMEFROM': '10:30', 'TIMETO': '12:00', 'ROOM': 'Room 204',
+    }
+    writer.writerow([sample.get(column['key'], '') for column in columns])
     return response
 
 
@@ -740,8 +872,12 @@ def upload_schedule(request):
     if faculty is None:
         return JsonResponse({'error': 'No faculty profile'}, status=400)
     uploaded_file = request.FILES.get('file')
+    college = College.objects.filter(code__iexact=faculty.college_id).first()
     try:
-        rows = _parse_schedule_csv(uploaded_file)
+        rows = _parse_schedule_csv(
+            uploaded_file,
+            college.schedule_template if college else None,
+        )
     except ValueError as exc:
         detail = exc.args[0] if exc.args else 'Invalid CSV file.'
         errors = detail if isinstance(detail, list) else [detail]
@@ -749,6 +885,22 @@ def upload_schedule(request):
 
     updated_at = timezone.now()
     with transaction.atomic():
+        existing_keys = {
+            schedule_event_key(values)
+            for values in ScheduleEvent.objects.filter(faculty=faculty).values(
+                'title', 'date', 'day_of_week', 'start_month', 'end_month',
+                'recurrence_start_date', 'recurrence_end_date', 'start_time', 'end_time',
+            )
+        }
+        new_rows = []
+        skipped_count = 0
+        for row in rows:
+            key = schedule_event_key(row)
+            if key in existing_keys:
+                skipped_count += 1
+                continue
+            existing_keys.add(key)
+            new_rows.append(row)
         events = ScheduleEvent.objects.bulk_create([
             ScheduleEvent(
                 faculty=faculty,
@@ -759,6 +911,7 @@ def upload_schedule(request):
                 units=row['units'],
                 lecture=row['lecture'],
                 lab=row['lab'],
+                extra_attributes=row.get('extra_attributes', {}),
                 uploaded_by=request.user,
                 is_csv_upload=True,
                 description=row['description'],
@@ -776,10 +929,11 @@ def upload_schedule(request):
                 managed_by_facsync=True,
                 sync_state='local',
             )
-            for row in rows
+            for row in new_rows
         ])
-        faculty.schedule_last_updated_at = updated_at
-        faculty.save(update_fields=['schedule_last_updated_at'])
+        if events:
+            faculty.schedule_last_updated_at = updated_at
+            faculty.save(update_fields=['schedule_last_updated_at'])
 
     calendar_sync = {
         'requested': request.POST.get('sync_to_google') == 'true',
@@ -834,9 +988,11 @@ def upload_schedule(request):
             + (f" {calendar_sync['message']}" if calendar_sync.get('message') else '')
         ),
         'added_count': len(events),
+        'skipped_count': skipped_count,
         'calendar_sync': calendar_sync,
         'last_updated_at': updated_at.isoformat(),
         'preview': [_schedule_csv_row(event) for event in events],
+        'template_columns': schedule_template_columns(college.schedule_template if college else None),
         'events': [_event_json(event) for event in events],
     }, status=201)
 
@@ -850,6 +1006,7 @@ def view_schedule_preview(request):
     faculty = _faculty_for_request(request)
     if faculty is None:
         return JsonResponse({'error': 'No faculty profile'}, status=400)
+    college = College.objects.filter(code__iexact=faculty.college_id).first()
     events = ScheduleEvent.objects.filter(
         faculty=faculty, is_csv_upload=True,
     ).select_related('uploaded_by').order_by('id')
@@ -866,7 +1023,10 @@ def view_schedule_preview(request):
             'uploader_label': label,
             'uploaded_by_other': uploader is not None and uploader.pk != request.user.pk,
         })
-    return JsonResponse({'preview': rows})
+    return JsonResponse({
+        'preview': rows,
+        'template_columns': schedule_template_columns(college.schedule_template if college else None),
+    })
 
 
 @login_required
@@ -1236,6 +1396,11 @@ def api_schedule_events(request):
             return HttpResponseBadRequest(str(exc))
 
         event = ScheduleEvent(faculty=faculty, **values)
+        if schedule_event_duplicate(faculty, values):
+            return JsonResponse(
+                {'error': 'An identical event is already in this calendar.'},
+                status=409,
+            )
         connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
         sync_requested = payload.get('sync_to_google')
         if sync_requested is not None and not isinstance(sync_requested, bool):

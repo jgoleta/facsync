@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const updateStatusLabel = document.getElementById('updateStatusLabel');
     const statusModeLabel = document.getElementById('statusModeLabel');
     const useCalendarStatusBtn = document.getElementById('useCalendarStatusBtn');
+    const dailyCheckInModal = document.getElementById('dailyCheckInModal');
+    const dailyCheckInFeedback = document.getElementById('dailyCheckInFeedback');
     const refreshConsultationsButton = document.getElementById('refreshConsultations');
     const completedModal = document.getElementById('completedConsultationsModal');
     const openCompletedModalButton = document.getElementById('openCompletedConsultations');
@@ -64,6 +66,45 @@ document.addEventListener('DOMContentLoaded', () => {
         if (statusExpiresAt && !data.expires_at) statusExpiresAt.value = '';
         if (useCalendarStatusBtn) useCalendarStatusBtn.classList.toggle('hidden', !data.manual_override);
     }
+
+    function closeDailyCheckIn() {
+        dailyCheckInModal?.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    if (dailyCheckInModal?.dataset.required === 'true') {
+        dailyCheckInModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    dailyCheckInModal?.querySelectorAll('[data-check-in-answer]').forEach((button) => {
+        button.addEventListener('click', async () => {
+            const buttons = dailyCheckInModal.querySelectorAll('[data-check-in-answer]');
+            buttons.forEach((item) => { item.disabled = true; });
+            if (dailyCheckInFeedback) dailyCheckInFeedback.textContent = 'Saving your check-in...';
+            try {
+                const response = await fetch('/faculty/api/daily-check-in/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCsrfToken(),
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ at_office: button.dataset.checkInAnswer === 'true' }),
+                });
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(data.error || 'Unable to save your check-in.');
+                updateStatusPresentation(data);
+                closeDailyCheckIn();
+                facultyFeedback?.showToast(data.at_office ? 'Check-in recorded.' : 'You are marked unavailable for today.');
+            } catch (error) {
+                if (dailyCheckInFeedback) {
+                    dailyCheckInFeedback.className = 'status-feedback error';
+                    dailyCheckInFeedback.textContent = error.message;
+                }
+                buttons.forEach((item) => { item.disabled = false; });
+            }
+        });
+    });
 
     // Track which status the faculty member selected before saving it.
     statusButtons.forEach((button) => {

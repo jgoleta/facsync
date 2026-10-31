@@ -133,6 +133,7 @@ class College(SchoolScopedModel):
     code = models.CharField(max_length=20, blank=True)
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
+    schedule_template = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

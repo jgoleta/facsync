@@ -101,9 +101,7 @@
                 <div class="schedule-preview-table-wrap">
                     <p id="schedule-preview-empty" class="schedule-preview-empty">No uploaded schedule entries.</p>
                     <table class="schedule-preview-table">
-                        <thead>
-                            <tr><th>Offering ID</th><th>Subject Code</th><th>Section</th><th>Subject Title</th><th>Units</th><th>Lecture</th><th>Lab</th><th>Recurring Day</th><th>Day From</th><th>Day To</th><th>Time From</th><th>Time To</th><th>Room</th><th>Uploader</th><th>Actions</th></tr>
-                        </thead>
+                        <thead><tr id="schedule-preview-head"></tr></thead>
                         <tbody id="schedule-preview-body"></tbody>
                     </table>
                 </div>
@@ -302,7 +300,7 @@
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
     <script src="{% static 'js/calendar/calendar-core.js' %}?v=20260910-month-navigation"></script>
     <script src="{% static 'js/consultation_notes.js' %}?v=20261021-consultation-notes"></script>
-    <script src="{% static 'faculty/js/calendar/calendar-editor.js' %}?v=20261004-loading"></script>
+    <script src="{% static 'faculty/js/calendar/calendar-editor.js' %}?v=20261031-dynamic-template-preview"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 

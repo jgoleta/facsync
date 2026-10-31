@@ -34,6 +34,8 @@ class FacultyProfile(SchoolScopedModel):
     walk_ins_enabled = models.BooleanField(default=False)
     last_calendar_sync_at = models.DateTimeField(null=True, blank=True)
     schedule_last_updated_at = models.DateTimeField(null=True, blank=True)
+    daily_check_in_date = models.DateField(null=True, blank=True)
+    daily_check_in_at_office = models.BooleanField(null=True, blank=True)
     photo_url = models.URLField(blank=True)
     biography = models.TextField(blank=True, default='')
 
@@ -164,6 +166,7 @@ class ScheduleEvent(SchoolScopedModel):
     units = models.CharField(max_length=32, blank=True)
     lecture = models.CharField(max_length=32, blank=True)
     lab = models.CharField(max_length=32, blank=True)
+    extra_attributes = models.JSONField(default=dict, blank=True)
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name='uploaded_schedule_events')
     description = models.TextField(blank=True)
     location = models.CharField(max_length=128, blank=True)

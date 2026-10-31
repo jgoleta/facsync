@@ -9,6 +9,7 @@ urlpatterns = [
     path('api/consultation-browser/', views.consultation_browser_api, name='consultation_browser_api'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('api/status/', views.update_status, name='update_status'),
+    path('api/daily-check-in/', views.daily_check_in, name='daily_check_in'),
     path('api/walk-ins/preference/', views.api_walk_in_preference, name='api_walk_in_preference'),
     path('api/walk-ins/', views.api_faculty_walk_ins, name='api_faculty_walk_ins'),
     path('api/walk-ins/<str:queue_id>/', views.api_walk_in_detail, name='api_walk_in_detail'),
