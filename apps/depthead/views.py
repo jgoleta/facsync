@@ -1,4 +1,5 @@
 import csv
+import json
 import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -11,8 +12,13 @@ from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm, SharedWindowForm
 from apps.faculty.models import FacultyProfile, GoogleCalendarConnection, ScheduleEvent
 from apps.faculty.services.google_calendar import GoogleCalendarError, create_google_event
+from apps.faculty.services.schedule_duplicates import schedule_event_key
 from apps.core.services import send_schedule_uploaded_email
-from apps.faculty.views import SCHEDULE_CSV_HEADERS, _event_json, _parse_schedule_csv, _schedule_csv_row
+from apps.faculty.views import (
+    SCHEDULE_CSV_HEADERS, SCHEDULE_REQUIRED_FIELDS, SCHEDULE_TEMPLATE_FIELDS, _event_json,
+    _parse_schedule_csv, _schedule_csv_row, schedule_template_headers,
+    schedule_template_columns,
+)
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.db import transaction
@@ -205,6 +211,7 @@ def ai_insights_api(request):
 @login_required
 @role_required('depthead')
 def admin_faculty(request):
+    college = College.objects.filter(code__iexact=request.user.college).first()
     faculty_users = list(User.objects.filter(
         role='faculty',
         college__iexact=request.user.college,
@@ -214,6 +221,15 @@ def admin_faculty(request):
 
     return render(request, 'depthead/adminFaculty.html', {
         'active_faculty': [u for u in faculty_users if u.account_status == 'active'],
+        'schedule_template_fields': [
+            {
+                'field': field,
+                'label': label,
+                'value': (college.schedule_template or {}).get(field, field) if college else field,
+            }
+            for field, label in SCHEDULE_TEMPLATE_FIELDS
+        ],
+        'schedule_template_columns': schedule_template_columns(college.schedule_template if college else None),
     })
 
 
@@ -222,16 +238,20 @@ def admin_faculty(request):
 def faculty_schedule_template(request):
     """Download the CSV format used for college-head faculty uploads."""
     response = HttpResponse(content_type='text/csv')
+    college = College.objects.filter(code__iexact=request.user.college).first()
+    headers = schedule_template_headers(college.schedule_template if college else None)
     response['Content-Disposition'] = 'attachment; filename=schedule_template.csv'
     writer = csv.writer(response)
-    writer.writerow(SCHEDULE_CSV_HEADERS)
+    writer.writerow(headers)
+    sample = {
+        'OFFERING_ID': 'OFFERING-001', 'SUBJ_CODE': 'CS101', 'SECTION': 'A',
+        'SUBJECT_TITLE': 'Introduction to Computing', 'UNITS': '3', 'LECTURE': '3',
+        'LAB': '0', 'RECURRING_DAY': 'Monday', 'DAYFROM': '2026-08-17',
+        'DAYTO': '2026-12-15', 'TIMEFROM': '10:30', 'TIMETO': '12:00', 'ROOM': 'Room 204',
+    }
     writer.writerow([
-        'OFFERING-001', 'CS101', 'A', 'Introduction to Computing', '3', '3', '0', 'Monday',
-        '2026-08-17', '2026-12-15', '10:30', '12:00', 'Room 204',
-    ])
-    writer.writerow([
-        'OFFERING-002', 'CS102', 'A', 'Data Structures', '3', '3', '0', 'Tuesday',
-        '2026-08-18', '2026-12-15', '13:00', '15:00', 'Room 204',
+        sample.get(column['key'], '')
+        for column in schedule_template_columns(college.schedule_template if college else None)
     ])
     return response
 
@@ -249,8 +269,12 @@ def upload_faculty_schedule(request, faculty_id):
         college_id__iexact=request.user.college,
         user__role='faculty',
     )
+    college = College.objects.filter(code__iexact=request.user.college).first()
     try:
-        rows = _parse_schedule_csv(request.FILES.get('file'))
+        rows = _parse_schedule_csv(
+            request.FILES.get('file'),
+            college.schedule_template if college else None,
+        )
     except ValueError as exc:
         detail = exc.args[0] if exc.args else 'Invalid CSV file.'
         errors = detail if isinstance(detail, list) else [detail]
@@ -258,6 +282,22 @@ def upload_faculty_schedule(request, faculty_id):
 
     updated_at = timezone.now()
     with transaction.atomic():
+        existing_keys = {
+            schedule_event_key(values)
+            for values in ScheduleEvent.objects.filter(faculty=faculty).values(
+                'title', 'date', 'day_of_week', 'start_month', 'end_month',
+                'recurrence_start_date', 'recurrence_end_date', 'start_time', 'end_time',
+            )
+        }
+        new_rows = []
+        skipped_count = 0
+        for row in rows:
+            key = schedule_event_key(row)
+            if key in existing_keys:
+                skipped_count += 1
+                continue
+            existing_keys.add(key)
+            new_rows.append(row)
         events = ScheduleEvent.objects.bulk_create([
             ScheduleEvent(
                 faculty=faculty,
@@ -268,6 +308,7 @@ def upload_faculty_schedule(request, faculty_id):
                 units=row['units'],
                 lecture=row['lecture'],
                 lab=row['lab'],
+                extra_attributes=row.get('extra_attributes', {}),
                 uploaded_by=request.user,
                 is_csv_upload=True,
                 description=row['description'],
@@ -285,10 +326,11 @@ def upload_faculty_schedule(request, faculty_id):
                 managed_by_facsync=True,
                 sync_state='local',
             )
-            for row in rows
+            for row in new_rows
         ])
-        faculty.schedule_last_updated_at = updated_at
-        faculty.save(update_fields=['schedule_last_updated_at'])
+        if events:
+            faculty.schedule_last_updated_at = updated_at
+            faculty.save(update_fields=['schedule_last_updated_at'])
 
     calendar_sync = {
         'requested': request.POST.get('sync_to_google') == 'true',
@@ -332,9 +374,11 @@ def upload_faculty_schedule(request, faculty_id):
         'message': f'Schedule uploaded for {faculty.user.get_full_name() or faculty.user.username}. {len(events)} row(s) added.',
         'email_sent': email_sent,
         'added_count': len(events),
+        'skipped_count': skipped_count,
         'calendar_sync': calendar_sync,
         'last_updated_at': updated_at.isoformat(),
         'preview': [_schedule_csv_row(event) for event in events],
+        'template_columns': schedule_template_columns(college.schedule_template if college else None),
         'events': [_event_json(event) for event in events],
     }, status=201)
 
@@ -371,6 +415,9 @@ def view_faculty_schedule_preview(request, faculty_id):
         'faculty_name': faculty.user.get_full_name() or faculty.user.username,
         'last_updated_at': faculty.schedule_last_updated_at.isoformat() if faculty.schedule_last_updated_at else None,
         'preview': rows,
+        'template_columns': schedule_template_columns(
+            College.objects.filter(code__iexact=request.user.college).values_list('schedule_template', flat=True).first()
+        ),
         'events': [_event_json(event) for event in events],
     })
 
@@ -481,6 +528,7 @@ def faculty_monitoring(request):
         last_login = profile.user.last_login
         is_inactive = last_login is None or last_login < inactivity_threshold
         faculty_list.append({
+            'faculty_id': profile.faculty_id,
             'name': profile.user.get_full_name() or profile.user.username,
             'photo_url': profile.user.avatar_url,
             'status_label': label,
@@ -549,6 +597,14 @@ def college_settings(request):
         'college_announcements': college_announcements,
         'announcement_form': CollegeAnnouncementForm(),
         'college': college,
+        'schedule_template_fields': [
+            {
+                'field': field,
+                'label': label,
+                'value': (college.schedule_template or {}).get(field, field) if college else field,
+            }
+            for field, label in SCHEDULE_TEMPLATE_FIELDS
+        ],
     })
 
 
@@ -744,6 +800,59 @@ def edit_college_description(request):
                     messages.error(request, error)
 
     return redirect('depthead:college_settings')
+
+
+@login_required
+@role_required('depthead')
+@csrf_protect
+def save_schedule_template(request):
+    """Save the College Head's CSV labels for future schedule uploads."""
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    college = College.objects.filter(code__iexact=request.user.college).first()
+    if not college:
+        messages.error(request, 'Your college could not be found. Contact a Super Admin.')
+        return redirect('depthead:college_settings')
+
+    try:
+        submitted_columns = json.loads(request.POST.get('template_columns', '[]'))
+    except (TypeError, ValueError):
+        submitted_columns = []
+    if not isinstance(submitted_columns, list) or not submitted_columns or len(submitted_columns) > 32:
+        messages.error(request, 'Add between 1 and 32 schedule template attributes.')
+        return redirect('depthead:admin_faculty')
+
+    columns = []
+    used = set()
+    for item in submitted_columns:
+        if not isinstance(item, dict):
+            messages.error(request, 'Invalid schedule template attribute.')
+            return redirect('depthead:admin_faculty')
+        field = str(item.get('key', '')).strip().upper()
+        label = ' '.join(str(item.get('label', '')).split())
+        if not field or not label or len(label) > 64:
+            messages.error(request, 'Every schedule template attribute needs a name of 1 to 64 characters.')
+            return redirect('depthead:admin_faculty')
+        if field not in SCHEDULE_CSV_HEADERS and not field.startswith('CUSTOM_'):
+            messages.error(request, 'Invalid schedule template attribute.')
+            return redirect('depthead:admin_faculty')
+        key = label.casefold()
+        if field in used or key in used:
+            messages.error(request, 'Schedule template attributes must be unique.')
+            return redirect('depthead:admin_faculty')
+        used.add(field)
+        used.add(key)
+        columns.append({'key': field, 'label': label})
+
+    missing_required = SCHEDULE_REQUIRED_FIELDS.difference(column['key'] for column in columns)
+    if missing_required:
+        messages.error(request, 'Required schedule attributes cannot be deleted.')
+        return redirect('depthead:admin_faculty')
+
+    college.schedule_template = {'columns': columns}
+    college.save(update_fields=['schedule_template'])
+    messages.success(request, 'Schedule upload template updated.')
+    return redirect('depthead:admin_faculty')
 
 @login_required
 @role_required('depthead')

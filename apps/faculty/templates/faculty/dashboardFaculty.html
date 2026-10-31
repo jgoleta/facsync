@@ -211,6 +211,20 @@
         </main>
     </div>
 
+    <div id="dailyCheckInModal" class="modal-overlay hidden" data-required="{% if daily_checkin_required %}true{% else %}false{% endif %}" role="dialog" aria-modal="true" aria-labelledby="dailyCheckInTitle">
+        <div class="modal daily-check-in-modal">
+            <div class="daily-check-in-icon" aria-hidden="true">?</div>
+            <span class="eyebrow">Daily check-in</span>
+            <h2 id="dailyCheckInTitle">Will you be at the office today?</h2>
+            <p>Your answer helps students see whether you are available for in-person assistance. You can still update your status afterward.</p>
+            <p id="dailyCheckInFeedback" class="status-feedback" role="status" aria-live="polite"></p>
+            <div class="daily-check-in-actions">
+                <button type="button" class="btn-secondary" data-check-in-answer="false">No, I will be away</button>
+                <button type="button" class="btn-primary" data-check-in-answer="true">Yes, I’ll be there</button>
+            </div>
+        </div>
+    </div>
+
     <div id="completedConsultationsModal" class="modal-overlay hidden" role="dialog" aria-modal="true"
         aria-labelledby="completedConsultationsTitle">
         <div class="modal completed-consultations-modal">

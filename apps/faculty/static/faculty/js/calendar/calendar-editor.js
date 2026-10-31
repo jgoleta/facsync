@@ -19,6 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const schedulePreviewCard = document.getElementById("schedule-preview-card");
   const schedulePreviewClose = document.getElementById("schedule-preview-close");
   const schedulePreviewBody = document.getElementById("schedule-preview-body");
+  const schedulePreviewHead = document.getElementById("schedule-preview-head");
   const schedulePreviewSearch = document.getElementById("schedule-preview-search");
   const schedulePreviewEmpty = document.getElementById("schedule-preview-empty");
   const schedulePreviewCount = document.getElementById("schedule-preview-count");
@@ -41,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let bulkDeleteEventIds = new Set();
   let schedulePreviewHasOtherUploader = false;
   let schedulePreviewRows = [];
+  let schedulePreviewColumns = [];
   let returnToSchedulePreview = false;
   let scheduleUploadInProgress = false;
   let scheduleCrudLoadingCount = 0;
@@ -222,12 +224,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render the unified uploaded schedule in the preview modal.
   function renderSchedulePreview(rows) {
-    if (!schedulePreviewCard || !schedulePreviewBody) return;
+    if (!schedulePreviewCard || !schedulePreviewBody || !schedulePreviewHead) return;
+    schedulePreviewHead.innerHTML = "";
+    schedulePreviewColumns.forEach((column) => {
+      const th = document.createElement("th");
+      th.textContent = column.label;
+      schedulePreviewHead.appendChild(th);
+    });
+    ["Uploader", "Actions"].forEach((label) => {
+      const th = document.createElement("th");
+      th.textContent = label;
+      schedulePreviewHead.appendChild(th);
+    });
     schedulePreviewBody.innerHTML = "";
     rows.forEach((row) => {
       const tr = document.createElement("tr");
-      [row.OFFERING_ID, row.SUBJ_CODE, row.SECTION, row.SUBJECT_TITLE, row.UNITS, row.LECTURE,
-        row.LAB, row.RECURRING_DAY, row.DAYFROM, row.DAYTO, row.TIMEFROM, row.TIMETO, row.ROOM, row.uploader_label]
+      schedulePreviewColumns.map((column) => row[column.key] || "").concat(row.uploader_label || "Uploader unknown")
         .forEach((value) => {
           const td = document.createElement("td");
           td.textContent = value;
@@ -415,6 +427,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const response = await fetch(viewUploadPreviewBtn.dataset.previewUrl, { headers: requestHeaders() });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Unable to load schedule preview.");
+    schedulePreviewColumns = data.template_columns || [];
     const rows = data.preview || [];
     schedulePreviewRows = rows;
     schedulePreviewEventIds = rows.map((row) => row.id);

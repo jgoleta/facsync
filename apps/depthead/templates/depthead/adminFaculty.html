@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav" />
     <link
       rel="stylesheet"
-      href="{% static 'depthead/css/admin_management.css' %}?v=20260930-schedule-preview-layer"
+      href="{% static 'depthead/css/admin_management.css' %}?v=20261031-schedule-preview-position-fix"
     />
     <link
       rel="stylesheet"
@@ -46,14 +46,10 @@
               <h2>Registered Faculty</h2>
             </div>
             <div class="management-table-header-actions">
-              <a
-                class="btn-secondary header-action"
-                href="{% url 'depthead:faculty_schedule_template' %}"
-                download
-              >
+              <button id="openScheduleTemplateModal" class="btn-secondary header-action" type="button">
                 <span class="header-action-icon" aria-hidden="true">↓</span>
-                <span>Download CSV Format</span>
-              </a>
+                <span>Schedule Upload Template</span>
+              </button>
               <button
                 id="addFacultyBtn"
                 class="btn-primary header-action"
@@ -150,6 +146,48 @@
       </main>
     </div>
 
+    <div class="modal-overlay hidden" id="scheduleTemplateModal">
+      <div class="modal schedule-template-modal" role="dialog" aria-modal="true" aria-labelledby="scheduleTemplateModalTitle">
+        <div class="modal-header">
+          <div>
+            <p class="section-kicker">College schedule settings</p>
+            <h2 id="scheduleTemplateModalTitle">Schedule Upload Template</h2>
+            <p>Choose the column names your college uses in its schedule CSV. These names will appear in the downloaded template.</p>
+          </div>
+          <button type="button" class="modal-close" id="closeScheduleTemplateModal" aria-label="Close">&times;</button>
+        </div>
+        <form method="post" action="{% url 'depthead:save_schedule_template' %}" class="modal-form">
+          {% csrf_token %}
+          <div class="schedule-template-help">
+            <span class="schedule-template-help-icon" aria-hidden="true">i</span>
+            <p>Keep the names short and unique. Faculty must use the downloaded column names when uploading schedules.</p>
+          </div>
+          <div id="scheduleTemplateFields" class="schedule-template-fields">
+            {% for item in schedule_template_columns %}
+            <div class="modal-form-group schedule-template-attribute" data-key="{{ item.key }}">
+              <label>
+                <span class="schedule-template-attribute-label">{{ item.label }}</span>
+                <span class="schedule-template-field-key">{{ item.key }}</span>
+              </label>
+              <div class="schedule-template-input-row">
+                <input type="text" class="schedule-template-attribute-input" value="{{ item.label }}" maxlength="64" required>
+                <button type="button" class="schedule-template-remove" aria-label="Remove {{ item.label }}">Remove</button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="template_columns" id="scheduleTemplateColumns">
+          <button type="button" class="btn-secondary schedule-template-add" id="addScheduleTemplateAttribute">+ Add attribute</button>
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="resetScheduleTemplate">Restore Defaults</button>
+            <button type="button" class="btn-secondary" id="cancelScheduleTemplate">Cancel</button>
+            <a class="btn-secondary" href="{% url 'depthead:faculty_schedule_template' %}" download>Download CSV Template</a>
+            <button type="submit" class="btn-primary">Save Template</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <div class="modal-overlay hidden" id="facultyModal">
       <div
         class="modal"
@@ -222,13 +260,7 @@
         <div class="schedule-preview-table-wrap">
           <p id="facultySchedulePreviewEmpty" class="schedule-preview-empty">Choose a CSV file from the selected faculty row to preview it here.</p>
           <table id="facultySchedulePreviewTable" class="schedule-preview-table hidden">
-            <thead>
-              <tr>
-                <th>Offering ID</th><th>Subject Code</th><th>Section</th><th>Subject Title</th>
-                <th>Units</th><th>Lecture</th><th>Lab</th><th>Recurring Day</th><th>Day From</th><th>Day To</th><th>Time From</th>
-                <th>Time To</th><th>Room</th><th>Uploader</th>
-              </tr>
-            </thead>
+            <thead><tr id="facultySchedulePreviewHead"></tr></thead>
             <tbody id="facultySchedulePreviewBody"></tbody>
           </table>
         </div>
@@ -294,6 +326,6 @@
     </div>
 
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
-    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20260927-google-calendar-confirmation-1"></script>
+    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261031-schedule-template-modal-ux2"></script>
   </body>
 </html>

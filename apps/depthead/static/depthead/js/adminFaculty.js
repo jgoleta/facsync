@@ -8,7 +8,102 @@
         const removeFacultyName = document.getElementById('removeFacultyName');
         const closeRemoveFacultyConfirm = document.getElementById('closeRemoveFacultyConfirm');
         const confirmRemoveFaculty = document.getElementById('confirmRemoveFaculty');
+        const scheduleTemplateModal = document.getElementById('scheduleTemplateModal');
+        const openScheduleTemplateModal = document.getElementById('openScheduleTemplateModal');
+        const closeScheduleTemplateModal = document.getElementById('closeScheduleTemplateModal');
+        const cancelScheduleTemplate = document.getElementById('cancelScheduleTemplate');
+        const resetScheduleTemplate = document.getElementById('resetScheduleTemplate');
+        const scheduleTemplateFields = document.getElementById('scheduleTemplateFields');
+        const scheduleTemplateColumns = document.getElementById('scheduleTemplateColumns');
+        const addScheduleTemplateAttribute = document.getElementById('addScheduleTemplateAttribute');
+        const scheduleTemplateForm = scheduleTemplateModal?.querySelector('form');
+        const requiredTemplateAttributes = new Set([
+            'OFFERING_ID', 'SUBJ_CODE', 'SECTION', 'SUBJECT_TITLE',
+            'DAYFROM', 'DAYTO', 'TIMEFROM', 'TIMETO',
+        ]);
         let pendingRemoveForm = null;
+
+        function closeScheduleTemplateModalFn() {
+            if (scheduleTemplateModal) scheduleTemplateModal.classList.add('hidden');
+        }
+
+        if (openScheduleTemplateModal) {
+            openScheduleTemplateModal.addEventListener('click', () => {
+                scheduleTemplateModal.classList.remove('hidden');
+            });
+        }
+        if (closeScheduleTemplateModal) closeScheduleTemplateModal.addEventListener('click', closeScheduleTemplateModalFn);
+        if (cancelScheduleTemplate) cancelScheduleTemplate.addEventListener('click', closeScheduleTemplateModalFn);
+        if (resetScheduleTemplate) {
+            resetScheduleTemplate.addEventListener('click', () => {
+                const defaults = [
+                    ['OFFERING_ID', 'OFFERING_ID'], ['SUBJ_CODE', 'SUBJ_CODE'],
+                    ['SECTION', 'SECTION'], ['SUBJECT_TITLE', 'SUBJECT_TITLE'],
+                    ['UNITS', 'UNITS'], ['LECTURE', 'LECTURE'], ['LAB', 'LAB'],
+                    ['RECURRING_DAY', 'RECURRING_DAY'], ['DAYFROM', 'DAYFROM'],
+                    ['DAYTO', 'DAYTO'], ['TIMEFROM', 'TIMEFROM'], ['TIMETO', 'TIMETO'],
+                    ['ROOM', 'ROOM'],
+                ];
+                scheduleTemplateFields.innerHTML = '';
+                defaults.forEach(([key, label]) => addTemplateAttributeRow(key, label));
+                syncScheduleTemplateColumns();
+            });
+        }
+
+        function addTemplateAttributeRow(key, label) {
+            const row = document.createElement('div');
+            row.className = 'modal-form-group schedule-template-attribute';
+            row.dataset.key = key;
+            row.innerHTML = `<label><span class="schedule-template-attribute-label">${label}</span><span class="schedule-template-field-key">${key}</span></label><div class="schedule-template-input-row"><input type="text" class="schedule-template-attribute-input" value="${label}" maxlength="64" required><button type="button" class="schedule-template-remove">Remove</button></div>`;
+            scheduleTemplateFields.appendChild(row);
+            return row;
+        }
+
+        function syncScheduleTemplateColumns() {
+            if (!scheduleTemplateFields || !scheduleTemplateColumns) return;
+            const columns = [...scheduleTemplateFields.querySelectorAll('.schedule-template-attribute')]
+                .map((row) => ({
+                    key: row.dataset.key,
+                    label: row.querySelector('.schedule-template-attribute-input')?.value.trim() || '',
+                }));
+            scheduleTemplateColumns.value = JSON.stringify(columns);
+        }
+
+        function removeScheduleTemplateAttribute(row) {
+            if (requiredTemplateAttributes.has(row.dataset.key)) {
+                showCrudToast('Required schedule attributes cannot be deleted.', true);
+                return;
+            }
+            row.remove();
+            syncScheduleTemplateColumns();
+        }
+
+        scheduleTemplateFields?.addEventListener('click', (event) => {
+            const button = event.target.closest('.schedule-template-remove');
+            if (button) removeScheduleTemplateAttribute(button.closest('.schedule-template-attribute'));
+        });
+        scheduleTemplateFields?.addEventListener('input', (event) => {
+            if (!event.target.classList.contains('schedule-template-attribute-input')) return;
+            const label = event.target.closest('.schedule-template-attribute')?.querySelector('.schedule-template-attribute-label');
+            if (label) label.textContent = event.target.value || 'Unnamed attribute';
+        });
+
+        addScheduleTemplateAttribute?.addEventListener('click', () => {
+            const used = new Set([...scheduleTemplateFields.querySelectorAll('.schedule-template-attribute')]
+                .map((row) => row.dataset.key));
+            let index = 1;
+            let key = `CUSTOM_ATTRIBUTE_${index}`;
+            while (used.has(key)) key = `CUSTOM_ATTRIBUTE_${++index}`;
+            addTemplateAttributeRow(key, 'New attribute');
+            scheduleTemplateFields.lastElementChild.querySelector('input').focus();
+        });
+
+        scheduleTemplateForm?.addEventListener('submit', syncScheduleTemplateColumns);
+        if (scheduleTemplateModal) {
+            scheduleTemplateModal.addEventListener('click', (event) => {
+                if (event.target === scheduleTemplateModal) closeScheduleTemplateModalFn();
+            });
+        }
 
         function setCrudLoading(isLoading, message = 'Processing request...') {
             if (!crudLoadingModal) return;
@@ -104,11 +199,13 @@ const schedulePreviewFaculty = document.getElementById('facultySchedulePreviewFa
 const scheduleUploadStatus = document.getElementById('facultyScheduleUploadStatus');
 const schedulePreviewEmpty = document.getElementById('facultySchedulePreviewEmpty');
 const schedulePreviewTable = document.getElementById('facultySchedulePreviewTable');
+const schedulePreviewHead = document.getElementById('facultySchedulePreviewHead');
 const schedulePreviewBody = document.getElementById('facultySchedulePreviewBody');
 const schedulePreviewSearch = document.getElementById('facultySchedulePreviewSearch');
 const schedulePreviewCount = document.getElementById('facultySchedulePreviewCount');
 const deleteUploadedScheduleButton = document.getElementById('deleteFacultyUploadedSchedule');
 let schedulePreviewRows = [];
+let schedulePreviewColumns = [];
 let selectedFacultyId = '';
 let selectedFacultyUploadUrl = '';
 let selectedFacultyPreviewUrl = '';
@@ -198,15 +295,22 @@ function closeSchedulePreview() {
 }
 
 function renderSchedulePreview(rows) {
-    if (!schedulePreviewBody || !schedulePreviewTable || !schedulePreviewEmpty) return;
+    if (!schedulePreviewBody || !schedulePreviewTable || !schedulePreviewEmpty || !schedulePreviewHead) return;
+    schedulePreviewHead.innerHTML = '';
+    schedulePreviewColumns.forEach((column) => {
+        const th = document.createElement('th');
+        th.textContent = column.label;
+        schedulePreviewHead.appendChild(th);
+    });
+    const uploaderHeader = document.createElement('th');
+    uploaderHeader.textContent = 'Uploader';
+    schedulePreviewHead.appendChild(uploaderHeader);
     schedulePreviewBody.innerHTML = '';
     rows.forEach((row) => {
         const tr = document.createElement('tr');
-        [
-            row.OFFERING_ID, row.SUBJ_CODE, row.SECTION, row.SUBJECT_TITLE,
-            row.UNITS, row.LECTURE, row.LAB, row.RECURRING_DAY, row.DAYFROM, row.DAYTO, row.TIMEFROM, row.TIMETO,
-            row.ROOM, row.uploader_label || 'Uploader unknown',
-        ].forEach((value) => {
+        schedulePreviewColumns.map((column) => row[column.key] || '').concat(
+            row.uploader_label || 'Uploader unknown',
+        ).forEach((value) => {
             const td = document.createElement('td');
             td.textContent = value;
             tr.appendChild(td);
@@ -249,6 +353,7 @@ async function viewFacultySchedulePreview(button) {
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'Unable to load the uploaded schedule.');
+        schedulePreviewColumns = data.template_columns || [];
         schedulePreviewRows = data.preview || [];
         if (schedulePreviewSearch) schedulePreviewSearch.value = '';
         renderSchedulePreview(schedulePreviewRows);
@@ -357,6 +462,7 @@ if (scheduleFileInput) {
                 const details = (data.errors || [data.error || 'Unable to upload schedule.']).join(' ');
                 throw new Error(details);
             }
+            schedulePreviewColumns = data.template_columns || schedulePreviewColumns;
             schedulePreviewRows = data.preview || [];
             renderSchedulePreview(schedulePreviewRows);
             const calendarSync = data.calendar_sync || {};
