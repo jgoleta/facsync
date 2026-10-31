@@ -4,6 +4,7 @@ from . import views
 app_name = 'systemadmin'
 urlpatterns = [
     path('', views.manage_schools, name='manage_schools'),
+    path('overview/', views.overview, name='overview'),
     path('schools/add/', views.school_edit, name='school_add'),
     path('schools/<int:school_id>/edit/', views.school_edit, name='school_edit'),
     path('schools/<int:school_id>/status/', views.school_status, name='school_status'),

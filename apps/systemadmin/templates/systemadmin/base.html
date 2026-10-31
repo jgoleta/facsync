@@ -7,17 +7,18 @@
     <title>FacSync | {{ title }}</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
-    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}">
+    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}?v=20261031-footer">
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_management.css' %}">
-    <link rel="stylesheet" href="{% static 'systemadmin/css/systemadmin.css' %}">
+    <link rel="stylesheet" href="{% static 'systemadmin/css/systemadmin.css' %}?v=20261031-overview">
 </head>
 <body class="college-head-palette systemadmin-area">
 <div class="admin-shell">
     <aside class="sidebar">
         <div class="sidebar-header">
-            <a href="{% url 'systemadmin:manage_schools' %}" class="brand"><span class="brand-mark">S</span><span>FacSync System Admin</span></a>
+            <a href="{% url 'systemadmin:overview' %}" class="brand">{% include 'components/_facsync_logo.html' %}<span>FacSync System Admin</span></a>
         </div>
         <nav class="sidebar-nav" aria-label="System administration">
+            <a href="{% url 'systemadmin:overview' %}" class="nav-item {% if tab == 'overview' %}active{% endif %}" {% if tab == 'overview' %}aria-current="page"{% endif %}>System Overview</a>
             <a href="{% url 'systemadmin:manage_schools' %}" class="nav-item {% if tab == 'schools' %}active{% endif %}" {% if tab == 'schools' %}aria-current="page"{% endif %}>Manage Schools</a>
             <a href="{% url 'systemadmin:manage_superadmins' %}" class="nav-item {% if tab == 'superadmins' %}active{% endif %}" {% if tab == 'superadmins' %}aria-current="page"{% endif %}>Manage Super Admins</a>
         </nav>
@@ -26,11 +27,12 @@
         <div class="sidebar-footer"><a class="nav-item logout-link" href="{% url 'account_logout' %}">Logout</a></div>
     </aside>
     <main class="main-content">
-        <header class="main-header with-action">
-            <div><p class="page-kicker">System administration</p><h1>{{ title }}</h1><p>Manage institutions and the administrators responsible for them.</p></div>
+        <header class="main-header with-action{% if tab == 'overview' %} system-overview-header{% endif %}">
+            <div><p class="page-kicker">System administration</p><h1>{{ title }}</h1><p>{{ subtitle|default:"Manage institutions and the administrators responsible for them." }}</p></div>
             {% block action %}{% endblock %}
         </header>
         <nav class="system-tabs" aria-label="Management tabs">
+            <a href="{% url 'systemadmin:overview' %}" {% if tab == 'overview' %}aria-current="page"{% endif %}>System Overview</a>
             <a href="{% url 'systemadmin:manage_schools' %}" {% if tab == 'schools' %}aria-current="page"{% endif %}>Manage Schools</a>
             <a href="{% url 'systemadmin:manage_superadmins' %}" {% if tab == 'superadmins' %}aria-current="page"{% endif %}>Manage Super Admins</a>
         </nav>

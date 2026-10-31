@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Super Admin Dashboard</title>
-    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}?v=20261006-sidebar" />
+    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}?v=20261031-footer" />
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_dashboard.css' %}?v=20261014-overview" />
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
@@ -18,13 +18,13 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <a href="{% url 'superadmin:superadmin_dashboard' %}" class="brand">
-                    <span class="brand-mark brand-mark-image"><img src="https://i.imgur.com/MFtx6rV.png" alt="" onload="this.classList.add('is-loaded')" onerror="this.remove()"><span class="brand-mark-placeholder" aria-hidden="true">F</span></span>
+                    {% include 'components/_facsync_logo.html' %}
                     <span>FacSync Super Admin</span>
                 </a>
             </div>
             <nav class="sidebar-nav">
                 <a href="{% url 'superadmin:superadmin_dashboard' %}" class="nav-item active">
-                    <span>System Overview</span>
+                    <span>School Overview</span>
                 </a>
                 <a href="{% url 'superadmin:manage_colleges' %}" class="nav-item">
                     <span>Manage Colleges</span>
@@ -54,9 +54,9 @@
         <main class="main-content">
             <header class="main-header dashboard-hero">
                 <div>
-                    <p class="overview-kicker">Platform administration</p>
-                    <h1>System-Wide Overview</h1>
-                    <p>Monitor the health and reach of your entire FacSync system.</p>
+                    <p class="overview-kicker">School administration</p>
+                    <h1>School Overview</h1>
+                    <p>Monitor colleges, faculty, and consultations in {{ request.user.school.name }}.</p>
                 </div>
                 <span class="admin-identity-badge">Super Admin</span>
             </header>
@@ -66,14 +66,14 @@
                     <div class="section-heading">
                         <div>
                             <p class="section-kicker">At a glance</p>
-                            <h2 id="system-metrics-title">System metrics</h2>
+                            <h2 id="system-metrics-title">School metrics</h2>
                         </div>
                         <span class="section-caption">Live totals</span>
                     </div>
                     <div class="summary-cards">
                         <article class="overview-stat-card colleges-card">
                             <div class="stat-icon" aria-hidden="true">C</div>
-                            <div><p class="stat-label">Total Colleges</p><p class="stat">{{ total_colleges }}</p><p class="stat-caption">Registered institutions</p></div>
+                            <div><p class="stat-label">Total Colleges</p><p class="stat">{{ total_colleges }}</p><p class="stat-caption">Colleges in your school</p></div>
                         </article>
                         <article class="overview-stat-card faculty-card">
                             <div class="stat-icon" aria-hidden="true">F</div>
@@ -90,7 +90,7 @@
                 <section class="drill-down-panel" aria-labelledby="drill-down-title">
                     <div class="panel-heading">
                         <div>
-                            <p class="section-kicker">Explore the network</p>
+                            <p class="section-kicker">Explore your school</p>
                             <h2 id="drill-down-title">College drill-down</h2>
                         </div>
                         <span class="panel-icon" aria-hidden="true">↗</span>

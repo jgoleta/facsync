@@ -1,0 +1,17 @@
+.recovery-action {
+  box-sizing: border-box;
+  text-align: center;
+  text-decoration: none;
+}
+
+.recovery-note {
+  margin: 24px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.recovery-note code {
+  color: var(--text);
+}
