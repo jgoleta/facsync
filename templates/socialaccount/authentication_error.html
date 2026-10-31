@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>FacSync | Sign-in interrupted</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261015-brand-logo">
+    <link rel="stylesheet" href="{% static 'core/css/loginPage.css' %}?v=20261015-brand-logo">
+    <link rel="stylesheet" href="{% static 'core/css/loginRecovery.css' %}?v=20261031">
+</head>
+<body>
+    <main class="login-container">
+        <section class="login-panel" aria-labelledby="recovery-title">
+            <div class="login-brand">
+                <span class="brand-mark brand-mark-image"><img src="https://i.imgur.com/MFtx6rV.png" alt="" onload="this.classList.add('is-loaded')" onerror="this.remove()"><span class="brand-mark-placeholder" aria-hidden="true">F</span></span>
+                <p class="brand-label">FacSync</p>
+            </div>
+            <div class="form-header">
+                <h1 id="recovery-title">We couldn’t finish signing you in</h1>
+                <p>The sign-in link may have expired or already been used. Return to the login page to start again.</p>
+            </div>
+            <a class="btn-secondary recovery-action" href="{% url 'core:login' %}">Back to login</a>
+            {% if request.user.is_authenticated %}
+            <p class="login-footer">You’re already signed in to an account. <a href="{% url 'core:post_login_redirect' %}">Return to your dashboard</a>.</p>
+            {% endif %}
+            <p class="recovery-note">If this keeps happening, contact your administrator{% if failure_reference %} and share reference <code>{{ failure_reference }}</code>{% endif %}.</p>
+        </section>
+    </main>
+</body>
+</html>

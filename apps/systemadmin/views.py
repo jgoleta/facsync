@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -32,6 +33,23 @@ def _deliver_invite(request, invite):
 def _form_page(request, form, *, title, tab, back, school=None):
     return render(request, 'systemadmin/form.html', dict(form=form, title=title, tab=tab,
         back=back, school=school, changes=school.changes.select_related('actor')[:30] if school else None))
+
+
+@login_required
+@role_required('systemadmin')
+def overview(request):
+    schools = School.objects.aggregate(total=Count('pk'), active=Count('pk', filter=Q(is_active=True)))
+    return render(request, 'systemadmin/overview.html', {
+        'tab': 'overview', 'title': 'System Overview',
+        'subtitle': 'A platform-wide view of schools and administrator onboarding.',
+        'total_schools': schools['total'],
+        'active_schools': schools['active'],
+        'suspended_schools': schools['total'] - schools['active'],
+        'total_superadmins': User.objects.filter(role='superadmin').count(),
+        'pending_invitations': SuperAdminInvite.objects.filter(
+            used=False, is_active=True, school__is_active=True,
+        ).count(),
+    })
 
 
 @login_required

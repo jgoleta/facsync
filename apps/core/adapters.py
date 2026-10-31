@@ -1,14 +1,68 @@
+import logging
+from uuid import uuid4
+
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.core.exceptions import ImmediateHttpResponse
-from django.shortcuts import redirect
+from allauth.socialaccount.providers.base import AuthError, ProviderException
+from allauth.socialaccount.providers.oauth2.client import OAuth2Error
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import redirect, render
 from django.contrib import messages
+from requests.exceptions import RequestException, Timeout
 from .models import FacultyInvite, DeptHeadInvite, SuperAdminInvite, School, User
 from .profile_photos import safe_photo_url
 from django.db import transaction
 from .school_scope import school_scope
 from .student_registration import reject_registration, student_school
 
+logger = logging.getLogger(__name__)
+
+
 class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
+
+    def on_authentication_error(self, request, provider, error=None, exception=None, extra_context=None):
+        # Preserve allauth's normal cancellation flow. Failed callbacks still
+        # fail; no state check, token exchange or authentication is retried here.
+        if error == AuthError.CANCELLED:
+            return super().on_authentication_error(
+                request, provider, error=error, exception=exception, extra_context=extra_context,
+            )
+
+        if extra_context is not None and 'state_id' in extra_context:
+            category = 'oauth_state_unavailable'
+        elif isinstance(exception, Timeout):
+            category = 'provider_timeout'
+        elif isinstance(exception, RequestException):
+            category = 'provider_request_failed'
+        elif isinstance(exception, OAuth2Error):
+            category = 'provider_exchange_failed'
+        elif isinstance(exception, ProviderException):
+            category = 'provider_response_invalid'
+        elif isinstance(exception, PermissionDenied):
+            category = 'permission_denied'
+        elif 'error' in request.GET:
+            category = 'provider_returned_error'
+        elif not request.GET.get('code'):
+            category = 'callback_code_missing'
+        else:
+            category = 'authentication_failed'
+
+        reference = uuid4().hex[:12]
+        # Fixed categories/allowlisted provider and booleans only. Never log
+        # exception text, traceback, callback URLs, state/code values or cookies.
+        provider_name = 'google' if getattr(provider, 'id', None) == 'google' else 'other'
+        authenticated = bool(getattr(getattr(request, 'user', None), 'is_authenticated', False))
+        logger.warning(
+            'social_login_failure reference=%s provider=%s category=%s authenticated=%s has_state=%s has_code=%s',
+            reference, provider_name, category, authenticated,
+            bool(request.GET.get('state')), bool(request.GET.get('code')),
+        )
+        response = render(request, 'socialaccount/authentication_error.html', {
+            'failure_reference': reference,
+        }, status=401)
+        response['Cache-Control'] = 'private, no-store'
+        response['Referrer-Policy'] = 'no-referrer'
+        raise ImmediateHttpResponse(response)
 
     @staticmethod
     def _verified_google_email(sociallogin):

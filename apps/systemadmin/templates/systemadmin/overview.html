@@ -1,0 +1,42 @@
+{% extends 'systemadmin/base.html' %}
+
+{% block action %}<span class="system-scope-badge">All schools</span>{% endblock %}
+
+{% block content %}
+<section class="system-snapshot" aria-labelledby="platform-snapshot-title">
+    <div class="system-snapshot-heading">
+        <div><p class="page-kicker">Platform snapshot</p><h2 id="platform-snapshot-title">Schools, people, and onboarding</h2></div>
+        <p class="system-hint">Current totals across FacSync</p>
+    </div>
+    <div class="system-metrics">
+        <article class="system-metric">
+            <div class="system-metric-heading">
+                <h3>Total schools</h3>
+                <svg class="system-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21h18M5 21V9l7-6 7 6v12M9 21v-5h6v5M9 11h.01M15 11h.01"/></svg>
+            </div>
+            <p class="system-metric-value">{{ total_schools }}</p>
+            <p class="system-metric-detail">{{ active_schools }} active <span aria-hidden="true">&middot;</span> {{ suspended_schools }} suspended</p>
+            <a class="system-metric-link" href="{% url 'systemadmin:manage_schools' %}">Manage schools <span aria-hidden="true">&rarr;</span></a>
+        </article>
+        <article class="system-metric">
+            <div class="system-metric-heading">
+                <h3>Total Super Admins</h3>
+                <svg class="system-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M16 4a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 4v2"/></svg>
+            </div>
+            <p class="system-metric-value">{{ total_superadmins }}</p>
+            <p class="system-metric-detail">School administrators, including deactivated accounts</p>
+            <a class="system-metric-link" href="{% url 'systemadmin:manage_superadmins' %}">Manage Super Admins <span aria-hidden="true">&rarr;</span></a>
+        </article>
+        <article class="system-metric">
+            <div class="system-metric-heading">
+                <h3>Pending invitations</h3>
+                <svg class="system-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+            </div>
+            <p class="system-metric-value">{{ pending_invitations }}</p>
+            <p class="system-metric-detail">Active Super Admin invites awaiting sign-in at active schools</p>
+            <a class="system-metric-link" href="{% url 'systemadmin:manage_superadmins' %}">Review invitations <span aria-hidden="true">&rarr;</span></a>
+        </article>
+    </div>
+    <p class="system-overview-note">School activity and consultation reports remain in each school’s Super Admin workspace.</p>
+</section>
+{% endblock %}
