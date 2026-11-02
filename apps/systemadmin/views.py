@@ -68,7 +68,10 @@ def overview(request):
 @role_required('systemadmin')
 def manage_schools(request):
     return render(request, 'systemadmin/schools.html', {
-        'schools': School.objects.prefetch_related('domains'), 'tab': 'schools', 'title': 'Manage Schools',
+        'schools': School.objects.prefetch_related('domains').annotate(
+            superadmin_count=Count('users', filter=Q(users__role='superadmin'), distinct=True)),
+        'tab': 'schools', 'title': 'Manage Schools',
+        'subtitle': 'Manage school details, registration domains and access to FacSync.',
     })
 
 
@@ -112,7 +115,9 @@ def manage_superadmins(request):
     return render(request, 'systemadmin/superadmins.html', {
         'administrators': User.objects.filter(role='superadmin').select_related('school').order_by('school__name', 'email'),
         'invitations': SuperAdminInvite.objects.filter(used=False).select_related('school', 'invited_by'),
+        'filter_schools': School.objects.all(),
         'tab': 'superadmins', 'title': 'Manage Super Admins',
+        'subtitle': 'Invite Super Admins and manage their access to each school.',
     })
 
 

@@ -1,0 +1,8 @@
+<template id="system-superadmins-skeleton">
+<div data-skeleton="superadmins" aria-label="Loading Super Admins" role="status"><span class="system-sr-only">Loading Super Admins…</span>
+{% for section in '12'|make_list %}<section class="system-skeleton" aria-hidden="true">
+<div class="system-skeleton-heading"><span class="system-shape system-shape-title"></span><span class="system-shape system-shape-button"></span></div>
+<div class="system-skeleton-table">{% for row in '123'|make_list %}<div class="system-skeleton-row superadmin-columns"><span class="system-skeleton-person"><span class="system-shape system-shape-avatar"></span><span class="system-shape"></span></span><span class="system-shape"></span><span class="system-shape"></span><span class="system-shape"></span><span class="system-shape"></span></div>{% endfor %}</div>
+</section>{% endfor %}
+</div>
+</template>

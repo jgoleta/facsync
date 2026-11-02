@@ -2,9 +2,6 @@
 .systemadmin-area { background: var(--bg-main); }
 .systemadmin-area a.btn-primary,
 .systemadmin-area a.btn-secondary { display: inline-block; text-decoration: none; text-align: center; }
-.system-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); }
-.system-tabs a { padding: 12px 18px; text-decoration: none; color: var(--text-secondary); border-bottom: 3px solid transparent; }
-.system-tabs a[aria-current="page"] { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
 .system-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .system-actions form { margin: 0; }
 .systemadmin-area .management-table-wrapper { margin-bottom: 24px; }
@@ -50,6 +47,82 @@
 .system-metric-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border-color); color: var(--primary-dark); font-size: .875rem; font-weight: 600; text-decoration: none; }
 .system-metric-link:hover { text-decoration: underline; }
 .system-overview-note { margin-top: 20px; color: var(--text-secondary); font-size: .875rem; line-height: 1.6; }
+
+/* Scoped management styles use the existing theme palette. */
+.systemadmin-area [hidden] { display: none !important; }
+/* base.css makes every button full-width with !important; override only here. */
+.systemadmin-area .system-header-action { width: auto !important; flex: 0 0 auto; white-space: nowrap; }
+.systemadmin-area .main-header.with-action:not(.system-overview-header) { gap: 24px; }
+.systemadmin-area .main-header.with-action:not(.system-overview-header) > div { min-width: 0; }
+.systemadmin-area .system-actions > a, .systemadmin-area .system-actions button { width: auto !important; padding: 9px 13px; }
+.systemadmin-area .system-modal-actions button { width: auto !important; }
+.systemadmin-area .system-directory-card { padding: 0; }
+.system-directory-card { border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden; background: var(--card-bg); }
+.system-directory-card .management-table-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px; padding: 24px; }
+.system-directory-card .management-table-header h2 { margin: 4px 0 0; font-size: 1.15rem; }
+.system-directory-table { width: 100%; border-collapse: collapse; text-align: left; }
+.system-directory-table th { color: var(--text-secondary); background: var(--bg-main); font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.system-directory-table th, .system-directory-table td { padding: 18px 24px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+.system-directory-table tbody tr:last-child td { border-bottom: 0; }
+.system-directory-table tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 35%, var(--card-bg)); }
+.system-directory-table .empty-state { padding: 56px 24px; text-align: center; color: var(--text-secondary); }
+.system-person { display: flex; align-items: center; gap: 10px; min-width: 180px; }
+.system-person .system-initial { margin: 0; width: 38px; height: 38px; background: var(--accent-soft); color: var(--primary-dark); }
+.system-person-name { font-weight: 600; color: var(--text-primary); overflow-wrap: anywhere; }
+.system-email { overflow-wrap: anywhere; }
+.system-code { font-weight: 600; letter-spacing: .025em; }
+.system-count { font-variant-numeric: tabular-nums; font-weight: 600; }
+.system-domain-list { display: flex; flex-wrap: wrap; gap: 6px; min-width: 160px; max-width: 300px; }
+.system-domain-chip { padding: 4px 9px; border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-main); color: var(--text-secondary); font-size: .8rem; overflow-wrap: anywhere; }
+.system-pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 5px 11px; font-size: .8rem; font-weight: 600; white-space: nowrap; }
+.system-pill.is-active { color: var(--success); background: color-mix(in srgb, var(--success) 10%, var(--card-bg)); }
+.system-pill.is-suspended, .system-pill.is-deactivated { color: var(--danger); background: var(--danger-soft); }
+.system-pill.is-invited { color: var(--primary-dark); background: var(--accent-soft); }
+.system-school-note { display: block; margin-top: 4px; color: var(--text-secondary); font-size: .8rem; }
+.system-school-filter { display: grid; gap: 6px; color: var(--text-secondary); font-size: .8rem; font-weight: 600; }
+.system-directory-toolbar { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+.system-school-filter select { width: min(260px, 100%); padding: 10px 32px 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-bg); color: var(--text-primary); font: inherit; }
+.system-directory-table .system-actions { min-width: 170px; }
+.systemadmin-area .system-danger-action { color: var(--danger); }
+.systemadmin-area button:disabled { cursor: wait; opacity: .65; }
+.system-modal { width: min(720px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); padding: 28px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--card-bg); color: var(--text-primary); overflow: auto; box-shadow: 0 24px 80px color-mix(in srgb, var(--bg-sidebar) 25%, transparent); }
+.system-modal::backdrop { background: color-mix(in srgb, var(--bg-sidebar) 65%, transparent); }
+.system-modal-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 24px; }
+.system-modal-header h2 { margin: 6px 0 0; font-size: 1.4rem; }
+.systemadmin-area .system-close { flex-shrink: 0; width: 36px; height: 36px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-bg); color: var(--text-secondary); font-size: 1.5rem; cursor: pointer; }
+.system-modal .system-form-card { padding: 0; border: 0; box-shadow: none; margin-bottom: 0; }
+.system-modal .system-form { margin: 0; }
+.system-modal #system-form-content > section + section { margin-top: 24px; }
+.system-modal .system-form .system-actions { padding-top: 16px; border-top: 1px solid var(--border-color); justify-content: flex-end; }
+.system-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.system-confirm { max-width: 480px; line-height: 1.6; }
+.system-domain-feedback { margin: 0; color: var(--danger); font-size: .85rem; }
+.system-form textarea[aria-invalid="true"] { border-color: var(--danger); }
+.system-toast-stack { position: fixed; right: 24px; bottom: 24px; display: grid; gap: 10px; z-index: 2000; max-width: min(440px, calc(100vw - 32px)); }
+.system-toast { border: 1px solid var(--success); border-left-width: 4px; border-radius: 10px; padding: 16px 20px; color: var(--text-primary); background: var(--card-bg); box-shadow: 0 8px 24px color-mix(in srgb, var(--bg-sidebar) 12%, transparent); opacity: 0; transform: translateY(8px); transition: opacity .2s, transform .2s; }
+.system-toast.show { opacity: 1; transform: none; }
+.system-toast.error { border-color: var(--danger); }.system-toast.warning { border-color: var(--warning); }
+.system-modal .system-toast { margin-bottom: 16px; }
+.system-processing { position: fixed; bottom: 24px; left: 50%; display: flex; align-items: center; gap: 10px; padding: 14px 20px; border: 1px solid var(--border-color); border-radius: 12px; background: var(--card-bg); color: var(--text-primary); z-index: 1900; }
+.system-spinner { display: inline-block; vertical-align: middle; width: 16px; height: 16px; margin-right: 6px; border: 2px solid var(--border-color); border-top-color: var(--primary); border-radius: 50%; animation: system-spin .75s linear infinite; }
+.system-skeleton { padding: 24px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--card-bg); overflow: hidden; }
+.system-skeleton-heading { display: flex; justify-content: space-between; gap: 20px; margin-bottom: 32px; }
+.system-shape { display: block; width: 100%; height: 12px; border-radius: 6px; background: var(--border-color); animation: system-pulse 1.2s ease-in-out infinite alternate; }
+.system-shape-title { width: 210px; height: 22px; }.system-shape-button { width: 140px; height: 34px; }
+.system-skeleton-row { display: grid; align-items: center; gap: 24px; min-width: 720px; padding: 20px 0; border-top: 1px solid var(--border-color); }
+.school-columns { grid-template-columns: 2fr .7fr 1.6fr .7fr 1fr 1.2fr; }.superadmin-columns { grid-template-columns: 1.6fr 1.7fr 1.2fr .8fr 1.4fr; }
+.system-skeleton-person { display: flex; gap: 10px; align-items: center; }.system-shape-avatar { flex-shrink: 0; width: 38px; height: 38px; border-radius: 50%; }
+.system-navigation-skeleton { position: fixed; z-index: 1500; overflow: hidden; background: var(--bg-main); padding: 24px; }.system-navigation-skeleton .system-skeleton { height: 100%; }
+.system-navigation-skeleton [data-skeleton="superadmins"] { display: grid; gap: 24px; }
+.system-navigation-skeleton [data-skeleton="superadmins"] > .system-skeleton { height: auto; }
+.system-overview-skeleton-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.system-overview-skeleton-card { display: grid; gap: 24px; padding: 24px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--card-bg); }
+.system-shape-metric { width: 64px; height: 48px; }.system-shape-note { width: 65%; margin-top: 28px; }
+@media (max-width: 1100px) { .system-overview-skeleton-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .system-overview-skeleton-cards { grid-template-columns: 1fr; } }
+.system-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@keyframes system-spin { to { transform: rotate(360deg); } } @keyframes system-pulse { from { opacity: .45; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .system-spinner, .system-shape { animation: none; }.system-toast { transition: none; } }
 @media (max-width: 1100px) { .system-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 760px) {
   .system-metrics { grid-template-columns: 1fr; }
