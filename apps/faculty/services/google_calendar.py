@@ -840,7 +840,7 @@ def _refresh_faculty_status_locked(faculty, google_events=None, *, immediate_ema
     )
     active_status = None
     calendar_events = eligible_schedule_events().filter(faculty=faculty)
-    status_priority = {'busy': 1, 'virtual_only': 2, 'on_leave': 3}
+    status_priority = {'busy': 1, 'virtual_only': 2, 'unavailable': 3, 'on_leave': 4}
     local_now = now.replace(tzinfo=None)
 
     def consider_interval(interval, candidate):
@@ -852,9 +852,12 @@ def _refresh_faculty_status_locked(faculty, google_events=None, *, immediate_ema
             active_status = candidate
 
     def event_status(event_type):
-        return 'on_leave' if event_type == 'on-leave' else (
-            'virtual_only' if event_type == 'virtual' else 'busy'
-        )
+        return {
+            'busy': 'busy',
+            'unavailable': 'unavailable',
+            'on-leave': 'on_leave',
+            'virtual': 'virtual_only',
+        }.get(event_type, 'busy')
 
     for event in calendar_events:
         for interval in schedule_intervals(event, now.date()):
