@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}?v=20261031-footer">
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_management.css' %}">
-    <link rel="stylesheet" href="{% static 'systemadmin/css/systemadmin.css' %}?v=20261031-overview">
+    <link rel="stylesheet" href="{% static 'systemadmin/css/systemadmin.css' %}?v=20261102-management-2">
 </head>
 <body class="college-head-palette systemadmin-area">
 <div class="admin-shell">
@@ -28,18 +28,28 @@
     </aside>
     <main class="main-content">
         <header class="main-header with-action{% if tab == 'overview' %} system-overview-header{% endif %}">
-            <div><p class="page-kicker">System administration</p><h1>{{ title }}</h1><p>{{ subtitle|default:"Manage institutions and the administrators responsible for them." }}</p></div>
+            <div><p class="page-kicker">System administration</p><h1>{{ title }}</h1><p>{{ subtitle|default:"Manage schools and their Super Admins." }}</p></div>
             {% block action %}{% endblock %}
         </header>
-        <nav class="system-tabs" aria-label="Management tabs">
-            <a href="{% url 'systemadmin:overview' %}" {% if tab == 'overview' %}aria-current="page"{% endif %}>System Overview</a>
-            <a href="{% url 'systemadmin:manage_schools' %}" {% if tab == 'schools' %}aria-current="page"{% endif %}>Manage Schools</a>
-            <a href="{% url 'systemadmin:manage_superadmins' %}" {% if tab == 'superadmins' %}aria-current="page"{% endif %}>Manage Super Admins</a>
-        </nav>
-        {% for message in messages %}<p class="system-message" role="status">{{ message }}</p>{% endfor %}
+        <div data-system-messages>{% for message in messages %}<p class="system-message" role="status" data-level="{{ message.tags }}">{{ message }}</p>{% endfor %}</div>
         {% block content %}{% endblock %}
     </main>
 </div>
-<script src="{% static 'systemadmin/js/confirm.js' %}" defer></script>
+<dialog id="system-form-modal" class="system-modal" aria-labelledby="system-modal-title">
+    <div class="system-modal-header"><div><p class="page-kicker">SYSTEM ADMINISTRATION</p><h2 id="system-modal-title">Loading form</h2></div><button type="button" class="system-close" data-close-modal aria-label="Close">&times;</button></div>
+    <div id="system-modal-body"></div>
+</dialog>
+<dialog id="system-confirm-modal" class="system-modal system-confirm" aria-labelledby="system-confirm-title">
+    <div class="system-modal-header"><h2 id="system-confirm-title">Confirm action</h2><button type="button" class="system-close" data-close-confirm aria-label="Close">&times;</button></div>
+    <p id="system-confirm-message"></p>
+    <div class="system-modal-actions"><button type="button" class="btn-secondary" data-close-confirm>Cancel</button><button type="button" class="btn-primary" id="system-confirm-submit">Confirm</button></div>
+</dialog>
+{% include 'systemadmin/partials/schools_skeleton.html' %}
+{% include 'systemadmin/partials/superadmins_skeleton.html' %}
+{% include 'systemadmin/partials/overview_skeleton.html' %}
+<div id="system-toast-stack" class="system-toast-stack" aria-live="polite"></div>
+<div id="system-processing" class="system-processing" role="status" hidden><span class="system-spinner" aria-hidden="true"></span><span data-processing-message>Processing request…</span></div>
+<script src="{% static 'js/avatars.js' %}" defer></script>
+<script src="{% static 'systemadmin/js/management.js' %}?v=20261102-management-2" defer></script>
 </body>
 </html>

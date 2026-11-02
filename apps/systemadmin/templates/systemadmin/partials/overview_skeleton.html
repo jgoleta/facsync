@@ -1,0 +1,10 @@
+<template id="system-overview-skeleton">
+<section class="system-skeleton system-overview-skeleton" data-skeleton="overview" aria-label="Loading System Overview" role="status">
+    <span class="system-sr-only">Loading System Overview…</span>
+    <div class="system-skeleton-heading"><span class="system-shape system-shape-title"></span><span class="system-shape system-shape-button"></span></div>
+    <div class="system-overview-skeleton-cards">
+        {% for card in '123'|make_list %}<div class="system-overview-skeleton-card" aria-hidden="true"><span class="system-shape"></span><span class="system-shape system-shape-metric"></span><span class="system-shape"></span><span class="system-shape"></span></div>{% endfor %}
+    </div>
+    <span class="system-shape system-shape-note" aria-hidden="true"></span>
+</section>
+</template>
