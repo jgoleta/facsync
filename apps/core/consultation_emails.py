@@ -31,6 +31,8 @@ def _recipient(consultation, event):
         raise ValueError('Consultation participants do not match the school and roles.')
     recipient = faculty if event == 'requested' else student
     if any(not user.is_active or user.account_status != 'active' for user in (student, faculty)):
+        logger.info('consultation_email_skipped request=%s event=%s reason=participant_inactive',
+                    consultation.pk, event)
         return None
     return recipient if (recipient.email or '').strip() else None
 
@@ -49,6 +51,9 @@ def queue_consultation_email(consultation, event):
     try:
         if safe_event == 'unknown':
             raise ValueError('Unknown consultation email event.')
+        logger.info('consultation_email_dispatch_started request=%s event=%s enabled=%s region=%s',
+                    consultation.pk, event, settings.CONSULTATION_EMAILS_ENABLED,
+                    settings.CONSULTATION_EMAIL_QUEUE_REGION)
         if _recipient(consultation, event) is None:
             return
         if not settings.CONSULTATION_EMAILS_ENABLED:
@@ -59,6 +64,7 @@ def queue_consultation_email(consultation, event):
         def publish():
             try:
                 _publish(job)
+                logger.info('consultation_email_queued request=%s event=%s', consultation.pk, event)
             except Exception as error:
                 # Never print addresses, student notes, backend responses or secrets.
                 logger.warning('consultation_email_dispatch_failed request=%s event=%s category=%s',
@@ -78,14 +84,20 @@ def send_consultation_email(job):
                 or not isinstance(job.get('request_id'), str) or len(job['request_id']) > 64):
             raise ValueError('Invalid consultation email job.')
         event = job['event']
+        logger.info('consultation_email_worker_received request=%s event=%s enabled=%s',
+                    job['request_id'], event, settings.CONSULTATION_EMAILS_ENABLED)
         school = School.objects.filter(pk=job['school_id'], is_active=True).first()
         if school is None or not settings.CONSULTATION_EMAILS_ENABLED:
+            logger.info('consultation_email_skipped request=%s event=%s reason=%s',
+                        job['request_id'], event, 'school_unavailable' if school is None else 'disabled')
             return False
         with school_scope(school):
             consultation = ConsultationRequest.objects.select_related('user__school', 'faculty__user__school').filter(
                 pk=job['request_id'],
             ).first()
             if consultation is None or consultation.status != EVENTS[event][0]:
+                logger.info('consultation_email_skipped request=%s event=%s reason=removed_or_superseded',
+                            job['request_id'], event)
                 return False  # Removed or superseded requests must not send stale messages.
             recipient = _recipient(consultation, event)
             if recipient is None:
@@ -112,6 +124,7 @@ def send_consultation_email(job):
             if not _send_html_email(EVENTS[event][1], 'consultation_notification.html', context,
                                     [recipient.email.strip()], text_content=text):
                 raise RuntimeError('Email backend did not accept the message.')
+            logger.info('consultation_email_backend_accepted request=%s event=%s', consultation.pk, event)
             return True
     except Exception as error:
         logger.warning('consultation_email_delivery_failed category=%s', type(error).__name__)
