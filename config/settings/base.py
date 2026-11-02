@@ -189,6 +189,9 @@ SOCIALACCOUNT_ADAPTER = 'apps.core.adapters.FacSyncSocialAdapter'
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 BREVO_API_KEY = config('BREVO_API_KEY', default='')
 BREVO_BATCH_SIZE = config('BREVO_BATCH_SIZE', default=100, cast=int)
+# Enable after deploying the private Vercel Queues subscriber and verifying mail.
+CONSULTATION_EMAILS_ENABLED = config('CONSULTATION_EMAILS_ENABLED', default=False, cast=bool)
+CONSULTATION_EMAIL_QUEUE_REGION = config('CONSULTATION_EMAIL_QUEUE_REGION', default='sin1')
 # Enable only after migrating and configuring the external scheduled POST.
 AUTOMATIC_STATUS_EMAIL_QUEUE_ENABLED = config('AUTOMATIC_STATUS_EMAIL_QUEUE_ENABLED', default=False, cast=bool)
 STATUS_SCHEDULER_SECRET = config('STATUS_SCHEDULER_SECRET', default='')

@@ -21,6 +21,7 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.cache import never_cache
 from apps.core.models import College, CollegeAnnouncement
 from apps.core.services import create_notification, get_active_announcements
+from apps.core.consultation_emails import queue_consultation_email
 from django.http import JsonResponse
 from django.utils import timezone
 
@@ -1927,6 +1928,10 @@ def api_consultation(request, request_id):
                 f'Your consultation request {consultation.request_id} with '
                 f'{consultation.faculty} was {new_status}.',
             )
+        if new_status == 'approved' and not rejecting_cancellation:
+            queue_consultation_email(consultation, 'approved')
+        elif new_status == 'completed':
+            queue_consultation_email(consultation, 'completed')
         return JsonResponse(_consultation_json(consultation))
 
     if request.method == 'PATCH':

@@ -1,0 +1,3 @@
+# Private Vercel queue consumer; the Django website keeps using requirements.txt.
+[[tool.vercel.subscribers]]
+entrypoint = "apps.core.consultation_email_worker"

@@ -4,6 +4,7 @@ import uuid
 from datetime import date, datetime, time, timedelta
 from apps.core.models import OfficeClosure
 from apps.core.services import create_notification, get_active_announcements, active_announcement_queryset
+from apps.core.consultation_emails import queue_consultation_email
 
 from django.contrib.auth.decorators import login_required
 from apps.core.decorators import role_required
@@ -386,6 +387,7 @@ def api_consultation_requests(request):
         ),
         url='/faculty/dashboard/',
     )
+    queue_consultation_email(consultation, 'requested')
     return JsonResponse(_consultation_json(consultation), status=201)
 
 @login_required
