@@ -10,7 +10,7 @@ from django.views.decorators.http import require_POST
 
 from apps.core.decorators import role_required
 from apps.core.models import School, SuperAdminInvite, User
-from apps.core.services import _send_html_email
+from apps.core.services import send_superadmin_deactivated_email, send_superadmin_invite_email
 from .forms import SchoolForm, SuperAdminEditForm, SuperAdminInviteForm
 from .services import require_replacement_superadmin
 
@@ -18,16 +18,28 @@ logger = logging.getLogger(__name__)
 
 
 def _deliver_invite(request, invite):
+    if not (invite.email or '').strip():
+        return
     try:
-        sent = _send_html_email("You've been invited to FacSync as a Super Admin",
-            'superadmin_invite.html', {'school': invite.school}, [invite.email])
+        sent = send_superadmin_invite_email(invite.email, invite.school)
         if not sent:
             raise RuntimeError('Email backend did not accept the invitation.')
-    except Exception:
-        logger.exception('Super Admin invitation email delivery failed for invite %s', invite.pk)
+    except Exception as error:
+        logger.warning('superadmin_invite_email_failed invite=%s category=%s', invite.pk, type(error).__name__)
         messages.warning(request, 'The invitation is saved, but its email could not be sent. Use Resend email to try again.')
     else:
         messages.success(request, f'Invitation email sent to {invite.email}.')
+
+
+def _deliver_deactivation(request, user):
+    if not (user.email or '').strip():
+        return
+    try:
+        if not send_superadmin_deactivated_email(user):
+            raise RuntimeError('Email backend did not accept the notice.')
+    except Exception as error:
+        logger.warning('superadmin_deactivation_email_failed user=%s category=%s', user.pk, type(error).__name__)
+        messages.warning(request, 'The Super Admin was deactivated, but the notification email could not be sent.')
 
 
 def _form_page(request, form, *, title, tab, back, school=None):
@@ -182,6 +194,7 @@ def superadmin_edit(request, user_id):
 def superadmin_status(request, user_id):
     # Lock the school first so two concurrent deactivations cannot remove its last admin.
     initial = get_object_or_404(User, pk=user_id, role='superadmin')
+    notify_deactivation = False
     with transaction.atomic():
         school = get_object_or_404(School.objects.select_for_update(), pk=initial.school_id)
         user = get_object_or_404(User.objects.select_for_update(), pk=user_id, role='superadmin', school=school)
@@ -193,11 +206,15 @@ def superadmin_status(request, user_id):
                 require_replacement_superadmin(user)
             elif not school.is_active:
                 raise ValidationError('Reactivate the school before reactivating this account.')
+            was_active = user.is_active and user.account_status == 'active'
             user.account_status = 'active' if action == 'reactivate' else 'deactivated'
             user.is_active = action == 'reactivate'
             user.save(update_fields=['account_status', 'is_active'])
         except ValidationError as error:
             messages.error(request, '; '.join(error.messages))
         else:
+            notify_deactivation = was_active and action == 'deactivate'
             messages.success(request, 'Super Admin reactivated.' if user.is_active else 'Super Admin deactivated.')
+    if notify_deactivation:
+        _deliver_deactivation(request, user)
     return redirect('systemadmin:manage_superadmins')

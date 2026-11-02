@@ -241,6 +241,35 @@ def send_depthead_deactivated_email(user):
         [user.email],
     )
 
+
+def send_superadmin_invite_email(email, school):
+    email = (email or '').strip()
+    if not email:
+        return False
+    login_url = settings.SITE_URL.rstrip('/') + reverse('core:login')
+    return bool(_send_html_email(
+        "You've been invited to FacSync as a Super Admin",
+        'superadmin_invite.html', {'school': school, 'login_url': login_url}, [email],
+        text_content=(f'You have been invited as a Super Admin for {school.name} ({school.code}) on FacSync.\n\n'
+                      'Sign in with Google using the email address that received this invitation. '
+                      f'Your account will activate on your first login.\n\nActivate Account: {login_url}'),
+    ))
+
+
+def send_superadmin_deactivated_email(user):
+    email = (user.email or '').strip()
+    if not email:
+        return False
+    name = user.get_full_name() or user.username
+    return bool(_send_html_email(
+        'Your FacSync Super Admin account was deactivated',
+        'superadmin_deactivated.html', {'name': name, 'school': user.school}, [email],
+        text_content=(f'Hi {name},\n\nYour Super Admin account for {user.school.name} '
+                      f'({user.school.code}) has been deactivated by a System Admin. '
+                      'You will not be able to sign in until it is reactivated. '
+                      'If you believe this was a mistake, please contact your System Admin.'),
+    ))
+
 logger = logging.getLogger(__name__)
 
 
