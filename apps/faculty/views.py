@@ -3,6 +3,7 @@ from django.views.decorators.http import require_GET
 import csv
 import io
 import json
+import logging
 import re
 from datetime import date, datetime, time, timedelta
 
@@ -15,12 +16,13 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.cache import never_cache
 from apps.core.models import College, CollegeAnnouncement
-from apps.core.services import create_notification, get_active_announcements
+from apps.core.services import _send_html_email, create_notification, get_active_announcements
 from apps.core.consultation_emails import queue_consultation_email
 from django.http import JsonResponse
 from django.utils import timezone
@@ -1809,13 +1811,33 @@ def _notify_consultation_student(consultation, subject, body):
     """Email a consultation status change to the student when an address exists."""
     if not consultation.user.email:
         return
-    send_mail(
-        subject,
-        body,
-        getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@facsync.local'),
-        [consultation.user.email],
-        fail_silently=True,
-    )
+    try:
+        context = {
+            'heading': f'Consultation {consultation.status}',
+            'intro': body,
+            'name': consultation.user.get_full_name() or consultation.user.username,
+            'student_name': consultation.user.get_full_name() or consultation.user.username,
+            'faculty_name': consultation.faculty.user.get_full_name() or consultation.faculty.user.username,
+            'agenda': consultation.get_agenda_display(),
+            'consultation_type': consultation.get_consultation_type_display(),
+            'date': consultation.date,
+            'start_time': consultation.start_time,
+            'end_time': consultation.end_time,
+            'timezone': settings.GOOGLE_CALENDAR_TIME_ZONE,
+            'message_label': 'Faculty note',
+            'message': (consultation.faculty_note or '')[:CONSULTATION_NOTE_MAX_LENGTH],
+            'button_label': 'View consultation',
+            'button_url': settings.SITE_URL.rstrip('/') + reverse('students:consultation_requests'),
+        }
+        _send_html_email(
+            subject, 'consultation_notification.html', context, [consultation.user.email],
+            fail_silently=True, text_content=body,
+        )
+    except Exception as error:
+        # Rendering/provider failures must not undo a saved status change.
+        logging.getLogger(__name__).warning(
+            'consultation_status_email_failed category=%s', type(error).__name__,
+        )
 
 
 @login_required
