@@ -9,6 +9,21 @@ ALLOWED_HOSTS = [host for host in config('ALLOWED_HOSTS', cast=Csv()) if host]
 CSRF_TRUSTED_ORIGINS = [origin for origin in config('CSRF_TRUSTED_ORIGINS', cast=Csv()) if origin]
 SITE_URL = config('SITE_URL').rstrip('/')
 
+# Expose the email pipeline's INFO milestones without enabling verbose provider
+# or authentication logs. Django's other loggers retain their existing setup.
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'consultation_email_console': {'class': 'logging.StreamHandler'}},
+    'loggers': {
+        'apps.core.consultation_emails': {
+            'handlers': ['consultation_email_console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_SSL_REDIRECT = True
