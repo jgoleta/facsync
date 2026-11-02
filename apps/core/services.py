@@ -153,8 +153,10 @@ def _build_html_email(subject, template_name, context, recipient_list):
     return msg
 
 
-def _send_html_email(subject, template_name, context, recipient_list, fail_silently=False):
+def _send_html_email(subject, template_name, context, recipient_list, fail_silently=False, *, text_content=None):
     msg = _build_html_email(subject, template_name, context, recipient_list)
+    if text_content is not None:
+        msg.body = text_content
     return msg.send(fail_silently=fail_silently)
 
 

@@ -1,0 +1,18 @@
+{% autoescape off %}{{ heading }}
+
+Hi {{ name }},
+
+{{ intro }}
+
+Student: {{ student_name }}
+Faculty: {{ faculty_name }}
+Agenda: {{ agenda }}
+Consultation type: {{ consultation_type }}
+Date: {{ date|date:"F j, Y" }}
+Time: {% if start_time %}{{ start_time|time:"g:i A" }}{% if end_time %} – {{ end_time|time:"g:i A" }}{% endif %}{% else %}Not specified{% endif %} ({{ timezone }})
+{% if message or show_empty_message %}
+{{ message_label }}:
+{{ message|default:"No message provided." }}
+{% endif %}
+{{ button_label }}: {{ button_url }}
+{% endautoescape %}
