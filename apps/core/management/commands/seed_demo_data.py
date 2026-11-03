@@ -56,7 +56,7 @@ def build_plan(college, batch, now, seed):
                 faculty_id=fid, user=username, college_id=college.code,
                 office_location=f'DEMO office {number}', biography=f'Demo dataset: {batch}',
                 current_status=statuses[i], manual_status=statuses[i], manual_status_override=True,
-                manual_status_expires_at=None, sync_enabled=False, walk_ins_enabled=i < 3,
+                manual_status_expires_at=None, sync_enabled=True, walk_ins_enabled=i < 3,
                 status_updated_at=now,
             ))
             # A carry-in row establishes the state before the rolling seven-day window.

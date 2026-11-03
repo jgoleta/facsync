@@ -39,6 +39,11 @@ class FacultyProfile(SchoolScopedModel):
     photo_url = models.URLField(blank=True)
     biography = models.TextField(blank=True, default='')
 
+    def save(self, *args, **kwargs):
+        # Calendar synchronization is a product-wide invariant.
+        self.sync_enabled = True
+        super().save(*args, **kwargs)
+
     @property
     def college_name(self):
         """Return the full college name, including for legacy CCS records."""

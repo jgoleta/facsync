@@ -13,6 +13,8 @@ UPDATE_QUESTIONS = {
 
 @school_service
 def department_update_answer(metric, college, role, source_url):
+    if role == 'officeadmin':
+        role = 'depthead'
     if metric not in UPDATE_QUESTIONS or role not in ('student', 'faculty', 'depthead'):
         raise ValueError('Unsupported department update')
     if not str(college or '').strip():

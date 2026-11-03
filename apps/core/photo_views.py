@@ -14,7 +14,7 @@ from .profile_photos import PhotoStorage, PhotoStorageError, delete_photo_safely
 @require_POST
 @never_cache
 def profile_photo(request):
-    if request.user.role not in {'student', 'faculty'} or request.user.account_status != 'active':
+    if request.user.role not in {'student', 'faculty', 'officeadmin'} or request.user.account_status != 'active':
         return JsonResponse({'error': 'Photo changes are unavailable for this account.'}, status=403)
     action = request.POST.get('action')
     if action not in {'upload', 'remove'}:

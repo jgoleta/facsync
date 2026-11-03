@@ -1,0 +1,7 @@
+{% extends "emails/base_email.html" %}
+{% block title %}You've been invited to FacSync{% endblock %}
+{% block heading %}Office Admin invitation{% endblock %}
+{% block body %}
+<p>You've been pre-registered as an Office Admin for <strong>{{ office }}</strong> on FacSync.</p>
+<p>Sign in with the invited Google account to activate your account. Office Admins can manage the office, update availability, and accept student consultation requests.</p>
+{% endblock %}

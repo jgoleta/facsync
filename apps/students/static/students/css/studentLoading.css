@@ -171,11 +171,7 @@
 }
 
 .faculty-transition.student-transition .student-home-content {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
-  grid-template-areas: "services actions";
-  align-items: start;
-  gap: 22px;
+  display: block;
 }
 
 .student-home-services,
@@ -279,7 +275,8 @@
 }
 
 .student-home-actions {
-  grid-template-columns: minmax(0, 1fr);
+  grid-area: auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .student-home-action-card {
@@ -379,10 +376,10 @@
 
 .student-dashboard-controls {
   display: grid;
-  grid-template-columns: minmax(170px, 0.9fr) auto minmax(190px, 1fr);
+  grid-template-columns: minmax(150px, 0.8fr) minmax(170px, 0.9fr) auto minmax(190px, 1fr);
   align-items: end;
   gap: 12px;
-  width: min(100%, 620px);
+  width: min(100%, 860px);
 }
 
 .student-dashboard-control {
@@ -725,6 +722,10 @@
   .student-home-services-grid {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .student-home-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 @media (max-width: 640px) {
@@ -735,6 +736,10 @@
   }
 
   .student-faculty-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .student-dashboard-controls {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -753,6 +758,26 @@
 
   .student-home-announcement {
     padding: 18px;
+  }
+}
+
+/* Keep transition pages clear of the fixed topbar and the viewport edge. */
+.faculty-navigation-shell .page-shell {
+  padding-top: 84px;
+  padding-bottom: 24px;
+}
+
+@media (max-width: 640px) {
+  .faculty-navigation-shell .page-shell {
+    padding-top: 78px;
+    padding-bottom: 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  .faculty-navigation-shell .page-shell {
+    padding-top: 122px;
+    padding-bottom: 14px;
   }
 }
 

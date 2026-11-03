@@ -1,12 +1,12 @@
 from django import forms
-from .models import College, User
-from .colleges import COLLEGE_CHOICES, get_college_choices
+from .models import College, Office, User
+from .colleges import COLLEGE_CHOICES, get_unit_choices
 from django.utils import timezone
 from apps.core.models import CollegeAnnouncement
 from .school_forms import SchoolBoundModelForm
 
 class StudentProfileForm(SchoolBoundModelForm):
-    college = forms.ChoiceField(choices=get_college_choices)
+    college = forms.ChoiceField(choices=get_unit_choices)
 
     class Meta:
         model = User
@@ -61,4 +61,20 @@ class CollegeForm(SchoolBoundModelForm):
 class CollegeDescriptionForm(SchoolBoundModelForm):
     class Meta:
         model = College
+        fields = ['description']
+
+class OfficeForm(SchoolBoundModelForm):
+    class Meta:
+        model = Office
+        fields = ['name', 'description']
+
+    def clean_name(self):
+        value = self.cleaned_data['name']
+        if Office.objects.filter(name__iexact=value).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('An office with this name already exists in your school.')
+        return value
+
+class OfficeDescriptionForm(SchoolBoundModelForm):
+    class Meta:
+        model = Office
         fields = ['description']

@@ -4,16 +4,17 @@ from django.contrib.auth import get_user_model
 from apps.core.decorators import role_required
 from django.contrib import messages
 from django.http import JsonResponse
-from apps.core.colleges import get_college_choices
+from apps.core.colleges import get_college_choices, get_unit_choices
 from apps.core.faculty import mark_inactive_faculty
-from .forms import DeptHeadInviteForm, FacultySuperInviteForm
-from apps.core.models import User, College, FacultyInvite
-from apps.core.forms import CollegeForm
+from .forms import DeptHeadInviteForm, FacultySuperInviteForm, OfficeAdminInviteForm
+from apps.core.models import User, College, Office, FacultyInvite, OfficeAdminInvite
+from apps.core.forms import CollegeForm, OfficeForm
 from apps.core.services import (
     send_depthead_invite_email,
     send_depthead_deactivated_email,
     send_faculty_invite_email,
     send_faculty_removed_email,
+    send_office_admin_invite_email,
 )
 from apps.faculty.models import FacultyProfile, ConsultationRequest
 
@@ -42,7 +43,7 @@ def edit_depthead(request, user_id):
         new_role = request.POST.get('role')
         new_college = request.POST.get('college')
         new_title = request.POST.get('title')
-        new_status = request.POST.get('account_status')
+        new_status = request.POST.get('account_status') or depthead.account_status
 
         if new_role not in {'student', 'faculty', 'depthead'}:
             return JsonResponse({'success': False, 'error': 'Invalid role selected.'}, status=400)
@@ -124,20 +125,29 @@ def manage_colleges(request):
     for college in colleges:
         college.head_users = heads_by_college.get(college.code.upper(), [])
 
-    return render(request, 'superadmin/manageColleges.html', {
-        'colleges': colleges,
-    })
+    return render(request, 'superadmin/manageColleges.html', {'colleges': colleges})
+
+@login_required
+@role_required('superadmin')
+def manage_offices(request):
+    offices = Office.objects.all().order_by('name')
+    for office in offices:
+        office.head_users = User.objects.filter(role='officeadmin', college__iexact=office.code)
+    return render(request, 'superadmin/manageOffices.html', {'offices': offices})
 
 @login_required
 @role_required('superadmin')
 def manage_admins(request):
     depthead_accounts = User.objects.filter(role='depthead')
+    office_admin_accounts = User.objects.filter(role='officeadmin')
     return render(request, 'superadmin/manageAdmins.html', {
         'depthead_accounts': depthead_accounts,
+        'office_admin_accounts': office_admin_accounts,
         'college_choices': get_college_choices(),
         'dept_head_form': DeptHeadInviteForm(),
         'role_choices': [choice for choice in User.ROLE_CHOICES if choice[0] in {'student', 'faculty', 'depthead'}],
         'title_choices': User.TITLE_CHOICES,
+        'office_admin_form': OfficeAdminInviteForm(),
     })
 
 @login_required
@@ -152,7 +162,7 @@ def manage_faculty(request):
 
     return render(request, 'superadmin/manageFaculty.html', {
         'active_faculty': [u for u in faculty_users if u.account_status == 'active'],
-        'college_choices': get_college_choices(),
+        'college_choices': get_unit_choices(),
     })
 
 @login_required
@@ -187,6 +197,47 @@ def create_college(request):
                 for error in error_list:
                     messages.error(request, error)
     return redirect('superadmin:manage_colleges')
+
+@login_required
+@role_required('superadmin')
+def create_office(request):
+    if request.method == 'POST':
+        form = OfficeForm(request.POST)
+        if form.is_valid():
+            office = form.save()
+            messages.success(request, f"Office '{office.name}' created with code {office.code}.")
+        else:
+            for error_list in form.errors.values():
+                for error in error_list:
+                    messages.error(request, error)
+    return redirect('superadmin:manage_offices')
+
+@login_required
+@role_required('superadmin')
+def delete_office(request, office_id):
+    office = get_object_or_404(Office, id=office_id)
+    if request.method == 'POST':
+        name = office.name
+        office.delete()
+        messages.success(request, f"Office '{name}' removed.")
+    return redirect('superadmin:manage_offices')
+
+@login_required
+@role_required('superadmin')
+def invite_office_admin(request):
+    if request.method == 'POST':
+        form = OfficeAdminInviteForm(request.POST)
+        if form.is_valid():
+            invite = form.save(commit=False)
+            invite.invited_by = request.user
+            invite.save()
+            send_office_admin_invite_email(invite.email, invite.office)
+            messages.success(request, f"Office Admin invitation created for {invite.email}.")
+        else:
+            for error_list in form.errors.values():
+                for error in error_list:
+                    messages.error(request, error)
+    return redirect('superadmin:manage_admins')
 
 @login_required
 @role_required('superadmin')

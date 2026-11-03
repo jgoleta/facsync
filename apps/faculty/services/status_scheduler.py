@@ -122,7 +122,7 @@ def claim_deliveries():
                 row.recipient.is_active and row.recipient.account_status == 'active'
                 and row.recipient.role == 'student' and row.recipient.email == row.email
                 and faculty_user.is_active and faculty_user.account_status == 'active'
-                and faculty_user.role == 'faculty'
+                and faculty_user.role in {'faculty', 'officeadmin'}
                 and faculty_user.school_id is not None
                 and row.recipient.school_id == faculty_user.school_id
                 and faculty_user.school.is_active
@@ -149,7 +149,7 @@ def run_status_scheduler():
     try:
         cursor = StatusSchedulerState.objects.get(pk='automatic-status').faculty_cursor
         eligible = FacultyProfile.objects.filter(
-            user__role='faculty', user__account_status='active', user__is_active=True,
+                user__role__in=['faculty', 'officeadmin'], user__account_status='active', user__is_active=True,
             user__school__is_active=True,
         ).filter(Q(manual_status_override=False) | Q(manual_status_expires_at__lte=timezone.now()))
         profiles = list(eligible.filter(pk__gt=cursor).order_by('pk')[:MAX_FACULTY])

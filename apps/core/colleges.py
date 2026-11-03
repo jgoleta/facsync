@@ -33,3 +33,10 @@ def get_college_label(value):
 def get_college_choices():
     from apps.core.models import College
     return [(d.code, d.name) for d in College.objects.all().order_by('name')]
+
+@school_service
+def get_unit_choices():
+    from apps.core.models import College, Office
+    colleges = [(d.code, d.name) for d in College.objects.all().order_by('name')]
+    offices = [(d.code, d.name) for d in Office.objects.all().order_by('name')]
+    return colleges + offices

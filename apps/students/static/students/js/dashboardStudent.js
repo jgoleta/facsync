@@ -1,4 +1,5 @@
 const collegeFilter = document.getElementById("collegeFilter");
+const unitTypeFilter = document.getElementById("unitTypeFilter");
 const availableToggle = document.getElementById("availableToggle");
 const searchInput = document.getElementById("searchInput");
 const facultyGrid = document.getElementById("facultyGrid");
@@ -91,6 +92,7 @@ function renderCollegeStatus() {
 
 function renderCards() {
   const college = collegeFilter.value;
+  const unitType = unitTypeFilter?.value || "all";
   const onlyAvailable = availableToggle.checked;
   const q = searchInput.value.trim().toLowerCase();
   renderCollegeStatus();
@@ -98,12 +100,14 @@ function renderCards() {
   let visibleCount = 0;
   cards.forEach((card) => {
     const cCollege = card.dataset.college || "";
+    const cUnitType = card.dataset.unitType || "college";
     const status = card.dataset.status || "";
     const name = (
       card.querySelector(".card-title")?.textContent || ""
     ).toLowerCase();
     let show = true;
     if (college !== "all" && cCollege !== college) show = false;
+    if (unitType !== "all" && cUnitType !== unitType) show = false;
     if (onlyAvailable && status !== "available") show = false;
     if (q && !name.includes(q)) show = false;
 
@@ -219,7 +223,7 @@ function renderFacultyDirectory() {
   facultyGrid.innerHTML = directory
     .map(
       (faculty) => `
-    <article class="card${faculty.is_college_closed ? " card-closed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-college="${escapeHtml(faculty.college)}" data-status="${escapeHtml(faculty.status)}" data-lastupdated="${escapeHtml(faculty.updated_at || "")}">
+    <article class="card${faculty.is_college_closed ? " card-closed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-college="${escapeHtml(faculty.college)}" data-unit-type="${escapeHtml(faculty.unit_type || "college")}" data-status="${escapeHtml(faculty.status)}" data-lastupdated="${escapeHtml(faculty.updated_at || "")}">
       <div class="card-left">
         <div class="avatar fs-avatar" aria-hidden="true"><span class="fs-avatar-fallback">${escapeHtml(getInitials(faculty.name))}</span>${faculty.photo_url ? `<img src="${escapeHtml(faculty.photo_url)}" alt="" loading="lazy" referrerpolicy="no-referrer" data-avatar-image>` : ''}</div>
       </div>
@@ -282,6 +286,7 @@ async function refreshFacultyDirectory() {
 
 // Wire up filters
 collegeFilter.addEventListener("change", renderCards);
+unitTypeFilter?.addEventListener("change", renderCards);
 availableToggle.addEventListener("change", renderCards);
 let searchTimer = null;
 searchInput.addEventListener("input", () => {

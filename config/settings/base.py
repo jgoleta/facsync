@@ -124,7 +124,7 @@ GOOGLE_CALENDAR_REDIRECT_URI = config('GOOGLE_CALENDAR_REDIRECT_URI', default=''
 GOOGLE_CALENDAR_TIME_ZONE = config('GOOGLE_CALENDAR_TIME_ZONE', default='Asia/Manila')
 GOOGLE_CALENDAR_SCOPE = config(
     'GOOGLE_CALENDAR_SCOPE',
-    default='https://www.googleapis.com/auth/calendar.events',
+    default='openid email profile https://www.googleapis.com/auth/calendar.events',
 )
 GOOGLE_CALENDAR_SYNC_PAST_DAYS = config('GOOGLE_CALENDAR_SYNC_PAST_DAYS', cast=int, default=1)
 GOOGLE_CALENDAR_SYNC_FUTURE_DAYS = config('GOOGLE_CALENDAR_SYNC_FUTURE_DAYS', cast=int, default=60)

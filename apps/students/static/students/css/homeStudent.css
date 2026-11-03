@@ -191,7 +191,7 @@ body {
 
 .student-home-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
   padding: 24px;
 }
@@ -298,15 +298,11 @@ body {
 }
 
 .student-home-content {
-  display: grid;
-  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
-  grid-template-areas: "services actions";
-  align-items: start;
-  gap: 22px;
+  display: block;
 }
 
 .student-home-content .student-home-grid {
-  grid-area: actions;
+  grid-area: auto;
 }
 
 .student-services {
@@ -490,7 +486,7 @@ body {
 
 @media (max-width: 520px) {
   .container {
-    padding: 0 14px;
+    padding: 20px 14px 42px;
   }
 
   .page-intro {
@@ -510,3 +506,4 @@ body {
     border-radius: 20px;
   }
 }
+.student-services { display: none !important; }

@@ -16,8 +16,8 @@ ALL_SCHOOLS = object()
 _scope = ContextVar('facsync_school_scope', default=None)
 
 PATHS = {
-    'core.user': ('school_id',), 'core.college': ('school_id',),
-    'core.facultyinvite': ('school_id',), 'core.deptheadinvite': ('school_id',),
+    'core.user': ('school_id',), 'core.college': ('school_id',), 'core.office': ('school_id',),
+    'core.facultyinvite': ('school_id',), 'core.deptheadinvite': ('school_id',), 'core.officeadmininvite': ('school_id',),
     'core.superadmininvite': ('school_id',),
     'core.officeclosure': ('school_id',), 'core.collegeannouncement': ('school_id',),
     'core.notification': ('recipient__school_id',), 'core.demodatabatch': ('college__school_id',),

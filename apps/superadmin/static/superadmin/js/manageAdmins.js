@@ -97,8 +97,6 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("edit-depthead-college").value =
         btn.dataset.college;
       document.getElementById("edit-depthead-title").value = btn.dataset.title;
-      document.getElementById("edit-depthead-status").value =
-        btn.dataset.status;
 
       editForm.action = `/superadmin/admins/depthead/${id}/edit/`;
       editModal.classList.remove("hidden");
@@ -144,11 +142,8 @@ function updateDeptheadRow(depthead) {
   row.dataset.college = depthead.college;
   row.querySelector(".depthead-title").textContent = depthead.title_display;
 
-  const statusCell = row.querySelector(".depthead-status");
-  statusCell.innerHTML = `<span class="status-pill status-${depthead.status}">${depthead.status_display}</span>`;
 
   const editBtn = row.querySelector(".edit-depthead-btn");
-  editBtn.dataset.status = depthead.status;
   editBtn.dataset.college = depthead.college;
   applyAdminCollegeFilter();
 }

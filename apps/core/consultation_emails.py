@@ -27,7 +27,7 @@ EVENTS = {
 def _recipient(consultation, event):
     student, faculty = consultation.user, consultation.faculty.user
     school = require_school(student.school)
-    if faculty.school_id != school.pk or student.role != 'student' or faculty.role != 'faculty':
+    if faculty.school_id != school.pk or student.role != 'student' or faculty.role not in {'faculty', 'officeadmin'}:
         raise ValueError('Consultation participants do not match the school and roles.')
     recipient = faculty if event == 'requested' else student
     if any(not user.is_active or user.account_status != 'active' for user in (student, faculty)):

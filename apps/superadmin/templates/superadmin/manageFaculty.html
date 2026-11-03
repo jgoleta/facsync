@@ -57,9 +57,9 @@
           <p>Invite faculty and manage access across all colleges.</p>
         </div>
         <label class="college-filter" for="collegeFilter">
-          <span>College</span>
+          <span>College/Office</span>
           <select id="collegeFilter">
-            <option value="all">All Colleges</option>
+            <option value="all">All Colleges/Offices</option>
             {% for code, name in college_choices %}<option value="{{ code }}">{{ name }}</option>{% endfor %}
           </select>
         </label>
@@ -69,14 +69,14 @@
 
       <section class="management-table-wrapper" data-faculty-section="registered">
         <div class="management-table-header">
-          <div><p class="section-kicker">College directory</p><h2>Registered Faculty</h2></div>
+          <div><p class="section-kicker">College/Office directory</p><h2>Registered Faculty</h2></div>
           <div class="management-table-header-actions">
             <button id="addFacultyBtn" class="btn-primary header-action" type="button"><span class="header-action-icon" aria-hidden="true">+</span><span>Invite Faculty</span></button>
           </div>
         </div>
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Faculty ID</th><th>Name</th><th>Email</th><th>College</th><th>Office/Room</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Faculty ID</th><th>Name</th><th>Email</th><th>College/Office</th><th>Office/Room</th><th>Actions</th></tr></thead>
             <tbody>
               {% for user in active_faculty %}
               <tr class="faculty-row" data-college="{{ user.college|default:'' }}">
@@ -100,12 +100,12 @@
 
   <div class="modal-overlay hidden" id="facultyModal">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
-      <div class="modal-header"><div><h2 id="facultyModalTitle">Invite Faculty</h2><p>Enter the faculty member's details and assign their college.</p></div><button type="button" class="modal-close" id="closeFacultyModal" aria-label="Close">×</button></div>
+      <div class="modal-header"><div><h2 id="facultyModalTitle">Invite Faculty</h2><p>Enter the faculty member's details and assign their college or office.</p></div><button type="button" class="modal-close" id="closeFacultyModal" aria-label="Close">×</button></div>
       <form id="facultyForm" class="modal-form" method="post" action="{% url 'superadmin:invite_faculty_superadmin' %}">
         {% csrf_token %}
         <div class="modal-form-group"><label for="facultyName">Name</label><input id="facultyName" type="text" placeholder="Dr. Maria Santos" required /></div>
         <div class="modal-form-group"><label for="facultyEmail">Email</label><input id="facultyEmail" name="email" type="email" placeholder="maria.santos@university.edu" required /></div>
-        <div class="modal-form-group"><label for="facultyCollege">College</label><select id="facultyCollege" name="college" required><option value="" selected disabled>Select a college</option>{% for code, name in college_choices %}<option value="{{ code }}">{{ name }}</option>{% endfor %}</select></div>
+        <div class="modal-form-group"><label for="facultyCollege">College/Office</label><select id="facultyCollege" name="college" required><option value="" selected disabled>Select a college or office</option>{% for code, name in college_choices %}<option value="{{ code }}">{{ name }}</option>{% endfor %}</select></div>
         <div class="modal-actions"><button type="button" class="btn-secondary" id="cancelFacultyInvite">Cancel</button><button type="submit" class="btn-primary">Send Invite</button></div>
       </form>
     </div>

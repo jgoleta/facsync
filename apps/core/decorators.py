@@ -7,7 +7,10 @@ def role_required(role):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
             user = request.user
-            if not user.is_authenticated or user.role != role or not user.is_active or user.account_status != 'active':
+            allowed_roles = {role}
+            if role in {'depthead', 'faculty'}:
+                allowed_roles.add('officeadmin')
+            if not user.is_authenticated or user.role not in allowed_roles or not user.is_active or user.account_status != 'active':
                 raise PermissionDenied
             if role == 'systemadmin':
                 if user.school_id is not None:

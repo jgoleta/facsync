@@ -1320,12 +1320,12 @@ def calendar_preference(request):
     except ValueError as exc:
         return HttpResponseBadRequest(str(exc))
     enabled = payload.get('sync_enabled')
-    if not isinstance(enabled, bool):
-        return JsonResponse({'error': 'sync_enabled must be true or false.'}, status=400)
+    if enabled is not True:
+        return JsonResponse({'error': 'Two-way calendar sync is always enabled.'}, status=400)
     connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
     if enabled and connection is None:
         return JsonResponse({'error': 'Connect Google Calendar before enabling sync.'}, status=409)
-    faculty.sync_enabled = enabled
+    faculty.sync_enabled = True
     faculty.save(update_fields=['sync_enabled'])
     if enabled:
         try:
@@ -1336,7 +1336,7 @@ def calendar_preference(request):
                 'error': str(exc),
             }, status=502)
     return JsonResponse({
-        'sync_enabled': faculty.sync_enabled,
+        'sync_enabled': True,
         'connected': connection is not None,
         'last_synced_at': connection.last_synced_at.isoformat() if connection and connection.last_synced_at else None,
     })
@@ -1358,15 +1358,13 @@ def api_schedule_events(request):
         sync_performed = False
         connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
         calendar_connected = connection is not None
-        sync_enabled = bool(faculty.sync_enabled and connection)
+        sync_enabled = bool(connection)
         if sync_requested and sync_enabled:
             try:
                 sync_google_calendar(request.user)
                 sync_performed = True
             except GoogleCalendarError as exc:
                 sync_error = str(exc)
-        elif sync_requested and calendar_connected and not faculty.sync_enabled:
-            sync_error = 'Two-way sync is disabled in your profile.'
         elif sync_requested and not calendar_connected:
             sync_error = 'Connect Google Calendar before syncing.'
 

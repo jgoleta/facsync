@@ -6,8 +6,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 from apps.core.decorators import role_required
-from apps.core.models import User, FacultyInvite, OfficeClosure, CollegeAnnouncement, College
-from apps.core.forms import CollegeAnnouncementForm, CollegeDescriptionForm
+from apps.core.models import User, FacultyInvite, OfficeClosure, CollegeAnnouncement, College, Office
+from apps.core.forms import CollegeAnnouncementForm, CollegeDescriptionForm, OfficeDescriptionForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm, SharedWindowForm
 from apps.faculty.models import FacultyProfile, GoogleCalendarConnection, ScheduleEvent
@@ -54,6 +54,9 @@ from .services.analytics_display import (
 from .services.analytics_browser import ANALYTICS_QUESTIONS, analytics_browser_answer
 
 logger = logging.getLogger(__name__)
+
+def _managed_unit(code):
+    return College.objects.filter(code__iexact=code).first() or Office.objects.filter(code__iexact=code).first()
 
 
 def _shared_window_context(request):
@@ -154,7 +157,7 @@ def remove_faculty(request, user_id):
 @role_required('depthead')
 def admin_dashboard(request):
     college_code = request.user.college
-    college = College.objects.filter(code__iexact=college_code).first()
+    college = _managed_unit(college_code)
     analytics = get_college_analytics(college_code)
     summary = analytics['consultations']
     trends = analytics['trends']
@@ -211,7 +214,7 @@ def ai_insights_api(request):
 @login_required
 @role_required('depthead')
 def admin_faculty(request):
-    college = College.objects.filter(code__iexact=request.user.college).first()
+    college = _managed_unit(request.user.college)
     faculty_users = list(User.objects.filter(
         role='faculty',
         college__iexact=request.user.college,
@@ -238,7 +241,7 @@ def admin_faculty(request):
 def faculty_schedule_template(request):
     """Download the CSV format used for college-head faculty uploads."""
     response = HttpResponse(content_type='text/csv')
-    college = College.objects.filter(code__iexact=request.user.college).first()
+    college = _managed_unit(request.user.college)
     headers = schedule_template_headers(college.schedule_template if college else None)
     response['Content-Disposition'] = 'attachment; filename=schedule_template.csv'
     writer = csv.writer(response)
@@ -269,7 +272,7 @@ def upload_faculty_schedule(request, faculty_id):
         college_id__iexact=request.user.college,
         user__role='faculty',
     )
-    college = College.objects.filter(code__iexact=request.user.college).first()
+    college = _managed_unit(request.user.college)
     try:
         rows = _parse_schedule_csv(
             request.FILES.get('file'),
@@ -590,7 +593,7 @@ def college_settings(request):
         expiry__gt=timezone.now()
     )
 
-    college = College.objects.filter(code__iexact=request.user.college).first()
+    college = _managed_unit(request.user.college)
 
     return render(request, 'depthead/collegeSettings.html', {
         'closure_form': form,
@@ -784,16 +787,17 @@ def create_announcement(request):
 @login_required
 @role_required('depthead')
 def edit_college_description(request):
-    college = College.objects.filter(code__iexact=request.user.college).first()
+    college = _managed_unit(request.user.college)
     if not college:
         messages.error(request, "Your college could not be found. Contact a Super Admin.")
         return redirect('depthead:college_settings')
 
     if request.method == 'POST':
-        form = CollegeDescriptionForm(request.POST, instance=college)
+        form_class = OfficeDescriptionForm if isinstance(college, Office) else CollegeDescriptionForm
+        form = form_class(request.POST, instance=college)
         if form.is_valid():
             form.save()
-            messages.success(request, "College description updated.")
+            messages.success(request, "Office description updated." if isinstance(college, Office) else "College description updated.")
         else:
             for error_list in form.errors.values():
                 for error in error_list:
@@ -809,7 +813,7 @@ def save_schedule_template(request):
     """Save the College Head's CSV labels for future schedule uploads."""
     if request.method != 'POST':
         return HttpResponse(status=405)
-    college = College.objects.filter(code__iexact=request.user.college).first()
+    college = _managed_unit(request.user.college)
     if not college:
         messages.error(request, 'Your college could not be found. Contact a Super Admin.')
         return redirect('depthead:college_settings')
