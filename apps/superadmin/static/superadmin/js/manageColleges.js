@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const addModal = document.getElementById("addCollegeModal");
+  const officeModal = document.getElementById("addOfficeModal");
 
   // Add modal open/close
   const openAddBtn = document.getElementById("openAddCollegeModal");
@@ -12,9 +13,11 @@ document.addEventListener("DOMContentLoaded", () => {
     closeAddBtn.addEventListener("click", () =>
       addModal.classList.add("hidden"),
     );
+  document.getElementById("openAddOfficeModal")?.addEventListener("click", () => officeModal.classList.remove("hidden"));
+  document.getElementById("closeAddOfficeModal")?.addEventListener("click", () => officeModal.classList.add("hidden"));
 
   // Click outside modal content to close
-  [addModal].forEach((modal) => {
+  [addModal, officeModal].filter(Boolean).forEach((modal) => {
     modal.addEventListener("click", (e) => {
       if (e.target === modal) modal.classList.add("hidden");
     });

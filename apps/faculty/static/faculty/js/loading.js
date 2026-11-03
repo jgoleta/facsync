@@ -62,7 +62,6 @@
       block('faculty-skeleton-profile-grid', [
         block('faculty-skeleton-personal-card', [
           block('profile-identity', [shape('profile-avatar'), block('identity-copy', [shape('eyebrow'), shape('identity-name'), shape('identity-college')])]),
-          block('photo-section', [shape('section-title'), shape('section-copy'), shape('file-field'), shape('upload-button')]),
           block('personal-details', [block('details-heading', [block('details-heading-copy', [shape('eyebrow'), shape('section-title')]), shape('details-caption')]), block('profile-fields', detailFields)]),
           block('biography-section', [shape('section-title'), shape('section-copy'), shape('biography-line'), shape('biography-line medium'), shape('biography-line short')])
         ]),
@@ -93,7 +92,6 @@
         block('student-home-summary', [shape('summary-chip'), ...stats, shape('summary-college')])
       ]),
       block('student-home-content', [
-        block('student-home-services', [block('student-home-services-heading', [shape('section-title'), shape('section-copy')]), block('student-home-services-grid', services)]),
         block('student-home-actions', [block('student-home-actions-heading', [shape('section-title'), shape('section-copy')]), ...actions])
       ])
     ]);
@@ -112,6 +110,7 @@
         block('student-dashboard-toolbar', [
           block('student-dashboard-heading', [shape('section-title'), shape('section-copy')]),
           block('student-dashboard-controls', [
+            block('student-dashboard-control', [shape('control-label'), shape('control-input')]),
             block('student-dashboard-control', [shape('control-label'), shape('control-input')]),
             block('student-dashboard-toggle', [shape('toggle-track'), shape('toggle-label')]),
             block('student-dashboard-control', [shape('control-label'), shape('control-input')])

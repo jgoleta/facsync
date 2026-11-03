@@ -166,8 +166,11 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchEventsFromApi(sync = false, background = false) {
     const initial = initialScheduleLoad;
     initialScheduleLoad = false;
+    // The schedule page already has one page-level navigation skeleton. Keep
+    // only the calendar-region fallback for direct loads; a second sidebar
+    // skeleton makes the initial transition look duplicated.
     const finishCalendar = initial ? window.facultyInitialLoading?.(document.querySelector('.calendar-wrapper'), 'schedule', 'calendar') : null;
-    const finishActivities = initial ? window.facultyInitialLoading?.(document.querySelector('.legend-card'), 'activities', 'queue') : null;
+    const finishActivities = null;
     if (!initial && !background) showScheduleCrudLoading(sync ? "Syncing Google Calendar..." : "Loading schedule...");
     try {
       const res = await fetch(`/faculty/api/events/${sync ? '?sync=1' : ''}`);

@@ -22,7 +22,7 @@ def create_notification(recipient, notification_type, title, message, url=''):
 
 
 @school_service
-def notify_college_users(college, notification_type, title, message, url='', exclude_user_id=None, roles=('student', 'faculty')):
+def notify_college_users(college, notification_type, title, message, url='', exclude_user_id=None, roles=('student', 'faculty', 'officeadmin')):
     recipients = User.objects.filter(
         college=college,
         role__in=roles,
@@ -229,6 +229,14 @@ def send_depthead_invite_email(email, college, title):
         "You've been invited to FacSync",
         'depthead_invite.html',
         {'college': college, 'title_label': title_label},
+        [email],
+    )
+
+def send_office_admin_invite_email(email, office):
+    return _send_html_email(
+        "You've been invited to FacSync as an Office Admin",
+        'office_admin_invite.html',
+        {'office': office},
         [email],
     )
 

@@ -8,8 +8,7 @@
     <div id="accountNavActions" class="account-nav-actions" hidden>
         {% if request.user.role == 'student' %}
         <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
-        <a href="{% url 'students:profile' %}" class="nav-btn">Profile</a>
-        {% elif request.user.role == 'faculty' %}
+        {% elif request.user.role == 'faculty' or request.user.role == 'officeadmin' %}
         <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
         {% endif %}
         <a href="{% url 'account_logout' %}" class="nav-btn logout-btn">Logout</a>

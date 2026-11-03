@@ -1,7 +1,7 @@
 {% load static %}
 {% if request.user.is_authenticated %}
 <span class="account-identity{% if show_profile_icon %} account-identity-with-icon{% endif %}" title="{{ request.user.get_full_name|default:request.user.username }}">
-    {% if request.user.role == 'student' or request.user.role == 'faculty' %}
+    {% if request.user.role == 'student' or request.user.role == 'faculty' or request.user.role == 'officeadmin' %}
     <span data-own-avatar>{% include 'components/_avatar.html' with photo_url=request.user.avatar_url initials=request.user.avatar_initials avatar_class='fs-avatar-nav' %}</span>
     {% elif show_profile_icon %}
     <svg class="account-profile-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
@@ -11,7 +11,7 @@
     {% endif %}
     <span>{{ request.user.get_full_name|default:request.user.username }}</span>
 </span>
-{% if request.user.role == 'student' or request.user.role == 'faculty' %}
+{% if request.user.role == 'student' or request.user.role == 'faculty' or request.user.role == 'officeadmin' %}
 <script src="{% static 'js/avatars.js' %}?v=20261002" defer></script>
 {% endif %}
 {% endif %}

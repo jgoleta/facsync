@@ -105,7 +105,7 @@ def dashboard_public(request):
 @login_required
 @require_http_methods(['GET', 'POST', 'DELETE'])
 def notifications_api(request):
-    if request.user.role not in {'student', 'faculty'}:
+    if request.user.role not in {'student', 'faculty', 'officeadmin'}:
         return JsonResponse({'error': 'Notifications are unavailable for this account.'}, status=403)
 
     if request.method == 'GET':
@@ -167,7 +167,7 @@ def post_login_redirect(request):
     if not user.profile_completed:
         if user.role == 'student':
             return redirect('core:student_profile_setup')
-        elif user.role == 'faculty':
+        elif user.role in {'faculty', 'officeadmin'}:
             return redirect('core:faculty_profile_setup')
 
     if user.role == 'student':
@@ -175,6 +175,8 @@ def post_login_redirect(request):
     elif user.role == 'faculty':
         return redirect('faculty:dashboard')
     elif user.role == 'depthead':
+        return redirect('depthead:admin_dashboard')
+    elif user.role == 'officeadmin':
         return redirect('depthead:admin_dashboard')
     elif user.role == 'superadmin':
         return redirect('superadmin:superadmin_dashboard')
@@ -210,7 +212,7 @@ def faculty_profile_setup(request):
             )
             request.user.profile_completed = True
             request.user.save()
-            return redirect('faculty:dashboard')
+            return redirect('depthead:admin_dashboard' if request.user.role == 'officeadmin' else 'faculty:dashboard')
     else:
         form = FacultyProfileSetupForm()
 

@@ -9,7 +9,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from requests.exceptions import RequestException, Timeout
-from .models import FacultyInvite, DeptHeadInvite, SuperAdminInvite, School, User
+from .models import FacultyInvite, DeptHeadInvite, OfficeAdminInvite, SuperAdminInvite, School, User
 from .profile_photos import safe_photo_url
 from django.db import transaction
 from .school_scope import school_scope
@@ -235,6 +235,22 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                 del request.session['registration_role']
             return
         except FacultyInvite.DoesNotExist:
+            pass
+
+        # Office Admins can act as both the unit administrator and its faculty-facing operator.
+        try:
+            office_invite = OfficeAdminInvite.objects.select_related('school').get(email__iexact=email, used=False)
+            if office_invite.school_id is None or not office_invite.school.is_active:
+                self._deny_invite(request)
+            sociallogin.user.role = 'officeadmin'
+            sociallogin.user.account_status = 'active'
+            sociallogin.user.college = office_invite.office
+            sociallogin.user.school = office_invite.school
+            sociallogin.user.profile_completed = False
+            sociallogin._facsync_invite = office_invite
+            request.session.pop('registration_role', None)
+            return
+        except OfficeAdminInvite.DoesNotExist:
             pass
 
         #new account, no faculty invite, check for depthead invites

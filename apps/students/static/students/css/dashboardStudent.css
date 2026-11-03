@@ -89,10 +89,10 @@
 
 .student-dashboard .controls {
   display: grid;
-  grid-template-columns: minmax(170px, 0.9fr) auto minmax(190px, 1fr);
+  grid-template-columns: minmax(150px, 0.8fr) minmax(170px, 0.9fr) auto minmax(190px, 1fr);
   align-items: end;
   gap: 12px;
-  width: min(100%, 620px);
+  width: min(100%, 860px);
 }
 
 .student-dashboard .control {
@@ -406,7 +406,8 @@
 @media (max-width: 640px) {
   .student-dashboard .dashboard-container {
     width: min(100% - 24px, 560px);
-    padding-top: 26px;
+    padding-top: 30px;
+    padding-bottom: 48px;
   }
 
   .student-dashboard .dashboard-hero {

@@ -512,10 +512,7 @@ def delete_consultation_event(connection, consultation):
 def calendar_sync_enabled(user):
     """Return whether a faculty member has both an active connection and sync enabled."""
     faculty = FacultyProfile.objects.filter(user=user).first()
-    return bool(
-        faculty and faculty.sync_enabled and
-        GoogleCalendarConnection.objects.filter(user=user).exists()
-    )
+    return bool(faculty and GoogleCalendarConnection.objects.filter(user=user).exists())
 
 
 def consultation_has_calendar_conflict(connection, consultation):
@@ -627,8 +624,6 @@ def sync_google_calendar(user):
     if connection is None:
         raise GoogleCalendarError('Connect Google Calendar before syncing.')
     faculty = FacultyProfile.objects.get(user=user)
-    if not faculty.sync_enabled:
-        raise GoogleCalendarError('Two-way sync is disabled in your profile.')
     try:
         google_events = list_google_events(connection)
         seen_ids = set()
@@ -791,7 +786,7 @@ def sync_google_calendar(user):
         connection.last_sync_error = error_text
         connection.save(update_fields=['last_sync_error', 'updated_at'])
         if any(marker in error_text.casefold() for marker in ('401', 'authorization has expired', 'invalid_grant')):
-            FacultyProfile.objects.filter(pk=faculty.pk).update(current_status=models.F('manual_status'), sync_enabled=False)
+            FacultyProfile.objects.filter(pk=faculty.pk).update(current_status=models.F('manual_status'), sync_enabled=True)
             ConsultationRequest.objects.filter(
                 faculty=faculty,
                 google_calendar_id=connection.calendar_id,
@@ -927,7 +922,7 @@ def disconnect_google_calendar(user):
 
     faculty = FacultyProfile.objects.filter(user=user).first()
     if faculty:
-        faculty.sync_enabled = False
+        faculty.sync_enabled = True
         faculty.last_calendar_sync_at = None
         faculty.save(update_fields=['sync_enabled', 'last_calendar_sync_at'])
         ScheduleEvent.objects.filter(

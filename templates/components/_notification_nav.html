@@ -1,4 +1,4 @@
-{% if request.user.role == 'student' or request.user.role == 'faculty' %}
+{% if request.user.role == 'student' or request.user.role == 'faculty' or request.user.role == 'officeadmin' %}
 <span class="notification-nav">
     {% include 'components/_account_identity.html' %}
     <span class="hidden">{% csrf_token %}</span>

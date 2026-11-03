@@ -2,7 +2,7 @@ import json
 import json
 import uuid
 from datetime import date, datetime, time, timedelta
-from apps.core.models import OfficeClosure
+from apps.core.models import OfficeClosure, Office, College
 from apps.core.services import create_notification, get_active_announcements, active_announcement_queryset
 from apps.core.consultation_emails import queue_consultation_email
 
@@ -59,7 +59,9 @@ def _closed_college_map():
     closures = OfficeClosure.objects.filter(is_closed=True)
     result = {}
     for c in closures:
-        label = get_college_label(c.college) or c.college
+        office = Office.objects.filter(code__iexact=c.college).first()
+        college = College.objects.filter(code__iexact=c.college).first()
+        label = office.name if office else college.name if college else get_college_label(c.college) or c.college
         result[label] = c.reason or f"{label} is currently closed."
     return result
 
@@ -89,11 +91,14 @@ def _faculty_directory(closed_college_codes=None, student=None):
     directory = []
     for faculty in FacultyProfile.objects.select_related('user').all():
         refresh_faculty_status(faculty)
+        office = Office.objects.filter(code__iexact=faculty.college_id).first()
+        college = College.objects.filter(code__iexact=faculty.college_id).first()
         directory.append({
             'faculty_id': faculty.faculty_id,
             'name': faculty.user.get_full_name() or faculty.user.username,
             'photo_url': faculty.user.avatar_url,
-            'college': faculty.college_name,
+            'college': office.name if office else college.name if college else faculty.college_name,
+            'unit_type': 'office' if office else 'college',
             'status': faculty.current_status,
             'note': 'College closed' if faculty.college_id in closed_college_codes else faculty.status_note,
             'walk_ins_enabled': faculty.walk_ins_enabled,

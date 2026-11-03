@@ -55,7 +55,6 @@
                         </div>
                     </div>
 
-                    {% include 'components/_photo_editor.html' %}
                     <div class="card-heading">
                         <div>
                             <span class="section-label">Account details</span>
@@ -134,13 +133,7 @@
                         </div>
 
                         <div class="calendar-sync-preference">
-                            <label class="toggle-row" for="calendar-sync-toggle">
-                                <span>
-                                    <strong>Two-way sync</strong>
-                                    <small>Keep FacSync and Google Calendar aligned.</small>
-                                </span>
-                                <input id="calendar-sync-toggle" type="checkbox" {% if calendar_sync_enabled %}checked{% endif %} {% if not calendar_connected %}disabled{% endif %}>
-                            </label>
+                            <div class="sync-enabled-note"><strong>Two-way sync is always enabled</strong><small>Keep FacSync and Google Calendar aligned whenever your calendar is connected.</small></div>
                             <p id="calendar-last-sync" class="integration-meta">
                                 {% if calendar_last_synced_at %}Last synced {{ calendar_last_synced_at|date:'M j, Y g:i A' }}{% else %}Not synced yet{% endif %}
                             </p>

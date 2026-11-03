@@ -99,7 +99,6 @@
                             <th>Email</th>
                             <th>College</th>
                             <th>Title</th>
-                            <th>Account Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -110,9 +109,6 @@
                             <td class="depthead-email">{{ admin.email }}</td>
                             <td class="depthead-college">{{ admin.college }}</td>
                             <td class="depthead-title">{{ admin.get_title_display|default:"—" }}</td>
-                            <td class="depthead-status">
-                                <span class="status-pill status-{{ admin.account_status }}">{{ admin.get_account_status_display }}</span>
-                            </td>
                             <td class="actions">
                                 <button type="button" class="edit-depthead-btn" data-id="{{ admin.id }}" data-role="{{ admin.role }}"
                                     data-college="{{ admin.college }}" data-title="{{ admin.title }}"
@@ -121,13 +117,61 @@
                         </tr>
                         {% endfor %}
                         <tr id="adminFilterEmpty" class="{% if depthead_accounts %}hidden{% endif %}">
-                            <td colspan="6" class="empty-state">No College Head accounts match the selected college.</td>
+                            <td colspan="5" class="empty-state">No College Head accounts match the selected college.</td>
                         </tr>
                     </tbody>
                 </table>
                 </div>
             </div>
+            <div class="management-table-wrapper">
+                <div class="management-table-header">
+                    <div>
+                        <p class="section-kicker">Administrative directory</p>
+                        <h2>Office Admin Accounts</h2>
+                    </div>
+                    <div class="management-table-header-actions">
+                        <button id="openOfficeAdminModal" class="btn-primary header-action" type="button">
+                            <span class="header-action-icon" aria-hidden="true">+</span>
+                            <span>Add New Admin</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr><th>Name</th><th>Email</th><th>Office</th><th>Role</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for admin in office_admin_accounts %}
+                            <tr data-office-admin-id="{{ admin.id }}" data-office="{{ admin.college }}">
+                                <td>{{ admin.get_full_name|default:admin.username }}</td>
+                                <td>{{ admin.email }}</td>
+                                <td>{{ admin.college }}</td>
+                                <td>Office Admin</td>
+                                <td class="actions"><span class="table-action-muted">Managed by Office</span></td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="empty-state">No Office Admin accounts yet. Add your first Office Admin.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </main>
+    </div>
+    <div class="modal-overlay hidden" id="officeAdminModal">
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="officeAdminModalTitle">
+            <div class="modal-header">
+                <div><h2 id="officeAdminModalTitle">Add Office Admin</h2><p>Pre-register an Office Admin email for instant activation on first login.</p></div>
+                <button type="button" class="modal-close" id="closeOfficeAdminModal">×</button>
+            </div>
+            <form method="post" action="{% url 'superadmin:invite_office_admin' %}" class="modal-form">
+                {% csrf_token %}
+                <div class="modal-form-group"><label for="officeAdminEmail">Email</label><input id="officeAdminEmail" name="email" type="email" placeholder="officeadmin@adnu.edu.ph" required></div>
+                <div class="modal-form-group"><label for="officeAdminOffice">Office</label><select id="officeAdminOffice" name="office" required>{% for value,label in office_admin_form.office.field.choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+                <div class="modal-actions"><button type="button" class="btn-secondary" id="cancelOfficeAdminModal">Cancel</button><button type="submit" class="btn-primary">Send Invite</button></div>
+            </form>
+        </div>
     </div>
     <div class="modal-overlay hidden" id="inviteDeptheadModal">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inviteDeptheadModalTitle">
@@ -201,13 +245,6 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="modal-form-group">
-                    <label for="edit-depthead-status">Account Status</label>
-                    <select id="edit-depthead-status" name="account_status" required>
-                        <option value="active">Active</option>
-                        <option value="deactivated">Deactivated</option>
-                    </select>
-                </div>
                 <div class="form-actions modal-actions">
                     <button type="button" class="btn-secondary" id="closeEditDeptheadModal">Cancel</button>
                     <button type="submit" class="btn-primary">Save Changes</button>
@@ -220,6 +257,13 @@
     </div>
     
     <script src="{% static 'superadmin/js/manageAdmins.js' %}?v=20260908-college-filter"></script>
+    <script>
+      const officeAdminModal = document.getElementById('officeAdminModal');
+      document.getElementById('openOfficeAdminModal')?.addEventListener('click', () => officeAdminModal.classList.remove('hidden'));
+      document.getElementById('closeOfficeAdminModal')?.addEventListener('click', () => officeAdminModal.classList.add('hidden'));
+      document.getElementById('cancelOfficeAdminModal')?.addEventListener('click', () => officeAdminModal.classList.add('hidden'));
+      officeAdminModal?.addEventListener('click', (event) => { if (event.target === officeAdminModal) officeAdminModal.classList.add('hidden'); });
+    </script>
 </body>
 
 </html>

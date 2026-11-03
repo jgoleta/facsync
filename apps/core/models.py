@@ -16,6 +16,7 @@ class User(AbstractUser, SchoolScopedModel):
         ('student', 'Student'),
         ('faculty', 'Faculty'),
         ('depthead', 'College Head'),
+        ('officeadmin', 'Office Admin'),
         ('superadmin', 'Super Admin'),
         ('systemadmin', 'System Admin'),
     ]
@@ -112,6 +113,17 @@ class DeptHeadInvite(SchoolScopedModel):
     def __str__(self):
         return f"College Head invite for {self.email} ({self.college})"
 
+class OfficeAdminInvite(SchoolScopedModel):
+    school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='office_admin_invites')
+    email = models.EmailField(unique=True)
+    office = models.CharField(max_length=100)
+    invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='office_admin_invites_sent')
+    created_at = models.DateTimeField(auto_now_add=True)
+    used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Office Admin invite for {self.email} ({self.office})"
+
 class OfficeClosure(SchoolScopedModel):
     school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='closures')
     college = models.CharField(max_length=100)
@@ -153,6 +165,37 @@ class College(SchoolScopedModel):
         while College.objects.filter(school_id=self.school_id, code__iexact=code).exclude(pk=self.pk).exists():
             counter += 1
             code = f"{base_code}{counter}"
+        return code
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = self.generate_code()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+class Office(SchoolScopedModel):
+    school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='offices')
+    code = models.CharField(max_length=20, blank=True)
+    name = models.CharField(max_length=150)
+    description = models.TextField(blank=True)
+    schedule_template = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(models.functions.Lower('code'), models.F('school'), name='office_school_code_unique'),
+            models.UniqueConstraint(models.functions.Lower('name'), models.F('school'), name='office_school_name_unique'),
+        ]
+
+    def generate_code(self):
+        words = [w for w in self.name.split() if w.lower() not in {'of', 'and', 'the', 'for'}]
+        base_code = ''.join(w[0].upper() for w in words) or 'OFF'
+        code, counter = base_code, 1
+        while Office.objects.filter(school_id=self.school_id, code__iexact=code).exclude(pk=self.pk).exists():
+            counter += 1
+            code = f'{base_code}{counter}'
         return code
 
     def save(self, *args, **kwargs):
