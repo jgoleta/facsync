@@ -35,6 +35,7 @@ GOOGLE_CALENDAR_SCOPE = getattr(
     'GOOGLE_CALENDAR_SCOPE',
     'https://www.googleapis.com/auth/calendar.events',
 )
+REQUIRED_CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar.events'
 logger = logging.getLogger(__name__)
 
 
@@ -88,6 +89,15 @@ def _client_credentials():
     return client_id, client_secret
 
 
+def _oauth_scopes():
+    """Return the configured OAuth scopes with the Calendar scope guaranteed."""
+    configured = GOOGLE_CALENDAR_SCOPE if isinstance(GOOGLE_CALENDAR_SCOPE, str) else ''
+    scopes = list(dict.fromkeys(configured.split()))
+    if REQUIRED_CALENDAR_SCOPE not in scopes:
+        scopes.append(REQUIRED_CALENDAR_SCOPE)
+    return scopes
+
+
 def callback_url(request):
     """Return the configured OAuth callback URL for the current deployment."""
     configured_url = getattr(settings, 'GOOGLE_CALENDAR_REDIRECT_URI', '')
@@ -105,7 +115,7 @@ def start_oauth(request):
         'client_id': client_id,
         'redirect_uri': callback_url(request),
         'response_type': 'code',
-        'scope': GOOGLE_CALENDAR_SCOPE,
+        'scope': ' '.join(_oauth_scopes()),
         'access_type': 'offline',
         'prompt': 'select_account consent',
         'login_hint': request.user.email,
@@ -153,8 +163,14 @@ def finish_oauth(request, code, state):
     diagnostic_id = secrets.token_hex(6)
     # Warning level makes these temporary diagnostics visible without DEBUG=True.
     logger.warning('calendar_oauth_diagnostic ref=%s stage=token_exchange requested_scopes=%s granted_scopes=%s',
-                   diagnostic_id, _diagnostic_scopes(GOOGLE_CALENDAR_SCOPE),
+                   diagnostic_id, _diagnostic_scopes(' '.join(_oauth_scopes())),
                    _diagnostic_scopes(token_data.get('scope')))
+    granted_scopes = token_data.get('scope')
+    if isinstance(granted_scopes, str) and REQUIRED_CALENDAR_SCOPE not in granted_scopes.split():
+        raise GoogleCalendarError(
+            'Google did not grant the Calendar scope. Select Allow on the Google consent screen '
+            'and connect Google Calendar again.'
+        )
     try:
         userinfo_response = requests.get(
             GOOGLE_USERINFO_URL,
@@ -251,6 +267,11 @@ def google_request(connection, method, path, **kwargs):
             except ValueError:
                 details = {}
             reason = (details.get('error') or {}).get('message') if isinstance(details.get('error'), dict) else details.get('error_description')
+            if response.status_code == 403 and reason and 'insufficient authentication scopes' in reason.casefold():
+                raise GoogleCalendarError(
+                    'Google Calendar authorization is missing the Calendar scope. '
+                    'Disconnect Google Calendar and connect it again.'
+                )
             suffix = f': {reason}' if reason else ''
             raise GoogleCalendarError(
                 f'Google Calendar request failed ({response.status_code}){suffix}.'
