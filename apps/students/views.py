@@ -2,7 +2,8 @@ import json
 import json
 import uuid
 from datetime import date, datetime, time, timedelta
-from apps.core.models import OfficeClosure, Office, College
+from zoneinfo import ZoneInfo
+from apps.core.models import OfficeClosure, Office, College, User
 from apps.core.services import create_notification, get_active_announcements, active_announcement_queryset
 from apps.core.consultation_emails import queue_consultation_email
 
@@ -219,7 +220,7 @@ def api_delete_consultation(request, request_id):
             )
         if consultation.status in {'approved', 'cancellation_requested'}:
             return JsonResponse(
-                {'error': 'Approved consultations must be cancelled by faculty approval of a cancellation request.'},
+                {'error': 'Cancel this consultation before deleting it.'},
                 status=409,
             )
         if consultation.google_event_id:
@@ -338,8 +339,16 @@ def api_consultation_requests(request):
         faculty_id = str(payload.get('faculty_id') or '').strip()
         date_value = date.fromisoformat(str(payload.get('date') or ''))
         start_time = time.fromisoformat(str(payload.get('start_time') or ''))
+        if start_time.tzinfo is not None:
+            raise ValueError('Use a local appointment time.')
     except (TypeError, ValueError, KeyError) as exc:
         return JsonResponse({'error': 'A valid faculty, date, and start time are required.'}, status=400)
+
+    appointment_start = timezone.make_aware(datetime.combine(date_value, start_time), ZoneInfo('Asia/Manila'))
+    if appointment_start <= timezone.now():
+        return JsonResponse({'error': 'Choose a future consultation date and time.'}, status=400)
+    if date_value.weekday() == 6 or not time(9) <= start_time <= time(17):
+        return JsonResponse({'error': 'Choose a consultation starting between 9 AM and 5 PM, Monday–Saturday (Philippine time).'}, status=400)
 
     student_message = str(payload.get('message') or '').strip()
     if len(student_message) > CONSULTATION_NOTE_MAX_LENGTH:
@@ -368,20 +377,29 @@ def api_consultation_requests(request):
     except (TypeError, ValueError):
         return JsonResponse({'error': 'Invalid consultation end time.'}, status=400)
 
-    if end_time <= start_time:
+    if end_time.tzinfo is not None or end_time <= start_time:
         return JsonResponse({'error': 'The consultation must end after it starts.'}, status=400)
 
-    consultation = ConsultationRequest.objects.create(
-        request_id=uuid.uuid4().hex,
-        user=request.user,
-        faculty=faculty,
-        date=date_value,
-        start_time=start_time,
-        end_time=end_time,
-        agenda=agenda,
-        consultation_type=consultation_type,
-        student_message=student_message,
-    )
+    with transaction.atomic():
+        # Serialize this student's submissions, including requests from another tab.
+        # Lock an existing row: locking a nonexistent matching request is insufficient.
+        User.objects.select_for_update().get(pk=request.user.pk)
+        if ConsultationRequest.objects.filter(
+            user=request.user, faculty=faculty, date=date_value, start_time=start_time,
+            status__in=['pending', 'approved', 'cancellation_requested'],
+        ).exists():
+            return JsonResponse({'error': 'You already have a request for this faculty member at this time.'}, status=409)
+        consultation = ConsultationRequest.objects.create(
+            request_id=uuid.uuid4().hex,
+            user=request.user,
+            faculty=faculty,
+            date=date_value,
+            start_time=start_time,
+            end_time=end_time,
+            agenda=agenda,
+            consultation_type=consultation_type,
+            student_message=student_message,
+        )
     create_notification(
         recipient=faculty.user,
         notification_type='consultation_request',
