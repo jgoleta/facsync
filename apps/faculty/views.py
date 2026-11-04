@@ -1394,7 +1394,7 @@ def api_schedule_events(request):
             payload = _json_body(request)
             values = _event_values(payload)
         except ValueError as exc:
-            return HttpResponseBadRequest(str(exc))
+            return JsonResponse({'error': str(exc)}, status=400)
 
         event = ScheduleEvent(faculty=faculty, **values)
         if schedule_event_duplicate(faculty, values):
@@ -1405,7 +1405,7 @@ def api_schedule_events(request):
         connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
         sync_requested = payload.get('sync_to_google')
         if sync_requested is not None and not isinstance(sync_requested, bool):
-            return HttpResponseBadRequest('sync_to_google must be true or false')
+            return JsonResponse({'error': 'sync_to_google must be true or false'}, status=400)
         if sync_requested is True and faculty.sync_enabled and connection is None:
             return JsonResponse(
                 {'error': 'Connect Google Calendar before adding this event to it.'},
@@ -1557,10 +1557,10 @@ def api_schedule_event_detail(request, pk):
                     'recurrence_end_date': None,
                 })
         except ValueError as exc:
-            return HttpResponseBadRequest(str(exc))
+            return JsonResponse({'error': str(exc)}, status=400)
         sync_requested = payload.get('sync_to_google')
         if sync_requested is not None and not isinstance(sync_requested, bool):
-            return HttpResponseBadRequest('sync_to_google must be true or false')
+            return JsonResponse({'error': 'sync_to_google must be true or false'}, status=400)
         if sync_requested is True and connection is None:
             return JsonResponse(
                 {'error': 'Connect Google Calendar before adding this event to it.'},
@@ -1745,7 +1745,7 @@ def api_schedule_event_detail(request, pk):
                     faculty=faculty, pk__in=[item.pk for item in series_events],
                 ).delete()
         except ValueError as exc:
-            return HttpResponseBadRequest(str(exc))
+            return JsonResponse({'error': str(exc)}, status=400)
         except GoogleCalendarError as exc:
             return JsonResponse({'error': str(exc)}, status=502)
         refresh_faculty_status(faculty)

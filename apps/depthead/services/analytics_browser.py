@@ -130,13 +130,13 @@ def analytics_browser_answer(metric, college):
             'status_frequency': f'Here is how often status changes were recorded for faculty in your college over {dates}:',
             'status_availability': f'Here is the share of observed time faculty in your college were marked Available over {dates}:',
             'completion_rates': f'Here are the faculty consultation completion rates in your college for {dates}:',
-            'approval_times': f'Here is the average time faculty in your college took to approve requests scheduled for {dates}:',
+            'approval_times': f'Here is the average time faculty in your college took to approve requests approved during {dates}:',
         }[metric]
         note = {
             'status_frequency': 'The daily average is the number of status-history entries divided by seven. Entries are not necessarily manual updates. The last recorded update may predate this window.',
             'status_availability': 'This measures observed time in the Available status. It is not schedule-based availability or a prediction of future availability.',
             'completion_rates': 'Completed requests are divided by all requests scheduled in this period, including requests with other statuses.',
-            'approval_times': 'This measures the average time from submission to recorded approval. Requests without recorded approval times are excluded.',
+            'approval_times': 'This measures the average time from submission to recorded approval for requests approved during this period, regardless of their scheduled consultation dates. Requests without recorded approval times are excluded.',
         }[metric]
         empty = 'There are no active faculty in your college to summarize.'
     source_label = {'peak_analytics': 'View peak analytics', 'student_behavior': 'View student behavior',

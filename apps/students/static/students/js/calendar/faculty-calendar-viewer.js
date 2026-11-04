@@ -689,8 +689,11 @@ detailCloseBtns.forEach((btn) => {
 });
 
 if (consultationForm) {
+  let submittingConsultation = false;
   consultationForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    if (submittingConsultation) return;
+    submittingConsultation = true;
     const submitButton = consultationForm.querySelector(
       'button[type="submit"]',
     );
@@ -723,6 +726,7 @@ if (consultationForm) {
     } catch (error) {
       studentFeedback?.showToast(error.message, true);
     } finally {
+      submittingConsultation = false;
       studentFeedback?.hideLoading();
       if (submitButton) submitButton.disabled = false;
     }

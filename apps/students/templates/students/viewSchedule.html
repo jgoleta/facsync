@@ -160,7 +160,8 @@
 
                     <div class="form-group">
                         <label for="timeSelect">Time slot</label>
-                        <input type="time" id="timeSelect" required>
+                        <input type="time" id="timeSelect" min="09:00" max="17:00" required>
+                        <small>Appointments may start from 9 AM to 5 PM, Monday–Saturday (Philippine time). Consultations last one hour.</small>
                     </div>
 
                     <div class="form-group">
@@ -202,7 +203,8 @@
     <script src="{% static 'js/calendar/calendar-core.js' %}?v=20260910-month-navigation"></script>
     <script src="{% static 'js/consultation_notes.js' %}?v=20261021-consultation-notes"></script>
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
-    <script src="{% static 'students/js/calendar/faculty-calendar-viewer.js' %}?v=20261004-loading"></script>
+    <script src="{% static 'students/js/calendar/consultation-validation.js' %}?v=20261104-booking-validation"></script>
+    <script src="{% static 'students/js/calendar/faculty-calendar-viewer.js' %}?v=20261104-booking-validation"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 
