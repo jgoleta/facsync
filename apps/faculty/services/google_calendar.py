@@ -1,5 +1,6 @@
 import secrets
 import calendar
+import uuid
 import logging
 from datetime import date, datetime, time, timedelta
 from hmac import compare_digest
@@ -487,19 +488,87 @@ def consultation_event_payload(consultation):
     return payload
 
 
+def consultation_conference_request():
+    """Request a new Google Meet conference for a Calendar event."""
+    return {
+        'createRequest': {
+            'requestId': uuid.uuid4().hex,
+            'conferenceSolutionKey': {'type': 'hangoutsMeet'},
+        },
+    }
+
+
 def create_consultation_event(connection, consultation):
     """Create or update the Calendar event for an approved consultation."""
     if consultation.google_event_id:
         return update_consultation_event(connection, consultation)
+    payload = consultation_event_payload(consultation)
+    if consultation.consultation_type == 'online':
+        payload['conferenceData'] = consultation_conference_request()
     response = google_request(
         connection,
         'POST',
         f'/calendars/{connection.calendar_id}/events',
-        params={'sendUpdates': 'none'},
-        json=consultation_event_payload(consultation),
+        params=(
+            {'sendUpdates': 'none', 'conferenceDataVersion': 1}
+            if consultation.consultation_type == 'online'
+            else {'sendUpdates': 'none'}
+        ),
+        json=payload,
     )
     event = response.json()
     return event
+
+
+def consultation_meet_link(google_event):
+    """Extract the Meet URL returned by Google Calendar."""
+    if not isinstance(google_event, dict):
+        return ''
+    if google_event.get('hangoutLink'):
+        return google_event['hangoutLink']
+    for entry_point in (google_event.get('conferenceData') or {}).get('entryPoints', []):
+        if entry_point.get('entryPointType') == 'video' and entry_point.get('uri'):
+            return entry_point['uri']
+    return ''
+
+
+def refresh_consultation_meet_link(connection, consultation):
+    """Poll an approved consultation event and persist its Meet URL."""
+    if (
+        consultation.status != 'approved'
+        or consultation.consultation_type != 'online'
+        or not consultation.google_event_id
+    ):
+        return consultation.google_meet_link
+    try:
+        path = f'/calendars/{consultation.google_calendar_id or connection.calendar_id}/events/{consultation.google_event_id}'
+        event = google_request(connection, 'GET', path).json()
+        link = consultation_meet_link(event)
+        if not link:
+            create_request = (event.get('conferenceData') or {}).get('createRequest') or {}
+            state = (create_request.get('status') or {}).get('statusCode')
+            if state != 'pending':
+                event = google_request(
+                    connection,
+                    'PATCH',
+                    path,
+                    params={'sendUpdates': 'none', 'conferenceDataVersion': 1},
+                    json={'conferenceData': consultation_conference_request()},
+                ).json()
+                link = consultation_meet_link(event)
+        if link and link != consultation.google_meet_link:
+            consultation.google_meet_link = link
+            consultation.calendar_sync_status = 'synced'
+            consultation.calendar_sync_error = ''
+            consultation.save(update_fields=[
+                'google_meet_link', 'calendar_sync_status',
+                'calendar_sync_error', 'updated_at',
+            ])
+    except GoogleCalendarError as exc:
+        consultation.calendar_sync_status = 'failed'
+        consultation.calendar_sync_error = str(exc)
+        consultation.save(update_fields=['calendar_sync_status', 'calendar_sync_error', 'updated_at'])
+    return consultation.google_meet_link
 
 
 def update_consultation_event(connection, consultation):
@@ -705,11 +774,15 @@ def sync_google_calendar(user):
                     consultation.google_calendar_id = connection.calendar_id
                     consultation.calendar_sync_status = 'synced'
                     consultation.calendar_sync_error = ''
+                    meeting_link = consultation_meet_link(item)
+                    if meeting_link:
+                        consultation.google_meet_link = meeting_link
                     consultation.last_calendar_sync_at = timezone.now()
                     consultation.save(update_fields=[
                         'date', 'start_time', 'end_time', 'google_event_id',
                         'google_calendar_id', 'calendar_sync_status',
                         'calendar_sync_error', 'last_calendar_sync_at',
+                        'google_meet_link',
                     ])
                     continue
 
@@ -784,13 +857,14 @@ def sync_google_calendar(user):
                     replacement = create_consultation_event(connection, consultation)
                     consultation.google_event_id = replacement.get('id')
                     consultation.calendar_sync_status = 'synced'
+                    consultation.google_meet_link = consultation_meet_link(replacement)
                     consultation.calendar_sync_error = ''
                 except GoogleCalendarError as exc:
                     consultation.calendar_sync_status = 'out_of_sync'
                     consultation.calendar_sync_error = str(exc)
                 consultation.last_calendar_sync_at = timezone.now()
                 consultation.save(update_fields=[
-                    'google_event_id', 'calendar_sync_status', 'calendar_sync_error',
+                    'google_event_id', 'google_meet_link', 'calendar_sync_status', 'calendar_sync_error',
                     'last_calendar_sync_at',
                 ])
 

@@ -128,7 +128,12 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                 # invitation supplies the final assignment, including after a
                 # delayed allauth signup form/session round trip.
                 school = School.objects.select_for_update().get(pk=invite.school_id)
-                invite = type(invite).objects.select_for_update().select_related('school').filter(pk=invite.pk, used=False).first()
+                # Lock only the invitation row here.  Joining ``school`` while
+                # using FOR UPDATE makes PostgreSQL try to lock the nullable
+                # side of the relation for the other invitation models.
+                # The school row is already locked above, so a joined lock is
+                # unnecessary and breaks OAuth activation on PostgreSQL.
+                invite = type(invite).objects.select_for_update().filter(pk=invite.pk, used=False).first()
                 if invite is None:
                     self._deny_invite(request)
                 if isinstance(invite, SuperAdminInvite):

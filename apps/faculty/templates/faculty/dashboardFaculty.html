@@ -120,6 +120,13 @@
                                 <p class="request-type"><strong>Consultation Type:</strong>
                                     {% if consultation.consultation_type == 'online' %}Online{% else %}Face-to-Face{% endif %}
                                 </p>
+                                {% if consultation.google_meet_link %}
+                                <p class="request-meet"><strong>Google Meet:</strong> <a href="{{ consultation.google_meet_link }}" target="_blank" rel="noopener">Join Google Meet</a></p>
+                                {% elif consultation.consultation_type == 'online' and consultation.status == 'approved' and consultation.calendar_sync_status == 'pending' %}
+                                <p class="request-meet-pending" role="status">Google Meet link is being generated.</p>
+                                {% elif consultation.consultation_type == 'face_to_face' %}
+                                <p class="request-meet-none">No Google Meet link for Face-to-Face Consultation</p>
+                                {% endif %}
                                 <p class="request-message consultation-note" data-note-clamp><strong>Message:</strong> {{ consultation.student_message|default:"No message provided." }}</p>
                                 {% if consultation.status == 'cancellation_requested' or consultation.get_status_display == 'Cancellation Requested' %}
                                 <p class="faculty-note">The student requested cancellation. Accept to cancel the appointment, or decline to keep it scheduled.</p>

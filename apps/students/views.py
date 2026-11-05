@@ -24,7 +24,11 @@ from apps.core.department_updates import UPDATE_QUESTIONS
 from django.views.decorators.http import require_GET
 from django.views.decorators.cache import never_cache
 from apps.faculty.services.google_calendar import refresh_faculty_status
-from apps.faculty.services.google_calendar import GoogleCalendarError, delete_consultation_event
+from apps.faculty.services.google_calendar import (
+    GoogleCalendarError,
+    delete_consultation_event,
+    refresh_consultation_meet_link,
+)
 from apps.faculty.constants import (
     CONSULTATION_NOTE_LIMIT_ERROR,
     CONSULTATION_NOTE_MAX_LENGTH,
@@ -197,6 +201,11 @@ def consultation_requests(request):
     consultations = ConsultationRequest.objects.filter(
         user=request.user,
     ).select_related('faculty__user')
+    for consultation in consultations:
+        if consultation.status == 'approved' and not consultation.google_meet_link:
+            connection = GoogleCalendarConnection.objects.filter(user_id=consultation.faculty.user_id).first()
+            if connection:
+                refresh_consultation_meet_link(connection, consultation)
     return render(request, 'students/consultationRequests.html', {
         'consultations': consultations,
     })
@@ -315,6 +324,7 @@ def _consultation_json(consultation):
         'agenda_label': consultation.get_agenda_display(),
         'consultation_type': consultation.consultation_type,
         'consultation_type_label': consultation.get_consultation_type_display(),
+        'google_meet_link': consultation.google_meet_link if consultation.status == 'approved' else '',
         'student_message': consultation.student_message,
         'faculty_note': consultation.faculty_note,
     }
@@ -330,6 +340,11 @@ def api_consultation_requests(request):
     ).select_related('faculty__user')
 
     if request.method == 'GET':
+        for consultation in consultations:
+            if consultation.status == 'approved' and not consultation.google_meet_link:
+                connection = GoogleCalendarConnection.objects.filter(user_id=consultation.faculty.user_id).first()
+                if connection:
+                    refresh_consultation_meet_link(connection, consultation)
         return JsonResponse({'consultations': [_consultation_json(item) for item in consultations]})
     if request.method != 'POST':
         return HttpResponse(status=405)
@@ -516,7 +531,7 @@ def api_walk_in_status(request):
 @role_required('student')
 @csrf_protect
 def api_join_walk_in_queue(request):
-    """Join a faculty member's walk-in queue only while walk-ins are enabled."""
+    """Join a walk-in queue only while the faculty member is available."""
     if request.method != 'POST':
         return HttpResponse(status=405)
 
@@ -537,9 +552,9 @@ def api_join_walk_in_queue(request):
         refresh_faculty_status(faculty)
         if OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).exists():
             return JsonResponse({'error': 'This college is currently closed and not accepting walk-ins.'}, status=409)
-        if faculty.current_status == 'on_leave':
+        if faculty.current_status != 'available':
             return JsonResponse(
-                {'error': 'This faculty member is currently on leave and is not accepting walk-ins.'},
+                {'error': 'This faculty member must be Available before students can join the walk-in queue.'},
                 status=409,
             )
         if not faculty.walk_ins_enabled:

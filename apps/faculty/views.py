@@ -32,6 +32,7 @@ from .services.google_calendar import (
     GoogleCalendarError,
     consultation_has_calendar_conflict,
     create_consultation_event,
+    consultation_meet_link,
     create_google_event,
     delete_consultation_event,
     delete_google_event,
@@ -42,6 +43,7 @@ from .services.google_calendar import (
     start_oauth,
     sync_google_calendar,
     refresh_faculty_status,
+    refresh_consultation_meet_link,
     update_google_event,
 )
 from .services.calendar_events import (
@@ -1767,6 +1769,7 @@ def _consultation_json(consultation):
         'agenda': consultation.agenda,
         'agenda_label': consultation.get_agenda_display(),
         'google_event_id': consultation.google_event_id,
+        'google_meet_link': consultation.google_meet_link,
         'calendar_sync_status': consultation.calendar_sync_status,
         'calendar_sync_error': consultation.calendar_sync_error,
         'last_calendar_sync_at': (
@@ -1879,6 +1882,11 @@ def api_consultation(request, request_id):
         }
         if new_status not in allowed_transitions.get(old_status, set()):
             return JsonResponse({'error': 'This request has changed. Refresh before trying again.'}, status=409)
+        if new_status == 'approved' and consultation.consultation_type == 'online' and not sync_enabled:
+            return JsonResponse({
+                'error': 'Connect Google Calendar before approving an online consultation.',
+                'calendar_connection_required': True,
+            }, status=409)
         rejecting_cancellation = old_status == 'cancellation_requested' and new_status == 'approved'
         if new_status == 'approved' and sync_enabled and not rejecting_cancellation:
             try:
@@ -1905,11 +1913,16 @@ def api_consultation(request, request_id):
                 try:
                     google_event = create_consultation_event(connection, consultation)
                     consultation.google_event_id = google_event.get('id')
+                    consultation.google_meet_link = consultation_meet_link(google_event)
                     consultation.google_calendar_id = connection.calendar_id
                     consultation.calendar_sync_status = 'synced'
                     consultation.last_calendar_sync_at = timezone.now()
                     if not consultation.google_event_id:
                         raise GoogleCalendarError('Google Calendar did not return an event ID.')
+                    if consultation.google_meet_link:
+                        consultation.calendar_sync_status = 'synced'
+                    else:
+                        consultation.calendar_sync_status = 'pending'
                 except GoogleCalendarError as exc:
                     consultation.calendar_sync_status = 'failed'
                     consultation.calendar_sync_error = str(exc)
@@ -1926,6 +1939,7 @@ def api_consultation(request, request_id):
                     return JsonResponse({'error': 'Unable to remove the calendar appointment. Please try again.'}, status=502)
             consultation.google_event_id = None
             consultation.google_calendar_id = None
+            consultation.google_meet_link = ''
             if consultation.calendar_sync_status != 'failed':
                 consultation.calendar_sync_status = 'not_configured'
         consultation.save()
@@ -1976,9 +1990,11 @@ def api_consultation(request, request_id):
                         consultation.google_event_id = None
                         google_event = create_consultation_event(connection, consultation)
                         consultation.google_event_id = google_event.get('id')
+                        consultation.google_meet_link = consultation_meet_link(google_event)
                 else:
                     google_event = create_consultation_event(connection, consultation)
                     consultation.google_event_id = google_event.get('id')
+                    consultation.google_meet_link = consultation_meet_link(google_event)
                 consultation.google_calendar_id = connection.calendar_id
                 consultation.calendar_sync_status = 'synced'
                 consultation.last_calendar_sync_at = timezone.now()
@@ -2004,9 +2020,10 @@ def api_consultation(request, request_id):
         consultation.status = 'cancelled'
         consultation.google_event_id = None
         consultation.google_calendar_id = None
+        consultation.google_meet_link = ''
         consultation.save(update_fields=[
             'status', 'google_event_id', 'google_calendar_id',
-            'calendar_sync_status', 'calendar_sync_error',
+            'google_meet_link', 'calendar_sync_status', 'calendar_sync_error',
         ])
         _notify_consultation_student(
             consultation,
@@ -2017,6 +2034,8 @@ def api_consultation(request, request_id):
         return JsonResponse(_consultation_json(consultation))
 
     if request.method == 'GET':
+        if connection:
+            refresh_consultation_meet_link(connection, consultation)
         return JsonResponse(_consultation_json(consultation))
     return HttpResponse(status=405)
 

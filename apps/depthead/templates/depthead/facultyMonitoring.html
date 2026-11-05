@@ -54,7 +54,7 @@
                 </div>
             </div>
 
-            <div class="monitoring-grid" id="monitoringGrid" data-refresh-url="{% url 'depthead:faculty_monitoring_data' %}">
+            <div class="monitoring-grid" id="monitoringGrid" data-refresh-url="{% url 'depthead:faculty_monitoring_data' %}" data-schedule-url-template="{% url 'depthead:faculty_monitoring_schedule' '__faculty__' %}">
                 {% for item in faculty_list %}
                 <div class="faculty-card {{ item.status_class }}">
                     {% include 'components/_avatar.html' with photo_url=item.photo_url initials=item.name|first|upper avatar_class='faculty-avatar' %}
@@ -65,6 +65,7 @@
                         </div>
                         <span class="status-badge">{{ item.status_label }}</span>
                     </div>
+                    <button type="button" class="view-schedule-btn" data-faculty-id="{{ item.faculty_id }}">View Schedule</button>
                     <div class="faculty-card-footer">
                         <span class="status-line"><i></i>Currently {{ item.status_label|lower }}</span>
                         <span class="updated-time">{% if item.updated_at %}{{ item.updated_at|timesince }} ago{% else %}No update yet{% endif %}</span>
@@ -75,6 +76,21 @@
                 {% endfor %}
             </div>
         </main>
+    </div>
+    <div class="monitoring-modal hidden" id="facultyScheduleModal" role="dialog" aria-modal="true" aria-labelledby="facultyScheduleModalTitle">
+        <div class="monitoring-modal-content">
+            <div class="monitoring-modal-header">
+                <div>
+                    <p class="page-kicker">Current month schedule</p>
+                    <h2 id="facultyScheduleModalTitle">Faculty Schedule</h2>
+                    <p id="facultyScheduleModalMonth" class="monitoring-modal-subtitle"></p>
+                </div>
+                <button type="button" class="monitoring-modal-close" id="closeFacultyScheduleModal" aria-label="Close schedule">&times;</button>
+            </div>
+            <div id="facultyScheduleModalBody" class="monitoring-schedule-list">
+                <p class="empty-state">Loading schedule...</p>
+            </div>
+        </div>
     </div>
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
       <script src="{% static 'depthead/js/facultyMonitoring.js' %}?v=20261031-faculty-calendar-modal"></script>

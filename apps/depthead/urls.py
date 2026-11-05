@@ -33,4 +33,5 @@ urlpatterns = [
     path('college/edit-description/', views.edit_college_description, name='edit_college_description'),
     path('college/schedule-template/', views.save_schedule_template, name='save_schedule_template'),
     path('faculty-monitoring/data/', views.faculty_monitoring_data, name='faculty_monitoring_data'),
+    path('faculty-monitoring/<str:faculty_id>/schedule/', views.faculty_monitoring_schedule, name='faculty_monitoring_schedule'),
 ]

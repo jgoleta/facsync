@@ -323,6 +323,20 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     console.log('Faculty dashboard script loaded.');
+    window.setInterval(async () => {
+        const pending = document.querySelectorAll('.request-meet-pending');
+        for (const message of pending) {
+            const item = message.closest('[data-request-id]');
+            if (!item) continue;
+            const response = await fetch(`/faculty/api/consultations/${encodeURIComponent(item.dataset.requestId)}/`, { cache: 'no-store' });
+            if (!response.ok) continue;
+            const data = await response.json();
+            if (data.google_meet_link || data.calendar_sync_status === 'failed') {
+                window.location.reload();
+                break;
+            }
+        }
+    }, 10000);
 });
 // Keep the announcement history compact until the faculty member expands it.
 (() => {
