@@ -29,6 +29,9 @@
                 <a href="{% url 'superadmin:manage_colleges' %}" class="nav-item">
                     <span>Manage Colleges</span>
                 </a>
+                <a href="{% url 'superadmin:manage_offices' %}" class="nav-item">
+                    <span>Manage Offices</span>
+                </a>
                 <a href="{% url 'superadmin:manage_admins' %}" class="nav-item active">
                     <span>Manage Admins</span>
                 </a>
@@ -110,9 +113,11 @@
                             <td class="depthead-college">{{ admin.college }}</td>
                             <td class="depthead-title">{{ admin.get_title_display|default:"—" }}</td>
                             <td class="actions">
-                                <button type="button" class="edit-depthead-btn" data-id="{{ admin.id }}" data-role="{{ admin.role }}"
-                                    data-college="{{ admin.college }}" data-title="{{ admin.title }}"
-                                    data-status="{{ admin.account_status }}">Edit</button>
+                                <form method="post" action="{% url 'superadmin:remove_depthead' admin.id %}" class="inline-form"
+                                    onsubmit="return confirm('Remove this College Head account?');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="danger">Remove</button>
+                                </form>
                             </td>
                         </tr>
                         {% endfor %}
@@ -139,7 +144,7 @@
                 <div class="table-scroll">
                     <table>
                         <thead>
-                            <tr><th>Name</th><th>Email</th><th>Office</th><th>Role</th><th>Actions</th></tr>
+                            <tr><th>Name</th><th>Email</th><th>Office</th><th>Actions</th></tr>
                         </thead>
                         <tbody>
                             {% for admin in office_admin_accounts %}
@@ -147,11 +152,10 @@
                                 <td>{{ admin.get_full_name|default:admin.username }}</td>
                                 <td>{{ admin.email }}</td>
                                 <td>{{ admin.college }}</td>
-                                <td>Office Admin</td>
                                 <td class="actions"><span class="table-action-muted">Managed by Office</span></td>
                             </tr>
                             {% empty %}
-                            <tr><td colspan="5" class="empty-state">No Office Admin accounts yet. Add your first Office Admin.</td></tr>
+                            <tr><td colspan="4" class="empty-state">No Office Admin accounts yet. Add your first Office Admin.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>

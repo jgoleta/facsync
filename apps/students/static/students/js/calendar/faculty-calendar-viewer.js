@@ -172,23 +172,18 @@ function renderWalkInState(data) {
   queueActiveState?.classList.add("hidden");
   queueActiveState?.classList.remove("is-called");
   if (joinQueueBtn) {
-    const facultyUnavailable = data.faculty_status === "unavailable";
-    const facultyOnLeave = data.faculty_status === "on_leave";
+    const facultyAvailable = data.faculty_status === "available";
     const walkInsUnavailable =
-      facultyUnavailable || facultyOnLeave || !data.walk_ins_enabled;
+      !facultyAvailable || !data.walk_ins_enabled;
     joinQueueBtn.classList.toggle("faculty-unavailable", walkInsUnavailable);
     joinQueueBtn.disabled = walkInsUnavailable;
-    joinQueueBtn.textContent = facultyOnLeave
-      ? "Faculty On Leave"
-      : facultyUnavailable
-        ? "Faculty Unavailable"
-        : data.walk_ins_enabled
-          ? "Join Walk-in Queue"
-          : "Walk-ins Unavailable";
+    joinQueueBtn.textContent = facultyAvailable && data.walk_ins_enabled
+      ? "Join Walk-in Queue"
+      : "Walk-ins Unavailable";
   }
   if (walkInNote) {
-    walkInNote.textContent = data.faculty_status === "on_leave"
-      ? "This faculty member is currently on leave and is not accepting walk-ins."
+    walkInNote.textContent = data.faculty_status !== "available"
+      ? "Walk-ins are available only when the faculty status is Available."
       : data.walk_ins_enabled
         ? "This faculty is currently accepting walk-ins."
         : "The faculty member is not accepting new walk-in students.";

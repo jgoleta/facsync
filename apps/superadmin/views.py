@@ -80,6 +80,18 @@ def edit_depthead(request, user_id):
 
 @login_required
 @role_required('superadmin')
+def remove_depthead(request, user_id):
+    depthead = get_object_or_404(User, id=user_id, role='depthead')
+    if request.method == 'POST':
+        name = depthead.get_full_name() or depthead.username
+        depthead.delete()
+        messages.success(request, f"{name} was removed.")
+        return redirect('superadmin:manage_admins')
+    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+
+@login_required
+@role_required('superadmin')
 def superadmin_dashboard(request):
     colleges = College.objects.all().order_by('name')
     total_colleges = colleges.count()

@@ -235,7 +235,7 @@ function renderFacultyDirectory() {
         </button>
          <div class="status-row"><span class="status-badge status-${faculty.status}" aria-hidden="true"></span>
           <span class="status-label">${escapeHtml(getStatusLabel(faculty.status))}</span>
-          <span class="status-note">${escapeHtml(faculty.walk_ins_enabled ? "Accepting walk-ins" : faculty.note || "Walk-ins unavailable")}</span>
+          <span class="status-note">${escapeHtml(faculty.status === "available" && faculty.walk_ins_enabled ? "Accepting walk-ins" : faculty.note || "Walk-ins unavailable")}</span>
         </div>
         <div class="meta">${escapeHtml(faculty.updated_at ? `Last updated: ${parseISOToDisplay(faculty.updated_at)}` : "No recent status update")}</div>
         <div class="card-actions">

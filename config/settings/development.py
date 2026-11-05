@@ -13,6 +13,30 @@ INSTALLED_APPS = [*INSTALLED_APPS, 'debug_toolbar']
 MIDDLEWARE = ['debug_toolbar.middleware.DebugToolbarMiddleware', *MIDDLEWARE]
 INTERNAL_IPS = ['127.0.0.1', '::1']
 
+
+def show_debug_toolbar(request):
+    """Keep the toolbar off JSON endpoints, where it is not useful.
+
+    The toolbar's template panel can inspect and mutate template context while
+    processing a response. API responses do not render templates, so allowing
+    the toolbar to process them can cause runtime errors in the toolbar itself.
+    """
+    return not request.path.startswith(
+        (
+            '/api/',
+            '/student/api/',
+            '/faculty/api/',
+            '/depthead/api/',
+            '/superadmin/api/',
+            '/systemadmin/api/',
+        )
+    )
+
+
+DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': 'config.settings.development.show_debug_toolbar',
+}
+
 # Read edited templates on every development request, including long-lived workers.
 TEMPLATES = [
     {

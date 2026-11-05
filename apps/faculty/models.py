@@ -259,6 +259,7 @@ class ConsultationRequest(SchoolScopedModel):
     faculty_note = models.TextField(blank=True)
     google_event_id = models.CharField(max_length=1024, null=True, blank=True, db_index=True)
     google_calendar_id = models.CharField(max_length=1024, null=True, blank=True)
+    google_meet_link = models.URLField(max_length=2048, blank=True)
     calendar_sync_status = models.CharField(max_length=16, default='not_configured')
     calendar_sync_error = models.TextField(blank=True)
     last_calendar_sync_at = models.DateTimeField(null=True, blank=True)

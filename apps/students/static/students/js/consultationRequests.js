@@ -102,7 +102,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const updated = new Map((data.consultations || []).map(item => [item.request_id, item]));
             if ([...requestList.querySelectorAll('.request-item')].some(item =>
                 updated.has(item.dataset.requestId)
-                && updated.get(item.dataset.requestId).status !== item.dataset.status)) {
+                && (updated.get(item.dataset.requestId).status !== item.dataset.status
+                    || (updated.get(item.dataset.requestId).google_meet_link || '') !== (item.dataset.meetLink || '')))) {
                 window.location.reload();
                 return;
             }

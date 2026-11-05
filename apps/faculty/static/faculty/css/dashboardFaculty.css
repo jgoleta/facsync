@@ -519,6 +519,27 @@ h2 {
     font-style: italic;
 }
 
+.request-meet {
+  margin: 12px 0 0;
+}
+
+.request-meet a {
+  color: #175fbb;
+  font-weight: 700;
+}
+
+.request-meet-pending {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: .84rem;
+}
+
+.request-meet-none {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: .84rem;
+}
+
 .status-expiry {
   margin-top: 14px;
 }

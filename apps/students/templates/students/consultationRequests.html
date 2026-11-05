@@ -56,7 +56,7 @@
                 </div>
                 <ul id="consultationRequestList" class="consultation-request-list">
                     {% for consultation in consultations %}
-                    <li class="request-item" data-request-id="{{ consultation.request_id }}" data-status="{{ consultation.status }}">
+                    <li class="request-item" data-request-id="{{ consultation.request_id }}" data-status="{{ consultation.status }}" data-meet-link="{{ consultation.google_meet_link }}">
                         <div class="request-status">
                             <span class="status-badge status-{{ consultation.status }}">{{ consultation.get_status_display }}</span>
                             {% if consultation.status == 'pending' %}<button type="button" class="request-cancellation-btn" title="Cancel request" data-cancellation-url="{% url 'students:api_request_consultation_cancellation' consultation.request_id %}">Cancel Request</button>{% elif consultation.status != 'approved' and consultation.status != 'cancellation_requested' %}<button type="button" class="delete-request-btn" aria-label="Delete request with {{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}" title="Delete request" data-delete-url="{% url 'students:api_delete_consultation' consultation.request_id %}">
@@ -81,6 +81,13 @@
                                 {% if consultation.end_time %} - {{ consultation.end_time|time:"g:i A" }}{% endif %}
                             </p>
                             <p class="request-mode"><strong>Type:</strong> {{ consultation.get_consultation_type_display }}</p>
+                            {% if consultation.google_meet_link %}
+                            <p class="request-meet"><a href="{{ consultation.google_meet_link }}" target="_blank" rel="noopener">Join Google Meet</a></p>
+                            {% elif consultation.consultation_type == 'online' and consultation.status == 'approved' and consultation.calendar_sync_status == 'pending' %}
+                            <p class="request-meet-pending" role="status">Google Meet link is being generated.</p>
+                            {% elif consultation.consultation_type == 'face_to_face' %}
+                            <p class="request-meet-none">No Google Meet link for Face-to-Face Consultation</p>
+                            {% endif %}
                             {% if consultation.student_message %}<p class="request-message consultation-note" data-note-clamp><strong>Your Message:</strong> {{ consultation.student_message }}</p>{% endif %}
                             {% if consultation.faculty_note %}<p class="faculty-note consultation-note" data-note-clamp><strong>Faculty Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
                         </div>

@@ -30,6 +30,7 @@ from apps.core.services import send_announcement_email_to_faculty, send_closure_
 from django.views.decorators.cache import never_cache
 from apps.core.faculty import mark_inactive_faculty
 from datetime import timedelta, date
+from apps.faculty.services.schedule_conflicts import occurs_on
 from .services import (
     generate_ai_insights,
     get_college_analytics,
@@ -884,6 +885,46 @@ def faculty_monitoring_data(request):
     return JsonResponse({
         'faculty_list': faculty_list,
         'status_counts': _monitoring_status_counts(faculty_list),
+    })
+
+
+@login_required
+@role_required('depthead')
+@require_GET
+def faculty_monitoring_schedule(request, faculty_id):
+    """Return one faculty member's schedule occurrences for the current month."""
+    faculty = get_object_or_404(
+        FacultyProfile.objects.select_related('user'),
+        faculty_id=faculty_id,
+        user__role='faculty',
+        college_id__iexact=request.user.college,
+    )
+    month_start = timezone.localdate().replace(day=1)
+    month_end = (
+        date(month_start.year + 1, 1, 1)
+        if month_start.month == 12
+        else date(month_start.year, month_start.month + 1, 1)
+    )
+    events = ScheduleEvent.objects.filter(faculty=faculty).order_by('date', 'start_time', 'title')
+    occurrences = []
+    day = month_start
+    while day < month_end:
+        for event in events:
+            if not occurs_on(event, day):
+                continue
+            payload = _event_json(event)
+            payload['id'] = f'{event.pk}:{day.isoformat()}'
+            payload['date'] = day.isoformat()
+            payload['is_recurring'] = event.date is None
+            occurrences.append(payload)
+        day += timedelta(days=1)
+
+    occurrences.sort(key=lambda item: (item['date'], item['start_time'] or '', item['title']))
+    return JsonResponse({
+        'faculty_id': faculty.faculty_id,
+        'faculty_name': faculty.user.get_full_name() or faculty.user.username,
+        'month_label': month_start.strftime('%B %Y'),
+        'events': occurrences,
     })
 
 
