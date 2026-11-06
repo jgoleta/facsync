@@ -2,6 +2,13 @@
   let processing = false;
   const overlay = document.getElementById('managementLoading');
   const triggers = new WeakMap();
+  function validateDepartments(form) {
+    const boxes = [...form.querySelectorAll('input[type=checkbox][name=departments]')];
+    if (boxes.length) boxes[0].setCustomValidity(boxes.some(box => box.checked) ? '' : 'Choose at least one department.');
+  }
+  document.querySelectorAll('[data-department-options]').forEach(group => {
+    group.addEventListener('change', () => validateDepartments(group.closest('form')));
+  });
   function close(dialog) { if (!processing) { dialog.close(); triggers.get(dialog)?.focus(); } }
   function toast(message, error = false) {
     document.querySelector('.management-toast')?.remove();
@@ -22,8 +29,11 @@
         input.value = button.dataset[field === 'account_status' ? 'accountStatus' : field];
       if (field === 'code' && input) input.disabled = !!button.dataset.editUrl;
     }
-    const select = form.elements.namedItem('departments');
-    if (select) { const selected = new Set((button.dataset.departments || '').split(',')); [...select.options].forEach(option => option.selected = selected.has(option.value)); }
+    const selected = new Set((button.dataset.departments || '').split(','));
+    const select = form.querySelector('select[name=departments]');
+    if (select) [...select.options].forEach(option => option.selected = selected.has(option.value));
+    form.querySelectorAll('input[type=checkbox][name=departments]').forEach(box => box.checked = selected.has(box.value));
+    validateDepartments(form);
     const title = dialog.querySelector('[data-modal-title]');
     if (title) title.textContent = button.dataset.editUrl ? title.dataset.editTitle : title.dataset.createTitle;
     triggers.set(dialog, button); dialog.showModal();
