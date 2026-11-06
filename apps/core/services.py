@@ -275,6 +275,29 @@ def send_superadmin_invite_email(email, school):
     ))
 
 
+def send_school_request_receipt(item):
+    return bool(_send_html_email('School registration request received', 'school_request_receipt.html',
+        {'application': item, 'status_url': settings.SITE_URL.rstrip('/') + reverse('core:school_registration')},
+        [item.applicant_email]))
+
+
+def send_school_request_notification(item):
+    from .models import User
+    recipients = list(User._base_manager.filter(role='systemadmin', school__isnull=True,
+        is_active=True, account_status='active').exclude(email='').values_list('email', flat=True))
+    if not recipients:
+        return True
+    return bool(_send_html_email('School registration request awaiting review', 'school_request_notification.html',
+        {'application': item, 'review_url': settings.SITE_URL.rstrip('/') + reverse('systemadmin:request_review', args=[item.pk])},
+        list(dict.fromkeys(recipients))))
+
+
+def send_school_request_rejection(item):
+    return bool(_send_html_email('School registration request update', 'school_request_rejected.html',
+        {'application': item, 'status_url': settings.SITE_URL.rstrip('/') + reverse('core:school_registration')},
+        [item.applicant_email]))
+
+
 def send_superadmin_deactivated_email(user):
     email = (user.email or '').strip()
     if not email:
@@ -284,9 +307,9 @@ def send_superadmin_deactivated_email(user):
         'Your FacSync Super Admin account was deactivated',
         'superadmin_deactivated.html', {'name': name, 'school': user.school}, [email],
         text_content=(f'Hi {name},\n\nYour Super Admin account for {user.school.name} '
-                      f'({user.school.code}) has been deactivated by a System Admin. '
+                      f'({user.school.code}) has been deactivated through FacSync Administration. '
                       'You will not be able to sign in until it is reactivated. '
-                      'If you believe this was a mistake, please contact your System Admin.'),
+                      'If you believe this was a mistake, please contact FacSync Administration.'),
     ))
 
 logger = logging.getLogger(__name__)

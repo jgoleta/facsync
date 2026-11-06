@@ -75,7 +75,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
 
     @staticmethod
     def _deny_invite(request):
-        messages.error(request, 'This invitation is unavailable or its school is suspended. Please contact the System Admin.')
+        messages.error(request, 'This invitation is unavailable or its school is suspended. Please contact FacSync Administration.')
         raise ImmediateHttpResponse(redirect('core:login'))
 
     def _save_student(self, request, sociallogin, form):
@@ -206,6 +206,9 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
     def pre_social_login(self, request, sociallogin):
         email = sociallogin.account.extra_data.get('email', '')
         user_exists = sociallogin.is_existing
+        from .school_requests import INTENT_KEY, capture_applicant
+        if INTENT_KEY in request.session:
+            capture_applicant(request, sociallogin, self._verified_google_email(sociallogin))
 
         # A newly bootstrapped account has no SocialAccount yet. Connect only a
         # verified Google identity with the exact email and no previous Google

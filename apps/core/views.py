@@ -32,9 +32,11 @@ def privacy_policy(request):
     return render(request, 'core/privacy_policy.html')
 
 def login_page(request):
+    request.session.pop('school_request_intent', None)
     return render(request, 'core/loginPage.html')
 
 def register_page(request):
+    request.session.pop('school_request_intent', None)
     return render(request, 'core/registerPage.html')
 
 STATUS_DISPLAY_MAP = {
@@ -159,6 +161,7 @@ def notifications_api(request):
     return JsonResponse({'deleted': deleted})
 
 def register_student(request):
+    request.session.pop('school_request_intent', None)
     request.session['registration_role'] = 'student'
     return redirect('google_login')
 

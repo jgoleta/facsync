@@ -79,6 +79,9 @@
   document.addEventListener('change', event => {
     if (modal.contains(event.target)) dirty = true;
     if (event.target.id === 'system-school-filter') filterSchools();
+    if (event.target.id === 'request-status' && event.target.closest('[data-request-filter]')) {
+      event.target.form.requestSubmit();
+    }
     validateDomains(event.target);
   });
 
@@ -261,7 +264,7 @@
     if (!link || link.target || link.hasAttribute('download')) return;
     const url = new URL(link.href);
     if (url.origin !== location.origin || url.pathname === location.pathname || url.hash) return;
-    const page = url.pathname === '/systemadmin/' ? 'schools' : url.pathname === '/systemadmin/superadmins/' ? 'superadmins' : url.pathname === '/systemadmin/overview/' ? 'overview' : null;
+    const page = url.pathname === '/systemadmin/' ? 'schools' : url.pathname === '/systemadmin/superadmins/' ? 'superadmins' : url.pathname === '/systemadmin/overview/' ? 'overview' : url.pathname === '/systemadmin/requests/' ? 'requests' : null;
     const template = page && document.getElementById(`system-${page}-skeleton`);
     if (!template) return;
     resetSkeleton();

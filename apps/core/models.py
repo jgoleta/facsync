@@ -7,6 +7,7 @@ from .colleges import get_college_label
 
 from apps.core.colleges import COLLEGE_CHOICES
 from .school_models import School, SchoolDomain, SchoolChangeLog
+from .school_request_models import SchoolRegistrationRequest
 from .school_scope import SchoolScopedModel, SchoolUserManager
 from .education import LEVEL_CHOICES, YEAR_CHOICES, default_levels, validate_announcement_levels
 
