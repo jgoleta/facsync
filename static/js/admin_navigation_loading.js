@@ -45,6 +45,7 @@
     else for (let i = 0; i < (type === 'table' ? 5 : 3); i++) {
       placeholder(card, type === 'table' ? 'admin-navigation-row' : type === 'form' ? 'admin-navigation-form' : '');
     }
+    return card;
   }
 
   function show(title, type) {
@@ -59,7 +60,26 @@
     const shapes = document.createElement('div');
     shapes.setAttribute('aria-hidden', 'true');
     overlay.append(shapes);
-    if (type === 'cards' || type === 'dashboard') {
+    if (type === 'school-settings') {
+      shapes.className = 'admin-navigation-school-settings';
+      placeholder(shapes, 'admin-navigation-title');
+      const grid = document.createElement('div');
+      grid.className = 'admin-navigation-grid'; shapes.append(grid);
+      block(grid, 'form');
+      const levels = block(grid, 'card');
+      levels.classList.add('admin-navigation-levels');
+      for (let i = 0; i < 4; i++) placeholder(levels, 'admin-navigation-checkbox');
+    } else if (type === 'departments') {
+      shapes.className = 'admin-navigation-departments';
+      placeholder(shapes, 'admin-navigation-title');
+      const table = document.createElement('div');
+      table.className = 'admin-navigation-block admin-navigation-departments-table'; shapes.append(table);
+      placeholder(table, 'admin-navigation-title');
+      for (let i = 0; i < 6; i++) {
+        const row = document.createElement('div'); row.className = 'admin-navigation-department-row'; table.append(row);
+        for (let cell = 0; cell < 7; cell++) placeholder(row);
+      }
+    } else if (type === 'cards' || type === 'dashboard') {
       const grid = document.createElement('div');
       grid.className = 'admin-navigation-grid';
       shapes.append(grid);
@@ -91,7 +111,7 @@
       item.classList.toggle('active', itemUrl.origin === target.origin && itemUrl.pathname === target.pathname);
     });
     // Other click handlers may cancel the navigation after this handler runs.
-    queueMicrotask(() => { if (event.defaultPrevented) reset(); });
+    setTimeout(() => { if (event.defaultPrevented) reset(); }, 0);
   });
   window.addEventListener('pageshow', reset);
   window.addEventListener('pagehide', reset);

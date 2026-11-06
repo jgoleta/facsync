@@ -1,4 +1,4 @@
-"""School identity and audited edits restricted to System Admins."""
+"""School identity, scoped maintenance and audited changes."""
 import re
 
 from django.conf import settings
@@ -105,6 +105,41 @@ class School(models.Model):
                 SchoolChangeLog.objects.create(school=locked, actor=actor, actor_label=actor.username,
                     field='educational_levels', old_value=before, new_value=levels)
             self.educational_levels = levels
+
+    def set_school_details(self, *, name, domain, actor):
+        """Allow an active school's own Super Admin to replace its name/domain."""
+        from .models import User
+        from .school_scope import require_school
+        require_school(self)
+        name = str(name or '').strip()
+        domain = str(domain or '').strip().lower()
+        name = self._meta.get_field('name').clean(name, self)
+        validate_school_domain(domain)
+        with transaction.atomic():
+            locked = type(self).objects.select_for_update().get(pk=self.pk)
+            require_school(locked)
+            if actor is None or not User._base_manager.filter(pk=actor.pk, role='superadmin',
+                    school_id=locked.pk, is_active=True, account_status='active').exists():
+                raise PermissionDenied('Only this school\'s Super Admin can edit its details.')
+            domains = list(locked.domains.select_for_update().order_by('pk'))
+            if len(domains) > 1:
+                raise ValidationError('This school has multiple domains. Contact support before replacing them.')
+            row = domains[0] if domains else SchoolDomain(school=locked)
+            before_domains = [item.domain for item in domains]
+            row.domain = domain
+            row.full_clean()
+            # Bypass only the System Admin actor gate, after the scoped actor
+            # check and model validation above. No code/status/level edits here.
+            if locked.name != name:
+                before_name = locked.name
+                locked.name = name
+                super(School, locked).save(update_fields=['name', 'updated_at'])
+                SchoolChangeLog.objects.create(school=locked, actor=actor, actor_label=actor.username,
+                    field='name', old_value=before_name, new_value=name)
+            if before_domains != [domain]:
+                super(SchoolDomain, row).save()
+                row._log_change(actor, router.db_for_write(SchoolDomain), before_domains)
+            self.name = locked.name
 
     def delete(self, *args, **kwargs):
         raise ProtectedError('Schools are suspended, never deleted.', [self])

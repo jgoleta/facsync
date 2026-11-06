@@ -4,6 +4,24 @@ from apps.core.models import College, Department, DeptHeadInvite, FacultyInvite,
 from apps.core.invitations import validate_invite_identity
 from apps.core.school_forms import SchoolBoundModelForm
 from apps.core.education import LEVEL_CHOICES
+from apps.core.school_models import SchoolDomain, validate_school_domain
+
+
+class SchoolDetailsForm(forms.Form):
+    name = forms.CharField(max_length=150, label='School name')
+    domain = forms.CharField(max_length=253, label='School email domain',
+        help_text='One domain ending in .edu.ph, without @ or https://.')
+
+    def __init__(self, *args, school, **kwargs):
+        self.school = school
+        super().__init__(*args, **kwargs)
+
+    def clean_domain(self):
+        domain = self.cleaned_data['domain'].strip().lower()
+        validate_school_domain(domain)
+        if SchoolDomain.objects.filter(domain__iexact=domain).exclude(school=self.school).exists():
+            raise forms.ValidationError('This domain is already assigned to another school.')
+        return domain
 
 
 class SchoolEducationForm(forms.Form):
