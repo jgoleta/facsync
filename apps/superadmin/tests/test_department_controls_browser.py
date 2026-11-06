@@ -10,7 +10,7 @@ from django.contrib.staticfiles.testing import StaticLiveServerTestCase
 from django.test import override_settings
 from django.urls import reverse
 
-from apps.core.models import School, College, Department, DeptHeadInvite, User
+from apps.core.models import School, College, Department, DeptHeadInvite, OfficeClosure, User
 
 
 @skipUnless(os.environ.get('DEPARTMENT_BROWSER_TESTS') == '1', 'Opt-in browser checks')
@@ -24,6 +24,10 @@ class DepartmentControlsBrowserTests(StaticLiveServerTestCase):
         college = College.objects.create(school=self.school, code='CONTROLS', name='Controls college')
         self.first = Department.objects.create(school=self.school, college=college, code='DFIRST', name='Department of First Studies')
         self.second = Department.objects.create(school=self.school, code='DSECOND', name='Department of Second Studies')
+        self.unassigned = Department.objects.create(school=self.school, code='DPRIVATE', name='Unassigned department')
+        foreign_school = School(code='FOREIGN_CONTROLS', name='Foreign controls school')
+        foreign_school.save(actor=operator)
+        self.foreign = Department.objects.create(school=foreign_school, code='DFOREIGN', name='Foreign department')
         admin = User.objects.create_user(username='controls-admin', role='superadmin', school=self.school)
         self.head = User.objects.create_user(username='controls-head', role='depthead', school=self.school)
         self.head.managed_departments.add(self.first)
@@ -105,11 +109,11 @@ class DepartmentControlsBrowserTests(StaticLiveServerTestCase):
         self.database(lambda: User.objects.get(pk=self.head.pk).managed_departments.add(self.second))
         self.context.add_cookies([{'name': settings.SESSION_COOKIE_NAME, 'value': self.head_cookie, 'url': self.live_server_url}])
         self.visit('depthead:college_settings')
-        expect(self.page.locator('.department-settings-unit')).to_have_count(2)
+        expect(self.page.locator('.department-settings-stack > .settings-card')).to_have_count(2)
         expect(self.page.locator('.department-announcements')).to_have_count(1)
-        unit = self.page.locator('.department-settings-unit').first
-        details = unit.locator('.settings-card').nth(0).bounding_box()
-        booking = unit.locator('.settings-card').nth(1).bounding_box()
+        stack = self.page.locator('.department-settings-stack')
+        details = stack.locator('.settings-card').nth(0).bounding_box()
+        booking = stack.locator('.settings-card').nth(1).bounding_box()
         announcements = self.page.locator('.department-announcements').bounding_box()
         self.assertAlmostEqual(details['x'], booking['x'], delta=1)
         self.assertGreater(booking['y'], details['y'] + details['height'])
@@ -118,8 +122,61 @@ class DepartmentControlsBrowserTests(StaticLiveServerTestCase):
         self.screenshot('settings-columns-desktop.png')
         self.page.set_viewport_size({'width': 390, 'height': 844})
         self.assertLessEqual(self.page.evaluate('document.documentElement.scrollWidth'), 391)
-        last_unit = self.page.locator('.department-settings-unit').last.bounding_box()
+        last_unit = stack.bounding_box()
         announcements = self.page.locator('.department-announcements').bounding_box()
         self.assertGreater(announcements['y'], last_unit['y'] + last_unit['height'])
         self.screenshot('settings-columns-mobile.png')
+        self.assertFalse(self.errors)
+
+    def test_independent_selectors_drafts_scoped_saves_and_restore_after_reload(self):
+        import json
+        from playwright.sync_api import expect
+        def prepare():
+            self.head.managed_departments.add(self.second)
+            first = Department.objects.get(pk=self.first.pk)
+            first.description = 'First saved description'
+            first.save()
+            second = Department.objects.get(pk=self.second.pk)
+            second.description = 'Second saved description'
+            second.save()
+        self.database(prepare)
+        self.context.add_cookies([{'name': settings.SESSION_COOKIE_NAME, 'value': self.head_cookie, 'url': self.live_server_url}])
+        self.visit('depthead:college_settings')
+        payload = json.loads(self.page.locator('#department-settings-data').text_content())
+        self.assertEqual(set(payload), {str(self.first.pk), str(self.second.pk)})
+        details = self.page.locator('form[data-department-editor=description]')
+        availability = self.page.locator('form[data-department-editor=availability]')
+        expect(details.locator('textarea')).to_have_value('First saved description')
+        details.locator('textarea').fill('First unsaved draft')
+        details.locator('select').select_option(str(self.second.pk))
+        expect(details.locator('textarea')).to_have_value('Second saved description')
+        expect(availability.locator('select')).to_have_value(str(self.first.pk))
+        details.locator('select').select_option(str(self.first.pk))
+        expect(details.locator('textarea')).to_have_value('First unsaved draft')
+        details.locator('select').select_option(str(self.second.pk))
+        details.locator('textarea').fill('Second updated description')
+        with self.page.expect_response('**' + reverse('depthead:edit_college_description')):
+            details.get_by_role('button', name='Save Description').click()
+        self.page.wait_for_timeout(1000)
+        expect(details.locator('select')).to_have_value(str(self.second.pk))
+        actual = self.database(lambda: dict(Department.objects.filter(pk__in=[self.first.pk, self.second.pk]).values_list('pk', 'description')))
+        self.assertEqual(actual, {self.first.pk: 'First saved description', self.second.pk: 'Second updated description'})
+        availability.locator('select').select_option(str(self.second.pk))
+        availability.locator('[name=is_closed]').check()
+        availability.locator('[name=reason]').fill('Only the second department is closed')
+        self.page.once('dialog', lambda dialog: dialog.accept())
+        with patch('apps.depthead.views.send_closure_email_to_faculty'), self.page.expect_response('**' + reverse('depthead:college_settings')):
+            availability.get_by_role('button', name='Save Booking Availability').click()
+        self.page.wait_for_timeout(1000)
+        expect(availability.locator('select')).to_have_value(str(self.second.pk))
+        expect(availability.locator('[name=is_closed]')).to_be_checked()
+        self.assertTrue(self.database(lambda: OfficeClosure.objects.get(department=self.second).is_closed))
+        self.assertFalse(self.database(lambda: OfficeClosure.objects.filter(department=self.first, is_closed=True).exists()))
+        availability.locator('select').select_option(str(self.first.pk))
+        expect(availability.locator('[name=is_closed]')).not_to_be_checked()
+        csrf = details.locator('[name=csrfmiddlewaretoken]').input_value()
+        for department in (self.unassigned, self.foreign):
+            response = self.page.request.post(self.live_server_url + reverse('depthead:edit_college_description'),
+                form={'csrfmiddlewaretoken': csrf, 'department_id': str(department.pk), 'description': 'forged'})
+            self.assertEqual(response.status, 404)
         self.assertFalse(self.errors)

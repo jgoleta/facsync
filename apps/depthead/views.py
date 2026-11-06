@@ -110,13 +110,22 @@ def _department_settings(request):
                 logger.warning('Department closure email failed.')
         return JsonResponse({'success': True, 'is_closed': closure.is_closed})
     panels = []
+    settings_data = {}
     for unit in managed_departments(request.user).select_related('college'):
         closure = OfficeClosure.objects.filter(department=unit).first() or OfficeClosure(department=unit, school=request.user.school)
         form = OfficeClosureForm(instance=closure, auto_id=f'department_{unit.pk}_%s')
         form.fields['is_closed'].widget.attrs['id'] = f'department_{unit.pk}_closed'
         panels.append({'unit': unit, 'closure_form': form})
+        settings_data[str(unit.pk)] = {
+            'college': unit.college.name if unit.college else 'No college',
+            'description': unit.description,
+            'is_closed': closure.is_closed,
+            'reason': closure.reason,
+            'closure_start': closure.closure_start.isoformat() if closure.closure_start else '',
+            'closure_end': closure.closure_end.isoformat() if closure.closure_end else '',
+        }
     return render(request, 'depthead/departmentSettings.html', {
-        'panels': panels, 'departments': managed_departments(request.user),
+        'panels': panels, 'departments': managed_departments(request.user), 'settings_data': settings_data,
         'announcement_form': CollegeAnnouncementForm(target_levels=True),
         'announcements': CollegeAnnouncement.objects.filter(department__in=managed_departments(request.user), expiry__gt=timezone.now()).select_related('department'),
     })
