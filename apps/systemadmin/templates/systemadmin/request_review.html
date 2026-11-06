@@ -1,0 +1,14 @@
+{% extends 'systemadmin/base.html' %}
+{% block content %}
+<div id="system-form-content" data-form-title="Review School Request"><section class="management-table-wrapper system-form-card">
+<h2>{{ application.school_name }}</h2>
+<dl class="school-request-summary"><dt>School code</dt><dd>{{ application.school_code }}</dd><dt>Verified Google email</dt><dd>{{ application.applicant_email }}</dd><dt>Domain</dt><dd>{{ application.domain }}</dd><dt>Representative</dt><dd>{{ application.representative_name }} — {{ application.position }}</dd><dt>School contact</dt><dd>{{ application.contact_email }}</dd><dt>Submitted website</dt><dd>{{ application.website|default:'Not supplied' }}</dd><dt>Requested levels</dt><dd>{{ application.educational_levels|join:', ' }}</dd><dt>Status</dt><dd>{{ application.get_status_display }}</dd></dl>
+<p class="system-hint">An institutional email does not prove authority. Independently find an official school contact, confirm this representative's authority, and record the source and confirmation below. Submitted contact details are not automatically trusted.</p>
+<form method="post" action="{{ request.path }}" class="system-form" data-system-action data-processing-label="Saving school registration decision…">{% csrf_token %}
+{% if application.status == 'pending' %}
+{{ form.non_field_errors }}{% for field in form %}<div class="system-field">{{ field.label_tag }}{{ field }}{% if field.help_text %}<p class="system-hint">{{ field.help_text }}</p>{% endif %}{{ field.errors }}</div>{% endfor %}
+<p class="system-hint">Approval creates one school, its domain and its first Super Admin invitation. Rejection creates none of these.</p>
+<div class="system-actions"><button class="btn-primary" type="submit">Save Decision</button><a class="btn-secondary" data-modal-cancel href="{% url 'systemadmin:school_requests' %}">Cancel</a></div>
+{% else %}<p>Reviewed by {{ application.reviewer_label }} on {{ application.reviewed_at|date:'M j, Y H:i' }}.</p><h3>Private verification notes</h3><p>{{ application.verification_notes|default:'None'|linebreaksbr }}</p><h3>Applicant-facing reason</h3><p>{{ application.decision_reason|default:'None'|linebreaksbr }}</p><a class="btn-secondary" data-modal-cancel href="{% url 'systemadmin:school_requests' %}">Back to requests</a>{% endif %}
+</form></section></div>
+{% endblock %}

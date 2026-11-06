@@ -1,0 +1,33 @@
+.school-registration-page { min-height:100vh; display:grid; place-items:start center; padding:40px 20px; box-sizing:border-box; }
+.school-registration-card { box-sizing:border-box; width:min(760px,100%); padding:32px; background:var(--surface); border:1px solid var(--border); border-radius:18px; box-shadow:var(--shadow-sm); }
+.school-registration-brand { display:inline-flex; align-items:center; gap:12px; color:var(--text); font-size:1.25rem; font-weight:700; text-decoration:none; }
+.school-registration-kicker { color:var(--accent); text-transform:uppercase; font-size:.75rem; letter-spacing:.1em; margin-top:24px; }
+.school-registration-card h1 { margin:8px 0 20px; font-size:1.8rem; }
+.school-registration-card p { line-height:1.7; }
+.school-registration-form { display:grid; gap:20px; margin-top:24px; }
+.school-request-field { display:grid; gap:8px; }
+.school-request-field label, .school-registration-form legend { font-weight:600; }
+.school-request-field input { box-sizing:border-box; width:100%; padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--text); font:inherit; }
+.school-registration-form fieldset { border:1px solid var(--border); border-radius:8px; padding:16px; }
+.school-registration-form fieldset label { display:flex; align-items:center; gap:8px; padding:6px 0; }
+.school-registration-card small { color:var(--text-secondary); line-height:1.5; }
+.school-registration-identity, .school-registration-status { padding:16px; margin:20px 0; border:1px solid var(--border); border-radius:10px; overflow-wrap:anywhere; }
+.school-registration-status h2 { margin-top:0; font-size:1.25rem; }
+.school-registration-card .errorlist, .school-registration-notice { color:var(--danger); }
+.school-request-switch { margin-top:24px; }
+.school-request-footer { border-top:1px solid var(--border); padding-top:20px; margin-top:24px; }
+.school-registration-card :focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+.school-registration-card button:disabled { opacity:.65; cursor:wait; }
+.school-request-actions, .school-request-footer { display:flex; flex-wrap:wrap; gap:12px; }
+.school-registration-card .btn-primary, .school-registration-card .btn-secondary { display:inline-flex; align-items:center; justify-content:center; gap:12px; box-sizing:border-box; min-height:46px; width:auto !important; padding:12px 20px; border:1px solid var(--border); border-radius:10px; font:inherit; font-size:.9rem; font-weight:600; line-height:1.4; text-decoration:none; cursor:pointer; }
+.school-registration-card .btn-primary { background:var(--accent); color:var(--surface); }
+.school-registration-card .btn-primary:hover { background:var(--accent-dark); }
+.school-registration-card .btn-secondary { background:var(--surface); color:var(--text); }
+.school-registration-card .btn-secondary:hover { background:var(--bg); }
+.school-request-account { padding:24px; background:var(--bg); margin:24px 0; }
+.school-request-account h2 { margin:14px 0 8px; }
+.school-request-account p { margin:0; color:var(--text-secondary); }
+.school-request-badge { display:inline-flex; padding:5px 10px; border-radius:999px; background:var(--accent-light); color:var(--accent-dark); font-size:.75rem; font-weight:600; }
+.school-registration-notice { padding:14px 16px; border:1px solid var(--border); border-radius:10px; background:var(--bg); }
+@media(max-width:540px) { .school-request-actions, .school-request-footer { flex-direction:column; } .school-registration-card .school-request-actions a, .school-registration-card .school-request-footer a { width:100% !important; } }
+@media(max-width:540px) { .school-registration-page { padding:16px; } .school-registration-card { padding:24px 18px; } }

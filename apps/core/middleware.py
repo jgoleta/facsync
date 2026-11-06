@@ -22,7 +22,7 @@ class SchoolScopeMiddleware:
             elif not system_admin and not user.school.is_active:
                 message = 'Your school’s access to FacSync has been suspended. Please contact your school’s Super Admin.'
             elif request.path.startswith('/admin/') and not system_admin:
-                message = 'Only a System Admin can access database administration.'
+                message = 'Only authorized FacSync Administration accounts can access database administration.'
             if message and request.path not in {'/accounts/logout/', '/login/'}:
                 if '/api/' in request.path or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'error': message}, status=403)

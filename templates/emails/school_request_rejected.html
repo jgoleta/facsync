@@ -1,0 +1,3 @@
+{% extends 'emails/base_email.html' %}
+{% block heading %}School registration request update{% endblock %}
+{% block body %}<p>Your request for <strong>{{ application.school_name }}</strong> was not approved.</p><p>{{ application.decision_reason|linebreaksbr }}</p><p>No school or account was created by this request.</p><p><a href="{{ status_url }}">View your request</a> with the same institutional Google account. You can correct the details and submit a new request.</p>{% endblock %}

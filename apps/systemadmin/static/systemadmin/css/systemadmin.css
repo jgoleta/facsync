@@ -1,5 +1,9 @@
 /* Extend the existing admin layout using the shared theme variables only. */
 .systemadmin-area { background: var(--bg-main); }
+.school-request-summary { display:grid; grid-template-columns:minmax(110px,1fr) minmax(0,2fr); gap:10px 18px; margin-bottom:24px; overflow-wrap:anywhere; }
+.school-request-summary dt { font-weight:600; }
+.school-request-summary dd { margin:0; }
+.systemadmin-area form[method=get] select { padding:9px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); }
 .systemadmin-area a.btn-primary,
 .systemadmin-area a.btn-secondary { display: inline-block; text-decoration: none; text-align: center; }
 .system-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
@@ -81,6 +85,14 @@
 .system-school-note { display: block; margin-top: 4px; color: var(--text-secondary); font-size: .8rem; }
 .system-school-filter { display: grid; gap: 6px; color: var(--text-secondary); font-size: .8rem; font-weight: 600; }
 .system-directory-toolbar { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+.system-request-toolbar { justify-content: flex-start; }
+.system-request-toolbar .system-school-filter { width: min(260px, 100%); }
+.systemadmin-area .system-request-card { padding: 0 20px 12px; }
+.system-request-card .management-table-header { padding: 20px 0; }
+.system-request-card .management-table-header h2 { margin: 0; font-size: 1rem; }
+.system-request-card .system-directory-table th { background: var(--card-bg); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; }
+.system-request-card .system-directory-table th, .system-request-card .system-directory-table td { padding: 16px 12px; }
+.system-request-card .system-directory-table .system-actions { min-width: 0; }
 .system-school-filter select { width: min(260px, 100%); padding: 10px 32px 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-bg); color: var(--text-primary); font: inherit; }
 .system-directory-table .system-actions { min-width: 170px; }
 .systemadmin-area .system-danger-action { color: var(--danger); }

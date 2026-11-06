@@ -1,10 +1,14 @@
 from django.urls import path
 from . import views
 from . import photo_views
+from . import school_request_views
 
 app_name = 'core'
 
 urlpatterns = [
+    path('register/school/', school_request_views.school_registration, name='school_registration'),
+    path('register/school/verify/', school_request_views.start_school_registration, name='school_registration_start'),
+    path('register/school/reset/', school_request_views.reset_school_registration, name='school_registration_reset'),
     path('account/photo/', photo_views.profile_photo, name='profile_photo'),
     path('account/photo/<int:user_id>/', photo_views.profile_photo_image, name='profile_photo_image'),
     path('announcements/active/', views.active_announcements, name='active_announcements'),
