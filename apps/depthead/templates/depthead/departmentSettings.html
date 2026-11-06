@@ -1,0 +1,33 @@
+{% load static %}
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FacSync | Department Settings</title>
+<link rel="stylesheet" href="{% static 'css/base.css' %}">
+<link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
+<link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}">
+<link rel="stylesheet" href="{% static 'depthead/css/admin_settings.css' %}">
+<link rel="stylesheet" href="{% static 'superadmin/css/departmentManagement.css' %}">
+{% include 'components/_admin_navigation_loading.html' %}
+</head><body class="college-settings-page"><div class="admin-shell">
+{% include 'depthead/partials/sidebar.html' %}
+<main class="main-content"><header class="main-header"><p class="settings-eyebrow">Department administration</p><h1>Department Settings</h1><p>Manage the departments assigned to you. Each action affects only the named department.</p></header>
+{% for panel in panels %}<section class="settings-card"><header class="settings-section-heading"><h2>{{ panel.unit.name }}</h2><p>{{ panel.unit.college.name|default:'No college' }}</p></header>
+<form method="post" action="{% url 'depthead:edit_college_description' %}" class="settings-form" data-managed-form>{% csrf_token %}<input type="hidden" name="department_id" value="{{ panel.unit.pk }}">
+<label for="description-{{ panel.unit.pk }}">Description</label><textarea id="description-{{ panel.unit.pk }}" name="description" rows="3">{{ panel.unit.description }}</textarea>
+<p data-form-error role="alert" hidden></p><button type="submit" class="primary-button">Save Description</button></form>
+<h3>Booking availability: {% if panel.closure_form.instance.is_closed %}Closed{% else %}Open{% endif %}</h3>
+<form method="post" action="{% url 'depthead:college_settings' %}" class="settings-form" data-managed-form>{% csrf_token %}<input type="hidden" name="department_id" value="{{ panel.unit.pk }}">
+{% for field in panel.closure_form %}<div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endfor %}
+<p>Closing this department prevents new bookings with its faculty. Existing appointments remain.</p>
+<p data-form-error role="alert" hidden></p><button type="submit" class="primary-button" data-confirm="Save booking availability for this department?">Save Booking Availability</button></form>
+</section>{% empty %}<p class="empty-state">No active departments are assigned to you. Contact your Super Admin.</p>{% endfor %}
+{% if panels %}<section class="settings-card"><header class="settings-section-heading"><h2>Announcements</h2><p>Faculty and college students are limited to the selected department. Basic-education students receive announcements for their selected levels across this school.</p></header>
+<form method="post" action="{% url 'depthead:create_announcement' %}" class="settings-form" data-managed-form>{% csrf_token %}
+<label for="announcement-department">Department</label><select id="announcement-department" name="department_id" required>{% for department in departments %}<option value="{{ department.pk }}">{{ department.name }}</option>{% endfor %}</select>
+{% for field in announcement_form %}<div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endfor %}
+<p data-form-error role="alert" hidden></p><button type="submit" class="primary-button">Post Announcement</button></form>
+<h3>Active announcements across your departments</h3>{% for announcement in announcements %}<article class="announcement-item"><strong>{{ announcement.department.name }}</strong><p>{{ announcement.message }}</p><small>{{ announcement.get_audience_display }} · Expires {{ announcement.expiry|date:'M d, Y' }}</small></article>{% empty %}<p>No active announcements.</p>{% endfor %}
+</section>{% endif %}</main></div>
+<div id="managementLoading" class="loading-overlay" role="status" aria-live="polite" aria-hidden="true"><div class="loading-spinner" aria-hidden="true"></div></div>
+<script src="{% static 'superadmin/js/departmentManagement.js' %}?v=20261106"></script>
+</body></html>

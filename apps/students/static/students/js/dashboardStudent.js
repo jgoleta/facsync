@@ -130,7 +130,7 @@ function renderCards() {
     noResults.style.display = "block";
     if (college !== "all" && closedColleges[college]) {
       noResults.textContent =
-        "Faculty are not shown because this college is currently closed.";
+        "Faculty are not shown because this department or office is currently closed.";
     } else {
       noResults.textContent = "No faculty match your filters.";
     }
@@ -230,6 +230,7 @@ function renderFacultyDirectory() {
       <div class="card-body">
         <div class="card-title">${escapeHtml(faculty.name)}</div>
         <div class="card-sub">${escapeHtml(faculty.college)}</div>
+        ${faculty.college_label ? `<div class="card-sub">${escapeHtml(faculty.college_label)}</div>` : ''}
         <button type="button" class="card-notify${faculty.is_subscribed ? " subscribed" : ""}" data-id="${escapeHtml(faculty.faculty_id)}" data-subscribed="${faculty.is_subscribed ? "true" : "false"}" aria-label="${faculty.is_subscribed ? "Stop receiving notifications for this faculty member" : "Receive notifications when this faculty member's status changes"}" title="${faculty.is_subscribed ? "Notifications enabled — click to unsubscribe" : "Notify me when this faculty member's status changes"}">
           <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M12 22a2 2 0 0 0 2.2-1.7H9.8A2.3 2.3 0 0 0 12 22Zm7-5.4-1.4-1.7V10a5.6 5.6 0 0 0-4.4-5.5V3.8a1.2 1.2 0 1 0-2.4 0v.7A5.6 5.6 0 0 0 6.4 10v4.9L5 16.6v1h14v-1Z"/></svg>
         </button>

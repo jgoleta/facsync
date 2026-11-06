@@ -19,6 +19,9 @@ def role_required(role):
             else:
                 scope = require_school(user.school)
             with school_scope(scope):
+                if role == 'depthead':
+                    from apps.depthead.scope import head_scope
+                    request.managed_scope = head_scope(user)
                 return view_func(request, *args, **kwargs)
         return wrapper
     return decorator

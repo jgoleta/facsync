@@ -1,0 +1,82 @@
+(() => {
+  let processing = false;
+  const overlay = document.getElementById('managementLoading');
+  const triggers = new WeakMap();
+  function close(dialog) { if (!processing) { dialog.close(); triggers.get(dialog)?.focus(); } }
+  function toast(message, error = false) {
+    document.querySelector('.management-toast')?.remove();
+    const item = document.createElement('div'); item.className = `management-toast${error ? ' error' : ''}`;
+    item.setAttribute('role', error ? 'alert' : 'status'); item.textContent = message;
+    document.body.appendChild(item); setTimeout(() => item.remove(), 5000);
+  }
+  document.querySelectorAll('[data-open-modal]').forEach(button => button.addEventListener('click', () => {
+    if (processing) return;
+    const dialog = document.getElementById(button.dataset.openModal), form = dialog?.querySelector('form');
+    if (!dialog || !form) return;
+    form.reset(); dialog.dataset.dirty = 'false';
+    const error = form.querySelector('[data-form-error]'); if (error) error.hidden = true;
+    form.setAttribute('action', button.dataset.editUrl || form.dataset.createUrl || form.getAttribute('action'));
+    for (const field of ['name','code','college','description','email','title','account_status','unit']) {
+      const input = form.elements.namedItem(field);
+      if (input && button.dataset[field === 'account_status' ? 'accountStatus' : field] !== undefined)
+        input.value = button.dataset[field === 'account_status' ? 'accountStatus' : field];
+      if (field === 'code' && input) input.disabled = !!button.dataset.editUrl;
+    }
+    const select = form.elements.namedItem('departments');
+    if (select) { const selected = new Set((button.dataset.departments || '').split(',')); [...select.options].forEach(option => option.selected = selected.has(option.value)); }
+    const title = dialog.querySelector('[data-modal-title]');
+    if (title) title.textContent = button.dataset.editUrl ? title.dataset.editTitle : title.dataset.createTitle;
+    triggers.set(dialog, button); dialog.showModal();
+    (dialog.querySelector('form input:not([type=hidden]):not(:disabled), form select:not(:disabled), form textarea:not(:disabled)') || dialog.querySelector('button'))?.focus();
+  }));
+  document.querySelectorAll('dialog.management-dialog').forEach(dialog => {
+    dialog.addEventListener('input', () => dialog.dataset.dirty = 'true');
+    dialog.addEventListener('change', () => dialog.dataset.dirty = 'true');
+    dialog.querySelectorAll('[data-close-modal]').forEach(button => button.addEventListener('click', () => close(dialog)));
+    dialog.addEventListener('cancel', event => { event.preventDefault(); close(dialog); });
+    dialog.addEventListener('click', event => {
+      const box = dialog.getBoundingClientRect();
+      if (event.target === dialog && dialog.dataset.dirty !== 'true' &&
+          (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom)) close(dialog);
+    });
+  });
+  document.querySelectorAll('form[data-managed-form]').forEach(form => form.addEventListener('submit', async event => {
+    event.preventDefault(); if (processing) return;
+    const confirmation = event.submitter?.dataset.confirm;
+    if (confirmation && !window.confirm(confirmation)) return;
+    const data = new FormData(form); // Capture before disabling controls, including action.
+    const enabled = [...form.elements].filter(input => !input.disabled);
+    const dialog = form.closest('dialog'), error = form.querySelector('[data-form-error]');
+    if (error) error.hidden = true;
+    processing = true; enabled.forEach(input => input.disabled = true); form.setAttribute('aria-busy','true');
+    if (overlay) { (dialog || document.body).appendChild(overlay); overlay.classList.add('show'); overlay.setAttribute('aria-hidden','false'); }
+    let succeeded = false;
+    try {
+      const response = await fetch(form.getAttribute('action'), { method:'POST', credentials:'same-origin',
+        headers:{'X-CSRFToken':data.get('csrfmiddlewaretoken'), 'X-Requested-With':'XMLHttpRequest'}, body:data });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save. Your session may have expired; sign in again if needed.');
+      succeeded = true; toast(result.message || 'Changes saved.', result.email_sent === false);
+      setTimeout(() => window.location.reload(), 800);
+    } catch (failure) {
+      const message = failure instanceof TypeError ? 'The connection was interrupted. Check the list before retrying; the change may have been saved.' : failure.message;
+      if (error) { error.textContent = message; error.hidden = false; } else toast(message, true);
+    } finally {
+      if (!succeeded) { processing = false; enabled.forEach(input => input.disabled = false); form.removeAttribute('aria-busy'); overlay?.classList.remove('show'); overlay?.setAttribute('aria-hidden','true'); }
+    }
+  }));
+  document.querySelectorAll('[data-directory-filter]').forEach(filter => filter.addEventListener('change', () => {
+    document.querySelectorAll('[data-department-ids]').forEach(row => row.hidden = filter.value !== 'all' && !row.dataset.departmentIds.split(',').includes(filter.value));
+    document.querySelectorAll('[data-filter-empty]').forEach(row => {
+      row.hidden = [...row.closest('tbody').querySelectorAll('[data-department-ids]')].some(item => !item.hidden);
+    });
+  }));
+  document.querySelectorAll('[data-faculty-filter]').forEach(filter => filter.addEventListener('change', () => {
+    const unit = document.querySelector('[data-faculty-filter=unit]').value;
+    const college = document.querySelector('[data-faculty-filter=college]').value;
+    const rows = [...document.querySelectorAll('[data-faculty-row]')];
+    rows.forEach(row => row.hidden = (unit !== 'all' && row.dataset.unit !== unit) || (college !== 'all' && row.dataset.college !== college));
+    const empty = document.querySelector('[data-faculty-empty]');
+    if (empty) empty.hidden = rows.some(row => !row.hidden);
+  }));
+})();

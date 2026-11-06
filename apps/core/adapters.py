@@ -9,7 +9,7 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from requests.exceptions import RequestException, Timeout
-from .models import FacultyInvite, DeptHeadInvite, OfficeAdminInvite, SuperAdminInvite, School, User
+from .models import Department, FacultyInvite, DeptHeadInvite, Office, OfficeAdminInvite, SuperAdminInvite, School, User
 from .profile_photos import safe_photo_url
 from django.db import transaction
 from .school_scope import school_scope
@@ -93,6 +93,9 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
             user.is_staff = False
             user.is_superuser = False
             user.profile_completed = False
+            user.educational_level = ''
+            user.department = None
+            user.year_level = None
             user.college = None
             user.title = None
             with school_scope(school):
@@ -150,8 +153,45 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                 if invite.school_id is None or not invite.school.is_active:
                     messages.error(request, 'Your school’s access to FacSync has been suspended. Please contact your school’s Super Admin.')
                     raise ImmediateHttpResponse(redirect('core:login'))
+                head_departments = None
+                if isinstance(invite, (FacultyInvite, DeptHeadInvite)):
+                    if self._verified_google_email(sociallogin) != invite.email.lower():
+                        self._deny_invite(request)
+                    sociallogin.user.school = school
+                    if isinstance(invite, DeptHeadInvite):
+                        ids = list(invite.departments.values_list('pk', flat=True))
+                        head_departments = list(Department.objects.select_for_update().filter(
+                            pk__in=ids, school=school, is_active=True).order_by('pk'))
+                        if not ids or len(head_departments) != len(ids):
+                            self._deny_invite(request)
+                        sociallogin.user.role = 'depthead'
+                        sociallogin.user.title = invite.title
+                        sociallogin.user.department = None
+                        first = head_departments[0]
+                        sociallogin.user.college = first.college.code if first.college else ''
+                    else:
+                        department = invite.department
+                        if department is None:
+                            # Existing head pages still create college/office invitations.
+                            # A single unambiguous department is the only safe fallback.
+                            candidates = list(Department.objects.filter(
+                                school=school, college__code__iexact=invite.college, is_active=True)[:2])
+                            if len(candidates) == 1:
+                                department = candidates[0]
+                            elif candidates or not Office.objects.filter(school=school, code__iexact=invite.college).exists():
+                                self._deny_invite(request)
+                        if department:
+                            department = Department.objects.select_for_update().filter(
+                                pk=department.pk, school=school, is_active=True).first()
+                            if department is None:
+                                self._deny_invite(request)
+                        sociallogin.user.role = 'faculty'
+                        sociallogin.user.department = department
+                        sociallogin.user.college = (department.college.code if department.college else '') if department else invite.college
                 with school_scope(invite.school):
                     saved = super().save_user(request, sociallogin, form)
+                    if head_departments is not None:
+                        saved.managed_departments.set(head_departments)
                     if isinstance(invite, SuperAdminInvite):
                         if saved.email.lower() != invite.email.lower():
                             self._deny_invite(request)

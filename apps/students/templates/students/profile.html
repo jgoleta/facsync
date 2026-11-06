@@ -24,7 +24,7 @@
             <section class="profile-card">
                 <div class="profile-picture-section">
                     <span data-own-avatar>{% include 'components/_avatar.html' with photo_url=request.user.avatar_url initials=request.user.avatar_initials avatar_class='fs-avatar-profile' %}</span>
-                    <div class="profile-identity"><strong>{{ request.user.get_full_name|default:request.user.username }}</strong><span>{{ request.user.email }}</span><span>{{ request.user.college_name }}</span></div>
+                    <div class="profile-identity"><strong>{{ request.user.get_full_name|default:request.user.username }}</strong><span>{{ request.user.email }}</span><span>{{ request.user.school.name }}</span><span>{{ request.user.get_educational_level_display }} · {{ request.user.get_year_level_display }}</span>{% if request.user.department_id %}<span>{{ request.user.department.name }}</span>{% if request.user.department.college_id %}<span>{{ request.user.department.college.name }}</span>{% endif %}{% endif %}<span>Student ID: {{ request.user.student_id }}</span><a href="{% url 'core:student_profile_setup' %}">Update student details</a></div>
                 </div>
                 {% include 'components/_photo_editor.html' %}
             </section>

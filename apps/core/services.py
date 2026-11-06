@@ -22,12 +22,17 @@ def create_notification(recipient, notification_type, title, message, url=''):
 
 
 @school_service
-def notify_college_users(college, notification_type, title, message, url='', exclude_user_id=None, roles=('student', 'faculty', 'officeadmin')):
+def notify_college_users(college, notification_type, title, message, url='', exclude_user_id=None, roles=('student', 'faculty', 'officeadmin'), *, department=None, student_levels=None):
     recipients = User.objects.filter(
-        college=college,
         role__in=roles,
         account_status='active',
     )
+    if department and student_levels is not None:
+        from .student_announcements import student_recipients
+        from django.db.models import Q
+        recipients = recipients.filter(Q(role='faculty', department=department) | student_recipients(department, student_levels))
+    else:
+        recipients = recipients.filter(department=department) if department else recipients.filter(department__isnull=True, college=college)
     if exclude_user_id:
         recipients = recipients.exclude(pk=exclude_user_id)
     return Notification.objects.bulk_create([
@@ -120,11 +125,17 @@ def send_faculty_status_email(student, faculty_name, status_label, url):
     )
 
 @school_service
-def active_announcement_queryset(college=None, *, audience='both'):
+def active_announcement_queryset(college=None, *, audience='both', department=None, student=None):
     audiences = {'faculty': ('faculty', 'both'), 'students': ('students', 'both'), 'both': ('both',)}
     qs = CollegeAnnouncement.objects.filter(
         expiry__gt=timezone.now(), audience__in=audiences[audience],
     )
+    if student is not None:
+        from .student_announcements import student_announcement_queryset
+        return student_announcement_queryset(student, qs)
+    if department is not None:
+        return qs.filter(department=department)
+    qs = qs.filter(department__isnull=True)
     if audience != 'both' and not college:
         return qs.none()
     if college is not None:
@@ -133,11 +144,11 @@ def active_announcement_queryset(college=None, *, audience='both'):
 
 
 @school_service
-def get_active_announcements(college=None, *, audience='both'):
-    qs = active_announcement_queryset(college, audience=audience)
+def get_active_announcements(college=None, *, audience='both', department=None, student=None):
+    qs = active_announcement_queryset(college, audience=audience, department=department, student=student)
     return [
         {
-            'college': a.get_college_display(),
+            'college': a.department.name if a.department_id else a.get_college_display(),
             'message': a.message,
             'posted_at': a.posted_at.strftime('%b %d, %Y'),
         }
@@ -282,12 +293,13 @@ logger = logging.getLogger(__name__)
 
 
 @school_service
-def _email_college_faculty(college, subject, template, context):
-    if not college:
+def _email_college_faculty(college, subject, template, context, *, department=None):
+    if not college and department is None:
         return
     recipients = User.objects.filter(
-        role='faculty', account_status='active', college__iexact=college,
+        role='faculty', account_status='active', is_active=True,
     ).exclude(email='')
+    recipients = recipients.filter(department=department) if department else recipients.filter(department__isnull=True, college__iexact=college)
     backend = get_connection()
     batch_sender = getattr(backend, 'send_personalized_batch', None)
     if callable(batch_sender):
@@ -295,7 +307,7 @@ def _email_college_faculty(college, subject, template, context):
         messages = [
             _build_html_email(subject, template, {
                 **context, 'name': faculty.get_full_name() or faculty.username,
-                'college': get_college_label(college),
+                'college': department.name if department else get_college_label(college),
             }, [faculty.email.strip()])
             for faculty in recipients if faculty.email.strip()
         ]
@@ -316,7 +328,7 @@ def _email_college_faculty(college, subject, template, context):
         try:
             _send_html_email(subject, template, {
                 **context, 'name': faculty.get_full_name() or faculty.username,
-                'college': get_college_label(college),
+                'college': department.name if department else get_college_label(college),
             }, [faculty.email])
         except Exception:
             logger.exception('Failed to send %s to faculty %s', template, faculty.pk)
@@ -326,9 +338,9 @@ def send_announcement_email_to_faculty(announcement):
     if announcement.audience not in ('faculty', 'both'):
         return
     _email_college_faculty(
-        announcement.college, 'New college announcement', 'college_announcement.html',
-        {'message': announcement.message, 'expiry': announcement.expiry},
-        school=announcement.school,
+        announcement.college, 'New department announcement' if announcement.department_id else 'New college announcement', 'college_announcement.html',
+        {'message': announcement.message, 'expiry': announcement.expiry, 'unit_label': 'Department' if announcement.department_id else 'College'},
+        school=announcement.school, department=announcement.department,
     )
 
 
@@ -336,7 +348,8 @@ def send_closure_email_to_faculty(closure):
     if not closure.is_closed:
         return
     _email_college_faculty(
-        closure.college, 'College closed for new consultation requests', 'college_closure.html',
-        {'reason': closure.reason, 'closure_start': closure.closure_start, 'closure_end': closure.closure_end},
-        school=closure.school,
+        closure.college, 'Department closed for new consultation requests' if closure.department_id else 'College closed for new consultation requests', 'college_closure.html',
+        {'reason': closure.reason, 'closure_start': closure.closure_start, 'closure_end': closure.closure_end,
+         'unit_label': 'Department' if closure.department_id else 'College'},
+        school=closure.school, department=closure.department,
     )

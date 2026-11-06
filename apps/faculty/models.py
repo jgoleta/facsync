@@ -211,6 +211,9 @@ class ScheduleEvent(SchoolScopedModel):
 
 
 class ConsultationRequest(SchoolScopedModel):
+    # Historical academic scope; office consultations retain a null department.
+    department = models.ForeignKey('core.Department', on_delete=models.PROTECT, null=True, blank=True,
+                                   related_name='consultations')
     CONSULTATION_TYPE_CHOICES = [
         ('face_to_face', 'Face-to-Face'),
         ('online', 'Online'),
@@ -277,6 +280,8 @@ class ConsultationRequest(SchoolScopedModel):
 
 
 class WalkInQueue(SchoolScopedModel):
+    department = models.ForeignKey('core.Department', on_delete=models.PROTECT, null=True, blank=True,
+                                   related_name='walk_ins')
     QUEUE_STATUS_CHOICES = [
         ('waiting', 'Waiting'),
         ('called', 'Called to Office'),

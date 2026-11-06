@@ -5,6 +5,7 @@ from django.urls import reverse
 from apps.core.chat_presentation import answer, date_label, date_range, duration, hour_range, quantity
 from apps.core.department_updates import UPDATE_QUESTIONS, department_update_answer
 from . import analytics
+from apps.depthead.scope import DepartmentScope
 from .analytics_display import (
     student_reporting_period, peak_request_month, faculty_load_display, faculty_trends_display, consultation_topics_display,
 )
@@ -141,6 +142,9 @@ def analytics_browser_answer(metric, college):
         empty = 'There are no active faculty in your college to summarize.'
     source_label = {'peak_analytics': 'View peak analytics', 'student_behavior': 'View student behavior',
                     'faculty_trends': 'View faculty trends'}[source]
+    if isinstance(college, DepartmentScope):
+        intro = intro.replace('your college', 'your assigned departments').replace('Your college', 'Your assigned departments')
+        empty = empty.replace('your college', 'your assigned departments').replace('Your college', 'Your assigned departments')
     result = answer(intro, lines, note, reverse(f'depthead:{source}'), source_label,
                     empty=empty, paragraphs=paragraphs)
     return dict(result, metric=metric, question=ANALYTICS_QUESTIONS[metric][1])

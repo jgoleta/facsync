@@ -301,6 +301,12 @@ def _analytics_hash(serialized_payload):
 
 def _prompt_for(analytics, serialized_payload):
     context_notes = []
+    if analytics.get('scope', {}).get('scope_type') == 'departments':
+        context_notes.append(
+            'COMBINED DEPARTMENT REPORT: These statistics already combine the assigned '
+            'departments. Interpret them as one scope. Do not add together old insights '
+            'or imply that this is a report for every department in a college or school.'
+        )
     data_quality = analytics.get("data_quality") or {}
     if data_quality.get("confidence") == "low":
         context_notes.append(
@@ -478,6 +484,8 @@ def generate_ai_insights(analytics, force_refresh=False):
     """Return a weekly persisted Gemini interpretation of canonical analytics."""
 
     try:
+        if analytics.get('scope', {}).get('scope_type') == 'departments' and not analytics['scope'].get('department_count'):
+            return _unavailable_result()
         if analytics.get('scope', {}).get('school_code', current_school().code) != current_school().code:
             raise ValueError('Analytics payload belongs to another school.')
         sanitized = sanitize_analytics_for_ai(analytics)
@@ -485,7 +493,7 @@ def generate_ai_insights(analytics, force_refresh=False):
         serialized = _serialized_payload(sanitized)
         analytics_hash = _analytics_hash(serialized)
         college_code = str(
-            sanitized.get("scope", {}).get("college_code") or ""
+            analytics.get("scope", {}).get("college_code") or ""
         ).strip().upper()
         if not college_code:
             raise ValueError("Analytics scope must contain a college code.")

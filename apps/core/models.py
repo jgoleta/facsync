@@ -8,6 +8,7 @@ from .colleges import get_college_label
 from apps.core.colleges import COLLEGE_CHOICES
 from .school_models import School, SchoolDomain, SchoolChangeLog
 from .school_scope import SchoolScopedModel, SchoolUserManager
+from .education import LEVEL_CHOICES, YEAR_CHOICES, default_levels, validate_announcement_levels
 
 
 class User(AbstractUser, SchoolScopedModel):
@@ -36,8 +37,8 @@ class User(AbstractUser, SchoolScopedModel):
     ]
 
     TITLE_CHOICES = [
-    ('chairperson', 'Chairperson'),
-    ('dean', 'Dean'),
+    ('chairperson', 'Department Head'),
+    ('dean', 'College Head'),
     ]
 
     title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=True, null=True)
@@ -46,9 +47,16 @@ class User(AbstractUser, SchoolScopedModel):
     college = models.CharField(max_length=100, blank=True, null=True)
     # Nullable only during the staged rollout; existing records are backfilled.
     school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='users')
+    # Academic home for faculty/college students; head access uses assignments.
+    # Nullable while the existing college/office flows remain in service.
+    department = models.ForeignKey('core.Department', on_delete=models.PROTECT, null=True, blank=True,
+                                   related_name='members')
+    managed_departments = models.ManyToManyField('core.Department', through='core.DepartmentHeadAssignment',
+                                                related_name='heads', blank=True)
     profile_completed = models.BooleanField(default=False)
     student_id = models.CharField(max_length=20, blank=True, null=True)
-    year_level = models.CharField(max_length=1, choices=YEAR_LEVEL_CHOICES, blank=True, null=True)
+    educational_level = models.CharField(max_length=12, choices=LEVEL_CHOICES, blank=True, default='')
+    year_level = models.CharField(max_length=2, blank=True, null=True)
     google_photo_url = models.URLField(max_length=2048, blank=True)
     uploaded_photo_url = models.URLField(max_length=2048, blank=True)
 
@@ -73,6 +81,9 @@ class User(AbstractUser, SchoolScopedModel):
         """Return the full college name, including for legacy CCS records."""
         return get_college_label(self.college)
 
+    def get_year_level_display(self):
+        return dict(YEAR_CHOICES.get(self.educational_level or 'college', [])).get(self.year_level, self.year_level or '')
+
 class SuperAdminInvite(SchoolScopedModel):
     school = models.ForeignKey(School, on_delete=models.PROTECT, related_name='superadmin_invites')
     email = models.EmailField()
@@ -94,6 +105,8 @@ class FacultyInvite(SchoolScopedModel):
     school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='faculty_invites')
     email = models.EmailField(unique=True)
     college = models.CharField(max_length=100)
+    department = models.ForeignKey('core.Department', on_delete=models.PROTECT, null=True, blank=True,
+                                   related_name='faculty_invites')
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='invites_sent')
     created_at = models.DateTimeField(auto_now_add=True)
     used = models.BooleanField(default=False)  
@@ -105,6 +118,8 @@ class DeptHeadInvite(SchoolScopedModel):
     school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='head_invites')
     email = models.EmailField(unique=True)
     college = models.CharField(max_length=100)
+    departments = models.ManyToManyField('core.Department', through='core.DepartmentInviteAssignment',
+                                         related_name='head_invites', blank=True)
     title = models.CharField(max_length=20, choices=User.TITLE_CHOICES, blank=True, null=True)
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='depthead_invites_sent')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -127,6 +142,8 @@ class OfficeAdminInvite(SchoolScopedModel):
 class OfficeClosure(SchoolScopedModel):
     school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='closures')
     college = models.CharField(max_length=100)
+    department = models.OneToOneField('core.Department', on_delete=models.PROTECT, null=True, blank=True,
+                                      related_name='closure')
     is_closed = models.BooleanField(default=False)
     reason = models.TextField(blank=True)
     closure_start = models.DateField(null=True, blank=True)
@@ -135,7 +152,8 @@ class OfficeClosure(SchoolScopedModel):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        constraints = [models.UniqueConstraint(models.functions.Lower('college'), models.F('school'), name='closure_school_college_unique')]
+        constraints = [models.UniqueConstraint(models.functions.Lower('college'), models.F('school'),
+            condition=models.Q(department__isnull=True), name='closure_school_office_unique')]
 
     def __str__(self):
         return f"{self.college} - {'Closed' if self.is_closed else 'Open'}"
@@ -210,7 +228,10 @@ class CollegeAnnouncement(SchoolScopedModel):
     school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='announcements')
     AUDIENCE_CHOICES = [('faculty', 'Faculty'), ('students', 'Students'), ('both', 'Both')]
     audience = models.CharField(max_length=8, choices=AUDIENCE_CHOICES, default='both')
+    student_levels = models.JSONField(default=default_levels, blank=True, validators=[validate_announcement_levels])
     college = models.CharField(max_length=20, choices=COLLEGE_CHOICES)
+    department = models.ForeignKey('core.Department', on_delete=models.PROTECT, null=True, blank=True,
+                                   related_name='announcements')
     message = models.TextField()
     posted_at = models.DateTimeField(auto_now_add=True)
     expiry = models.DateTimeField()
@@ -266,3 +287,6 @@ class Notification(SchoolScopedModel):
 
     def __str__(self):
         return f"{self.title} for {self.recipient}"
+
+
+from .department_models import Department, DepartmentHeadAssignment, DepartmentInviteAssignment  # noqa: E402,F401

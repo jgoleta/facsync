@@ -1,273 +1,37 @@
-<!doctype html>
-{% load static %}
-<html lang="en">
-
-<head>
-    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
-    <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}" />
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FacSync | Manage Admins</title>
-    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}?v=20261031-footer" />
-    <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_management.css' %}" />
-    {% include 'components/_admin_navigation_loading.html' %}
-</head>
-
-<body class="college-head-palette">
-    <div class="admin-shell">
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <a href="{% url 'superadmin:superadmin_dashboard' %}" class="brand">
-                    {% include 'components/_facsync_logo.html' %}
-                    <span>FacSync Super Admin</span>
-                </a>
-            </div>
-            <nav class="sidebar-nav">
-                <a href="{% url 'superadmin:superadmin_dashboard' %}" class="nav-item">
-                    <span>School Overview</span>
-                </a>
-                <a href="{% url 'superadmin:manage_colleges' %}" class="nav-item">
-                    <span>Manage Colleges</span>
-                </a>
-                <a href="{% url 'superadmin:manage_offices' %}" class="nav-item">
-                    <span>Manage Offices</span>
-                </a>
-                <a href="{% url 'superadmin:manage_admins' %}" class="nav-item active">
-                    <span>Manage Admins</span>
-                </a>
-                <a href="{% url 'superadmin:manage_faculty' %}" class="nav-item">
-                    <span>Manage Faculty</span>
-                </a>
-                <a href="{% url 'superadmin:manage_students' %}" class="nav-item">
-                    <span>Manage Students</span>
-                </a>
-            </nav>
-            <div class="sidebar-account">
-                {% include 'components/_account_identity.html' with show_profile_icon=True %}
-            </div>
-            <div class="sidebar-divider"></div>
-            <div class="sidebar-footer">
-                <a href="{% url 'account_logout' %}" class="nav-item logout-link">
-                    <svg class="logout-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H5v14h4M14 8l4 4-4 4M9 12h9"/></svg>
-                    <span>Logout</span>
-                </a>
-            </div>
-        </aside>
-
-        <main class="main-content">
-            <header class="main-header with-action">
-                <div>
-                    <p class="page-kicker">System administration</p>
-                    <h1>Manage Admin Accounts</h1>
-                    <p>
-                        Manage accounts for College Heads and Support Office staff.
-                    </p>
-                </div>
-            <label class="college-filter" for="collegeFilter">
-                <span>College</span>
-                <select id="collegeFilter">
-                    <option value="all">All Colleges</option>
-                    {% for code, name in college_choices %}
-                    <option value="{{ code }}">{{ name }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            </header>
-            {% if messages %}
-            {% for message in messages %}
-            {% if forloop.last %}
-            <p class="message-{{ message.tags }}">{{ message }}</p>
-            {% endif %}
-            {% endfor %}
-            {% endif %}
-
-            <div class="management-table-wrapper">
-                <div class="management-table-header">
-                    <div>
-                        <p class="section-kicker">Administrative directory</p>
-                        <h2>College Head Accounts</h2>
-                    </div>
-                    <div class="management-table-header-actions">
-                        <button id="openInviteDeptheadBtn" class="btn-primary header-action" type="button">
-                            <span class="header-action-icon" aria-hidden="true">+</span>
-                            <span>Add New Admin</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="table-scroll">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>College</th>
-                            <th>Title</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for admin in depthead_accounts %}
-                        <tr data-depthead-id="{{ admin.id }}" data-college="{{ admin.college }}">
-                            <td class="depthead-name">{{ admin.get_full_name|default:admin.username }}</td>
-                            <td class="depthead-email">{{ admin.email }}</td>
-                            <td class="depthead-college">{{ admin.college }}</td>
-                            <td class="depthead-title">{{ admin.get_title_display|default:"—" }}</td>
-                            <td class="actions">
-                                <form method="post" action="{% url 'superadmin:remove_depthead' admin.id %}" class="inline-form"
-                                    onsubmit="return confirm('Remove this College Head account?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="danger">Remove</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        <tr id="adminFilterEmpty" class="{% if depthead_accounts %}hidden{% endif %}">
-                            <td colspan="5" class="empty-state">No College Head accounts match the selected college.</td>
-                        </tr>
-                    </tbody>
-                </table>
-                </div>
-            </div>
-            <div class="management-table-wrapper">
-                <div class="management-table-header">
-                    <div>
-                        <p class="section-kicker">Administrative directory</p>
-                        <h2>Office Admin Accounts</h2>
-                    </div>
-                    <div class="management-table-header-actions">
-                        <button id="openOfficeAdminModal" class="btn-primary header-action" type="button">
-                            <span class="header-action-icon" aria-hidden="true">+</span>
-                            <span>Add New Admin</span>
-                        </button>
-                    </div>
-                </div>
-                <div class="table-scroll">
-                    <table>
-                        <thead>
-                            <tr><th>Name</th><th>Email</th><th>Office</th><th>Actions</th></tr>
-                        </thead>
-                        <tbody>
-                            {% for admin in office_admin_accounts %}
-                            <tr data-office-admin-id="{{ admin.id }}" data-office="{{ admin.college }}">
-                                <td>{{ admin.get_full_name|default:admin.username }}</td>
-                                <td>{{ admin.email }}</td>
-                                <td>{{ admin.college }}</td>
-                                <td class="actions"><span class="table-action-muted">Managed by Office</span></td>
-                            </tr>
-                            {% empty %}
-                            <tr><td colspan="4" class="empty-state">No Office Admin accounts yet. Add your first Office Admin.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </main>
-    </div>
-    <div class="modal-overlay hidden" id="officeAdminModal">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="officeAdminModalTitle">
-            <div class="modal-header">
-                <div><h2 id="officeAdminModalTitle">Add Office Admin</h2><p>Pre-register an Office Admin email for instant activation on first login.</p></div>
-                <button type="button" class="modal-close" id="closeOfficeAdminModal">×</button>
-            </div>
-            <form method="post" action="{% url 'superadmin:invite_office_admin' %}" class="modal-form">
-                {% csrf_token %}
-                <div class="modal-form-group"><label for="officeAdminEmail">Email</label><input id="officeAdminEmail" name="email" type="email" placeholder="officeadmin@adnu.edu.ph" required></div>
-                <div class="modal-form-group"><label for="officeAdminOffice">Office</label><select id="officeAdminOffice" name="office" required>{% for value,label in office_admin_form.office.field.choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
-                <div class="modal-actions"><button type="button" class="btn-secondary" id="cancelOfficeAdminModal">Cancel</button><button type="submit" class="btn-primary">Send Invite</button></div>
-            </form>
-        </div>
-    </div>
-    <div class="modal-overlay hidden" id="inviteDeptheadModal">
-        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="inviteDeptheadModalTitle">
-            <div class="modal-header">
-                <div>
-                    <h2 id="inviteDeptheadModalTitle">Add College Head</h2>
-                    <p>Pre-register a College Head email for instant activation on first login.</p>
-                </div>
-                <button type="button" class="modal-close" id="closeInviteDeptheadModal">×</button>
-            </div>
-            <form method="post" action="{% url 'superadmin:invite_depthead' %}" class="modal-form">
-                {% csrf_token %}
-                <div class="modal-form-group">
-                    <label for="deptheadEmail">Email</label>
-                    <input id="deptheadEmail" name="email" type="email" placeholder="depthead@adnu.edu.ph" required>
-                </div>
-                <div class="modal-form-group">
-                    <label for="deptheadCollege">College</label>
-                    <select id="deptheadCollege" name="college" required>
-                        {% for value, label in dept_head_form.college.field.choices %}
-                        <option value="{{ value }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="modal-form-group">
-                    <label for="deptheadTitle">Title</label>
-                    <select id="deptheadTitle" name="title" required>
-                        {% for value, label in title_choices %}
-                        <option value="{{ value }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-secondary" id="cancelInviteDeptheadModal">Cancel</button>
-                    <button type="submit" class="btn-primary">Send Invite</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <div id="editDeptheadModal" class="modal-overlay hidden">
-        <div class="modal">
-            <div class="modal-header">
-                <div>
-                    <h2>Edit College Head</h2>
-                    <p>Update this administrator's assignment and account access.</p>
-                </div>
-            </div>
-            <form method="post" id="editDeptheadForm" class="settings-form modal-form">
-                {% csrf_token %}
-                <div class="modal-form-group">
-                    <label for="edit-depthead-role">Role</label>
-                    <select id="edit-depthead-role" name="role" required>
-                        {% for value, label in role_choices %}
-                        <option value="{{ value }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="modal-form-group">
-                    <label for="edit-depthead-college">College</label>
-                    <select id="edit-depthead-college" name="college" required>
-                        {% for value, label in dept_head_form.college.field.choices %}
-                        <option value="{{ value }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="modal-form-group">
-                    <label for="edit-depthead-title">Title</label>
-                    <select id="edit-depthead-title" name="title" required>
-                        {% for value, label in title_choices %}
-                        <option value="{{ value }}">{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-actions modal-actions">
-                    <button type="button" class="btn-secondary" id="closeEditDeptheadModal">Cancel</button>
-                    <button type="submit" class="btn-primary">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="loading-spinner"></div>
-    </div>
-    
-    <script src="{% static 'superadmin/js/manageAdmins.js' %}?v=20260908-college-filter"></script>
-    <script>
-      const officeAdminModal = document.getElementById('officeAdminModal');
-      document.getElementById('openOfficeAdminModal')?.addEventListener('click', () => officeAdminModal.classList.remove('hidden'));
-      document.getElementById('closeOfficeAdminModal')?.addEventListener('click', () => officeAdminModal.classList.add('hidden'));
-      document.getElementById('cancelOfficeAdminModal')?.addEventListener('click', () => officeAdminModal.classList.add('hidden'));
-      officeAdminModal?.addEventListener('click', (event) => { if (event.target === officeAdminModal) officeAdminModal.classList.add('hidden'); });
-    </script>
-</body>
-
-</html>
+{% extends 'superadmin/base_management.html' %}
+{% block title %}Manage Admins{% endblock %}
+{% block content %}
+<header class="main-header with-action"><div><p class="page-kicker">School administration</p><h1>Manage Admin Accounts</h1><p>Assign departments to College Heads and Department Heads. Titles alone do not grant access.</p></div><label class="college-filter" for="headDepartmentFilter">Department<select id="headDepartmentFilter" data-directory-filter><option value="all">All departments</option>{% for department in departments %}<option value="{{ department.pk }}">{{ department.name }}</option>{% endfor %}</select></label></header>
+<section class="management-table-wrapper"><div class="management-table-header"><div><p class="section-kicker">Academic administration</p><h2>Head Accounts</h2></div><button class="btn-primary" type="button" data-open-modal="headInviteModal">Invite Head</button></div><div class="table-scroll"><table>
+<thead><tr><th>Name</th><th>Email</th><th>Assigned departments</th><th>College labels</th><th>Title</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+{% for admin in depthead_accounts %}<tr data-department-ids="{{ admin.department_ids }}">
+<td>{% include 'components/_avatar.html' with photo_url=admin.avatar_url initials=admin.avatar_initials avatar_class='fs-avatar-table' %} {{ admin.get_full_name|default:admin.username }}</td><td>{{ admin.email }}</td><td>{{ admin.department_names|default:'Not assigned' }}</td><td>{{ admin.college_labels|default:'No college' }}</td><td>{{ admin.get_title_display|default:'Department Head' }}</td><td><span class="assignment-pill">{{ admin.get_account_status_display }}</span></td>
+<td class="actions"><button type="button" class="btn-secondary" data-open-modal="headEditModal" data-edit-url="{% url 'superadmin:edit_depthead' admin.pk %}" data-title="{{ admin.title|default:'chairperson' }}" data-departments="{{ admin.department_ids }}" data-account-status="{{ admin.account_status }}">Edit assignments</button>
+<form method="post" action="{% url 'superadmin:remove_depthead' admin.pk %}" data-managed-form>{% csrf_token %}<button class="danger" type="submit" data-confirm="Permanently remove this head account?">Remove</button></form></td>
+</tr>{% endfor %}<tr data-filter-empty {% if depthead_accounts %}hidden{% endif %}><td colspan="7" class="empty-state">No head accounts match this department.</td></tr>
+</tbody></table></div></section>
+<section class="management-table-wrapper"><div class="management-table-header"><div><p class="section-kicker">Awaiting first sign-in</p><h2>Head Invitations</h2></div></div><div class="table-scroll"><table><thead><tr><th>Email</th><th>Departments</th><th>Title</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+{% for invite in head_invites %}<tr data-department-ids="{{ invite.department_ids }}"><td>{{ invite.email }}</td><td>{{ invite.department_names|default:'Not assigned' }}</td><td>{{ invite.get_title_display }}</td><td><span class="assignment-pill">Invited</span></td><td><button class="btn-secondary" type="button" data-open-modal="headInviteModal" data-edit-url="{% url 'superadmin:edit_head_invite' invite.pk %}" data-email="{{ invite.email }}" data-title="{{ invite.title }}" data-departments="{{ invite.department_ids }}">Edit and email</button></td></tr>{% endfor %}
+<tr data-filter-empty {% if head_invites %}hidden{% endif %}><td colspan="5" class="empty-state">No pending head invitations match this department.</td></tr></tbody></table></div></section>
+<section class="management-table-wrapper"><div class="management-table-header"><h2>Office Admin Accounts</h2><button class="btn-primary" type="button" data-open-modal="officeAdminModal">Add Office Admin</button></div><div class="table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Office</th></tr></thead><tbody>
+{% for admin in office_admin_accounts %}<tr><td>{{ admin.get_full_name|default:admin.username }}</td><td>{{ admin.email }}</td><td>{{ admin.college }}</td></tr>{% empty %}<tr><td colspan="3" class="empty-state">No Office Admin accounts yet.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}
+{% block modals %}
+<dialog id="headInviteModal" class="management-dialog"><div class="modal-header"><div><h2 data-modal-title data-create-title="Invite Head" data-edit-title="Edit Head Invitation">Invite Head</h2><p>Choose the departments this account will manage. Hold Ctrl or Command to select more than one.</p></div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button></div>
+<form method="post" action="{% url 'superadmin:invite_depthead' %}" data-create-url="{% url 'superadmin:invite_depthead' %}" data-managed-form class="modal-form">{% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p>
+<div class="modal-form-group"><label for="headInviteEmail">Google email</label><input id="headInviteEmail" name="email" type="email" required></div>
+<div class="modal-form-group"><label for="headInviteTitle">Title</label><select id="headInviteTitle" name="title" required>{% for value,label in title_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+<div class="modal-form-group"><label for="headInviteDepartments">Departments</label><select id="headInviteDepartments" name="departments" multiple required>{% for department in departments %}<option value="{{ department.pk }}">{{ department.name }}{% if department.college %} — {{ department.college.name }}{% endif %}</option>{% endfor %}</select></div>
+<div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn-primary" type="submit">Save and Send Invite</button></div></form></dialog>
+<dialog id="headEditModal" class="management-dialog"><div class="modal-header"><div><h2>Edit Head Assignments</h2><p>Select at least one department. Titles do not add departments automatically.</p></div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button></div>
+<form method="post" data-managed-form class="modal-form">{% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p>
+<div class="modal-form-group"><label for="headEditTitle">Title</label><select id="headEditTitle" name="title" required>{% for value,label in title_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+<div class="modal-form-group"><label for="headEditDepartments">Departments</label><select id="headEditDepartments" name="departments" multiple required>{% for department in departments %}<option value="{{ department.pk }}">{{ department.name }}{% if department.college %} — {{ department.college.name }}{% endif %}</option>{% endfor %}</select></div>
+<div class="modal-form-group"><label for="headEditStatus">Account status</label><select id="headEditStatus" name="account_status"><option value="active">Active</option><option value="deactivated">Deactivated</option></select></div>
+<div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn-primary" type="submit">Save Assignments</button></div></form></dialog>
+<dialog id="officeAdminModal" class="management-dialog"><div class="modal-header"><h2>Add Office Admin</h2><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button></div>
+<form method="post" action="{% url 'superadmin:invite_office_admin' %}" class="modal-form">{% csrf_token %}
+<div class="modal-form-group"><label for="officeAdminEmail">Google email</label><input id="officeAdminEmail" type="email" name="email" required></div>
+<div class="modal-form-group"><label for="officeAdminOffice">Office</label><select id="officeAdminOffice" name="office" required>{% for value,label in office_admin_form.office.field.choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+<div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn-primary" type="submit">Send Invite</button></div></form></dialog>
+{% endblock %}

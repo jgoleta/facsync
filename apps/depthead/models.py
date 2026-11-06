@@ -3,7 +3,7 @@ from apps.core.school_scope import SchoolScopedModel
 
 
 class CollegeAIInsight(SchoolScopedModel):
-    """Persisted Gemini interpretation for one college analytics scope."""
+    """Persisted interpretation; college_code also holds reserved department-scope keys."""
 
     school = models.ForeignKey('core.School', on_delete=models.PROTECT, null=True, blank=True, related_name='ai_insights')
     college_code = models.CharField(max_length=100)

@@ -20,7 +20,7 @@
         <main class="main-content">
             <header class="main-header monitoring-header">
                 <div>
-                    <p class="page-kicker">College operations ({{ request.user.college_name }})</p>
+                    <p class="page-kicker">College operations ({{ request.managed_scope.name|default:request.user.college_name }})</p>
                     <h1>Faculty Monitoring</h1>
                     <p>Real-time status of all faculty in your college.</p>
                 </div>
