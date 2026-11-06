@@ -1,11 +1,8 @@
 .department-settings-stack { display:grid; gap:32px; }
 .department-settings-page .department-settings-layout { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.15fr); gap:24px; align-items:start; }
 .department-settings-layout > * { min-width:0; }
-.department-settings-page .department-settings-unit .settings-grid { grid-template-columns:minmax(0,1fr); }
+.department-settings-layout > .empty-state { grid-column:1 / -1; }
 @media(max-width:1100px) { .department-settings-page .department-settings-layout { grid-template-columns:minmax(0,1fr); } }
-.department-unit-heading { margin-bottom:18px; }
-.department-unit-heading h2 { margin:0 0 6px; font-size:1.15rem; }
-.department-unit-heading p { margin:0; color:var(--text-secondary); }
 .department-settings-page .settings-card { background:var(--bg-card); border-color:var(--border-color); }
 .department-settings-page .settings-section-heading { border-color:var(--border-color); }
 .department-settings-page .settings-section-heading h3 { margin:0 0 8px; font-size:1.1rem; }
