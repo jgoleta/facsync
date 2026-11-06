@@ -12,6 +12,7 @@ from django.db.models import Count, Q, OuterRef, Subquery
 from django.utils import timezone
 
 from apps.core.models import College
+from apps.depthead.scope import DepartmentScope, faculty_q, history_q
 from apps.faculty.models import ConsultationRequest, FacultyProfile, StatusHistory, WalkInQueue
 
 
@@ -126,7 +127,7 @@ def current_week_period():
 @school_service
 def get_hourly_availability_snapshot(college_code):
     """Read persisted statuses and appointments; never refresh status or Calendar."""
-    if not str(college_code or '').strip():
+    if not isinstance(college_code, DepartmentScope) and not str(college_code or '').strip():
         raise ValueError('college_code is required.')
     now = timezone.now().astimezone(ZoneInfo(DEFAULT_ANALYTICS_TIMEZONE))
     if not 9 <= now.hour < 17:
@@ -181,11 +182,9 @@ def _status_keys(choices):
 def get_base_consultation_queryset(college_code, period=None):
     """Return the canonical college-scoped consultation queryset."""
 
-    if not str(college_code or "").strip():
+    if not isinstance(college_code, DepartmentScope) and not str(college_code or "").strip():
         raise ValueError("college_code is required.")
-    queryset = ConsultationRequest.objects.filter(
-        faculty__college_id__iexact=str(college_code).strip()
-    )
+    queryset = ConsultationRequest.objects.filter(history_q(college_code))
     if period is not None:
         queryset = queryset.filter(
             date__gte=period.start_date,
@@ -364,9 +363,8 @@ def get_request_submission_patterns(college_code, period, *, faculty=None):
 @school_service
 def _eligible_faculty(college_code):
     return FacultyProfile.objects.filter(
-        user__role="faculty",
+        faculty_q(college_code), user__role="faculty",
         user__account_status="active",
-        college_id__iexact=college_code,
     )
 
 
@@ -619,7 +617,7 @@ def get_walk_in_analytics(college_code, period):
     """Return college-scoped walk-in volume and explicitly labeled timing proxies."""
 
     walk_ins = WalkInQueue.objects.filter(
-        faculty__college_id__iexact=college_code,
+        history_q(college_code),
         joined_at__gte=period.start_datetime,
         joined_at__lt=period.end_datetime_exclusive,
     )
@@ -975,7 +973,7 @@ def get_college_analytics(
     """Return the canonical JSON-safe analytics payload for one college."""
 
     period = normalize_period(start_date, end_date, timezone_name)
-    normalized_college_code = str(college_code or "").strip()
+    normalized_college_code = college_code if isinstance(college_code, DepartmentScope) else str(college_code or "").strip()
     consultations = _consultation_rows(get_base_consultation_queryset(
         normalized_college_code, period
     ))
@@ -1002,13 +1000,16 @@ def get_college_analytics(
         current_availability,
         historical_availability,
     )
-    college = College.objects.filter(code__iexact=normalized_college_code).first()
+    college = None if isinstance(college_code, DepartmentScope) else College.objects.filter(code__iexact=normalized_college_code).first()
 
     return {
         "schema_version": "1.0",
         "scope": {
-            "college_code": normalized_college_code,
-            "college_name": college.name if college else None,
+            "college_code": str(normalized_college_code),
+            "college_name": college_code.name if isinstance(college_code, DepartmentScope) else college.name if college else None,
+            "school_code": current_school().code,
+            "scope_type": "departments" if isinstance(college_code, DepartmentScope) else "college",
+            "department_count": len(college_code.department_ids) if isinstance(college_code, DepartmentScope) else None,
             "timezone": period.timezone_name,
         },
         "period": period.as_dict(),

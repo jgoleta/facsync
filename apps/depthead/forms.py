@@ -1,5 +1,5 @@
 from django import forms
-from apps.core.models import FacultyInvite, OfficeClosure
+from apps.core.models import Department, FacultyInvite, OfficeClosure
 from .services.shared_windows import DURATION_CHOICES
 from datetime import timedelta
 from apps.core.school_forms import SchoolBoundModelForm
@@ -40,9 +40,19 @@ class SharedWindowForm(forms.Form):
         return day
 
 class FacultyInviteForm(SchoolBoundModelForm):
+    department = forms.ModelChoiceField(queryset=Department.objects.none(), required=False)
     class Meta:
         model = FacultyInvite
-        fields = ['email']
+        fields = ['email', 'department']
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if user and user.role == 'depthead':
+            from .scope import managed_departments
+            self.fields['department'].queryset = managed_departments(user)
+            self.fields['department'].required = True
+        else:
+            self.fields.pop('department')
 
     def clean_email(self):
         from apps.core.invitations import validate_invite_identity

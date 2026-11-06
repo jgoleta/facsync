@@ -30,11 +30,11 @@
       <main class="main-content">
         <header class="main-header with-action">
           <div>
-            <p class="page-kicker">College administration ({{ request.user.college_name }})</p>
+            <p class="page-kicker">Department administration ({{ request.managed_scope.name|default:request.user.college_name }})</p>
             <h1>Manage Faculty Accounts</h1>
             <p>
-              Invite faculty, manage access, and maintain schedules for your
-              college.
+              Invite faculty, manage access, and maintain schedules for your assigned
+              departments.
             </p>
           </div>
         </header>
@@ -42,7 +42,7 @@
         <section class="management-table-wrapper">
           <div class="management-table-header">
             <div>
-              <p class="section-kicker">College directory</p>
+              <p class="section-kicker">Department directory</p>
               <h2>Registered Faculty</h2>
             </div>
             <div class="management-table-header-actions">
@@ -150,15 +150,15 @@
       <div class="modal schedule-template-modal" role="dialog" aria-modal="true" aria-labelledby="scheduleTemplateModalTitle">
         <div class="modal-header">
           <div>
-            <p class="section-kicker">College schedule settings</p>
+            <p class="section-kicker">Department schedule settings</p>
             <h2 id="scheduleTemplateModalTitle">Schedule Upload Template</h2>
-            <p>Choose the column names your college uses in its schedule CSV. These names will appear in the downloaded template.</p>
+            <p>Choose the column names for future schedule uploads. Saving applies this template to all your assigned departments. These names will appear in the downloaded template.</p>
           </div>
           <button type="button" class="modal-close" id="closeScheduleTemplateModal" aria-label="Close">&times;</button>
         </div>
         <form method="post" action="{% url 'depthead:save_schedule_template' %}" class="modal-form">
           {% csrf_token %}
-          <div class="schedule-template-help">
+          <div class="schedule-template-help">{% for department in managed_departments %}<a href="{% url 'depthead:faculty_schedule_template' %}?department_id={{ department.pk }}">Download {{ department.name }} template</a>{% endfor %}
             <span class="schedule-template-help-icon" aria-hidden="true">i</span>
             <p>Keep the names short and unique. Faculty must use the downloaded column names when uploading schedules.</p>
           </div>
@@ -230,6 +230,7 @@
               required
             />
           </div>
+          {% if faculty_invite_form.department %}<div class="modal-form-group"><label for="{{ faculty_invite_form.department.id_for_label }}">Department</label>{{ faculty_invite_form.department }}</div>{% endif %}
           <div class="modal-actions">
             <button type="submit" class="btn-primary">Send Invite</button>
           </div>

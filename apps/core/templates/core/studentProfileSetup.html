@@ -3,10 +3,11 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FacSync | Complete Your Profile</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}" />
     <link rel="stylesheet" href="{% static 'core/css/loginPage.css' %}" />
+    <link rel="stylesheet" href="{% static 'core/css/studentProfileSetup.css' %}" />
 </head>
 
 <body>
@@ -18,7 +19,7 @@
                 <p>School: <strong>{{ request.user.school.name }}</strong></p>
             </div>
 
-            <form method="post">
+            <form method="post" id="student-profile-form">
                 {% csrf_token %}
                 {{ form.non_field_errors }}
                 <div class="form-group">
@@ -27,19 +28,27 @@
                     {{ form.student_id.errors }}
                 </div>
                 <div class="form-group">
-                    <label for="{{ form.college.id_for_label }}">College</label>
-                    {{ form.college }}
-                    {{ form.college.errors }}
+                    <label for="{{ form.educational_level.id_for_label }}">Educational level</label>
+                    {{ form.educational_level }}{{ form.educational_level.errors }}
+                    {% if single_level_label %}<p>{{ single_level_label }} is the level offered by your school.</p>{% endif %}
                 </div>
                 <div class="form-group">
-                    <label for="{{ form.year_level.id_for_label }}">Year Level</label>
-                    {{ form.year_level }}
-                    {{ form.year_level.errors }}
+                    <label id="grade-year-label" for="{{ form.year_level.id_for_label }}">Grade / year</label>
+                    {{ form.year_level }}{{ form.year_level.errors }}
+                </div>
+                <div class="form-group" id="student-department-group">
+                    <label for="{{ form.department.id_for_label }}">Department (college students)</label>
+                    {{ form.department }}{{ form.department.errors }}
+                    <small>{{ form.department.help_text }}</small>
+                    <p id="student-college-label" aria-live="polite"></p>
                 </div>
                 <button type="submit" class="btn-primary">Continue to Dashboard</button>
             </form>
         </div>
     </div>
+{{ year_choices|json_script:'student-year-choices' }}
+{{ department_colleges|json_script:'student-department-colleges' }}
+<script src="{% static 'core/js/studentProfileSetup.js' %}"></script>
 </body>
 
 </html>

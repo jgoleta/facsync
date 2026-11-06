@@ -47,14 +47,14 @@
                         <label class="control">
                             <span class="control-label">Unit type</span>
                             <select id="unitTypeFilter">
-                                <option value="all">Colleges and Offices</option>
-                                <option value="college">Colleges</option>
+                                <option value="all">Departments and Offices</option>
+                                <option value="college">Departments</option>
                                 <option value="office">Offices</option>
                             </select>
                         </label>
 
                         <label class="control">
-                            <span class="control-label">College/Office</span>
+                            <span class="control-label">Department / Office</span>
                             <select id="collegeFilter">
                                 <option value="all">All units</option>
                             </select>
@@ -85,7 +85,7 @@
     {{ closed_colleges|json_script:"closed-colleges" }}
 
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
-    <script src="{% static 'students/js/dashboardStudent.js' %}?v=20261002-avatars"></script>
+    <script src="{% static 'students/js/dashboardStudent.js' %}?v=20261106-departments"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 {% url 'students:active_announcements' as announcement_fetch_url %}
     {% include 'partials/announcementModal.html' %}

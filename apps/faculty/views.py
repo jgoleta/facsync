@@ -620,7 +620,8 @@ def dashboard(request):
     status_label = dict(FacultyProfile.STATUS_CHOICES).get(current_status, 'Not Set')
     announcement_cutoff = timezone.now()
     college_announcements = CollegeAnnouncement.objects.filter(
-        college__iexact=request.user.college,
+        department=request.user.department,
+        **({'college__iexact': request.user.college} if not request.user.department_id else {}),
         audience__in=('faculty', 'both'),
     )
     announcements = []
@@ -661,7 +662,7 @@ def dashboard(request):
 @role_required('faculty')
 def active_announcements(request):
     """Return active announcements for the signed-in faculty member as JSON."""
-    return JsonResponse({'announcements': get_active_announcements(request.user.college, audience='faculty')})
+    return JsonResponse({'announcements': get_active_announcements(request.user.college, audience='faculty', department=request.user.department)})
 
 
 @login_required

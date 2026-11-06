@@ -2,7 +2,7 @@
     <button type="button" id="analytics-chat-toggle" aria-label="Open faculty availability" aria-expanded="false" aria-controls="analytics-chat-panel" hidden>{% include 'components/_chat_launcher_icon.html' %}</button>
     <section id="analytics-chat-panel" role="dialog" aria-labelledby="analytics-chat-title" hidden>
         <header class="analytics-chat-header">
-            <div><h2 id="analytics-chat-title">Faculty availability</h2><p>{{ request.user.college_name|default:request.user.college }} &middot; Your college only</p></div>
+            <div><h2 id="analytics-chat-title">Faculty availability</h2><p>{% if request.user.department_id %}{{ request.user.department.name }}{% else %}{{ request.user.school.name }}{% endif %}</p></div>
             <button type="button" id="analytics-chat-close" aria-label="Close faculty availability">&times;</button>
         </header>
         <div id="analytics-chat-messages" role="log" aria-live="polite" aria-relevant="additions text" aria-label="Availability conversation"></div>

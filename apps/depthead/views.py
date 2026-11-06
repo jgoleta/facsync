@@ -21,6 +21,11 @@ from apps.faculty.views import (
 )
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
+from django.core.exceptions import PermissionDenied
+from types import SimpleNamespace
+from .scope import DepartmentScope, managed_departments
+from apps.core.models import Department
+from apps.superadmin.assignment_services import lock_departments
 from django.db import transaction
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
@@ -56,7 +61,91 @@ from .services.analytics_browser import ANALYTICS_QUESTIONS, analytics_browser_a
 
 logger = logging.getLogger(__name__)
 
+
+def _user_scope(request):
+    scope = request.managed_scope
+    return {'department_id__in': scope.department_ids} if isinstance(scope, DepartmentScope) else {'college__iexact': scope}
+
+
+def _profile_scope(request):
+    scope = request.managed_scope
+    return {'user__department_id__in': scope.department_ids} if isinstance(scope, DepartmentScope) else {'college_id__iexact': scope}
+
+
+def _target_department(request):
+    units = managed_departments(request.user)
+    chosen = request.POST.get('department_id') or request.GET.get('department_id')
+    if chosen:
+        if not str(chosen).isdecimal():
+            raise PermissionDenied('Choose an assigned department.')
+        return get_object_or_404(units, pk=chosen)
+    if units.count() == 1:
+        return units.get()
+    raise PermissionDenied('Choose the department for this action.')
+
+
+class DepartmentDescriptionForm(CollegeDescriptionForm):
+    class Meta(CollegeDescriptionForm.Meta):
+        model = Department
+
+
+def _department_settings(request):
+    if request.method == 'POST':
+        unit = _target_department(request)
+        with transaction.atomic():
+            lock_departments([unit], request.user.school)
+            closure = OfficeClosure.objects.filter(department=unit).first() or OfficeClosure(
+                department=unit, college=unit.college.code if unit.college else '', school=request.user.school)
+            was_closed = closure.is_closed
+            form = OfficeClosureForm(request.POST, instance=closure)
+            if not form.is_valid():
+                return JsonResponse({'success': False, 'error': ' '.join(str(e) for errors in form.errors.values() for e in errors)}, status=400)
+            closure = form.save(commit=False)
+            closure.updated_by = request.user
+            closure.save()
+        if closure.is_closed and not was_closed:
+            try:
+                send_closure_email_to_faculty(closure)
+            except Exception:
+                logger.warning('Department closure email failed.')
+        return JsonResponse({'success': True, 'is_closed': closure.is_closed})
+    panels = []
+    for unit in managed_departments(request.user).select_related('college'):
+        closure = OfficeClosure.objects.filter(department=unit).first() or OfficeClosure(department=unit, school=request.user.school)
+        form = OfficeClosureForm(instance=closure, auto_id=f'department_{unit.pk}_%s')
+        form.fields['is_closed'].widget.attrs['id'] = f'department_{unit.pk}_closed'
+        panels.append({'unit': unit, 'closure_form': form})
+    return render(request, 'depthead/departmentSettings.html', {
+        'panels': panels, 'departments': managed_departments(request.user),
+        'announcement_form': CollegeAnnouncementForm(target_levels=True),
+        'announcements': CollegeAnnouncement.objects.filter(department__in=managed_departments(request.user), expiry__gt=timezone.now()).select_related('department'),
+    })
+
+
+def _department_announcement(request):
+    unit = _target_department(request)
+    form = CollegeAnnouncementForm(request.POST, target_levels=True)
+    if not form.is_valid():
+        return JsonResponse({'success': False, 'error': ' '.join(str(e) for errors in form.errors.values() for e in errors)}, status=400)
+    with transaction.atomic():
+        lock_departments([unit], request.user.school)
+        announcement = form.save(commit=False)
+        announcement.department = unit
+        announcement.college = unit.college.code if unit.college else ''
+        announcement.posted_by = request.user
+        announcement.save()
+        roles = {'faculty': ('faculty',), 'students': ('student',), 'both': ('student', 'faculty')}[announcement.audience]
+        notify_college_users(announcement.college, 'announcement', 'Department announcement', announcement.message,
+            exclude_user_id=request.user.pk, roles=roles, department=unit, student_levels=announcement.student_levels)
+    try:
+        send_announcement_email_to_faculty(announcement)
+    except Exception:
+        logger.warning('Department announcement email failed.')
+    return JsonResponse({'success': True, 'message': 'Announcement posted.'})
+
 def _managed_unit(code):
+    if isinstance(code, DepartmentScope):
+        return SimpleNamespace(name=code.name, description='', schedule_template={})
     return College.objects.filter(code__iexact=code).first() or Office.objects.filter(code__iexact=code).first()
 
 
@@ -66,10 +155,10 @@ def _shared_window_context(request):
     planner_result = None
     if not request.GET:
         day = planning['week_end'] if planning['ended'] else planning['today']
-        planner_result = find_shared_windows(request.user.college, day, 120, now=planning['now'])
+        planner_result = find_shared_windows(request.managed_scope, day, 120, now=planning['now'])
     elif planner_form.is_valid():
         planner_result = find_shared_windows(
-            request.user.college, planner_form.cleaned_data['date'],
+            request.managed_scope, planner_form.cleaned_data['date'],
             planner_form.cleaned_data['duration'], now=planning['now'],
         )
     return {'planning': planning, 'planner_form': planner_form, 'planner_result': planner_result}
@@ -80,8 +169,8 @@ def _shared_window_context(request):
 @require_GET
 @never_cache
 def shared_windows_api(request):
-    if not str(request.user.college or '').strip():
-        return JsonResponse({'error': 'Your account has no college assigned.'}, status=400)
+    if not str(request.managed_scope or '').strip():
+        return JsonResponse({'error': 'Your account has no departments assigned.'}, status=400)
     context = _shared_window_context(request)
     valid = not context['planner_form'].is_bound or not context['planner_form'].errors
     return JsonResponse({
@@ -94,7 +183,7 @@ def shared_windows_api(request):
 def invite_faculty(request):
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
-        if not request.user.college:
+        if not request.managed_scope:
             if is_ajax:
                 return JsonResponse({
                     'success': False,
@@ -107,14 +196,22 @@ def invite_faculty(request):
             email__iexact=requested_email,
             used=True,
         ).first()
-        form = FacultyInviteForm(request.POST, instance=used_invite)
+        form = FacultyInviteForm(request.POST, instance=used_invite, user=request.user)
         if form.is_valid():
             invite = form.save(commit=False)
-            invite.college = request.user.college
+            unit = form.cleaned_data.get('department')
+            invite.department = unit
+            invite.college = (unit.college.code if unit.college else '') if unit else request.managed_scope
             invite.invited_by = request.user
             invite.used = False
-            invite.save()
-            send_faculty_invite_email(invite.email, invite.college)
+            with transaction.atomic():
+                if unit:
+                    lock_departments([unit], request.user.school)
+                invite.save()
+            try:
+                send_faculty_invite_email(invite.email, unit.name if unit else invite.college)
+            except Exception:
+                logger.warning('Head faculty invitation email failed.')
             if is_ajax:
                 return JsonResponse({
                     'success': True,
@@ -139,7 +236,7 @@ def invite_faculty(request):
 @login_required
 @role_required('depthead')
 def remove_faculty(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='active', college__iexact=request.user.college)
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='active', **_user_scope(request))
     if request.method == 'POST':
         name = faculty_user.get_full_name() or faculty_user.username
         email = faculty_user.email
@@ -157,7 +254,7 @@ def remove_faculty(request, user_id):
 @login_required
 @role_required('depthead')
 def admin_dashboard(request):
-    college_code = request.user.college
+    college_code = request.managed_scope
     college = _managed_unit(college_code)
     analytics = get_college_analytics(college_code)
     summary = analytics['consultations']
@@ -191,8 +288,8 @@ def admin_dashboard(request):
 def ai_insights_api(request):
     """Return AI interpretation for the authenticated College Head's scope."""
 
-    analytics = get_college_analytics(request.user.college)
-    schedule_availability = get_schedule_availability(request.user.college)
+    analytics = get_college_analytics(request.managed_scope)
+    schedule_availability = get_schedule_availability(request.managed_scope)
     analytics['schedule_availability'] = schedule_availability_ai_summary(
         schedule_availability
     )
@@ -215,15 +312,17 @@ def ai_insights_api(request):
 @login_required
 @role_required('depthead')
 def admin_faculty(request):
-    college = _managed_unit(request.user.college)
+    college = _managed_unit(request.managed_scope)
     faculty_users = list(User.objects.filter(
         role='faculty',
-        college__iexact=request.user.college,
+        **_user_scope(request),
     ).select_related('faculty_profile').order_by('first_name', 'last_name', 'username'))
 
     mark_inactive_faculty(faculty_users)
 
     return render(request, 'depthead/adminFaculty.html', {
+        'faculty_invite_form': FacultyInviteForm(user=request.user),
+        'managed_departments': managed_departments(request.user) if request.user.role == 'depthead' else [],
         'active_faculty': [u for u in faculty_users if u.account_status == 'active'],
         'schedule_template_fields': [
             {
@@ -242,7 +341,7 @@ def admin_faculty(request):
 def faculty_schedule_template(request):
     """Download the CSV format used for college-head faculty uploads."""
     response = HttpResponse(content_type='text/csv')
-    college = _managed_unit(request.user.college)
+    college = _target_department(request) if request.user.role == 'depthead' and request.GET.get('department_id') else _managed_unit(request.managed_scope)
     headers = schedule_template_headers(college.schedule_template if college else None)
     response['Content-Disposition'] = 'attachment; filename=schedule_template.csv'
     writer = csv.writer(response)
@@ -270,10 +369,10 @@ def upload_faculty_schedule(request, faculty_id):
     faculty = get_object_or_404(
         FacultyProfile.objects.select_related('user'),
         faculty_id=faculty_id,
-        college_id__iexact=request.user.college,
+        **_profile_scope(request),
         user__role='faculty',
     )
-    college = _managed_unit(request.user.college)
+    college = faculty.user.department if faculty.user.department_id else _managed_unit(request.managed_scope)
     try:
         rows = _parse_schedule_csv(
             request.FILES.get('file'),
@@ -394,7 +493,7 @@ def view_faculty_schedule_preview(request, faculty_id):
     faculty = get_object_or_404(
         FacultyProfile.objects.select_related('user'),
         faculty_id=faculty_id,
-        college_id__iexact=request.user.college,
+        **_profile_scope(request),
         user__role='faculty',
     )
     events = list(
@@ -420,7 +519,7 @@ def view_faculty_schedule_preview(request, faculty_id):
         'last_updated_at': faculty.schedule_last_updated_at.isoformat() if faculty.schedule_last_updated_at else None,
         'preview': rows,
         'template_columns': schedule_template_columns(
-            College.objects.filter(code__iexact=request.user.college).values_list('schedule_template', flat=True).first()
+            (faculty.user.department.schedule_template if faculty.user.department_id else None)
         ),
         'events': [_event_json(event) for event in events],
     })
@@ -436,7 +535,7 @@ def delete_faculty_schedule(request, faculty_id):
     faculty = get_object_or_404(
         FacultyProfile.objects.select_related('user'),
         faculty_id=faculty_id,
-        college_id__iexact=request.user.college,
+        **_profile_scope(request),
         user__role='faculty',
     )
     with transaction.atomic():
@@ -456,7 +555,7 @@ def delete_faculty_schedule(request, faculty_id):
 @login_required
 @role_required('depthead')
 def student_behavior(request):
-    college_code = request.user.college
+    college_code = request.managed_scope
     month_starts, today = student_reporting_period()
     analytics = get_college_analytics(college_code, month_starts[0], today)
     monthly_lookup = {
@@ -524,7 +623,7 @@ def faculty_monitoring(request):
     profiles = FacultyProfile.objects.select_related('user').filter(
         user__role='faculty',
         user__account_status='active',
-        college_id__iexact=request.user.college,
+        **_profile_scope(request),
     )
     faculty_list = []
     for profile in profiles:
@@ -562,17 +661,19 @@ def _monitoring_status_counts(faculty_list):
 @login_required
 @role_required('depthead')
 def college_settings(request):
-    if not request.user.college:
-        return JsonResponse({'success': False, 'error': 'Your account has no college set.'}, status=400)
+    if request.user.role == 'depthead':
+        return _department_settings(request)
+    if not request.managed_scope:
+        return JsonResponse({'success': False, 'error': 'Your account has no departments assigned.'}, status=400)
     closure, _ = OfficeClosure.objects.get_or_create(
-        college__iexact=request.user.college,
-        defaults={'college': request.user.college}
+        **_user_scope(request),
+        defaults={'college': request.managed_scope}
     )
     if request.method == 'POST':
         form = OfficeClosureForm(request.POST, instance=closure)
         if form.is_valid():
             closure = form.save(commit=False)
-            closure.college = request.user.college
+            closure.college = request.managed_scope
             closure.updated_by = request.user
             was_closed = OfficeClosure.objects.values_list('is_closed', flat=True).get(pk=closure.pk)
             closure.save()
@@ -590,11 +691,11 @@ def college_settings(request):
         form = OfficeClosureForm(instance=closure)
 
     college_announcements = CollegeAnnouncement.objects.filter(
-        college__iexact=request.user.college,
+        **_user_scope(request),
         expiry__gt=timezone.now()
     )
 
-    college = _managed_unit(request.user.college)
+    college = _managed_unit(request.managed_scope)
 
     return render(request, 'depthead/collegeSettings.html', {
         'closure_form': form,
@@ -621,7 +722,7 @@ WEEKDAY_LABELS = {
 @login_required
 @role_required('depthead')
 def peak_analytics(request):
-    college_code = request.user.college
+    college_code = request.managed_scope
     week = current_week_period()
     analytics = get_college_analytics(college_code, week.start_date, week.end_date)
     patterns = analytics['consultation_patterns']
@@ -709,7 +810,7 @@ def peak_analytics(request):
 @login_required
 @role_required('depthead')
 def faculty_trends(request):
-    college_code = request.user.college
+    college_code = request.managed_scope
     week = current_week_period()
     analytics = get_faculty_trends(college_code, week.start_date, week.end_date, status_period=True)
     trends = faculty_trends_display(analytics)
@@ -743,7 +844,9 @@ def faculty_trends(request):
 @role_required('depthead')
 @require_POST
 def create_announcement(request):
-    if not request.user.college:
+    if request.user.role == 'depthead':
+        return _department_announcement(request)
+    if not request.managed_scope:
         return JsonResponse(
             {'success': False, 'error': "Your account has no college set. Contact a Super Admin."},
             status=400
@@ -755,7 +858,7 @@ def create_announcement(request):
         return JsonResponse({'success': False, 'error': ' '.join(errors)}, status=400)
 
     announcement = form.save(commit=False)
-    announcement.college = request.user.college
+    announcement.college = request.managed_scope
     announcement.posted_by = request.user
     announcement.save()
     notify_college_users(
@@ -788,18 +891,22 @@ def create_announcement(request):
 @login_required
 @role_required('depthead')
 def edit_college_description(request):
-    college = _managed_unit(request.user.college)
+    college = _target_department(request) if request.user.role == 'depthead' else _managed_unit(request.managed_scope)
     if not college:
         messages.error(request, "Your college could not be found. Contact a Super Admin.")
         return redirect('depthead:college_settings')
 
     if request.method == 'POST':
-        form_class = OfficeDescriptionForm if isinstance(college, Office) else CollegeDescriptionForm
+        form_class = OfficeDescriptionForm if isinstance(college, Office) else DepartmentDescriptionForm if isinstance(college, Department) else CollegeDescriptionForm
         form = form_class(request.POST, instance=college)
         if form.is_valid():
             form.save()
+            if isinstance(college, Department) and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Department description updated.'})
             messages.success(request, "Office description updated." if isinstance(college, Office) else "College description updated.")
         else:
+            if isinstance(college, Department) and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': ' '.join(str(e) for errors in form.errors.values() for e in errors)}, status=400)
             for error_list in form.errors.values():
                 for error in error_list:
                     messages.error(request, error)
@@ -814,7 +921,7 @@ def save_schedule_template(request):
     """Save the College Head's CSV labels for future schedule uploads."""
     if request.method != 'POST':
         return HttpResponse(status=405)
-    college = _managed_unit(request.user.college)
+    college = _managed_unit(request.managed_scope)
     if not college:
         messages.error(request, 'Your college could not be found. Contact a Super Admin.')
         return redirect('depthead:college_settings')
@@ -854,8 +961,11 @@ def save_schedule_template(request):
         messages.error(request, 'Required schedule attributes cannot be deleted.')
         return redirect('depthead:admin_faculty')
 
-    college.schedule_template = {'columns': columns}
-    college.save(update_fields=['schedule_template'])
+    targets = managed_departments(request.user) if request.user.role == 'depthead' else [college]
+    with transaction.atomic():
+        for target in targets:
+            target.schedule_template = {'columns': columns}
+            target.save(update_fields=['schedule_template'])
     messages.success(request, 'Schedule upload template updated.')
     return redirect('depthead:admin_faculty')
 
@@ -866,7 +976,7 @@ def faculty_monitoring_data(request):
     profiles = FacultyProfile.objects.select_related('user').filter(
         user__role='faculty',
         user__account_status='active',
-        college_id__iexact=request.user.college,
+        **_profile_scope(request),
     )
     faculty_list = []
     for profile in profiles:
@@ -897,7 +1007,7 @@ def faculty_monitoring_schedule(request, faculty_id):
         FacultyProfile.objects.select_related('user'),
         faculty_id=faculty_id,
         user__role='faculty',
-        college_id__iexact=request.user.college,
+        **_profile_scope(request),
     )
     month_start = timezone.localdate().replace(day=1)
     month_end = (
@@ -933,9 +1043,12 @@ def faculty_monitoring_schedule(request, faculty_id):
 @require_GET
 @never_cache
 def closure_status(request):
-    if not request.user.college:
-        return JsonResponse({'error': 'Your account has no college set.'}, status=400)
-    state = OfficeClosure.objects.filter(college__iexact=request.user.college).values_list('is_closed', flat=True).first()
+    if request.user.role == 'depthead':
+        unit = _target_department(request)
+        return JsonResponse({'is_closed': OfficeClosure.objects.filter(department=unit, is_closed=True).exists()})
+    if not request.managed_scope:
+        return JsonResponse({'error': 'Your account has no departments assigned.'}, status=400)
+    state = OfficeClosure.objects.filter(**_user_scope(request)).values_list('is_closed', flat=True).first()
     return JsonResponse({'is_closed': bool(state)})
 
 
@@ -944,13 +1057,13 @@ def closure_status(request):
 @require_GET
 @never_cache
 def analytics_browser_api(request):
-    if not request.user.college:
-        return JsonResponse({'error': 'Your account has no college set.'}, status=400)
+    if not request.managed_scope:
+        return JsonResponse({'error': 'Your account has no departments assigned.'}, status=400)
     metric = request.GET.get('metric', '')
     if metric not in ANALYTICS_QUESTIONS:
         return JsonResponse({'error': 'Unknown analytics question.'}, status=400)
     try:
-        return JsonResponse(analytics_browser_answer(metric, request.user.college))
+        return JsonResponse(analytics_browser_answer(metric, request.managed_scope))
     except Exception:
         logger.exception('Unable to load analytics browser metric %s', metric)
         return JsonResponse({'error': "Sorry, I couldn't load that right now."}, status=500)
@@ -961,6 +1074,6 @@ def analytics_browser_api(request):
 @require_GET
 @never_cache
 def hourly_availability(request):
-    if not request.user.college:
-        return JsonResponse({'error': 'No college assigned.'}, status=400)
-    return JsonResponse(get_hourly_availability_snapshot(request.user.college))
+    if not request.managed_scope:
+        return JsonResponse({'error': 'No departments assigned.'}, status=400)
+    return JsonResponse(get_hourly_availability_snapshot(request.managed_scope))

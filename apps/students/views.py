@@ -4,6 +4,7 @@ import uuid
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 from apps.core.models import OfficeClosure, Office, College, User
+from apps.core.department_access import unit_closures, faculty_closed
 from apps.core.services import create_notification, get_active_announcements, active_announcement_queryset
 from apps.core.consultation_emails import queue_consultation_email
 
@@ -20,6 +21,7 @@ from apps.faculty.models import ConsultationRequest, FacultyProfile, ScheduleEve
 from apps.faculty.services.calendar_events import serialize_consultation_event, serialize_schedule_event
 from .models import FacultyStatusSubscription
 from .availability_browser import QUESTIONS, availability_answer
+from apps.depthead.scope import member_scope
 from apps.core.department_updates import UPDATE_QUESTIONS
 from django.views.decorators.http import require_GET
 from django.views.decorators.cache import never_cache
@@ -66,7 +68,7 @@ def _closed_college_map():
     for c in closures:
         office = Office.objects.filter(code__iexact=c.college).first()
         college = College.objects.filter(code__iexact=c.college).first()
-        label = office.name if office else college.name if college else get_college_label(c.college) or c.college
+        label = c.department.name if c.department_id else office.name if office else college.name if college else get_college_label(c.college) or c.college
         result[label] = c.reason or f"{label} is currently closed."
     return result
 
@@ -94,7 +96,7 @@ def _faculty_directory(closed_college_codes=None, student=None):
             .values_list('faculty_id', flat=True)
         )
     directory = []
-    for faculty in FacultyProfile.objects.select_related('user').all():
+    for faculty in FacultyProfile.objects.select_related('user__department__college').all():
         refresh_faculty_status(faculty)
         office = Office.objects.filter(code__iexact=faculty.college_id).first()
         college = College.objects.filter(code__iexact=faculty.college_id).first()
@@ -102,19 +104,20 @@ def _faculty_directory(closed_college_codes=None, student=None):
             'faculty_id': faculty.faculty_id,
             'name': faculty.user.get_full_name() or faculty.user.username,
             'photo_url': faculty.user.avatar_url,
-            'college': office.name if office else college.name if college else faculty.college_name,
-            'unit_type': 'office' if office else 'college',
+            'college': faculty.user.department.name if faculty.user.department_id else office.name if office else college.name if college else faculty.college_name,
+            'college_label': faculty.user.department.college.name if faculty.user.department_id and faculty.user.department.college_id else '',
+            'unit_type': 'office' if office and not faculty.user.department_id else 'college',
             'status': faculty.current_status,
-            'note': 'College closed' if faculty.college_id in closed_college_codes else faculty.status_note,
+            'note': 'Department closed' if faculty_closed(faculty) else faculty.status_note,
             'walk_ins_enabled': faculty.walk_ins_enabled,
             'updated_at': faculty.status_updated_at.isoformat() if faculty.status_updated_at else None,
-            'is_college_closed': faculty.college_id in closed_college_codes,
+            'is_college_closed': faculty_closed(faculty),
             'is_subscribed': faculty.faculty_id in subscribed_faculty_ids,
         })
     return directory
 
 def _closed_college_codes():
-    return set(OfficeClosure.objects.filter(is_closed=True).values_list('college', flat=True))
+    return set(OfficeClosure.objects.filter(is_closed=True, department__isnull=True).values_list('college', flat=True))
 
 @login_required
 @role_required('student')
@@ -124,9 +127,9 @@ def dashboard(request):
     return render(request, 'students/dashboardStudent.html', {
         'faculty_directory': faculty_directory,
         'availability_questions': [(key, text) for key, text in QUESTIONS.items() if key not in UPDATE_QUESTIONS],
-        'department_questions': UPDATE_QUESTIONS.items(),
+        'department_questions': [(key, QUESTIONS[key]) for key in UPDATE_QUESTIONS],
         'closed_colleges': closed_colleges,
-        'announcements': get_active_announcements(request.user.college, audience='students'),
+        'announcements': get_active_announcements(request.user.college, audience='students', student=request.user),
     })
 
 
@@ -145,7 +148,7 @@ def view_schedule(request):
         refresh_faculty_status(faculty)
     closure = None
     if faculty:
-        closure = OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).first()
+        closure = unit_closures(faculty.user).filter(is_closed=True).first()
     return render(request, 'students/viewSchedule.html', {
         'selected_faculty': faculty,
         'college_closure': closure,
@@ -190,7 +193,7 @@ def api_schedule_events(request):
 @login_required
 @role_required('student')
 def active_announcements(request):
-    return JsonResponse({'announcements': get_active_announcements(request.user.college, audience='students')})
+    return JsonResponse({'announcements': get_active_announcements(request.user.college, audience='students', student=request.user)})
 
 
 @login_required
@@ -382,7 +385,7 @@ def api_consultation_requests(request):
     consultation_type = str(payload.get('consultation_type') or 'face_to_face').strip()
     if consultation_type not in dict(ConsultationRequest.CONSULTATION_TYPE_CHOICES):
         return JsonResponse({'error': 'Please select a valid consultation type.'}, status=400)
-    if OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).exists():
+    if faculty_closed(faculty):
         return JsonResponse({'error': 'This college is currently closed and not accepting consultation requests.'}, status=409)
     requested_end_time = payload.get('end_time')
     try:
@@ -444,17 +447,15 @@ def home(request):
         or (booking.date == today and (booking.start_time is None or booking.start_time >= current_time))
     )
 
-    student_college = get_college_label(request.user.college)
-    college_announcement = active_announcement_queryset(request.user.college, audience='students').first()
+    student_college = request.user.department.name if request.user.department_id else request.user.school.name
+    college_announcement = active_announcement_queryset(request.user.college, audience='students', student=request.user).first()
     available_faculty_count = 0
-    if student_college:
-        for faculty in FacultyProfile.objects.select_related('user').all():
-            # Match canonical college names so CCS and ccs records remain compatible.
-            if get_college_label(faculty.college_id) != student_college:
-                continue
-            refresh_faculty_status(faculty)
-            if faculty.current_status == 'available':
-                available_faculty_count += 1
+    for faculty in FacultyProfile.objects.select_related('user').filter(user__is_active=True, user__account_status='active'):
+        if request.user.educational_level == 'college' and faculty.user.department_id != request.user.department_id:
+            continue
+        refresh_faculty_status(faculty)
+        if faculty.current_status == 'available':
+            available_faculty_count += 1
 
     return render(request, 'students/homeStudent.html', {
         'upcoming_booking_count': upcoming_booking_count,
@@ -550,7 +551,7 @@ def api_join_walk_in_queue(request):
             faculty_id=faculty_id,
         )
         refresh_faculty_status(faculty)
-        if OfficeClosure.objects.filter(college=faculty.college_id, is_closed=True).exists():
+        if faculty_closed(faculty):
             return JsonResponse({'error': 'This college is currently closed and not accepting walk-ins.'}, status=409)
         if faculty.current_status != 'available':
             return JsonResponse(
@@ -589,10 +590,15 @@ def api_join_walk_in_queue(request):
 @require_GET
 @never_cache
 def availability_browser_api(request):
-    college = (request.user.college or '').strip()
-    if not college:
+    college = member_scope(request.user)
+    if request.user.educational_level != 'college' and not request.user.department_id:
+        from apps.depthead.scope import DepartmentScope
+        from apps.core.models import Department
+        units = list(Department.objects.filter(school=request.user.school, is_active=True).order_by('pk'))
+        college = DepartmentScope(request.user.school_id, tuple(d.pk for d in units), tuple(d.name for d in units), include_offices=True)
+    if not college and not request.user.educational_level:
         return JsonResponse({'error': 'Your account has no college set.'}, status=400)
     metric = request.GET.get('metric', '')
     if metric not in QUESTIONS:
         return JsonResponse({'error': 'Unknown availability question.'}, status=400)
-    return JsonResponse(availability_answer(metric, college))
+    return JsonResponse(availability_answer(metric, college, student=request.user))

@@ -2,6 +2,7 @@
 
 from apps.core.school_scope import school_service, current_school
 from django.urls import reverse
+from apps.depthead.scope import member_scope
 from django.core.exceptions import PermissionDenied
 from apps.core.chat_presentation import answer, date_range, hour_range, quantity
 from apps.core.department_updates import UPDATE_QUESTIONS, department_update_answer
@@ -26,7 +27,7 @@ def consultation_browser_answer(metric, faculty):
         raise PermissionDenied('The faculty profile belongs to another school.')
     if metric not in QUESTIONS:
         raise ValueError('Unknown consultation question')
-    college = faculty.college_id
+    college = member_scope(faculty.user)
     if metric in UPDATE_QUESTIONS:
         return department_update_answer(metric, college, 'faculty', reverse('faculty:dashboard'))
     period = analytics.normalize_period()

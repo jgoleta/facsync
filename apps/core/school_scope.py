@@ -30,6 +30,9 @@ PATHS = {
     'faculty.statusemaildelivery': ('recipient__school_id', 'history__faculty__user__school_id'),
     'students.facultystatussubscription': ('student__school_id', 'faculty__user__school_id'),
     'depthead.collegeaiinsight': ('school_id',),
+    'core.department': ('school_id',),
+    'core.departmentheadassignment': ('user__school_id', 'department__school_id'),
+    'core.departmentinviteassignment': ('invite__school_id', 'department__school_id'),
 }
 
 
@@ -88,6 +91,8 @@ def prepare_school_write(instance):
             raise PermissionDenied('Only a System Admin can manage Super Admin invitations.')
     if direct and scope is not None and scope is not ALL_SCHOOLS and instance.school_id is None:
         instance.school_id = scope.pk
+    from .department_models import validate_department_links
+    validate_department_links(instance)
     if instance._meta.label_lower == 'core.user' and instance.role == 'systemadmin':
         if instance.school_id is not None or (scope is not None and scope is not ALL_SCHOOLS):
             raise PermissionDenied('System Admin accounts cannot belong to a school or be created by school accounts.')
@@ -117,6 +122,12 @@ class SchoolQuerySet(models.QuerySet):
         return super().bulk_create(objs, **kwargs)
 
     def update(self, **kwargs):
+        if {'department', 'department_id'}.intersection(kwargs):
+            raise PermissionDenied('Department assignment changes require a validated model save.')
+        if self.model._meta.label_lower in {
+            'core.department', 'core.departmentheadassignment', 'core.departmentinviteassignment',
+        }:
+            raise PermissionDenied('Department changes require a validated model save.')
         if current_school() is not None and current_school() is not ALL_SCHOOLS:
             ownership = {'school', 'school_id', 'user', 'user_id', 'faculty', 'faculty_id',
                          'student', 'student_id', 'recipient', 'recipient_id', 'history', 'history_id',

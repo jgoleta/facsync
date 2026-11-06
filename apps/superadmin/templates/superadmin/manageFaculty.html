@@ -1,130 +1,22 @@
-{% load static %}
-<!doctype html>
-<html lang="en">
-<head>
-  <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261002-avatars" />
-  <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}" />
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FacSync | Manage Faculty</title>
-  <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}?v=20261031-footer" />
-  <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_management.css' %}?v=20260908-faculty-approve-blue" />
-    {% include 'components/_admin_navigation_loading.html' %}
-</head>
-<body class="college-head-palette">
-  <div class="admin-shell">
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <a href="{% url 'superadmin:superadmin_dashboard' %}" class="brand">
-          {% include 'components/_facsync_logo.html' %}
-          <span>FacSync Super Admin</span>
-        </a>
-      </div>
-      <nav class="sidebar-nav">
-        <a href="{% url 'superadmin:superadmin_dashboard' %}" class="nav-item">
-          <span>School Overview</span>
-        </a>
-        <a href="{% url 'superadmin:manage_colleges' %}" class="nav-item">
-          <span>Manage Colleges</span>
-        </a>
-        <a href="{% url 'superadmin:manage_offices' %}" class="nav-item">
-          <span>Manage Offices</span>
-        </a>
-        <a href="{% url 'superadmin:manage_admins' %}" class="nav-item">
-          <span>Manage Admins</span>
-        </a>
-        <a href="{% url 'superadmin:manage_faculty' %}" class="nav-item active">
-          <span>Manage Faculty</span>
-        </a>
-        <a href="{% url 'superadmin:manage_students' %}" class="nav-item">
-          <span>Manage Students</span>
-        </a>
-      </nav>
-      <div class="sidebar-account">
-                {% include 'components/_account_identity.html' with show_profile_icon=True %}
-            </div>
-            <div class="sidebar-divider"></div>
-      <div class="sidebar-footer">
-        <a href="{% url 'account_logout' %}" class="nav-item logout-link">
-                    <svg class="logout-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H5v14h4M14 8l4 4-4 4M9 12h9"/></svg>
-          <span>Logout</span>
-        </a>
-      </div>
-    </aside>
-
-    <main class="main-content">
-      <header class="main-header with-action">
-        <div>
-          <p class="page-kicker">System administration</p>
-          <h1>Manage Faculty Accounts</h1>
-          <p>Invite faculty and manage access across all colleges.</p>
-        </div>
-        <label class="college-filter" for="collegeFilter">
-          <span>College/Office</span>
-          <select id="collegeFilter">
-            <option value="all">All Colleges/Offices</option>
-            {% for code, name in college_choices %}<option value="{{ code }}">{{ name }}</option>{% endfor %}
-          </select>
-        </label>
-      </header>
-
-      {% if messages %}{% for message in messages %}{% if forloop.last %}<p class="message-{{ message.tags }}">{{ message }}</p>{% endif %}{% endfor %}{% endif %}
-
-      <section class="management-table-wrapper" data-faculty-section="registered">
-        <div class="management-table-header">
-          <div><p class="section-kicker">College/Office directory</p><h2>Registered Faculty</h2></div>
-          <div class="management-table-header-actions">
-            <button id="addFacultyBtn" class="btn-primary header-action" type="button"><span class="header-action-icon" aria-hidden="true">+</span><span>Invite Faculty</span></button>
-          </div>
-        </div>
-        <div class="table-scroll">
-          <table>
-            <thead><tr><th>Faculty ID</th><th>Name</th><th>Email</th><th>College/Office</th><th>Office/Room</th><th>Actions</th></tr></thead>
-            <tbody>
-              {% for user in active_faculty %}
-              <tr class="faculty-row" data-college="{{ user.college|default:'' }}">
-                <td>{{ user.faculty_profile.faculty_id|default:'—' }}</td>
-                <td>{% include 'components/_avatar.html' with photo_url=user.avatar_url initials=user.avatar_initials avatar_class='fs-avatar-table' %} {{ user.get_full_name|default:user.username }}</td>
-                <td>{{ user.email }}</td>
-                <td>{{ user.college_name|default:'—' }}</td>
-                <td>{{ user.faculty_profile.office_location|default:'—' }}</td>
-                <td class="actions">
-                  <form method="post" class="crud-action-form remove-faculty-form" action="{% url 'superadmin:remove_faculty_superadmin' user.id %}">{% csrf_token %}<button type="submit" class="danger remove-faculty-trigger" data-faculty-name="{{ user.get_full_name|default:user.username }}">Remove</button></form>
-                </td>
-              </tr>
-              {% endfor %}
-              <tr class="filter-empty{% if active_faculty %} hidden{% endif %}"><td colspan="6" class="empty-state">No registered faculty accounts.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-  </div>
-
-  <div class="modal-overlay hidden" id="facultyModal">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="facultyModalTitle">
-      <div class="modal-header"><div><h2 id="facultyModalTitle">Invite Faculty</h2><p>Enter the faculty member's details and assign their college or office.</p></div><button type="button" class="modal-close" id="closeFacultyModal" aria-label="Close">×</button></div>
-      <form id="facultyForm" class="modal-form" method="post" action="{% url 'superadmin:invite_faculty_superadmin' %}">
-        {% csrf_token %}
-        <div class="modal-form-group"><label for="facultyName">Name</label><input id="facultyName" type="text" placeholder="Dr. Maria Santos" required /></div>
-        <div class="modal-form-group"><label for="facultyEmail">Email</label><input id="facultyEmail" name="email" type="email" placeholder="maria.santos@university.edu" required /></div>
-        <div class="modal-form-group"><label for="facultyCollege">College/Office</label><select id="facultyCollege" name="college" required><option value="" selected disabled>Select a college or office</option>{% for code, name in college_choices %}<option value="{{ code }}">{{ name }}</option>{% endfor %}</select></div>
-        <div class="modal-actions"><button type="button" class="btn-secondary" id="cancelFacultyInvite">Cancel</button><button type="submit" class="btn-primary">Send Invite</button></div>
-      </form>
-    </div>
-  </div>
-
-  <div class="modal-overlay hidden" id="removeFacultyConfirmModal">
-    <div class="modal remove-confirm-modal" role="dialog" aria-modal="true" aria-labelledby="removeFacultyTitle">
-      <div class="modal-header"><div><p class="section-kicker">Confirm removal</p><h2 id="removeFacultyTitle">Remove Faculty</h2><p>Permanently remove <strong id="removeFacultyName">this faculty member</strong>?</p></div><button type="button" class="modal-close" id="closeRemoveFacultyConfirm" aria-label="Close">×</button></div>
-      <p class="remove-confirm-warning">This deletes the faculty account and related records and cannot be undone.</p>
-      <div class="modal-actions"><button type="button" class="btn-secondary" id="cancelRemoveFaculty">Cancel</button><button type="button" class="btn-primary danger" id="confirmRemoveFaculty">Remove Permanently</button></div>
-    </div>
-  </div>
-
-  <div id="crudLoadingModal" class="loading-overlay"><div class="crud-loading-card"><div class="loading-spinner"></div><p id="crudLoadingMessage">Processing request...</p></div></div>
-  <script src="{% static 'js/announcements.js' %}"></script>
-  <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
-  <script src="{% static 'superadmin/js/manageFaculty.js' %}?v=20260905-faculty-directory"></script>
-</body>
-</html>
+{% extends 'superadmin/base_management.html' %}
+{% block title %}Manage Faculty{% endblock %}
+{% block content %}
+<header class="main-header with-action"><div><p class="page-kicker">School administration</p><h1>Manage Faculty</h1><p>Assign faculty to a department or office. College labels follow department grouping.</p></div><button class="btn-primary" type="button" data-open-modal="facultyInviteModal">Invite Faculty</button></header>
+<div class="management-table-header"><label class="college-filter" for="facultyCollegeFilter">College label<select id="facultyCollegeFilter" data-faculty-filter="college"><option value="all">All colleges</option>{% for college in colleges %}<option value="{{ college.pk }}">{{ college.name }}</option>{% endfor %}</select></label>
+<label class="college-filter" for="facultyUnitFilter">Department or office<select id="facultyUnitFilter" data-faculty-filter="unit"><option value="all">All departments and offices</option>{% for group,options in faculty_invite_form.fields.unit.choices %}{% if group %}<optgroup label="{{ group }}">{% for value,label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</optgroup>{% endif %}{% endfor %}</select></label></div>
+<section class="management-table-wrapper"><div class="management-table-header"><h2>Faculty Accounts</h2></div><div class="table-scroll"><table><thead><tr><th>Faculty ID</th><th>Name</th><th>Email</th><th>Department / Office</th><th>College label</th><th>Office / Room</th><th>Actions</th></tr></thead><tbody>
+{% for user in active_faculty %}<tr data-faculty-row data-unit="{{ user.unit_value }}" data-college="{{ user.college_filter }}"><td>{{ user.faculty_profile.faculty_id|default:'—' }}</td><td>{% include 'components/_avatar.html' with photo_url=user.avatar_url initials=user.avatar_initials avatar_class='fs-avatar-table' %} {{ user.get_full_name|default:user.username }}</td><td>{{ user.email }}</td><td>{{ user.unit_label }}</td><td>{{ user.college_label|default:'No college' }}</td><td>{{ user.faculty_profile.office_location|default:'—' }}</td>
+<td class="actions"><button class="btn-secondary" type="button" data-open-modal="facultyAssignmentModal" data-edit-url="{% url 'superadmin:assign_faculty' user.pk %}" data-unit="{{ user.unit_value }}">Edit assignment</button><form method="post" action="{% url 'superadmin:remove_faculty_superadmin' user.pk %}" data-managed-form>{% csrf_token %}<button type="submit" class="danger" data-confirm="Permanently remove this faculty account and its related records? This cannot be undone.">Remove</button></form></td></tr>
+{% endfor %}<tr data-faculty-empty {% if active_faculty %}hidden{% endif %}><td colspan="7" class="empty-state">No registered faculty accounts match these filters.</td></tr></tbody></table></div></section>
+<section class="management-table-wrapper"><div class="management-table-header"><h2>Faculty Invitations</h2></div><div class="table-scroll"><table><thead><tr><th>Email</th><th>Department / Office</th><th>College label</th><th>Status</th></tr></thead><tbody>{% for invite in faculty_invites %}<tr><td>{{ invite.email }}</td><td>{{ invite.unit_label }}</td><td>{{ invite.department.college.name|default:'No college' }}</td><td><span class="assignment-pill">Invited</span></td></tr>{% empty %}<tr><td colspan="4" class="empty-state">No pending faculty invitations.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}
+{% block modals %}
+<dialog id="facultyInviteModal" class="management-dialog"><div class="modal-header"><div><h2>Invite Faculty</h2><p>The faculty member signs in with their invited Google email.</p></div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button></div>
+<form method="post" action="{% url 'superadmin:invite_faculty_superadmin' %}" data-managed-form class="modal-form">{% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p>
+<div class="modal-form-group"><label for="facultyInviteEmail">Google email</label><input id="facultyInviteEmail" type="email" name="email" required></div>
+<div class="modal-form-group"><label for="facultyInviteUnit">Department or office</label><select id="facultyInviteUnit" name="unit" required>{% for group,options in faculty_invite_form.fields.unit.choices %}{% if group %}<optgroup label="{{ group }}">{% for value,label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</optgroup>{% else %}<option value="">{{ options }}</option>{% endif %}{% endfor %}</select></div>
+<div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn-primary" type="submit">Send Invite</button></div></form></dialog>
+<dialog id="facultyAssignmentModal" class="management-dialog"><div class="modal-header"><div><h2>Edit Faculty Assignment</h2><p>Transfers are blocked once activity records exist so historical reporting is preserved.</p></div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button></div>
+<form method="post" data-managed-form class="modal-form">{% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p><div class="modal-form-group"><label for="facultyAssignmentUnit">Department or office</label><select id="facultyAssignmentUnit" name="unit" required>{% for group,options in faculty_invite_form.fields.unit.choices %}{% if group %}<optgroup label="{{ group }}">{% for value,label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</optgroup>{% else %}<option value="">{{ options }}</option>{% endif %}{% endfor %}</select></div>
+<div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn-primary" type="submit">Save Assignment</button></div></form></dialog>
+{% endblock %}

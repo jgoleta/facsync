@@ -22,7 +22,7 @@
                 <p class="settings-eyebrow">College administration</p>
                 <h1>College Settings</h1>
                 <p>Manage your college profile, booking availability, and announcements.</p>
-                <span class="settings-college-label">{{ request.user.college_name }}</span>
+                <span class="settings-college-label">{{ request.managed_scope.name|default:request.user.college_name }}</span>
             </header>
 
             <div class="settings-grid">
@@ -69,7 +69,7 @@
                     {% endif %}
                     {% endfor %}
                     {% endif %}
-                    <form method="post" id="closure-form" data-status-url="{% url 'depthead:closure_status' %}" data-college="{{ request.user.college_name }}" class="settings-form">
+                    <form method="post" id="closure-form" data-status-url="{% url 'depthead:closure_status' %}" data-college="{{ request.managed_scope.name|default:request.user.college_name }}" class="settings-form">
                         {% csrf_token %}
                         <div class="form-group form-group-toggle">
                             <label for="{{ closure_form.is_closed.id_for_label }}">Close office for bookings</label>
@@ -103,7 +103,7 @@
                         <p>Share timely updates with students and faculty.</p>
                     </header>
                 
-                    <form id="announcement-form" data-college="{{ request.user.college_name }}" class="settings-form" method="post" action="{% url 'depthead:create_announcement' %}">
+                    <form id="announcement-form" data-college="{{ request.managed_scope.name|default:request.user.college_name }}" class="settings-form" method="post" action="{% url 'depthead:create_announcement' %}">
                         {% csrf_token %}
                         <div class="form-group">
                             <label for="ann-message">Message</label>

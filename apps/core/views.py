@@ -2,6 +2,7 @@ import json
 from datetime import timezone as dt_timezone
 from django.utils import timezone
 from .models import User, OfficeClosure
+from .department_access import faculty_closed
 from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -59,11 +60,13 @@ STATUS_NOTE_DEFAULTS = {
 def dashboard_public(request):
 
     closures = OfficeClosure.objects.filter(is_closed=True)
-    closed_college_codes = set(closures.values_list('college', flat=True))
+    if request.user.role == 'depthead':
+        from apps.depthead.scope import managed_departments
+        closures = closures.filter(department__in=managed_departments(request.user))
 
     closure_list = [
         {
-            'college_name': get_college_label(c.college),
+            'college_name': c.department.name if c.department_id else get_college_label(c.college),
             'reason': c.reason,
             'closure_start': c.closure_start,
             'closure_end': c.closure_end,
@@ -76,12 +79,14 @@ def dashboard_public(request):
         .select_related('user')
         .filter(user__account_status='active')
     )
+    if request.user.role == 'depthead':
+        faculty_profiles = faculty_profiles.filter(user__department__in=managed_departments(request.user))
 
     faculty_cards = []
     for profile in faculty_profiles:
         status_key = profile.current_status
         data_status, status_class = STATUS_DISPLAY_MAP.get(status_key, ('available', 'status-available'))
-        is_college_closed = profile.college_id in closed_college_codes
+        is_college_closed = faculty_closed(profile)
         faculty_cards.append({
             'id': profile.faculty_id,
             'name': profile.user.get_full_name() or profile.user.username,
@@ -187,16 +192,26 @@ def post_login_redirect(request):
 @role_required('student')
 def student_profile_setup(request):
     if request.method == 'POST':
-        form = StudentProfileForm(request.POST, instance=request.user)
-        if form.is_valid():
-            user = form.save(commit=False)
-            user.profile_completed = True
-            user.save()
-            return redirect('students:home')
+        from django.db import transaction
+        from .models import School
+        with transaction.atomic():
+            school = School.objects.select_for_update().get(pk=request.user.school_id)
+            request.user.school = school
+            form = StudentProfileForm(request.POST, instance=request.user, school=school)
+            if form.is_valid():
+                user = form.save(commit=False)
+                user.profile_completed = True
+                user.save()
+                return redirect('students:home')
     else:
         form = StudentProfileForm(instance=request.user)
 
-    return render(request, 'core/studentProfileSetup.html', {'form': form})
+    from .education import LEVELS, YEAR_CHOICES
+    from .models import Department
+    return render(request, 'core/studentProfileSetup.html', {'form': form, 'year_choices': YEAR_CHOICES,
+        'single_level_label': LEVELS.get(request.user.school.educational_levels[0]) if len(request.user.school.educational_levels) == 1 else None,
+        'department_colleges': {str(d.pk): d.college.name if d.college else 'No college' for d in
+            Department.objects.filter(school=request.user.school, is_active=True).select_related('college')}})
 
 @login_required
 @role_required('faculty')
