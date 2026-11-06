@@ -1,0 +1,12 @@
+<fieldset class="department-options" data-department-options aria-describedby="{{ checkbox_prefix }}-help">
+  <legend>Departments</legend>
+  <p id="{{ checkbox_prefix }}-help" class="assignment-muted">Select one or more departments.</p>
+  <div class="department-options-list">
+    {% for department in departments %}
+    <label class="department-checkbox-option" for="{{ checkbox_prefix }}-{{ department.pk }}">
+      <input id="{{ checkbox_prefix }}-{{ department.pk }}" type="checkbox" name="departments" value="{{ department.pk }}">
+      <span>{{ department.name }}{% if department.college %}<small>{{ department.college.name }}</small>{% endif %}</span>
+    </label>
+    {% empty %}<p class="assignment-muted">No active departments are available. Add a department first.</p>{% endfor %}
+  </div>
+</fieldset>

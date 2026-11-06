@@ -27,6 +27,13 @@
 .management-dialog { width:min(560px,calc(100vw - 32px)); max-height:85vh; overflow:auto; padding:24px; border:1px solid var(--border-color); border-radius:16px; color:var(--text-primary); background:var(--bg-card); }
 .management-dialog::backdrop { background:color-mix(in srgb,var(--bg-sidebar) 60%,transparent); }
 .management-dialog select[multiple] { min-height:140px; }
+.management-dialog .department-options { margin:0 0 18px; padding:12px; border:1px solid var(--border-color); border-radius:8px; }
+.management-dialog .department-options legend { padding:0 6px; font-weight:600; }
+.management-dialog .department-options-list { display:grid; gap:6px; max-height:240px; overflow:auto; }
+.management-dialog .department-checkbox-option { display:flex; align-items:flex-start; gap:10px; padding:8px; border-radius:6px; cursor:pointer; }
+.management-dialog .department-checkbox-option:hover { background:var(--bg-main); }
+.management-dialog .department-checkbox-option input { width:auto; flex:0 0 auto; margin:3px 0 0; accent-color:var(--primary); }
+.management-dialog .department-checkbox-option small { display:block; margin-top:3px; color:var(--text-secondary); }
 .management-dialog .modal-header { display:flex; justify-content:space-between; gap:16px; }
 .management-dialog .modal-header p { color:var(--text-secondary); }
 .management-dialog .modal-form-group { margin-bottom:18px; }
