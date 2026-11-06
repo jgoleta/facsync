@@ -1,5 +1,23 @@
 .department-management .actions { display:flex; flex-wrap:wrap; gap:8px; min-width:180px; }
 .department-management .actions form { margin:0; }
+.department-management .btn-primary,
+.department-management .btn-secondary { width:auto !important; flex:0 0 auto; }
+.department-management .management-table-header-actions { flex:0 0 auto; }
+.department-management .header-action { min-height:40px; padding:9px 14px; font-size:.85rem; }
+.department-management > .management-table-wrapper + .management-table-wrapper { margin-top:24px; }
+.school-settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; align-items:start; }
+.school-settings-grid .management-table-wrapper { min-width:0; }
+.school-settings-grid .management-table-header p { color:var(--text-secondary); line-height:1.6; }
+.school-details-form { display:grid; gap:18px; }
+.school-settings-field { display:grid; gap:8px; }
+.school-settings-field label { font-size:.88rem; font-weight:600; }
+.school-settings-field input { box-sizing:border-box; width:100%; min-width:0; padding:11px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font:inherit; }
+.school-settings-field small { color:var(--text-secondary); line-height:1.5; }
+.school-settings-actions { display:flex; justify-content:flex-end; }
+.school-settings-field input:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+.school-settings-grid .education-settings-form { padding:0; display:grid; gap:18px; }
+.school-settings-grid .education-settings-form > p { margin:0; color:var(--text-secondary); line-height:1.6; }
+@media(max-width:1050px) { .school-settings-grid { grid-template-columns:minmax(0,1fr); } }
 .education-settings-form { padding:24px; }
 .education-settings-form fieldset { border:1px solid var(--border-color); border-radius:8px; padding:16px; }
 .education-settings-form label { display:block; margin:10px 0; }

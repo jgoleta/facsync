@@ -1,0 +1,21 @@
+.department-settings-stack { display:grid; gap:32px; }
+.department-unit-heading { margin-bottom:18px; }
+.department-unit-heading h2 { margin:0 0 6px; font-size:1.15rem; }
+.department-unit-heading p { margin:0; color:var(--text-secondary); }
+.department-settings-page .settings-card { background:var(--bg-card); border-color:var(--border-color); }
+.department-settings-page .settings-section-heading { border-color:var(--border-color); }
+.department-settings-page .settings-section-heading h3 { margin:0 0 8px; font-size:1.1rem; }
+.department-settings-page .settings-form .primary-button { width:auto !important; }
+.department-settings-page .settings-form .form-group input:not([type=checkbox]),
+.department-settings-page .settings-form .form-group select,
+.department-settings-page .settings-form .form-group textarea { background-color:var(--bg-card); color:var(--text-primary); border-color:var(--border-color); }
+.department-settings-page .settings-form textarea { resize:vertical; }
+.department-settings-page .settings-section-heading p,
+.department-settings-page .form-hint { color:var(--text-secondary); }
+.department-settings-page .education-targets { border:1px solid var(--border-color); border-radius:10px; padding:16px; }
+.department-settings-page .education-targets legend { font-weight:600; font-size:.84rem; padding:0 6px; }
+.department-settings-page .education-targets label { display:flex; align-items:center; gap:8px; padding:6px 0; }
+.department-settings-page .education-targets input { margin:0; }
+.department-settings-page .department-announcements { max-width:none; }
+.department-settings-page .assignment-error { color:var(--danger); }
+@media(max-width:540px) { .department-settings-page .form-actions .primary-button { max-width:100%; white-space:normal; } }

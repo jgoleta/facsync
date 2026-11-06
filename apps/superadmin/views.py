@@ -30,10 +30,25 @@ logger = logging.getLogger(__name__)
 @login_required
 @role_required('superadmin')
 def school_settings(request):
-    from .forms import SchoolEducationForm
-    form = SchoolEducationForm(request.POST if request.method == 'POST' else None,
+    from .forms import SchoolDetailsForm, SchoolEducationForm
+    details_action = request.method == 'POST' and request.POST.get('action') == 'school_details'
+    domain = request.user.school.domains.order_by('pk').first()
+    details_form = SchoolDetailsForm(request.POST if details_action else None, school=request.user.school,
+        initial={'name': request.user.school.name, 'domain': domain.domain if domain else ''})
+    form = SchoolEducationForm(request.POST if request.method == 'POST' and not details_action else None,
         initial={'educational_levels': request.user.school.educational_levels})
     if request.method == 'POST':
+        if details_action:
+            if details_form.is_valid():
+                try:
+                    request.user.school.set_school_details(actor=request.user, **details_form.cleaned_data)
+                except ValidationError as error:
+                    details_form.add_error(None, error.messages)
+                except IntegrityError:
+                    details_form.add_error('domain', 'This domain is already assigned to another school.')
+                else:
+                    return JsonResponse({'success': True, 'message': 'School details updated.'})
+            return form_error(details_form)
         if form.is_valid():
             try:
                 request.user.school.set_educational_levels(form.cleaned_data['educational_levels'], actor=request.user)
@@ -42,7 +57,7 @@ def school_settings(request):
             else:
                 return JsonResponse({'success': True, 'message': 'School educational levels updated.'})
         return form_error(form)
-    return render(request, 'superadmin/schoolSettings.html', {'form': form})
+    return render(request, 'superadmin/schoolSettings.html', {'form': form, 'details_form': details_form})
 
 
 def _send_saved_email(sender, *args):

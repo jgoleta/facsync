@@ -1,8 +1,8 @@
 {% extends 'superadmin/base_management.html' %}
 {% block title %}Manage Departments{% endblock %}
 {% block content %}
-<header class="main-header with-action"><div><p class="page-kicker">School administration</p><h1>Manage Departments</h1><p>Create departments and optionally group them under a college.</p></div><button class="btn-primary" data-open-modal="departmentModal" type="button">Add Department</button></header>
-<section class="management-table-wrapper"><div class="management-table-header"><div><p class="section-kicker">Academic structure</p><h2>Departments</h2></div></div><div class="table-scroll"><table>
+<header class="main-header"><div><p class="page-kicker">School administration</p><h1>Manage Departments</h1><p>Create departments and optionally group them under a college.</p></div></header>
+<section class="management-table-wrapper"><div class="management-table-header"><div><p class="section-kicker">Academic structure</p><h2>Departments</h2></div><div class="management-table-header-actions"><button class="btn-primary header-action" data-open-modal="departmentModal" type="button"><span class="header-action-icon" aria-hidden="true">+</span><span>Add Department</span></button></div></div><div class="table-scroll"><table>
 <thead><tr><th>Department</th><th>Code</th><th>College label</th><th>Members</th><th>Heads</th><th>Status</th><th>Actions</th></tr></thead><tbody>
 {% for department in departments %}<tr>
   <td><strong>{{ department.name }}</strong><p class="assignment-muted">{{ department.description }}</p></td><td>{{ department.code }}</td><td>{{ department.college.name|default:'No college' }}</td><td>{{ department.member_count }}</td><td>{{ department.head_count }}</td><td><span class="assignment-pill">{{ department.is_active|yesno:'Active,Deactivated' }}</span></td>
