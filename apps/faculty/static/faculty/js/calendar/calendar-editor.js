@@ -661,7 +661,7 @@ document.addEventListener("DOMContentLoaded", () => {
     typeEl.textContent = eventData.status || eventData.type || "busy";
     typeEl.className = `event-detail-type type-${eventData.type || "busy"}`;
     timeEl.textContent = formatEventTime(eventData);
-    descriptionEl.textContent = eventData.description || "No description provided.";
+    descriptionEl.textContent = (eventData.displayDescription ?? eventData.description) || "No description provided.";
     if (eventData.isConsultation) {
       descriptionEl.classList.add("consultation-note");
       descriptionEl.setAttribute("data-note-clamp", "");

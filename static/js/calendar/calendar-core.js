@@ -34,6 +34,7 @@
       requestId: event.request_id || null,
       title: event.title,
       description: event.description,
+      displayDescription: event.display_description ?? event.description,
       location: event.location || "",
       status: event.status || event.event_type,
       type: event.event_type,

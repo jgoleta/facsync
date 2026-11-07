@@ -1,4 +1,5 @@
 """Shared calendar event serialization for faculty and student calendars."""
+from .calendar_descriptions import readable_google_description
 
 
 def get_schedule_status_label(event):
@@ -19,6 +20,10 @@ def serialize_schedule_event(event, include_sync_metadata=False, human_status=Fa
         'lecture': event.lecture,
         'lab': event.lab,
         'description': event.description,
+        'display_description': (
+            readable_google_description(event.description)
+            if event.google_event_id and not event.managed_by_facsync else event.description
+        ),
         'location': event.location,
         'status': get_schedule_status_label(event) if human_status else (event.schedule_status or event.event_type),
         'event_type': event.event_type,
