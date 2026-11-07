@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Student Behavior</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}?v=20261005-frequency-scroll">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}?v=20261107-date-popup">
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -80,9 +80,10 @@
                     <p class="chart-caption">{{ peak_period_count }} requests</p>
                 </div>
             
-                <div class="table-card student-frequency-card">
+                <div class="table-card student-frequency-card" id="student-frequency">
                     <h3 id="student-frequency-heading">Student Request Frequency</h3>
-                    <p class="chart-caption">Requests submitted {{ topics_period_start|date:"M j, Y" }} &ndash; {{ topics_period_end|date:"M j, Y" }} &middot; All statuses</p>
+                    {% include 'depthead/partials/analytics_date_range.html' with form=frequency_form frequency=True selected_start=frequency_start selected_end=frequency_end %}
+                    <p class="chart-caption">Requests submitted {{ frequency_start|date:"M j, Y" }} &ndash; {{ frequency_end|date:"M j, Y" }} &middot; All statuses</p>
                     <div class="student-frequency-scroll" role="region" aria-labelledby="student-frequency-heading" tabindex="0">
                     <table>
                         <thead>
@@ -112,5 +113,6 @@
             </div>
         </main>
     </div>
+    <script src="{% static 'depthead/js/analytics_date_range.js' %}?v=20261107-date-popup" defer></script>
 </body>
 </html>

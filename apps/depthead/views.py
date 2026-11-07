@@ -62,6 +62,16 @@ from .services.analytics_browser import ANALYTICS_QUESTIONS, analytics_browser_a
 logger = logging.getLogger(__name__)
 
 
+def _analytics_date_range(request, start, end, *, prefix=None):
+    from .forms import AnalyticsDateRangeForm
+    form = AnalyticsDateRangeForm(prefix=prefix, initial={'start_date': start, 'end_date': end})
+    if any(form.add_prefix(field) in request.GET for field in ('start_date', 'end_date')):
+        form = AnalyticsDateRangeForm(request.GET, prefix=prefix)
+        if form.is_valid():
+            return form, normalize_period(**form.cleaned_data)
+    return form, normalize_period(start, end)
+
+
 def _user_scope(request):
     scope = request.managed_scope
     return {'department_id__in': scope.department_ids} if isinstance(scope, DepartmentScope) else {'college__iexact': scope}
@@ -596,7 +606,7 @@ def student_behavior(request):
     polyline_str = " ".join(f"{p['x']},{p['y']}" for p in line_points)
 
     peak_period_label, peak_period_count = peak_request_month(analytics['request_patterns']['monthly_trend'])
-    request_period = normalize_period(month_starts[0], today)
+    frequency_form, request_period = _analytics_date_range(request, month_starts[0], today, prefix='frequency')
     consultations_qs = get_base_consultation_queryset(college_code).filter(
         requested_at__gte=request_period.start_datetime,
         requested_at__lt=request_period.end_datetime_exclusive,
@@ -609,6 +619,9 @@ def student_behavior(request):
         'peak_period_label': peak_period_label,
         'peak_period_count': peak_period_count,
         'student_frequency': student_frequency,
+        'frequency_form': frequency_form,
+        'frequency_start': request_period.start_date,
+        'frequency_end': request_period.end_date,
         'consultation_topics': consultation_topics_display(analytics['consultations']),
         'topics_period_start': month_starts[0],
         'topics_period_end': today,
@@ -733,7 +746,8 @@ WEEKDAY_LABELS = {
 def peak_analytics(request):
     college_code = request.managed_scope
     week = current_week_period()
-    analytics = get_college_analytics(college_code, week.start_date, week.end_date)
+    period_form, period = _analytics_date_range(request, week.start_date, week.end_date)
+    analytics = get_college_analytics(college_code, period.start_date, period.end_date)
     patterns = analytics['consultation_patterns']
     hourly_data = {
         row['hour']: row['count'] for row in patterns['hourly_distribution']
@@ -804,6 +818,7 @@ def peak_analytics(request):
         'reporting_start': date.fromisoformat(analytics['period']['start_date']),
         'reporting_end': date.fromisoformat(analytics['period']['end_date']),
         'reporting_timezone': analytics['period']['timezone'],
+        'period_form': period_form,
         'hourly_data': hourly_data,
         'chart_bars': chart_bars,
         'peak_hour_label': peak_hour_label,

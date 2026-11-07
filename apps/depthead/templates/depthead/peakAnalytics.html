@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Peak Analytics</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}?v=20261006-peak-layout">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}?v=20261107-date-popup">
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -21,8 +21,10 @@
             <header class="main-header">
                 <h1>Peak Consultation Analytics ({{ request.managed_scope.name|default:request.user.college_name }})</h1>
                 <p>Analyze consultation volume and demand.</p>
-                <p class="chart-caption">This week: {{ reporting_start|date:"M j, Y" }} &ndash; {{ reporting_end|date:"M j, Y" }} ({{ reporting_timezone }}). Based on scheduled consultation dates.</p>
+                <p class="chart-caption">Reporting period: {{ reporting_start|date:"M j, Y" }} &ndash; {{ reporting_end|date:"M j, Y" }} ({{ reporting_timezone }}). Based on scheduled consultation dates.</p>
             </header>
+
+            {% include 'depthead/partials/analytics_date_range.html' with form=period_form selected_start=reporting_start selected_end=reporting_end %}
 
             <div class="analytics-grid peak-analytics-grid">
                 <div class="chart-card">
@@ -127,5 +129,6 @@
         </main>
     </div>
     <script src="{% static 'depthead/js/hourly_availability.js' %}?v=20261007-hours" defer></script>
+    <script src="{% static 'depthead/js/analytics_date_range.js' %}?v=20261107-date-popup" defer></script>
 </body>
 </html>
