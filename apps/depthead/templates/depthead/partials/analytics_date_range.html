@@ -1,0 +1,22 @@
+<div class="analytics-date-filter" data-date-range>
+    <div class="analytics-date-launcher">
+        <button type="button" class="btn-secondary analytics-date-trigger" data-date-open hidden aria-haspopup="dialog">Date range <span aria-hidden="true">&#9662;</span></button>
+        <span class="analytics-date-summary">{{ selected_start|date:"M j, Y" }} &ndash; {{ selected_end|date:"M j, Y" }}</span>
+    </div>
+    <div data-date-panel>
+        <header class="analytics-date-heading"><div><h2 id="{% if frequency %}frequency{% else %}peak{% endif %}-date-title">Select date range</h2><p>Choose a start date, then an end date, or enter the dates below.</p></div><button type="button" class="analytics-date-close" data-date-cancel aria-label="Close date range" hidden>&times;</button></header>
+        <form method="get" {% if frequency %}action="#student-frequency"{% endif %} aria-label="{% if frequency %}Student request frequency dates{% else %}Peak analytics dates{% endif %}" data-date-form {% if form.errors %}data-date-errors{% endif %}>
+            {% if form.errors %}<p class="analytics-date-error" role="alert">Please correct the dates below. The results still show the default period.</p>{% endif %}
+            <div class="analytics-range-calendar" data-range-calendar hidden>
+                <div class="analytics-month-controls"><button type="button" data-month-step="-1" aria-label="Previous month">&lsaquo;</button><strong data-month-title aria-live="polite"></strong><button type="button" data-month-step="1" aria-label="Next month">&rsaquo;</button></div>
+                <div class="analytics-weekdays" aria-hidden="true"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+                <div class="analytics-calendar-days" data-calendar-days role="group" aria-label="Choose dates"></div>
+                <p class="analytics-range-hint" data-range-hint aria-live="polite"></p>
+            </div>
+            <div class="analytics-date-controls">
+                {% for field in form %}<div class="analytics-date-field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>{% endfor %}
+            </div>
+            <div class="analytics-date-actions"><a class="analytics-date-reset" href="{{ request.path }}{% if frequency %}#student-frequency{% endif %}">Reset dates</a><button type="button" class="btn-secondary" data-date-cancel hidden>Cancel</button><button type="submit" class="btn-primary">Apply</button></div>
+        </form>
+    </div>
+</div>

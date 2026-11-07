@@ -4,6 +4,40 @@
     gap: 24px;
 }
 
+.analytics-date-filter { margin: 0 0 24px; }
+.analytics-date-launcher { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.analytics-date-filter [hidden], .analytics-date-dialog [hidden] { display: none !important; }
+.analytics-date-trigger { display: inline-flex; align-items: center; gap: 12px; width: auto !important; padding: 10px 16px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); color: var(--text-primary); font-weight: 600; }
+.analytics-date-summary { color: var(--text-secondary); font-size: .85rem; }
+.analytics-date-dialog { box-sizing: border-box; width: min(480px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 24px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-card); color: var(--text-primary); overflow-y: auto; }
+.analytics-date-dialog::backdrop { background: color-mix(in srgb, var(--bg-sidebar) 60%, transparent); }
+.analytics-date-heading { display: flex; align-items: flex-start; gap: 16px; justify-content: space-between; margin-bottom: 20px; }
+.analytics-date-heading h2 { font-size: 1.25rem; margin: 0 0 8px; }
+.analytics-date-heading p { color: var(--text-secondary); font-size: .85rem; line-height: 1.5; margin: 0; }
+.analytics-date-close { flex-shrink: 0; width: 32px !important; height: 32px; padding: 0; border: 0; background: transparent; color: var(--text-secondary); font-size: 1.5rem; }
+.analytics-month-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.analytics-month-controls button { width: 36px !important; height: 36px; padding: 0; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); color: var(--text-primary); font-size: 1.5rem; }
+.analytics-weekdays, .analytics-calendar-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.analytics-weekdays { color: var(--text-secondary); font-size: .75rem; text-align: center; margin-bottom: 8px; }
+.analytics-calendar-days button { width: 100% !important; min-height: 38px; margin: 0; padding: 6px 0; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--text-primary); font: inherit; font-size: .85rem; cursor: pointer; }
+.analytics-calendar-days button:hover, .analytics-calendar-days .is-in-range { background: var(--primary-light); color: var(--primary-dark); }
+.analytics-calendar-days .is-range-edge, .analytics-calendar-days .is-range-edge:hover { background: var(--primary); color: var(--bg-card); font-weight: 700; }
+.analytics-calendar-days [aria-current="date"] { border-color: var(--primary); }
+.analytics-calendar-days button:disabled, .analytics-month-controls button:disabled { opacity: .4; cursor: default; }
+.analytics-range-hint { min-height: 36px; color: var(--text-secondary); font-size: .8rem; line-height: 1.5; }
+.analytics-date-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.analytics-date-field { display: grid; gap: 6px; min-width: 0; }
+.analytics-date-field label { color: var(--text-secondary); font-size: .8rem; font-weight: 600; }
+.analytics-date-field input { box-sizing: border-box; width: 100%; min-width: 0; min-height: 40px; padding: 9px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); color: var(--text-primary); font: inherit; font-size: .875rem; }
+.analytics-date-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color); }
+.analytics-date-actions button { width: auto !important; padding: 10px 16px; }
+.analytics-date-reset { display: inline-flex; align-items: center; margin-right: auto; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); color: var(--text-primary); font-size: .85rem; text-decoration: none; }
+.analytics-date-reset:hover { background: var(--primary-light); }
+.analytics-date-error, .analytics-date-field .errorlist { color: var(--danger); font-size: .85rem; }
+.analytics-date-field .errorlist { margin: 0; padding-left: 18px; }
+.analytics-date-dialog :focus-visible, .analytics-date-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 400px) { .analytics-date-dialog { padding: 18px; } .analytics-date-field input { padding: 8px 5px; font-size: .8rem; } }
+
 .chart-card, .table-card {
     background-color: var(--bg-card);
     border: 1px solid var(--border-color);

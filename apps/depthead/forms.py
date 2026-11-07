@@ -1,8 +1,29 @@
 from django import forms
+from django.core.validators import MaxValueValidator
 from apps.core.models import Department, FacultyInvite, OfficeClosure
 from .services.shared_windows import DURATION_CHOICES
-from datetime import timedelta
+from datetime import date, timedelta
 from apps.core.school_forms import SchoolBoundModelForm
+
+
+class AnalyticsDateRangeForm(forms.Form):
+    start_date = forms.DateField(label='Start date', input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}))
+    end_date = forms.DateField(label='End date', input_formats=['%Y-%m-%d'],
+        widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'max': '9999-12-30'}),
+        # Analytics uses an exclusive next-day boundary.
+        validators=[MaxValueValidator(date(9999, 12, 30))])
+
+    def clean(self):
+        data = super().clean()
+        if data.get('start_date') and data.get('end_date') and data['start_date'] > data['end_date']:
+            self.add_error('end_date', 'End date must be on or after the start date.')
+        elif data.get('start_date') and data.get('end_date'):
+            try:
+                data['start_date'] - timedelta(days=(data['end_date'] - data['start_date']).days + 1)
+            except OverflowError:
+                self.add_error('start_date', 'Choose a later start date or a shorter date range.')
+        return data
 
 
 class WeekDaySelect(forms.Select):
