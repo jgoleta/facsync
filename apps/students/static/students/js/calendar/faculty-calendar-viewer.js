@@ -328,7 +328,7 @@ function openEventModal(eventData, dateKey) {
   typeEl.className = `event-detail-type type-${eventData.type || "busy"}`;
   timeEl.textContent = formatEventTime(eventData);
   descriptionEl.textContent =
-    eventData.description || "No description provided.";
+    (eventData.displayDescription ?? eventData.description) || "No description provided.";
   if (eventData.isConsultation) {
     descriptionEl.classList.add("consultation-note");
     descriptionEl.setAttribute("data-note-clamp", "");

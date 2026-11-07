@@ -964,6 +964,8 @@ a.btn-danger {
   color: var(--text);
 }
 
+#eventDetailDescription { white-space: pre-wrap; overflow-wrap: anywhere; }
+
 .event-detail-type {
   margin: 0;
   font-weight: 700;
