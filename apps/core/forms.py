@@ -111,13 +111,16 @@ class CollegeAnnouncementForm(SchoolBoundModelForm):
 class CollegeForm(SchoolBoundModelForm):
     class Meta:
         model = College
-        fields = ['name', 'description']
+        fields = ['name', 'code', 'description']
 
     def clean_name(self):
         value = self.cleaned_data['name']
         if College.objects.filter(name__iexact=value).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('A college with this name already exists in your school.')
         return value
+
+    def clean_code(self):
+        return self.cleaned_data['code'].strip().upper()
 
 class CollegeDescriptionForm(SchoolBoundModelForm):
     class Meta:
@@ -127,13 +130,16 @@ class CollegeDescriptionForm(SchoolBoundModelForm):
 class OfficeForm(SchoolBoundModelForm):
     class Meta:
         model = Office
-        fields = ['name', 'description']
+        fields = ['name', 'code', 'description']
 
     def clean_name(self):
         value = self.cleaned_data['name']
         if Office.objects.filter(name__iexact=value).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('An office with this name already exists in your school.')
         return value
+
+    def clean_code(self):
+        return self.cleaned_data['code'].strip().upper()
 
 class OfficeDescriptionForm(SchoolBoundModelForm):
     class Meta:

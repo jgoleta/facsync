@@ -256,6 +256,12 @@ document.addEventListener("DOMContentLoaded", () => {
       editButton.dataset.eventId = String(row.id);
       editButton.textContent = "Edit";
       actionCell.appendChild(editButton);
+      const deleteButton = document.createElement("button");
+      deleteButton.type = "button";
+      deleteButton.className = "schedule-preview-delete-btn";
+      deleteButton.dataset.eventId = String(row.id);
+      deleteButton.textContent = "Delete";
+      actionCell.appendChild(deleteButton);
       tr.appendChild(actionCell);
       schedulePreviewBody.appendChild(tr);
     });
@@ -288,11 +294,39 @@ document.addEventListener("DOMContentLoaded", () => {
         startTime: row.TIMEFROM || "00:00",
         endTime: row.TIMETO || "00:00",
       },
+      // Upload Preview edits represent the complete imported schedule entry.
+      editScope: "all",
+      editScopePrompted: true,
     };
     openAddEventModalForEdit();
   }
 
-  schedulePreviewBody?.addEventListener("click", (event) => {
+  schedulePreviewBody?.addEventListener("click", async (event) => {
+    const deleteButton = event.target.closest(".schedule-preview-delete-btn");
+    if (deleteButton) {
+      const row = schedulePreviewRows.find((item) => String(item.id) === deleteButton.dataset.eventId);
+      if (!row || !(await askDeleteConfirmation("Delete this uploaded schedule entry? This cannot be undone."))) return;
+      deleteButton.disabled = true;
+      showScheduleCrudLoading("Deleting uploaded schedule entry...");
+      fetch("/faculty/api/schedule/clear/", {
+        method: "POST",
+        headers: requestHeaders(true),
+        body: JSON.stringify({ event_ids: [row.id] }),
+      })
+        .then(async (response) => {
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(data.error || "Unable to delete schedule entry.");
+          facultyFeedback?.showToast("Uploaded schedule entry deleted.");
+          await fetchEventsFromApi();
+          await loadSchedulePreview();
+        })
+        .catch((error) => {
+          deleteButton.disabled = false;
+          facultyFeedback?.showToast(error.message, true);
+        })
+        .finally(() => hideScheduleCrudLoading());
+      return;
+    }
     const editButton = event.target.closest(".schedule-preview-edit-btn");
     if (!editButton) return;
     const row = schedulePreviewRows.find((item) => String(item.id) === editButton.dataset.eventId);
@@ -329,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const eventsById = new Map();
     facultySchedule.schedule.forEach((dayEntry) => {
       dayEntry.events.forEach((event) => {
-        if (event.id === undefined || event.id === null || event.isConsultation) return;
+        if (event.id === undefined || event.id === null || event.isConsultation || event.isCsvUpload) return;
         const key = String(event.id);
         if (!eventsById.has(key)) {
           eventsById.set(key, { ...event, firstDate: dayEntry.date });
@@ -427,7 +461,10 @@ document.addEventListener("DOMContentLoaded", () => {
     schedulePreviewEventIds = [];
     schedulePreviewHasOtherUploader = false;
     if (clearScheduleBtn) clearScheduleBtn.disabled = true;
-    const response = await fetch(viewUploadPreviewBtn.dataset.previewUrl, { headers: requestHeaders() });
+    const response = await fetch(viewUploadPreviewBtn.dataset.previewUrl, {
+      headers: requestHeaders(),
+      cache: "no-store",
+    });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "Unable to load schedule preview.");
     schedulePreviewColumns = data.template_columns || [];
@@ -520,7 +557,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const warning = schedulePreviewHasOtherUploader
         ? "This will delete all previewed schedule entries, including entries uploaded by someone else, such as your College Head. This cannot be undone. Continue?"
         : "This will delete all previewed schedule entries. This cannot be undone. Continue?";
-      if (!window.confirm(warning)) return;
+      if (!(await askDeleteConfirmation(warning))) return;
       clearScheduleBtn.disabled = true;
       setScheduleUploadStatus("Deleting schedule...");
       showScheduleCrudLoading("Deleting schedule...");
@@ -670,8 +707,19 @@ document.addEventListener("DOMContentLoaded", () => {
       window.FacSyncConsultationNotes?.clearClamp(descriptionEl);
     }
     if (locationEl) locationEl.textContent = eventData.location || "Not specified.";
-    if (editBtn) editBtn.style.display = eventData.isConsultation ? "none" : "";
-    removeBtn.style.display = eventData.isConsultation ? "none" : "";
+    const isUploadedEvent = Boolean(eventData.is_csv_upload || eventData.isCsvUpload);
+    if (editBtn) {
+      editBtn.disabled = isUploadedEvent;
+      editBtn.title = isUploadedEvent
+        ? "Edit uploaded schedules from Upload preview."
+        : "Edit event";
+    }
+    if (editBtn) editBtn.style.display = eventData.isConsultation || isUploadedEvent ? "none" : "";
+    removeBtn.style.display = eventData.isConsultation || isUploadedEvent ? "none" : "";
+    removeBtn.disabled = isUploadedEvent;
+    removeBtn.title = isUploadedEvent
+      ? "Delete uploaded schedules from Upload preview."
+      : "Delete event";
     modal.classList.remove("hidden");
 
     removeBtn.onclick = () => {
@@ -1209,8 +1257,17 @@ document.addEventListener("DOMContentLoaded", () => {
       if (eventSaveInProgress) return;
       eventSaveInProgress = true;
       try {
+        const invalidField = Array.from(addEventForm.elements).find(
+          (field) => typeof field.checkValidity === "function" && !field.checkValidity(),
+        );
+        if (invalidField) {
+          facultyFeedback?.showToast("Please complete all required fields before saving.", true);
+          invalidField.focus();
+          return;
+        }
         const syncToGoogle = await askGoogleCalendarSync();
         if (syncToGoogle === null) {
+          facultyFeedback?.showToast("Saving changes was cancelled.", true);
           document.getElementById("eventTitle")?.focus();
           return;
         }

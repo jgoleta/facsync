@@ -3,6 +3,7 @@ const unitTypeFilter = document.getElementById("unitTypeFilter");
 const availableToggle = document.getElementById("availableToggle");
 const searchInput = document.getElementById("searchInput");
 const facultyGrid = document.getElementById("facultyGrid");
+const facultyPagination = document.getElementById("facultyPagination");
 const statusBanner = document.getElementById("collegeStatusBanner");
 const studentFeedback = window.studentFeedback;
 
@@ -19,6 +20,8 @@ function loadClosedCollegesFromDOM() {
 }
 
 let cards = [];
+let currentPage = 1;
+const CARDS_PER_PAGE = 12;
 
 function parseISOToDisplay(iso) {
   try {
@@ -90,14 +93,56 @@ function renderCollegeStatus() {
   }
 }
 
-function renderCards() {
+function renderPagination(pageCount) {
+  if (!facultyPagination) return;
+  facultyPagination.replaceChildren();
+  const totalPages = Math.max(1, pageCount);
+
+  const addNavigationButton = (label, page, ariaLabel) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "faculty-page-button faculty-page-navigation";
+    button.textContent = label;
+    button.setAttribute("aria-label", ariaLabel);
+    button.disabled = page < 1 || page > totalPages || totalPages === 1;
+    button.addEventListener("click", () => {
+      currentPage = page;
+      renderCards();
+      facultyGrid.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    facultyPagination.appendChild(button);
+  };
+
+  addNavigationButton("<", currentPage - 1, "Go to previous faculty page");
+
+  for (let page = 1; page <= totalPages; page += 1) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = `faculty-page-button${page === currentPage ? " active" : ""}`;
+    button.textContent = String(page);
+    button.setAttribute("aria-label", `Go to faculty page ${page}`);
+    button.setAttribute("aria-current", page === currentPage ? "page" : "false");
+    button.disabled = totalPages === 1;
+    button.addEventListener("click", () => {
+      currentPage = page;
+      renderCards();
+      facultyGrid.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    facultyPagination.appendChild(button);
+  }
+
+  addNavigationButton(">", currentPage + 1, "Go to next faculty page");
+}
+
+function renderCards(resetPage = false) {
+  if (resetPage) currentPage = 1;
   const college = collegeFilter.value;
   const unitType = unitTypeFilter?.value || "all";
   const onlyAvailable = availableToggle.checked;
   const q = searchInput.value.trim().toLowerCase();
   renderCollegeStatus();
 
-  let visibleCount = 0;
+  const matchingCards = [];
   cards.forEach((card) => {
     const cCollege = card.dataset.college || "";
     const cUnitType = card.dataset.unitType || "college";
@@ -116,12 +161,20 @@ function renderCards() {
       show = false;
     }
 
-    card.style.display = show ? "" : "none";
-    if (show) visibleCount++;
+    if (show) matchingCards.push(card);
   });
 
+  const pageCount = Math.ceil(matchingCards.length / CARDS_PER_PAGE);
+  currentPage = pageCount ? Math.min(currentPage, pageCount) : 1;
+  const pageStart = (currentPage - 1) * CARDS_PER_PAGE;
+  const pageCards = new Set(matchingCards.slice(pageStart, pageStart + CARDS_PER_PAGE));
+  cards.forEach((card) => {
+    card.style.display = pageCards.has(card) ? "" : "none";
+  });
+  renderPagination(pageCount);
+
   let noResults = facultyGrid.querySelector(".no-results");
-  if (visibleCount === 0) {
+  if (matchingCards.length === 0) {
     if (!noResults) {
       noResults = document.createElement("div");
       noResults.className = "no-results";
@@ -286,13 +339,13 @@ async function refreshFacultyDirectory() {
 }
 
 // Wire up filters
-collegeFilter.addEventListener("change", renderCards);
-unitTypeFilter?.addEventListener("change", renderCards);
-availableToggle.addEventListener("change", renderCards);
+collegeFilter.addEventListener("change", () => renderCards(true));
+unitTypeFilter?.addEventListener("change", () => renderCards(true));
+availableToggle.addEventListener("change", () => renderCards(true));
 let searchTimer = null;
 searchInput.addEventListener("input", () => {
   clearTimeout(searchTimer);
-  searchTimer = setTimeout(renderCards, 200);
+  searchTimer = setTimeout(() => renderCards(true), 200);
 });
 
 // Init

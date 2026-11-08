@@ -23,6 +23,10 @@
         ]);
         let pendingRemoveForm = null;
 
+        document.querySelectorAll('#serverMessages [data-level]').forEach((message) => {
+            showCrudToast(message.textContent.trim(), message.dataset.level.includes('error'));
+        });
+
         function closeScheduleTemplateModalFn() {
             if (scheduleTemplateModal) scheduleTemplateModal.classList.add('hidden');
         }
@@ -158,7 +162,8 @@
 
                 closeFacultyModalFn();
                 showCrudToast(data.message || 'Faculty invitation created.');
-                window.setTimeout(() => window.location.reload(), 1100);
+                if (data.email_sent === false) showEmailFailureNote();
+                window.setTimeout(() => window.location.reload(), data.email_sent === false ? 3000 : 1100);
             } catch (error) {
                 setCrudLoading(false);
                 showCrudToast(error.message || 'Unable to create the faculty invitation.', true);

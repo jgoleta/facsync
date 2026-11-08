@@ -40,6 +40,7 @@
       type: event.event_type,
       isRecurring: Boolean(event.is_recurring),
       isConsultation: Boolean(event.is_consultation),
+      isCsvUpload: Boolean(event.is_csv_upload || event.isCsvUpload),
       dayOfWeek: event.day_of_week === "none" ? "" : (event.day_of_week || ""),
       startMonth: event.start_month,
       endMonth: event.end_month,

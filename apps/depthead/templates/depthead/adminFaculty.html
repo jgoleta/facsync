@@ -28,6 +28,13 @@
       {% include 'depthead/partials/sidebar.html' %}
 
       <main class="main-content">
+        {% if messages %}
+        <div id="serverMessages" hidden>
+          {% for message in messages %}
+          <span data-level="{{ message.tags|default:'success' }}">{{ message }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
         <header class="main-header with-action">
           <div>
             <p class="page-kicker">Department administration ({{ request.managed_scope.name|default:request.user.college_name }})</p>
@@ -327,6 +334,6 @@
     </div>
 
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
-    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261031-schedule-template-modal-ux2"></script>
+    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261108-schedule-template-save-fix"></script>
   </body>
 </html>

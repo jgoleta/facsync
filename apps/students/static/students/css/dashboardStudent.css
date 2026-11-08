@@ -280,6 +280,9 @@
 
 .student-dashboard .card-body {
   min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
   padding-right: 28px;
 }
 
@@ -338,7 +341,8 @@
 }
 
 .student-dashboard .card-actions {
-  margin-top: 18px;
+  margin-top: auto;
+  padding-top: 18px;
 }
 
 .student-dashboard .card .card-notify {
@@ -380,6 +384,39 @@
   border-radius: 14px;
   background: #fbfdff;
   text-align: center;
+}
+
+.student-dashboard .faculty-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.student-dashboard .faculty-page-button {
+  min-width: 36px;
+  height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--dashboard-line);
+  border-radius: 9px;
+  background: #fff;
+  color: var(--dashboard-blue-dark);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.student-dashboard .faculty-page-button:hover,
+.student-dashboard .faculty-page-button:focus-visible,
+.student-dashboard .faculty-page-button.active {
+  border-color: var(--dashboard-blue);
+  background: var(--dashboard-soft-blue);
+  outline: none;
+}
+
+.student-dashboard .faculty-page-button:disabled {
+  cursor: default;
+  opacity: 0.75;
 }
 
 @media (max-width: 1240px) {
@@ -429,7 +466,7 @@
   }
 
   .student-dashboard .control.toggle {
-    order: 3;
+    order: 0;
     min-height: 34px;
   }
 

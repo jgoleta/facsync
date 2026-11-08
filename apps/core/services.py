@@ -53,7 +53,8 @@ def notify_faculty_status_subscribers(faculty, status, *, history=None, deferred
 
     status_label = dict(faculty.STATUS_CHOICES).get(status, status)
     school = require_school(faculty.user.school)
-    faculty_name = faculty.user.get_full_name() or faculty.user.username
+    # Do not expose the faculty account username/ID in student notifications.
+    faculty_name = faculty.user.get_full_name() or 'This faculty member'
     url = f'/student/view-schedule/?faculty_id={faculty.faculty_id}'
     subscriptions = FacultyStatusSubscription.objects.filter(
         faculty=faculty,
@@ -203,21 +204,27 @@ def send_schedule_uploaded_email(faculty_user, uploaded_events, uploaded_by):
 
 
 def send_faculty_invite_email(email, college):
-    _send_html_email(
+    email = (email or '').strip()
+    if not email:
+        return False
+    return bool(_send_html_email(
         "You've been invited to FacSync",
         'faculty_invite.html',
         {'college': college},
         [email],
-    )
+    ))
 
 
 def send_faculty_removed_email(email, name):
-    _send_html_email(
+    email = (email or '').strip()
+    if not email:
+        return False
+    return bool(_send_html_email(
         "Your FacSync faculty account was removed",
         'faculty_removed.html',
         {'name': name},
         [email],
-    )
+    ))
 
 
 def send_faculty_status_email(student, faculty_name, status_label, url):

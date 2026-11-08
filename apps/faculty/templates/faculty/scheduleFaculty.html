@@ -182,7 +182,7 @@
                     <h1>Add a New Event</h1>
                 </div>
 
-                <form id="addEventForm" class="consultation-form">
+                <form id="addEventForm" class="consultation-form" novalidate>
                     {% csrf_token %}
                     <div class="form-group">
                         <label for="eventTitle">Event Title</label>
@@ -192,6 +192,7 @@
                         <label for="eventType">Status Type</label>
                         <select id="eventType" required>
                             <option value="busy" selected>Busy</option>
+                            <option value="virtual">Virtual Only</option>
                             <option value="unavailable">Unavailable</option>
                             <option value="on-leave">On Leave</option>
                         </select>
@@ -298,9 +299,9 @@
     </div>
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'js/calendar/calendar-core.js' %}?v=20261107-readable-descriptions"></script>
+    <script src="{% static 'js/calendar/calendar-core.js' %}?v=20261108-csv-action-visibility"></script>
     <script src="{% static 'js/consultation_notes.js' %}?v=20261021-consultation-notes"></script>
-    <script src="{% static 'faculty/js/calendar/calendar-editor.js' %}?v=20261107-readable-descriptions"></script>
+    <script src="{% static 'faculty/js/calendar/calendar-editor.js' %}?v=20261108-live-template-columns"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 

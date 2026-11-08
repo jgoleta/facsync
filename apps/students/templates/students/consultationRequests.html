@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | My Consultations</title>
-    <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}?v=20260930-cancellation-fix">
+    <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}?v=20261108-pagination">
     <link rel="stylesheet" href="{% static 'css/consultation_notes.css' %}?v=20261021-consultation-notes">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     {% include 'components/_student_navigation_loading.html' %}
@@ -47,7 +47,6 @@
                             <option value="all">All</option>
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
-                            <option value="cancellation_requested">Cancellation Requested</option>
                             <option value="declined">Declined</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
@@ -59,12 +58,11 @@
                     <li class="request-item" data-request-id="{{ consultation.request_id }}" data-status="{{ consultation.status }}" data-meet-link="{{ consultation.google_meet_link }}">
                         <div class="request-status">
                             <span class="status-badge status-{{ consultation.status }}">{{ consultation.get_status_display }}</span>
-                            {% if consultation.status == 'pending' %}<button type="button" class="request-cancellation-btn" title="Cancel request" data-cancellation-url="{% url 'students:api_request_consultation_cancellation' consultation.request_id %}">Cancel Request</button>{% elif consultation.status != 'approved' and consultation.status != 'cancellation_requested' %}<button type="button" class="delete-request-btn" aria-label="Delete request with {{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}" title="Delete request" data-delete-url="{% url 'students:api_delete_consultation' consultation.request_id %}">
+                            {% if consultation.status != 'pending' and consultation.status != 'approved' and consultation.status != 'cancellation_requested' %}<button type="button" class="delete-request-btn" aria-label="Delete request with {{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}" title="Delete request" data-delete-url="{% url 'students:api_delete_consultation' consultation.request_id %}">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
                                     <path d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M5 6l1 14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-14M10 10v7M14 10v7" />
                                 </svg>
-                            </button>{% elif consultation.status == 'approved' %}
-                            <button type="button" class="request-cancellation-btn" title="Cancel consultation" data-cancellation-url="{% url 'students:api_request_consultation_cancellation' consultation.request_id %}">Cancel Consultation</button>{% endif %}
+                            </button>{% endif %}
                         </div>
                         <div class="request-info">
                             <div class="request-card-heading">
@@ -97,12 +95,23 @@
                     <li class="empty-state">You have no active consultation requests.</li>
                     {% endfor %}
                 </ul>
+                <nav id="requestPagination" class="request-pagination" aria-label="Consultation request pages"></nav>
             </div>
         </main>
     </div>
+    <div id="consultationActionModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="consultationActionTitle">
+        <div class="modal consultation-action-modal">
+            <h2 id="consultationActionTitle">Delete consultation request?</h2>
+            <p id="consultationActionMessage">This consultation request will be permanently deleted. Any linked calendar appointment will also be removed.</p>
+            <div class="modal-actions">
+                <button type="button" id="cancelConsultationAction" class="btn-secondary">Keep Request</button>
+                <button type="button" id="confirmConsultationAction" class="btn-danger">Delete Request</button>
+            </div>
+        </div>
+    </div>
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
     <script src="{% static 'js/consultation_notes.js' %}?v=20261021-consultation-notes"></script>
-    <script src="{% static 'students/js/consultationRequests.js' %}?v=20260930-cancellation-fix"></script>
+    <script src="{% static 'students/js/consultationRequests.js' %}?v=20261108-pagination"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 </html>

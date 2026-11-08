@@ -263,6 +263,11 @@ body {
   display: none;
 }
 
+/* Keep the page behind an open modal from scrolling or receiving interaction. */
+body:has(.modal-overlay:not(.hidden)) {
+  overflow: hidden;
+}
+
 .setting-item span {
   font-weight: 600;
 }
@@ -325,6 +330,7 @@ input:checked + .slider:before {
   background: rgba(22, 33, 62, 0.55);
   z-index: 1000;
   padding: 16px;
+  overscroll-behavior: contain;
 }
 
 .modal-overlay.hidden {

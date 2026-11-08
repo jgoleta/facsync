@@ -349,6 +349,20 @@
   cursor: pointer;
 }
 .schedule-preview-edit-btn:hover { background: #d8ebff; }
+.schedule-preview-delete-btn {
+  margin-left: 6px;
+  padding: 7px 12px;
+  border: 1px solid #e2a2a2;
+  border-radius: 999px;
+  background: #fff5f5;
+  color: #b42318;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.schedule-preview-delete-btn:hover { background: #ffe5e5; }
+.schedule-preview-delete-btn:disabled { cursor: wait; opacity: 0.6; }
 .schedule-preview-meta {
   margin-top: 14px;
   text-align: center;

@@ -2,40 +2,55 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusFilter = document.getElementById('statusFilter');
     const requestList = document.querySelector('.consultation-request-list');
     const requestResultCount = document.getElementById('requestResultCount');
+    const requestPagination = document.getElementById('requestPagination');
+    const REQUESTS_PER_PAGE = 12;
+    let currentPage = 1;
+    const actionModal = document.getElementById('consultationActionModal');
+    const actionTitle = document.getElementById('consultationActionTitle');
+    const actionMessage = document.getElementById('consultationActionMessage');
+    const cancelActionButton = document.getElementById('cancelConsultationAction');
+    const confirmActionButton = document.getElementById('confirmConsultationAction');
+    let resolveActionConfirmation;
+
+    function closeActionModal(confirmed) {
+        actionModal?.classList.add('hidden');
+        if (resolveActionConfirmation) {
+            const resolve = resolveActionConfirmation;
+            resolveActionConfirmation = null;
+            resolve(confirmed);
+        }
+    }
+
+    function showActionModal(title, message, confirmLabel) {
+        return new Promise(resolve => {
+            resolveActionConfirmation = resolve;
+            if (actionTitle) actionTitle.textContent = title;
+            if (actionMessage) actionMessage.textContent = message;
+            if (confirmActionButton) confirmActionButton.textContent = confirmLabel;
+            actionModal?.classList.remove('hidden');
+            cancelActionButton?.focus();
+        });
+    }
+
+    cancelActionButton?.addEventListener('click', () => closeActionModal(false));
+    confirmActionButton?.addEventListener('click', () => closeActionModal(true));
+    actionModal?.addEventListener('click', event => {
+        if (event.target === actionModal) closeActionModal(false);
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && actionModal && !actionModal.classList.contains('hidden')) {
+            closeActionModal(false);
+        }
+    });
 
     requestList?.addEventListener('click', async (event) => {
-        const cancellationButton = event.target.closest('.request-cancellation-btn');
-        if (cancellationButton && !cancellationButton.disabled) {
-            if (!window.confirm('Cancel this consultation immediately?')) return;
-            cancellationButton.disabled = true;
-            const feedback = window.studentFeedback;
-            feedback?.showLoading('Cancelling consultation...');
-            try {
-                const cookie = document.cookie.split('; ').find(value => value.startsWith('csrftoken='));
-                const response = await fetch(cancellationButton.dataset.cancellationUrl, {
-                    method: 'POST',
-                    headers: { 'X-CSRFToken': cookie ? decodeURIComponent(cookie.slice('csrftoken='.length)) : '' },
-                });
-                const data = await response.json().catch(() => ({}));
-                if (!response.ok) throw new Error(data.error || 'Unable to request cancellation.');
-                const item = cancellationButton.closest('.request-item');
-                item.dataset.status = data.status;
-                item.querySelector('.status-badge').textContent = data.status_label;
-                item.querySelector('.status-badge').className = `status-badge status-${data.status}`;
-                cancellationButton.remove();
-                feedback?.showToast('Consultation cancelled.');
-                applyFilter();
-            } catch (error) {
-                feedback?.showToast(error.message, true);
-                cancellationButton.disabled = false;
-            } finally {
-                feedback?.hideLoading();
-            }
-            return;
-        }
         const button = event.target.closest('.delete-request-btn');
         if (!button || button.disabled) return;
-        if (!window.confirm('Delete this consultation request permanently? Any linked calendar appointment will also be removed.')) return;
+        if (!(await showActionModal(
+            'Delete consultation request?',
+            'This consultation request will be permanently deleted. Any linked calendar appointment will also be removed.',
+            'Delete Request',
+        ))) return;
         button.disabled = true;
         const feedback = window.studentFeedback;
         feedback?.showLoading('Deleting consultation request...');
@@ -66,29 +81,76 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    function applyFilter() {
+    function renderPagination(pageCount) {
+        if (!requestPagination) return;
+        requestPagination.replaceChildren();
+        const totalPages = Math.max(1, pageCount);
+
+        const addNavigationButton = (label, page, ariaLabel) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'request-page-button request-page-navigation';
+            button.textContent = label;
+            button.setAttribute('aria-label', ariaLabel);
+            button.disabled = page < 1 || page > totalPages || totalPages === 1;
+            button.addEventListener('click', () => {
+                currentPage = page;
+                applyFilter();
+                requestList?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            requestPagination.appendChild(button);
+        };
+
+        addNavigationButton('<', currentPage - 1, 'Go to previous consultation request page');
+        for (let page = 1; page <= totalPages; page += 1) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `request-page-button${page === currentPage ? ' active' : ''}`;
+            button.textContent = String(page);
+            button.setAttribute('aria-label', `Go to consultation request page ${page}`);
+            button.setAttribute('aria-current', page === currentPage ? 'page' : 'false');
+            button.disabled = totalPages === 1;
+            button.addEventListener('click', () => {
+                currentPage = page;
+                applyFilter();
+                requestList?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            requestPagination.appendChild(button);
+        }
+        addNavigationButton('>', currentPage + 1, 'Go to next consultation request page');
+    }
+
+    function applyFilter(resetPage = false) {
+        if (resetPage) currentPage = 1;
         const filter = statusFilter?.value || 'all';
-        let visibleCount = 0;
         const requestItems = requestList?.querySelectorAll('.request-item') || [];
+        const matchingItems = [];
         requestItems.forEach(item => {
             const visible = filter === 'all' || item.dataset.status === filter;
-            item.style.display = visible ? 'flex' : 'none';
-            if (visible) visibleCount += 1;
+            if (visible) matchingItems.push(item);
         });
+        const pageCount = Math.ceil(matchingItems.length / REQUESTS_PER_PAGE);
+        currentPage = pageCount ? Math.min(currentPage, pageCount) : 1;
+        const pageStart = (currentPage - 1) * REQUESTS_PER_PAGE;
+        const pageItems = new Set(matchingItems.slice(pageStart, pageStart + REQUESTS_PER_PAGE));
+        requestItems.forEach(item => {
+            item.style.display = pageItems.has(item) ? 'flex' : 'none';
+        });
+        renderPagination(pageCount);
         requestList?.querySelector('.filtered-empty-state')?.remove();
-        if (requestItems.length && visibleCount === 0 && requestList) {
+        if (requestItems.length && matchingItems.length === 0 && requestList) {
             const emptyState = document.createElement('li');
             emptyState.className = 'filtered-empty-state';
             emptyState.textContent = `No ${filter} consultation requests.`;
             requestList.appendChild(emptyState);
         }
         if (requestResultCount) {
-            requestResultCount.textContent = `${visibleCount} request${visibleCount === 1 ? '' : 's'}`;
+            requestResultCount.textContent = `${matchingItems.length} request${matchingItems.length === 1 ? '' : 's'}`;
         }
     }
 
     if (statusFilter) {
-        statusFilter.addEventListener('change', applyFilter);
+        statusFilter.addEventListener('change', () => applyFilter(true));
     }
 
     async function removeFinishedRequests() {
@@ -132,6 +194,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    applyFilter();
+    applyFilter(true);
     window.setInterval(removeFinishedRequests, 10000);
 });

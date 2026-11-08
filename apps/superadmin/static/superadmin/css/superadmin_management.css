@@ -108,6 +108,7 @@
   font: inherit;
 }
 
+
 .management-table-wrapper {
   border: 1px solid #dce7f3;
   border-radius: 18px;
@@ -115,6 +116,8 @@
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 12px 30px rgba(30, 64, 175, 0.06);
 }
+
+.faculty-invitations-wrapper { margin-bottom:24px; }
 
 .section-heading,
 .management-table-header {
