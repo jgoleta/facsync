@@ -46,4 +46,4 @@ Run the standalone email utility from the repository root with
 `python -m scripts.test_email` so the project packages are importable.
 
 ## GEMINI_MODEL=gemini
-    
+ 
