@@ -1,10 +1,15 @@
 from django.urls import path
 from . import views
 from . import department_views
+from . import superadmin_views
 
 app_name = 'superadmin'
 
 urlpatterns = [
+    path('superadmins/', superadmin_views.manage_superadmins, name='manage_superadmins'),
+    path('superadmins/invite/', superadmin_views.invite_superadmin, name='invite_superadmin'),
+    path('superadmins/invites/<int:invite_id>/resend/', superadmin_views.resend_superadmin_invite, name='resend_superadmin_invite'),
+    path('superadmins/invites/<int:invite_id>/cancel/', superadmin_views.cancel_superadmin_invite, name='cancel_superadmin_invite'),
     path('school-settings/', views.school_settings, name='school_settings'),
     path('', views.superadmin_dashboard, name='superadmin_dashboard'),
     path('dashboard/', views.superadmin_dashboard, name='superadmin_dashboard'),

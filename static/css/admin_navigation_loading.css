@@ -39,6 +39,8 @@
 .admin-navigation-departments-table { overflow:hidden; }
 .admin-navigation-department-row { display:grid; grid-template-columns:2fr .7fr 1.5fr .6fr .6fr .8fr 1.2fr; gap:16px; border-top:1px solid var(--border-color); }
 .admin-navigation-department-row .admin-navigation-placeholder { width:100%; height:22px; margin:22px 0; }
+.admin-navigation-superadmin-row { display: grid; gap: 18px; border-top: 1px solid var(--border-color); }
+.admin-navigation-superadmin-row .admin-navigation-placeholder { width: 100%; height: 22px; margin: 22px 0; }
 @media(max-width:1050px) { .admin-navigation-school-settings .admin-navigation-grid { grid-template-columns:minmax(0,1fr); } }
 main.admin-navigation-pending { visibility: hidden; }
 @keyframes admin-navigation-pulse { from { opacity: .5; } to { opacity: 1; } }
