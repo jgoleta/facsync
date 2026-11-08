@@ -14,6 +14,12 @@
   --shadow-md: 0 12px 24px rgba(15, 23, 42, 0.08);
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 @keyframes gradient-shift {
   0% {
     background-position: 0% 50%;
@@ -99,6 +105,7 @@ body {
     subtle-glow 3s ease-in-out infinite;
   width: 100%;
   max-width: 480px;
+  min-width: 0;
 }
 
 .login-brand,
@@ -253,6 +260,8 @@ body {
 
 .form-group input,
 .form-group select {
+  width: 100%;
+  min-width: 0;
   padding: 14px 16px;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -291,6 +300,10 @@ body {
     transform 0.2s ease,
     box-shadow 0.3s ease;
   box-shadow: 0 4px 16px rgba(37, 99, 235, 0.2);
+}
+
+.register-panel .btn-primary {
+  margin-top: 12px;
 }
 
 .btn-primary:hover {
