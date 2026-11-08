@@ -701,6 +701,75 @@ body {
 
 .delete-request-btn:hover { background: #fff1f0; }
 .delete-request-btn:disabled { opacity: 0.6; cursor: wait; }
+
+.consultation-action-modal {
+  gap: 14px;
+}
+
+.consultation-action-modal h2,
+.consultation-action-modal p {
+  margin: 0;
+}
+
+.consultation-action-modal p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.modal-actions button {
+  margin: 0;
+}
+
+.request-pagination {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.request-page-button {
+  min-width: 36px;
+  height: 36px;
+  padding: 6px 10px;
+  border: 1px solid #d8e2ef;
+  border-radius: 9px;
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.request-page-button:hover,
+.request-page-button:focus-visible,
+.request-page-button.active {
+  border-color: var(--primary);
+  background: #edf5ff;
+  outline: none;
+}
+
+.request-page-button:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+
+@media (max-width: 520px) {
+  .modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .modal-actions button {
+    width: 100%;
+  }
+}
+
 .request-cancellation-btn {
   padding: 8px 12px;
   border: 1px solid #b45309;

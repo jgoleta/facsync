@@ -227,16 +227,18 @@ def invite_faculty(request):
                 if unit:
                     lock_departments([unit], request.user.school)
                 invite.save()
+            email_sent = False
             try:
-                send_faculty_invite_email(invite.email, unit.name if unit else invite.college)
+                email_sent = send_faculty_invite_email(invite.email, unit.name if unit else invite.college)
             except Exception:
-                logger.warning('Head faculty invitation email failed.')
+                logger.exception('Head faculty invitation email failed.')
             if is_ajax:
                 return JsonResponse({
                     'success': True,
                     'message': f"Invitation created for {invite.email}.",
+                    'email_sent': email_sent,
                 }, status=201)
-            messages.success(request, f"Invitation created for {invite.email}.")
+            messages.success(request, f"Invitation created for {invite.email}." + ('' if email_sent else ' Confirmation email could not be sent.'))
         else:
             if is_ajax:
                 errors = ' '.join(
@@ -260,9 +262,9 @@ def remove_faculty(request, user_id):
         name = faculty_user.get_full_name() or faculty_user.username
         email = faculty_user.email
         faculty_user.delete()
-        email_sent = True
+        email_sent = False
         try:
-            send_faculty_removed_email(email, name)
+            email_sent = send_faculty_removed_email(email, name)
         except Exception:
             email_sent = False
             logger.exception("Failed to send faculty removal email to %s", email)
@@ -331,7 +333,8 @@ def ai_insights_api(request):
 @login_required
 @role_required('depthead')
 def admin_faculty(request):
-    college = _managed_unit(request.managed_scope)
+    managed_units = managed_departments(request.user) if request.user.role == 'depthead' else []
+    college = managed_units[0] if managed_units else _managed_unit(request.managed_scope)
     faculty_users = list(User.objects.filter(
         role='faculty',
         **_user_scope(request),
@@ -341,7 +344,7 @@ def admin_faculty(request):
 
     return render(request, 'depthead/adminFaculty.html', {
         'faculty_invite_form': FacultyInviteForm(user=request.user),
-        'managed_departments': managed_departments(request.user) if request.user.role == 'depthead' else [],
+        'managed_departments': managed_units,
         'active_faculty': [u for u in faculty_users if u.account_status == 'active'],
         'schedule_template_fields': [
             {
@@ -360,7 +363,14 @@ def admin_faculty(request):
 def faculty_schedule_template(request):
     """Download the CSV format used for college-head faculty uploads."""
     response = HttpResponse(content_type='text/csv')
-    college = _target_department(request) if request.user.role == 'depthead' and request.GET.get('department_id') else _managed_unit(request.managed_scope)
+    if request.user.role == 'depthead':
+        college = (
+            _target_department(request)
+            if request.GET.get('department_id')
+            else managed_departments(request.user).first()
+        )
+    else:
+        college = _managed_unit(request.managed_scope)
     headers = schedule_template_headers(college.schedule_template if college else None)
     response['Content-Disposition'] = 'attachment; filename=schedule_template.csv'
     writer = csv.writer(response)
@@ -985,7 +995,18 @@ def save_schedule_template(request):
         messages.error(request, 'Required schedule attributes cannot be deleted.')
         return redirect('depthead:admin_faculty')
 
-    targets = managed_departments(request.user) if request.user.role == 'depthead' else [college]
+    targets = list(managed_departments(request.user)) if request.user.role == 'depthead' else []
+    # Older faculty accounts may still be assigned only through their college.
+    # Preserve that path when no department assignments exist yet.
+    if not targets and college and hasattr(college, 'save'):
+        targets = [college]
+    if not targets and request.user.role == 'depthead' and request.user.college:
+        legacy_college = College.objects.filter(code__iexact=request.user.college).first()
+        if legacy_college:
+            targets = [legacy_college]
+    if not targets:
+        messages.error(request, 'No department or college was found for this admin account.')
+        return redirect('depthead:admin_faculty')
     with transaction.atomic():
         for target in targets:
             target.schedule_template = {'columns': columns}

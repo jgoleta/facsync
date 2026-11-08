@@ -7,7 +7,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20261014-legend-width">
+    <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20261108-request-pagination">
     <link rel="stylesheet" href="{% static 'css/consultation_notes.css' %}?v=20261021-consultation-notes">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     <link rel="stylesheet" href="{% static 'css/announcements.css' %}?v=20260917-faculty-announcement-ui">
@@ -30,14 +30,15 @@
         </header>
 
         <main class="dashboard-grid">
-            <div class="dashboard-card">
+            <div class="dashboard-main">
                 <div class="welcome-header">
                     <span class="eyebrow">Faculty workspace</span>
                     <h1>Welcome, {{ request.user.get_full_name|default:request.user.username }}!</h1>
                     <p>Manage your availability and student consultations.</p>
                 </div>
 
-                <div class="card-section">
+                <div class="dashboard-card">
+                    <div class="card-section">
                     <div class="section-heading">
                         <div>
                             <h2>Update Your Status</h2>
@@ -98,7 +99,6 @@
                                 <option value="all">All requests</option>
                                 <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
-                            <option value="cancellation_requested">Cancellation Requested</option>
                             </select>
                         </div>
                     </div>
@@ -154,6 +154,8 @@
                         <li class="request-item empty-request">No consultation requests yet.</li>
                         {% endfor %}
                     </ul>
+                    <nav id="facultyRequestPagination" class="faculty-request-pagination" aria-label="Consultation request pages"></nav>
+                    </div>
                 </div>
             </div>
 
@@ -279,7 +281,7 @@
 
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
     <script src="{% static 'js/consultation_notes.js' %}?v=20261021-consultation-notes"></script>
-    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20261002-announcement-toggle"></script>
+    <script src="{% static 'faculty/js/dashboardFaculty.js' %}?v=20261108-request-pagination"></script>
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 {% url 'faculty:active_announcements' as announcement_fetch_url %}

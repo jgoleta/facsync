@@ -262,20 +262,68 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Filter visible consultation requests by their current status.
     const consultationStatusFilter = document.getElementById('consultationStatusFilter');
-    const requestItems = document.querySelectorAll('.request-item');
+    const requestPagination = document.getElementById('facultyRequestPagination');
+    const requestItems = document.querySelectorAll('.request-item:not(.empty-request)');
+    const REQUESTS_PER_PAGE = 12;
+    let currentRequestPage = 1;
 
-    if (consultationStatusFilter && requestItems.length > 0) {
-        consultationStatusFilter.addEventListener('change', () => {
-            const filter = consultationStatusFilter.value;
-            requestItems.forEach((item) => {
-                if (filter === 'all' || item.dataset.status === filter) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
+    function renderRequestPagination(pageCount) {
+        if (!requestPagination) return;
+        requestPagination.replaceChildren();
+        const totalPages = Math.max(1, pageCount);
+
+        const addNavigationButton = (label, page, ariaLabel) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'faculty-request-page-button faculty-request-page-navigation';
+            button.textContent = label;
+            button.setAttribute('aria-label', ariaLabel);
+            button.disabled = page < 1 || page > totalPages || totalPages === 1;
+            button.addEventListener('click', () => {
+                currentRequestPage = page;
+                applyConsultationFilter();
+                document.getElementById('consultation-requests')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
-        });
+            requestPagination.appendChild(button);
+        };
+
+        addNavigationButton('<', currentRequestPage - 1, 'Go to previous consultation request page');
+        for (let page = 1; page <= totalPages; page += 1) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `faculty-request-page-button${page === currentRequestPage ? ' active' : ''}`;
+            button.textContent = String(page);
+            button.setAttribute('aria-label', `Go to consultation request page ${page}`);
+            button.setAttribute('aria-current', page === currentRequestPage ? 'page' : 'false');
+            button.disabled = totalPages === 1;
+            button.addEventListener('click', () => {
+                currentRequestPage = page;
+                applyConsultationFilter();
+                document.getElementById('consultation-requests')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            requestPagination.appendChild(button);
+        }
+        addNavigationButton('>', currentRequestPage + 1, 'Go to next consultation request page');
     }
+
+    function applyConsultationFilter(resetPage = false) {
+        if (resetPage) currentRequestPage = 1;
+        const filter = consultationStatusFilter?.value || 'all';
+        const matchingItems = Array.from(requestItems).filter(item => (
+            filter === 'all' || item.dataset.status === filter
+        ));
+        const pageCount = Math.ceil(matchingItems.length / REQUESTS_PER_PAGE);
+        currentRequestPage = pageCount ? Math.min(currentRequestPage, pageCount) : 1;
+        const pageStart = (currentRequestPage - 1) * REQUESTS_PER_PAGE;
+        const pageItems = new Set(matchingItems.slice(pageStart, pageStart + REQUESTS_PER_PAGE));
+        requestItems.forEach(item => {
+            item.style.display = pageItems.has(item) ? 'flex' : 'none';
+        });
+        renderRequestPagination(pageCount);
+    }
+
+    consultationStatusFilter?.addEventListener('change', () => applyConsultationFilter(true));
+    applyConsultationFilter(true);
 
     // Submit the faculty decision for an individual consultation request.
     requestItems.forEach((item) => {

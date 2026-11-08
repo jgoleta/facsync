@@ -1002,6 +1002,7 @@ a.btn-danger {
   }
   .schedule-shell > .legend-card {
     position: static;
+    order: -1;
   }
   .day-labels {
     display: none;
@@ -1056,7 +1057,7 @@ a.btn-danger {
 
   .modal-overlay {
     padding: 12px;
-    align-items: flex-start;
+    align-items: center;
   }
 
   .modal-content {

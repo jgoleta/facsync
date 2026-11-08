@@ -109,6 +109,7 @@
                     <h2>Add New College</h2>
                     <p>Register a college in the university directory.</p>
                 </div>
+                <button type="button" class="modal-close" id="closeAddCollegeModal" aria-label="Close">&times;</button>
             </div>
             <form method="post" action="{% url 'superadmin:create_college' %}" class="settings-form modal-form">
                 {% csrf_token %}
@@ -118,11 +119,15 @@
                         placeholder="e.g. College of Communication Studies">
                 </div>
                 <div class="form-group modal-form-group">
+                    <label for="add-college-code">College Code</label>
+                    <input type="text" id="add-college-code" name="code" required maxlength="20"
+                        placeholder="e.g. CCS">
+                </div>
+                <div class="form-group modal-form-group">
                     <label for="add-college-description">Description (optional)</label>
                     <textarea id="add-college-description" name="description"></textarea>
                 </div>
                 <div class="form-actions modal-actions">
-                    <button type="button" class="btn-secondary" id="closeAddCollegeModal">Cancel</button>
                     <button type="submit" class="btn-primary">Add College</button>
                 </div>
             </form>

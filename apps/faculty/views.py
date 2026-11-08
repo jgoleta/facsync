@@ -845,15 +845,28 @@ def schedule(request):
     })
 
 
+def _faculty_schedule_template(faculty):
+    """Return the department template assigned to faculty, with legacy fallback."""
+    if not faculty:
+        return None
+    department = getattr(faculty.user, 'department', None)
+    if department and department.schedule_template:
+        return department.schedule_template
+    college = College.objects.filter(code__iexact=faculty.college_id).first()
+    return college.schedule_template if college else None
+
+
 @login_required
 @role_required('faculty')
 def schedule_template(request):
-    """Download the signed-in faculty member's college CSV template."""
+    """Download the signed-in faculty member's department CSV template."""
     faculty = _faculty_for_request(request)
-    college = College.objects.filter(code__iexact=faculty.college_id).first() if faculty else None
-    template = college.schedule_template if college else None
+    template = _faculty_schedule_template(faculty)
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename=schedule_template.csv'
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
     writer = csv.writer(response)
     columns = schedule_template_columns(template)
     writer.writerow([column['label'] for column in columns])
@@ -878,11 +891,11 @@ def upload_schedule(request):
     if faculty is None:
         return JsonResponse({'error': 'No faculty profile'}, status=400)
     uploaded_file = request.FILES.get('file')
-    college = College.objects.filter(code__iexact=faculty.college_id).first()
+    template = _faculty_schedule_template(faculty)
     try:
         rows = _parse_schedule_csv(
             uploaded_file,
-            college.schedule_template if college else None,
+            template,
         )
     except ValueError as exc:
         detail = exc.args[0] if exc.args else 'Invalid CSV file.'
@@ -998,7 +1011,7 @@ def upload_schedule(request):
         'calendar_sync': calendar_sync,
         'last_updated_at': updated_at.isoformat(),
         'preview': [_schedule_csv_row(event) for event in events],
-        'template_columns': schedule_template_columns(college.schedule_template if college else None),
+        'template_columns': schedule_template_columns(template),
         'events': [_event_json(event) for event in events],
     }, status=201)
 
@@ -1012,7 +1025,7 @@ def view_schedule_preview(request):
     faculty = _faculty_for_request(request)
     if faculty is None:
         return JsonResponse({'error': 'No faculty profile'}, status=400)
-    college = College.objects.filter(code__iexact=faculty.college_id).first()
+    template = _faculty_schedule_template(faculty)
     events = ScheduleEvent.objects.filter(
         faculty=faculty, is_csv_upload=True,
     ).select_related('uploaded_by').order_by('id')
@@ -1031,7 +1044,7 @@ def view_schedule_preview(request):
         })
     return JsonResponse({
         'preview': rows,
-        'template_columns': schedule_template_columns(college.schedule_template if college else None),
+        'template_columns': schedule_template_columns(template),
     })
 
 
@@ -1464,7 +1477,11 @@ def api_schedule_events_bulk_delete(request):
     except (TypeError, ValueError):
         return JsonResponse({'error': 'event_ids must contain valid event IDs.'}, status=400)
 
-    events = list(ScheduleEvent.objects.filter(faculty=faculty, pk__in=event_ids))
+    events = list(ScheduleEvent.objects.filter(
+        faculty=faculty,
+        pk__in=event_ids,
+        is_csv_upload=False,
+    ))
     if len(events) != len(event_ids):
         return JsonResponse({'error': 'One or more selected events could not be found.'}, status=404)
 

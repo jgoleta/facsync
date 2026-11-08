@@ -1,10 +1,25 @@
-.department-management .actions { display:flex; flex-wrap:wrap; gap:8px; min-width:180px; }
-.department-management .actions form { margin:0; }
+.department-management .actions { display:flex; flex-wrap:nowrap; align-items:center; gap:8px; min-width:max-content; }
+.department-management .actions form { display:flex; align-items:center; margin:0; }
 .department-management .btn-primary,
-.department-management .btn-secondary { width:auto !important; flex:0 0 auto; }
+.department-management .btn-secondary,
+.department-management .actions .danger { width:auto !important; min-height:34px; padding:8px 12px; font-size:.82rem; flex:0 0 auto; }
+.department-management td.actions { vertical-align:middle; white-space:nowrap; }
 .department-management .management-table-header-actions { flex:0 0 auto; }
 .department-management .header-action { min-height:40px; padding:9px 14px; font-size:.85rem; }
 .department-management > .management-table-wrapper + .management-table-wrapper { margin-top:24px; }
+.department-management .table-scroll {
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-inline:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-gutter:stable;
+}
+.department-management .table-scroll table { min-width:980px; }
+.department-management .table-scroll tbody tr { border-bottom:1px solid var(--border-color); }
+.department-management .table-scroll tbody tr:last-child { border-bottom:none; }
+.department-management .table-scroll tbody td { border-bottom:0; }
 .school-settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; align-items:start; }
 .school-settings-grid .management-table-wrapper { min-width:0; }
 .school-settings-grid .management-table-header p { color:var(--text-secondary); line-height:1.6; }

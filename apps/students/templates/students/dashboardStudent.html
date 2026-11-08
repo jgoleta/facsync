@@ -44,6 +44,12 @@
                     </div>
 
                     <div class="controls" aria-label="Filter faculty">
+                        <label class="control toggle">
+                            <input type="checkbox" id="availableToggle" />
+                            <span class="toggle-track" aria-hidden="true"><span></span></span>
+                            <span>Available now</span>
+                        </label>
+
                         <label class="control">
                             <span class="control-label">Unit type</span>
                             <select id="unitTypeFilter">
@@ -60,12 +66,6 @@
                             </select>
                         </label>
 
-                        <label class="control toggle">
-                            <input type="checkbox" id="availableToggle" />
-                            <span class="toggle-track" aria-hidden="true"><span></span></span>
-                            <span>Available now</span>
-                        </label>
-
                         <label class="control search">
                             <span class="control-label">Search</span>
                             <input id="searchInput" type="search" placeholder="Search faculty by name" />
@@ -77,6 +77,7 @@
 
             <section id="facultyGrid" class="grid" aria-live="polite" aria-label="Faculty availability cards">
             </section>
+            <nav id="facultyPagination" class="faculty-pagination" aria-label="Faculty pages"></nav>
             </section>
         </main>
     </div>
@@ -85,7 +86,7 @@
     {{ closed_colleges|json_script:"closed-colleges" }}
 
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
-    <script src="{% static 'students/js/dashboardStudent.js' %}?v=20261106-departments"></script>
+    <script src="{% static 'students/js/dashboardStudent.js' %}?v=20261108-pagination-arrows"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 {% url 'students:active_announcements' as announcement_fetch_url %}
     {% include 'partials/announcementModal.html' %}

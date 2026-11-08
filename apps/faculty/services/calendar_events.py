@@ -37,6 +37,7 @@ def serialize_schedule_event(event, include_sync_metadata=False, human_status=Fa
         'recurrence_excluded_dates': event.recurrence_excluded_dates or [],
         'start_time': event.start_time.isoformat() if event.start_time else None,
         'end_time': event.end_time.isoformat() if event.end_time else None,
+        'is_csv_upload': event.is_csv_upload,
     }
     if include_sync_metadata:
         payload.update({
