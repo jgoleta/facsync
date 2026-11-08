@@ -1,5 +1,5 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/admin_navigation_loading.css' %}?v=20261106-settings-ui">
+<link rel="stylesheet" href="{% static 'css/admin_navigation_loading.css' %}?v=20261108-school-superadmins">
 <script id="admin-navigation-destinations" type="application/json">
 {
   "{% url 'depthead:admin_dashboard' %}": ["College Overview", "dashboard"],
@@ -15,8 +15,9 @@
   "{% url 'superadmin:school_settings' %}": ["School Settings", "school-settings"],
   "{% url 'superadmin:manage_offices' %}": ["Manage Offices", "table"],
   "{% url 'superadmin:manage_admins' %}": ["Manage Admins", "table"],
+  "{% url 'superadmin:manage_superadmins' %}": ["Manage Super Admins", "superadmins"],
   "{% url 'superadmin:manage_faculty' %}": ["Manage Faculty", "table"],
   "{% url 'superadmin:manage_students' %}": ["Manage Students", "table"]
 }
 </script>
-<script src="{% static 'js/admin_navigation_loading.js' %}?v=20261106-settings-ui" defer></script>
+<script src="{% static 'js/admin_navigation_loading.js' %}?v=20261108-school-superadmins" defer></script>

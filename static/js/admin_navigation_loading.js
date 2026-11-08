@@ -69,6 +69,19 @@
       const levels = block(grid, 'card');
       levels.classList.add('admin-navigation-levels');
       for (let i = 0; i < 4; i++) placeholder(levels, 'admin-navigation-checkbox');
+    } else if (type === 'superadmins') {
+      shapes.className = 'admin-navigation-superadmins';
+      placeholder(shapes, 'admin-navigation-title');
+      for (const columns of [3, 4]) {
+        const table = document.createElement('div');
+        table.className = 'admin-navigation-block'; shapes.append(table);
+        placeholder(table, 'admin-navigation-title');
+        for (let i = 0; i < 4; i++) {
+          const row = document.createElement('div'); row.className = 'admin-navigation-superadmin-row';
+          row.style.gridTemplateColumns = `repeat(${columns}, minmax(0, 1fr))`; table.append(row);
+          for (let cell = 0; cell < columns; cell++) placeholder(row);
+        }
+      }
     } else if (type === 'departments') {
       shapes.className = 'admin-navigation-departments';
       placeholder(shapes, 'admin-navigation-title');

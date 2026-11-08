@@ -196,7 +196,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                         if saved.email.lower() != invite.email.lower():
                             self._deny_invite(request)
                         # Consumption is a state-only write. Its inviter is a
-                        # System Admin; school accounts cannot create these.
+                        # validated sender; activation only consumes the invite.
                         type(invite)._base_manager.filter(pk=invite.pk).update(used=True)
                     else:
                         invite.delete()
