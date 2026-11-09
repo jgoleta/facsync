@@ -608,11 +608,11 @@ document.addEventListener("DOMContentLoaded", () => {
         end_time: timeValue(eventData.endTime),
         sync_to_google: syncToGoogle,
       };
-      const res = await fetch('/faculty/api/events/', {
+      const res = await window.FacSyncManualOverlap.request('/faculty/api/events/', {
         method: 'POST',
         headers: requestHeaders(true),
         body: JSON.stringify(payload),
-      });
+      }, { pause: hideScheduleCrudLoading, resume: () => showScheduleCrudLoading('Saving schedule...') });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error || 'Failed to create event.');
@@ -1314,17 +1314,18 @@ document.addEventListener("DOMContentLoaded", () => {
             edit_scope: activeEventContext.editScope || 'all',
             occurrence_date: activeEventContext.dateKey || null,
           };
-          const res = await fetch(`/faculty/api/events/${activeEventContext.eventData.id}/`, {
+          const res = await window.FacSyncManualOverlap.request(`/faculty/api/events/${activeEventContext.eventData.id}/`, {
             method: 'PUT',
             headers: requestHeaders(true),
             body: JSON.stringify(payload),
-          });
+          }, { pause: hideScheduleCrudLoading, resume: () => showScheduleCrudLoading('Saving schedule...') });
           if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             throw new Error(data.error || 'Failed to update event.');
           }
         } catch (err) {
           console.error('Error updating event', err);
+          if (err.name === 'ScheduleOverlapCancelled') return;
           if (calendarSyncStatus) {
             calendarSyncStatus.textContent = err.message;
             calendarSyncStatus.className = 'calendar-sync-status error';
@@ -1339,6 +1340,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
           await addEvent(eventDetails, syncToGoogle);
         } catch (err) {
+          if (err.name === 'ScheduleOverlapCancelled') return;
           if (calendarSyncStatus) {
             calendarSyncStatus.textContent = err.message;
             calendarSyncStatus.className = 'calendar-sync-status error';
