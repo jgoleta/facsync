@@ -304,6 +304,24 @@ def _adjust_recurring_edit(event, values):
             values['end_month'] = last_new_occurrence.month
 
 
+def _manual_overlap_response(faculty, values, payload, connection, *, existing=None, edit_scope='all', occurrence_date=None):
+    from copy import copy
+    from .services.manual_event_conflicts import manual_event_overlaps, overlap_warning
+    candidate = copy(existing) if existing else ScheduleEvent(faculty=faculty)
+    candidate_values = dict(values)
+    if existing and edit_scope == 'all':
+        restored = {item.original_occurrence_date.isoformat() for item in existing.edited_occurrences.all()
+                    if item.original_occurrence_date}
+        candidate.recurrence_excluded_dates = [day for day in (candidate.recurrence_excluded_dates or []) if day not in restored]
+        _adjust_recurring_edit(candidate, candidate_values)
+    for field, value in candidate_values.items():
+        setattr(candidate, field, value)
+    conflicts = manual_event_overlaps(faculty, candidate, connection, existing=existing,
+        edit_scope=edit_scope, occurrence_date=occurrence_date)
+    warning = overlap_warning(faculty, candidate, payload, conflicts, existing=existing)
+    return JsonResponse(warning, status=409) if warning else None
+
+
 def _consultation_event_json(consultation):
     """Serialize a consultation as a faculty-facing calendar event."""
     return serialize_consultation_event(consultation, viewer='faculty')
@@ -1436,6 +1454,9 @@ def api_schedule_events(request):
             else False
         )
         try:
+            warning = _manual_overlap_response(faculty, values, payload, connection)
+            if warning is not None:
+                return warning
             if sync_enabled:
                 google_event = create_google_event(connection, event)
                 event.google_event_id = google_event.get('id')
@@ -1445,7 +1466,7 @@ def api_schedule_events(request):
                 if not event.google_event_id:
                     raise GoogleCalendarError('Google Calendar did not return an event ID.')
             event.save()
-        except GoogleCalendarError as exc:
+        except (GoogleCalendarError, ValueError) as exc:
             return JsonResponse({'error': str(exc)}, status=502)
         refresh_faculty_status(faculty)
         return JsonResponse(_event_json(event), status=201)
@@ -1596,6 +1617,13 @@ def api_schedule_event_detail(request, pk):
                 {'error': 'Reconnect Google Calendar before removing this event from it.'},
                 status=409,
             )
+        try:
+            warning = _manual_overlap_response(faculty, values, payload, connection,
+                existing=event, edit_scope=edit_scope, occurrence_date=occurrence_date)
+            if warning is not None:
+                return warning
+        except (GoogleCalendarError, ValueError) as exc:
+            return JsonResponse({'error': f'Unable to check calendar overlaps. No event changes were saved. {exc}'}, status=502)
         if edit_scope == 'this':
             try:
                 if calendar_available and event.google_event_id:

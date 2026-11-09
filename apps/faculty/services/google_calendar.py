@@ -281,8 +281,8 @@ def google_request(connection, method, path, **kwargs):
     raise GoogleCalendarError('Google Calendar authorization failed.')
 
 
-def list_google_events(connection):
-    """Fetch calendar events in the configured past/future synchronization window."""
+def list_google_events(connection, *, time_min=None, time_max=None):
+    """Fetch events in explicit bounds, or the configured synchronization window."""
     events = []
     page_token = None
     while True:
@@ -293,12 +293,12 @@ def list_google_events(connection):
             'maxResults': 2500,
             'orderBy': 'startTime',
             'timeZone': getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE),
-            'timeMin': (
+            'timeMin': time_min or (
                 timezone.now() - timedelta(
                     days=getattr(settings, 'GOOGLE_CALENDAR_SYNC_PAST_DAYS', 1)
                 )
             ).isoformat(),
-            'timeMax': (
+            'timeMax': time_max or (
                 timezone.now() + timedelta(
                     days=getattr(settings, 'GOOGLE_CALENDAR_SYNC_FUTURE_DAYS', 60)
                 )
