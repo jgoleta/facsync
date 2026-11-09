@@ -29,6 +29,7 @@ urlpatterns = [
     path('offices/create/', views.create_office, name='create_office'),
     path('offices/<int:office_id>/delete/', views.delete_office, name='delete_office'),
     path('invite-office-admin/', views.invite_office_admin, name='invite_office_admin'),
+    path('office-admin-invites/<int:invite_id>/resend/', views.resend_office_admin_invite, name='resend_office_admin_invite'),
     path('colleges/<int:college_id>/edit/', views.edit_college, name='edit_college'),
     path('colleges/<int:college_id>/delete/', views.delete_college, name='delete_college'),
     path('admins/depthead/<int:user_id>/edit/', views.edit_depthead, name='edit_depthead'),

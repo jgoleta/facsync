@@ -149,4 +149,4 @@ class OfficeAdminInviteForm(SchoolBoundModelForm):
         self.fields['office'].choices = [(o.code, o.name) for o in Office.objects.all().order_by('name')]
 
     def clean_email(self):
-        return validate_invite_identity(self.cleaned_data['email'], instance=self.instance)
+        return validate_invite_identity(self.cleaned_data['email'].strip().lower(), instance=self.instance)

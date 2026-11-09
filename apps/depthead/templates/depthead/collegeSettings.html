@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FacSync | College Settings</title>
+    <title>FacSync | Office Settings</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
     <link rel="stylesheet" href="{% static 'depthead/css/admin_settings.css' %}?v=20260930-settings-cards">
     {% include 'components/_admin_navigation_loading.html' %}
@@ -19,8 +19,8 @@
 
         <main class="main-content">
             <header class="main-header">
-                <p class="settings-eyebrow">College administration</p>
-                <h1>College Settings</h1>
+                <p class="settings-eyebrow">Office administration</p>
+                <h1>Office Settings</h1>
                 <p>Manage your college profile, booking availability, and announcements.</p>
                 <span class="settings-college-label">{{ request.managed_scope.name|default:request.user.college_name }}</span>
             </header>

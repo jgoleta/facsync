@@ -16,6 +16,10 @@
     item.setAttribute('role', error ? 'alert' : 'status'); item.textContent = message;
     document.body.appendChild(item); setTimeout(() => item.remove(), 5000);
   }
+  try {
+    const warning = sessionStorage.getItem('managementDeliveryWarning');
+    if (warning) { sessionStorage.removeItem('managementDeliveryWarning'); toast(warning, true); }
+  } catch (_) { /* Feedback still works when browser storage is unavailable. */ }
   document.querySelectorAll('[data-open-modal]').forEach(button => button.addEventListener('click', () => {
     if (processing) return;
     const dialog = document.getElementById(button.dataset.openModal), form = dialog?.querySelector('form');
@@ -73,6 +77,9 @@
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save. Your session may have expired; sign in again if needed.');
       succeeded = true; toast(result.message || 'Changes saved.', result.email_sent === false);
+      if (result.email_sent === false) {
+        try { sessionStorage.setItem('managementDeliveryWarning', result.message); } catch (_) { /* Keep the visible toast. */ }
+      }
       setTimeout(() => window.location.reload(), 800);
     } catch (failure) {
       const message = failure instanceof TypeError ? 'The connection was interrupted. Check the list before retrying; the change may have been saved.' : failure.message;

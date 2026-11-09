@@ -20,10 +20,11 @@
     </aside>
     <main class="main-content">
         <header class="main-header"><div><p class="page-kicker">System administration</p><h1>Manage Offices</h1><p>Add or remove university offices and review assigned Office Admins.</p></div></header>
+        {% for message in messages %}<p role="status" class="message-{{ message.tags }}">{{ message }}</p>{% endfor %}
         <div class="management-table-wrapper">
             <div class="management-table-header"><div><p class="section-kicker">Student services directory</p><h2>Offices</h2></div><div class="management-table-header-actions"><button type="button" class="btn-primary header-action" id="openAddOfficeModal"><span class="header-action-icon">+</span><span>Add Office</span></button></div></div>
             <div class="table-scroll"><table><thead><tr><th>Office Name</th><th>Code</th><th>Office Admin</th><th>Actions</th></tr></thead><tbody>
-            {% for office in offices %}<tr><td>{{ office.name }}</td><td>{{ office.code }}</td><td>{% for admin in office.head_users %}{{ admin.get_full_name|default:admin.username }}{% if not forloop.last %}, {% endif %}{% empty %}Not assigned{% endfor %}</td><td class="actions"><form method="post" action="{% url 'superadmin:delete_office' office.id %}" class="inline-form" onsubmit="return confirm('Remove {{ office.name }}?');">{% csrf_token %}<button type="submit" class="danger">Remove</button></form></td></tr>{% empty %}<tr><td colspan="4" class="empty-state">No offices yet.</td></tr>{% endfor %}
+            {% for office in offices %}<tr><td>{{ office.name }}</td><td>{{ office.code }}</td><td>{% for admin in office.head_users %}{{ admin.get_full_name|default:admin.username }}{% if not forloop.last %}, {% endif %}{% empty %}Not assigned{% endfor %}</td><td class="actions"><form method="post" action="{% url 'superadmin:delete_office' office.id %}" class="inline-form" onsubmit="return confirm('Remove {{ office.name|escapejs }}?');">{% csrf_token %}<button type="submit" class="danger">Remove</button></form></td></tr>{% empty %}<tr><td colspan="4" class="empty-state">No offices yet.</td></tr>{% endfor %}
             </tbody></table></div>
         </div>
     </main>

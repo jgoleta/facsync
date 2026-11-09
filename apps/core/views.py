@@ -219,18 +219,29 @@ def student_profile_setup(request):
 @login_required
 @role_required('faculty')
 def faculty_profile_setup(request):
+    destination = 'depthead:admin_dashboard' if request.user.role == 'officeadmin' else 'faculty:dashboard'
+    if FacultyProfile.objects.filter(user=request.user).exists():
+        return redirect(destination)
     if request.method == 'POST':
         form = FacultyProfileSetupForm(request.POST)
         if form.is_valid():
-            FacultyProfile.objects.create(
-                faculty_id=form.cleaned_data['faculty_id'],
-                user=request.user,
-                college_id=request.user.college,
-                office_location=form.cleaned_data['office_location'],
-            )
-            request.user.profile_completed = True
-            request.user.save()
-            return redirect('depthead:admin_dashboard' if request.user.role == 'officeadmin' else 'faculty:dashboard')
+            from django.db import IntegrityError, transaction
+            try:
+                with transaction.atomic():
+                    user = User.objects.select_for_update().get(pk=request.user.pk)
+                    # Another tab may have completed setup after validation.
+                    if not FacultyProfile.objects.filter(user=user).exists():
+                        FacultyProfile.objects.create(
+                            faculty_id=form.cleaned_data['faculty_id'], user=user,
+                            college_id=user.college, office_location=form.cleaned_data['office_location'],
+                        )
+                    user.profile_completed = True
+                    user.save(update_fields=['profile_completed'])
+                return redirect(destination)
+            except IntegrityError:
+                # A different account may have claimed this identifier after
+                # validation. Never expose its identity or return a server error.
+                form.add_error('faculty_id', 'This faculty identifier is unavailable. Please choose another.')
     else:
         form = FacultyProfileSetupForm()
 

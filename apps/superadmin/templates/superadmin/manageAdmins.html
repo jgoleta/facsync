@@ -15,6 +15,9 @@
 <tr data-filter-empty {% if head_invites %}hidden{% endif %}><td colspan="5" class="empty-state">No pending head invitations match this department.</td></tr></tbody></table></div></section>
 <section class="management-table-wrapper"><div class="management-table-header"><h2>Office Admin Accounts</h2><button class="btn-primary header-action" type="button" data-open-modal="officeAdminModal">Add Office Admin</button></div><div class="table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Office</th></tr></thead><tbody>
 {% for admin in office_admin_accounts %}<tr><td>{{ admin.get_full_name|default:admin.username }}</td><td>{{ admin.email }}</td><td>{{ admin.college }}</td></tr>{% empty %}<tr><td colspan="3" class="empty-state">No Office Admin accounts yet.</td></tr>{% endfor %}</tbody></table></div></section>
+<section class="management-table-wrapper"><div class="management-table-header"><h2>Office Admin Invitations</h2></div><div class="table-scroll"><table><thead><tr><th>Email</th><th>Office</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+{% for invite in office_invites %}<tr><td>{{ invite.email }}</td><td>{{ invite.office }}</td><td><span class="assignment-pill">Invited</span></td><td><form method="post" action="{% url 'superadmin:resend_office_admin_invite' invite.pk %}" data-managed-form>{% csrf_token %}<button type="submit" class="btn-secondary">Resend</button></form></td></tr>{% empty %}<tr><td colspan="4" class="empty-state">No pending Office Admin invitations.</td></tr>{% endfor %}
+</tbody></table></div></section>
 {% endblock %}
 {% block modals %}
 <dialog id="headInviteModal" class="management-dialog"><div class="modal-header"><div><h2 data-modal-title data-create-title="Invite Head" data-edit-title="Edit Head Invitation">Invite Head</h2><p>Choose the departments this account will manage.</p></div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button></div>
@@ -30,7 +33,7 @@
 <div class="modal-form-group"><label for="headEditStatus">Account status</label><select id="headEditStatus" name="account_status"><option value="active">Active</option><option value="deactivated">Deactivated</option></select></div>
 <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn-primary" type="submit">Save Assignments</button></div></form></dialog>
 <dialog id="officeAdminModal" class="management-dialog"><div class="modal-header"><h2>Add Office Admin</h2><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button></div>
-<form method="post" action="{% url 'superadmin:invite_office_admin' %}" class="modal-form">{% csrf_token %}
+<form method="post" action="{% url 'superadmin:invite_office_admin' %}" data-managed-form class="modal-form">{% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p>
 <div class="modal-form-group"><label for="officeAdminEmail">Google email</label><input id="officeAdminEmail" type="email" name="email" required></div>
 <div class="modal-form-group"><label for="officeAdminOffice">Office</label><select id="officeAdminOffice" name="office" required>{% for value,label in office_admin_form.office.field.choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
 <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn-primary" type="submit">Send Invite</button></div></form></dialog>

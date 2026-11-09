@@ -16,12 +16,12 @@
 <body>
     <div class="page-shell">
         <header class="topbar">
-            <a href="{% url 'core:landing' %}" class="brand">
+            <a href="{% if request.user.is_authenticated %}{% url 'core:post_login_redirect' %}{% else %}{% url 'core:landing' %}{% endif %}" class="brand">
                 <span class="brand-mark brand-mark-image"><img src="https://i.imgur.com/MFtx6rV.png" alt="" onload="this.classList.add('is-loaded')" onerror="this.remove()"><span class="brand-mark-placeholder" aria-hidden="true">F</span></span>
                 <span>FacSync</span>
             </a>
             <nav class="nav-links" aria-label="Main navigation">
-                <a href="{% url 'core:landing' %}" class="nav-btn">Home</a>
+                <a href="{% if request.user.is_authenticated %}{% url 'core:post_login_redirect' %}{% else %}{% url 'core:landing' %}{% endif %}" class="nav-btn">Home</a>
                 <a href="{% url 'core:login' %}" class="nav-btn">Sign In</a>
             </nav>
         </header>
@@ -151,7 +151,7 @@
                 <p>&copy; 2026 FacSync. Built for modern faculty coordination.</p>
             </div>
             <div>
-                <a href="{% url 'core:landing' %}">Back to Home</a>
+                <a href="{% if request.user.is_authenticated %}{% url 'core:post_login_redirect' %}{% else %}{% url 'core:landing' %}{% endif %}">Back to Home</a>
                 <a href="{% url 'core:terms_of_service' %}">Terms of Service</a>
             </div>
         </footer>
