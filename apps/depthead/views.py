@@ -1,3 +1,4 @@
+from apps.core.account_lifecycle import access_response, with_consultation_counts
 import csv
 import json
 import logging
@@ -257,18 +258,9 @@ def invite_faculty(request):
 @login_required
 @role_required('depthead')
 def remove_faculty(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty', account_status='active', **_user_scope(request))
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty', **_user_scope(request))
     if request.method == 'POST':
-        name = faculty_user.get_full_name() or faculty_user.username
-        email = faculty_user.email
-        faculty_user.delete()
-        email_sent = False
-        try:
-            email_sent = send_faculty_removed_email(email, name)
-        except Exception:
-            email_sent = False
-            logger.exception("Failed to send faculty removal email to %s", email)
-        return JsonResponse({'success': True, 'message': f"{name} removed.", 'email_sent': email_sent})
+        return access_response(faculty_user, reactivate=request.POST.get('action') == 'reactivate')
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 
@@ -335,17 +327,17 @@ def ai_insights_api(request):
 def admin_faculty(request):
     managed_units = managed_departments(request.user) if request.user.role == 'depthead' else []
     college = managed_units[0] if managed_units else _managed_unit(request.managed_scope)
-    faculty_users = list(User.objects.filter(
+    faculty_users = list(with_consultation_counts(User.objects.filter(
         role='faculty',
         **_user_scope(request),
-    ).select_related('faculty_profile').order_by('first_name', 'last_name', 'username'))
+    )).select_related('faculty_profile').order_by('first_name', 'last_name', 'username'))
 
     mark_inactive_faculty(faculty_users)
 
     return render(request, 'depthead/adminFaculty.html', {
         'faculty_invite_form': FacultyInviteForm(user=request.user),
         'managed_departments': managed_units,
-        'active_faculty': [u for u in faculty_users if u.account_status == 'active'],
+        'active_faculty': faculty_users,
         'schedule_template_fields': [
             {
                 'field': field,

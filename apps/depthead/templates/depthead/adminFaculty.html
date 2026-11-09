@@ -85,7 +85,7 @@
                   {% include 'components/_avatar.html' with photo_url=user.avatar_url initials=user.avatar_initials avatar_class='fs-avatar-table' %}
                   {{ user.get_full_name|default:user.username }}
                 </td>
-                <td>{{ user.email }}</td>
+                <td>{{ user.email }} <span class="assignment-pill">{{ user.get_account_status_display }}</span></td>
                 <td>{{ user.faculty_profile.office_location|default:'—' }}</td>
                 <td class="actions">
                   {% if user.faculty_profile %}
@@ -130,12 +130,15 @@
                     style="display: inline"
                   >
                     {% csrf_token %}
+                    <input type="hidden" name="action" value="{% if user.account_status == 'deactivated' %}reactivate{% else %}deactivate{% endif %}">
                     <button
                       type="submit"
                       class="danger remove-faculty-trigger"
                       data-faculty-name="{{ user.get_full_name|default:user.username }}"
+                      data-history-count="{{ user.consultation_count }}"
+                      data-access-action="{% if user.account_status == 'deactivated' %}reactivate{% else %}deactivate{% endif %}"
                     >
-                      Remove
+                      {% if user.account_status == 'deactivated' %}Reactivate{% else %}Deactivate{% endif %}
                     </button>
                   </form>
                 </td>
@@ -293,9 +296,9 @@
         <div class="modal-header">
           <div>
             <p class="section-kicker">Confirm action</p>
-            <h2 id="removeFacultyConfirmTitle">Remove Faculty</h2>
+            <h2 id="removeFacultyConfirmTitle">Change Faculty Access</h2>
             <p>
-              Are you sure you want to remove
+              <span id="facultyAccessWarning"></span>
               <strong id="removeFacultyName">this faculty member</strong>?
             </p>
           </div>
@@ -309,12 +312,11 @@
           </button>
         </div>
         <p class="remove-confirm-warning">
-          This will remove the faculty account and its associated schedule data.
-          This action cannot be undone.
+          Consultation history and schedules are preserved. Access can be restored by an authorized administrator.
         </p>
         <div class="modal-actions">
           <button type="button" class="btn-danger" id="confirmRemoveFaculty">
-            Remove Faculty
+            Confirm
           </button>
         </div>
       </div>
@@ -334,6 +336,6 @@
     </div>
 
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
-    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261108-schedule-template-save-fix"></script>
+    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261109-account-access"></script>
   </body>
 </html>

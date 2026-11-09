@@ -1,3 +1,4 @@
+from apps.core.account_lifecycle import access_response, with_consultation_counts
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
@@ -142,11 +143,10 @@ def edit_head_invite(request, invite_id):
 def remove_depthead(request, user_id):
     depthead = get_object_or_404(User, id=user_id, role='depthead')
     if request.method == 'POST':
-        name = depthead.get_full_name() or depthead.username
-        depthead.delete()
+        response = access_response(depthead, reactivate=request.POST.get('action') == 'reactivate')
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': True, 'message': 'Head account removed.'})
-        messages.success(request, f"{name} was removed.")
+            return response
+        messages.success(request, 'Account access updated. Consultation history is preserved.')
         return redirect('superadmin:manage_admins')
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
@@ -199,7 +199,7 @@ def manage_offices(request):
 @login_required
 @role_required('superadmin')
 def manage_admins(request):
-    depthead_accounts = list(User.objects.filter(role='depthead').prefetch_related('managed_departments__college'))
+    depthead_accounts = list(with_consultation_counts(User.objects.filter(role='depthead')).prefetch_related('managed_departments__college'))
     for user in depthead_accounts:
         user.department_ids = ','.join(str(item.pk) for item in user.managed_departments.all())
         user.department_names = ', '.join(item.name for item in user.managed_departments.all())
@@ -224,9 +224,9 @@ def manage_admins(request):
 @login_required
 @role_required('superadmin')
 def manage_faculty(request):
-    faculty_users = list(User.objects.filter(
+    faculty_users = list(with_consultation_counts(User.objects.filter(
         role='faculty',
-    ).select_related('faculty_profile', 'department__college').order_by(
+    )).select_related('faculty_profile', 'department__college').order_by(
         'college', 'first_name', 'last_name', 'username'
     ))
     mark_inactive_faculty(faculty_users)
@@ -243,7 +243,7 @@ def manage_faculty(request):
         invite.unit_label = invite.department.name if invite.department_id else office.name if office else invite.college
 
     return render(request, 'superadmin/manageFaculty.html', {
-        'active_faculty': [u for u in faculty_users if u.account_status == 'active'],
+        'active_faculty': faculty_users,
         'college_choices': get_unit_choices(),
         'faculty_invite_form': FacultySuperInviteForm(),
         'faculty_invites': invites,
@@ -253,7 +253,7 @@ def manage_faculty(request):
 @login_required
 @role_required('superadmin')
 def manage_students(request):
-    student_accounts = User.objects.filter(role='student').select_related('department__college')
+    student_accounts = with_consultation_counts(User.objects.filter(role='student')).select_related('department__college')
     return render(request, 'superadmin/manageStudents.html', {
         'student_accounts': student_accounts
     })
@@ -264,9 +264,7 @@ def manage_students(request):
 def remove_student_superadmin(request, user_id):
     student_user = get_object_or_404(User, id=user_id, role='student')
     if request.method == 'POST':
-        name = student_user.get_full_name() or student_user.username
-        student_user.delete()
-        return JsonResponse({'success': True, 'message': f"{name} removed."})
+        return access_response(student_user, reactivate=request.POST.get('action') == 'reactivate')
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 @login_required
@@ -404,15 +402,8 @@ def invite_faculty_superadmin(request):
 @login_required
 @role_required('superadmin')
 def remove_faculty_superadmin(request, user_id):
-    faculty_user = get_object_or_404(
-        User, id=user_id, role='faculty', account_status='active'
-    )
+    faculty_user = get_object_or_404(User, id=user_id, role='faculty')
     if request.method == 'POST':
-        name = faculty_user.get_full_name() or faculty_user.username
-        email = faculty_user.email
-        faculty_user.delete()
-        sent = _send_saved_email(send_faculty_removed_email, email, name) if email else True
-        return JsonResponse({'success': True, 'email_sent': sent, 'message':
-            f'{name} removed.' if sent else 'Faculty account removed, but the email could not be sent.'})
+        return access_response(faculty_user, reactivate=request.POST.get('action') == 'reactivate')
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 

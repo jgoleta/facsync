@@ -215,12 +215,16 @@ def send_faculty_invite_email(email, college):
     ))
 
 
+def send_faculty_deactivated_email(user):
+    return send_faculty_removed_email(user.email, user.get_full_name() or user.username)
+
+
 def send_faculty_removed_email(email, name):
     email = (email or '').strip()
     if not email:
         return False
     return bool(_send_html_email(
-        "Your FacSync faculty account was removed",
+        "Your FacSync faculty account was deactivated",
         'faculty_removed.html',
         {'name': name},
         [email],

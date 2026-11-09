@@ -238,13 +238,13 @@ class ConsultationRequest(SchoolScopedModel):
     request_id = models.CharField(max_length=64, primary_key=True, unique=True)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='student_consultation_requests',
         db_column='user_id',
     )
     faculty = models.ForeignKey(
         FacultyProfile,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name='consultation_requests',
         db_column='faculty_id',
     )
