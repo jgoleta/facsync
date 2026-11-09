@@ -20,7 +20,7 @@
     if (processing) return;
     const dialog = document.getElementById(button.dataset.openModal), form = dialog?.querySelector('form');
     if (!dialog || !form) return;
-    form.reset(); dialog.dataset.dirty = 'false';
+    form.reset(); dialog.dataset.dirty = 'false'; form.dataset.historyCount = button.dataset.historyCount || '0'; form.dataset.initialStatus = button.dataset.accountStatus || '';
     const error = form.querySelector('[data-form-error]'); if (error) error.hidden = true;
     form.setAttribute('action', button.dataset.editUrl || form.dataset.createUrl || form.getAttribute('action'));
     for (const field of ['name','code','college','description','email','title','account_status','unit']) {
@@ -56,6 +56,8 @@
     if (form.classList.contains('school-details-form') && domainField
         && domainField.value.trim().toLowerCase() !== (form.dataset.currentDomain || '').trim().toLowerCase()
         && !window.confirm('Replace your school’s email domain? New students using the old domain will no longer be able to register under this school. Existing accounts keep their school and sign-in access while active.')) return;
+    if (form.elements.namedItem('account_status')?.value === 'deactivated' && form.dataset.initialStatus === 'active'
+        && !window.confirm(`${form.dataset.historyCount} consultation record(s) will be preserved. Login and booking access will be removed. Deactivate this account?`)) return;
     const confirmation = event.submitter?.dataset.confirm;
     if (confirmation && !window.confirm(confirmation)) return;
     const data = new FormData(form); // Capture before disabling controls, including action.

@@ -1,7 +1,7 @@
 {% extends "emails/base_email.html" %}
-{% block heading %}Your faculty account was removed{% endblock %}
+{% block heading %}Your faculty account was deactivated{% endblock %}
 {% block body %}
 <p>Hi {{ name }},</p>
-<p>Your faculty account has been removed by your College Head. If you believe this was a mistake, please contact your
-    college directly.</p>
+<p>Your faculty account has been deactivated. You can no longer sign in or receive new bookings. Your consultation history is preserved.</p>
+<p>If you believe this was a mistake, please contact your Department Head or Super Admin.</p>
 {% endblock %}

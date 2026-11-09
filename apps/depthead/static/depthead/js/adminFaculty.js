@@ -175,6 +175,9 @@
             button.addEventListener('click', (event) => {
                 event.preventDefault();
                 pendingRemoveForm = button.closest('.remove-faculty-form');
+                const activating = button.dataset.accessAction === 'reactivate';
+                document.getElementById('removeFacultyConfirmTitle').textContent = activating ? 'Reactivate Faculty' : 'Deactivate Faculty';
+                document.getElementById('facultyAccessWarning').textContent = activating ? 'Restore access for ' : `${button.dataset.historyCount} consultation record(s) will be preserved. Login and new booking access will be removed. Pending and approved appointments will keep their current status. Deactivate `;
                 if (removeFacultyName) {
                     removeFacultyName.textContent = button.dataset.facultyName || 'this faculty member';
                 }
@@ -268,6 +271,7 @@ document.querySelectorAll('.crud-action-form').forEach((form) => {
                     'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRFToken': formToken ? formToken.value : getCsrfToken(),
                 },
+                body: new FormData(form),
             });
             const data = await response.json().catch(() => ({}));
             if (!response.ok || !data.success) {

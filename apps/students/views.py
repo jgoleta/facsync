@@ -75,14 +75,16 @@ def _closed_college_map():
 def _faculty_for_schedule(request):
     faculty_id = request.GET.get('faculty_id')
     faculty_name = (request.GET.get('faculty') or '').strip()
-    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id) if faculty_id else None
+    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id, user__is_active=True, user__account_status='active') if faculty_id else None
     if faculty is None and faculty_name:
         faculty = FacultyProfile.objects.select_related('user').filter(
             user__first_name__iexact=faculty_name,
+            user__is_active=True, user__account_status='active',
         ).first()
         if faculty is None:
             faculty = FacultyProfile.objects.select_related('user').filter(
                 user__username__iexact=faculty_name,
+                user__is_active=True, user__account_status='active',
             ).first()
     return faculty
 
@@ -96,7 +98,7 @@ def _faculty_directory(closed_college_codes=None, student=None):
             .values_list('faculty_id', flat=True)
         )
     directory = []
-    for faculty in FacultyProfile.objects.select_related('user__department__college').all():
+    for faculty in FacultyProfile.objects.select_related('user__department__college').filter(user__is_active=True, user__account_status='active'):
         refresh_faculty_status(faculty)
         office = Office.objects.filter(code__iexact=faculty.college_id).first()
         college = College.objects.filter(code__iexact=faculty.college_id).first()
@@ -322,7 +324,7 @@ def api_consultation_requests(request):
     if len(student_message) > CONSULTATION_NOTE_MAX_LENGTH:
         return JsonResponse({'error': CONSULTATION_NOTE_LIMIT_ERROR}, status=400)
 
-    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id)
+    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id, user__is_active=True, user__account_status='active')
     refresh_faculty_status(faculty)
     if faculty.current_status == 'on_leave':
         return JsonResponse(
@@ -352,6 +354,7 @@ def api_consultation_requests(request):
         # Serialize this student's submissions, including requests from another tab.
         # Lock an existing row: locking a nonexistent matching request is insufficient.
         User.objects.select_for_update().get(pk=request.user.pk)
+        get_object_or_404(User.objects.select_for_update(), pk=faculty.user_id, is_active=True, account_status='active')
         if ConsultationRequest.objects.filter(
             user=request.user, faculty=faculty, date=date_value, start_time=start_time,
             status__in=['pending', 'approved', 'cancellation_requested'],
@@ -433,7 +436,7 @@ def api_faculty_status_subscription(request, faculty_id):
     if request.method not in {'GET', 'POST', 'DELETE'}:
         return HttpResponse(status=405)
 
-    faculty = get_object_or_404(FacultyProfile, faculty_id=faculty_id)
+    faculty = get_object_or_404(FacultyProfile, faculty_id=faculty_id, user__is_active=True, user__account_status='active')
     subscription = FacultyStatusSubscription.objects.filter(
         student=request.user,
         faculty=faculty,
@@ -462,7 +465,7 @@ def api_walk_in_status(request):
         return HttpResponse(status=405)
 
     faculty_id = request.GET.get('faculty_id')
-    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id)
+    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id, user__is_active=True, user__account_status='active')
     refresh_faculty_status(faculty)
     queue = WalkInQueue.objects.filter(
         faculty=faculty,
@@ -498,8 +501,9 @@ def api_join_walk_in_queue(request):
     with transaction.atomic():
         faculty = get_object_or_404(
             FacultyProfile.objects.select_for_update().select_related('user'),
-            faculty_id=faculty_id,
+            faculty_id=faculty_id, user__is_active=True, user__account_status='active',
         )
+        get_object_or_404(User.objects.select_for_update(), pk=faculty.user_id, is_active=True, account_status='active')
         refresh_faculty_status(faculty)
         if faculty_closed(faculty):
             return JsonResponse({'error': 'This college is currently closed and not accepting walk-ins.'}, status=409)
