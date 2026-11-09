@@ -2,7 +2,7 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FacSync | Request School Registration</title>
 <link rel="stylesheet" href="{% static 'css/base.css' %}"><link rel="stylesheet" href="{% static 'core/css/loginPage.css' %}"><link rel="stylesheet" href="{% static 'core/css/schoolRegistration.css' %}?v=20261107-registration-ui">
 </head><body><main class="school-registration-page"><section class="school-registration-card">
-<a href="{% url 'core:landing' %}" class="school-registration-brand">{% include 'components/_facsync_logo.html' %}<span>FacSync</span></a><p class="school-registration-kicker">School onboarding</p><h1>Request School Registration</h1>
+<a href="{% if request.user.is_authenticated %}{% url 'core:post_login_redirect' %}{% else %}{% url 'core:landing' %}{% endif %}" class="school-registration-brand">{% include 'components/_facsync_logo.html' %}<span>FacSync</span></a><p class="school-registration-kicker">School onboarding</p><h1>Request School Registration</h1>
 {% for message in messages %}{% if message.level >= DEFAULT_MESSAGE_LEVELS.WARNING %}<p role="alert" class="school-registration-notice">{{ message }}</p>{% endif %}{% endfor %}
 {% if request.user.is_authenticated %}
 <div class="school-registration-status school-request-account"><span class="school-request-badge">Already signed in</span><h2>Your account is ready to use</h2><p>You already have a FacSync account. School registration cannot change your role or move your account to another school.</p></div>

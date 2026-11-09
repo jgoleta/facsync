@@ -1,0 +1,8 @@
+#faculty-profile-form .errorlist {
+  color: var(--danger);
+  font-size: 0.875rem;
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+#faculty-profile-form[aria-busy="true"] { cursor: wait; }
+#faculty-profile-form button:disabled { cursor: wait; opacity: 0.7; }

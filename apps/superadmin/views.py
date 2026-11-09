@@ -14,7 +14,7 @@ from apps.core.faculty import mark_inactive_faculty
 from .forms import DeptHeadInviteForm, FacultySuperInviteForm, OfficeAdminInviteForm, HeadAssignmentForm
 from .assignment_services import lock_departments
 from .department_views import form_error
-from apps.core.models import User, College, Department, DeptHeadInvite, Office, FacultyInvite, OfficeAdminInvite
+from apps.core.models import User, College, Department, DeptHeadInvite, Office, FacultyInvite, OfficeAdminInvite, OfficeClosure, CollegeAnnouncement, School
 from apps.core.forms import CollegeForm, OfficeForm
 from apps.core.services import (
     send_depthead_invite_email,
@@ -214,6 +214,7 @@ def manage_admins(request):
         'head_invites': invites,
         'departments': Department.objects.filter(is_active=True).select_related('college'),
         'office_admin_accounts': office_admin_accounts,
+        'office_invites': OfficeAdminInvite.objects.filter(used=False).order_by('email'),
         'college_choices': get_college_choices(),
         'dept_head_form': DeptHeadInviteForm(),
         'role_choices': [choice for choice in User.ROLE_CHOICES if choice[0] in {'student', 'faculty', 'depthead'}],
@@ -298,29 +299,106 @@ def create_office(request):
 @login_required
 @role_required('superadmin')
 def delete_office(request, office_id):
-    office = get_object_or_404(Office, id=office_id)
     if request.method == 'POST':
-        name = office.name
-        office.delete()
-        messages.success(request, f"Office '{name}' removed.")
+        with transaction.atomic():
+            get_object_or_404(School.objects.select_for_update(), pk=request.user.school_id, is_active=True)
+            office = get_object_or_404(Office.objects.select_for_update(), id=office_id)
+            code = office.code
+            referenced = (
+                User.objects.filter(college__iexact=code).exists()
+                or FacultyProfile.objects.filter(college_id__iexact=code).exists()
+                or FacultyInvite.objects.filter(college__iexact=code).exists()
+                or DeptHeadInvite.objects.filter(college__iexact=code).exists()
+                or OfficeAdminInvite.objects.filter(office__iexact=code).exists()
+                or OfficeClosure.objects.filter(college__iexact=code).exists()
+                or CollegeAnnouncement.objects.filter(college__iexact=code).exists()
+            )
+            if referenced:
+                message = 'This office is still referenced by accounts, invitations or history. Keep it to preserve those records.'
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': False, 'error': message}, status=409)
+                messages.error(request, message)
+            else:
+                office.delete()
+                messages.success(request, f"Office '{office.name}' removed.")
     return redirect('superadmin:manage_offices')
 
 @login_required
 @role_required('superadmin')
 def invite_office_admin(request):
     if request.method == 'POST':
-        form = OfficeAdminInviteForm(request.POST)
-        if form.is_valid():
-            invite = form.save(commit=False)
-            invite.invited_by = request.user
-            invite.save()
-            send_office_admin_invite_email(invite.email, invite.office)
-            messages.success(request, f"Office Admin invitation created for {invite.email}.")
-        else:
-            for error_list in form.errors.values():
-                for error in error_list:
-                    messages.error(request, error)
+        try:
+            with transaction.atomic():
+                get_object_or_404(School.objects.select_for_update(), pk=request.user.school_id, is_active=True)
+                email = request.POST.get('email', '').strip().lower()
+                existing = OfficeAdminInvite.objects.filter(email__iexact=email, used=False,
+                                                            office=request.POST.get('office')).first()
+                form = OfficeAdminInviteForm(request.POST, instance=existing)
+                if not form.is_valid():
+                    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                        return form_error(form)
+                    for errors in form.errors.values():
+                        for error in errors:
+                            messages.error(request, error)
+                    return redirect('superadmin:manage_admins')
+                if existing:
+                    return _office_invite_result(request, 'This invitation already exists. Use Resend for the saved invitation.')
+                invite = form.save(commit=False)
+                invite.invited_by = request.user
+                invite.save()
+        except (ValidationError, IntegrityError):
+            message = 'This email is already registered or has a pending invitation. Refresh the list before retrying.'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': message}, status=400)
+            messages.error(request, message)
+            return redirect('superadmin:manage_admins')
+        sent = _deliver_office_invite(invite)
+        return _office_invite_result(request, 'Office Admin invitation saved and emailed.' if sent else
+                                    'Invitation saved, but the email could not be sent. Use Resend to try delivery again.', sent)
     return redirect('superadmin:manage_admins')
+
+
+def _deliver_office_invite(invite):
+    if not (invite.email or '').strip():
+        return False
+    try:
+        sent = bool(send_office_admin_invite_email(invite.email, invite.office))
+        if not sent:
+            logger.warning('office_admin_invite_email_not_accepted invite_id=%s', invite.pk)
+        return sent
+    except Exception as error:
+        logger.warning('office_admin_invite_email_failed invite_id=%s category=%s', invite.pk, type(error).__name__)
+        return False
+
+
+def _office_invite_result(request, message, sent=None):
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        result = {'success': True, 'message': message}
+        if sent is not None:
+            result['email_sent'] = sent
+        return JsonResponse(result)
+    (messages.warning if sent is False else messages.success)(request, message)
+    return redirect('superadmin:manage_admins')
+
+
+@login_required
+@role_required('superadmin')
+def resend_office_admin_invite(request, invite_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Only POST requests are allowed.'}, status=405)
+    with transaction.atomic():
+        get_object_or_404(School.objects.select_for_update(), pk=request.user.school_id, is_active=True)
+        invite = get_object_or_404(OfficeAdminInvite.objects.select_for_update(), pk=invite_id, used=False)
+        if (not Office.objects.filter(code__iexact=invite.office).exists()
+                or User._base_manager.filter(email__iexact=invite.email).exists()):
+            message = 'This invitation is no longer available. Refresh the account list.'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': message}, status=400)
+            messages.error(request, message)
+            return redirect('superadmin:manage_admins')
+    sent = _deliver_office_invite(invite)
+    return _office_invite_result(request, 'Invitation emailed.' if sent else
+                                'Invitation remains saved, but the email could not be sent.', sent)
 
 @login_required
 @role_required('superadmin')

@@ -2,13 +2,13 @@
 <link rel="stylesheet" href="{% static 'css/admin_navigation_loading.css' %}?v=20261108-school-superadmins">
 <script id="admin-navigation-destinations" type="application/json">
 {
-  "{% url 'depthead:admin_dashboard' %}": ["College Overview", "dashboard"],
+  "{% url 'depthead:admin_dashboard' %}": ["{% if request.user.role == 'officeadmin' %}Office Overview{% else %}Department Overview{% endif %}", "dashboard"],
   "{% url 'depthead:peak_analytics' %}": ["Peak Analytics", "chart"],
   "{% url 'depthead:faculty_trends' %}": ["Faculty Trends", "chart"],
   "{% url 'depthead:student_behavior' %}": ["Student Behavior", "chart"],
   "{% url 'depthead:faculty_monitoring' %}": ["Faculty Monitoring", "cards"],
   "{% url 'depthead:admin_faculty' %}": ["Manage Faculty", "table"],
-  "{% url 'depthead:college_settings' %}": ["College Settings", "form"],
+  "{% url 'depthead:college_settings' %}": ["{% if request.user.role == 'officeadmin' %}Office Settings{% else %}Department Settings{% endif %}", "form"],
   "{% url 'superadmin:superadmin_dashboard' %}": ["School Overview", "dashboard"],
   "{% url 'superadmin:manage_colleges' %}": ["Manage Colleges", "table"],
   "{% url 'superadmin:manage_departments' %}": ["Manage Departments", "departments"],

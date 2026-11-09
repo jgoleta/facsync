@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>FacSync | Department Overview</title>
+    <title>FacSync | {% if request.user.role == 'officeadmin' %}Office{% else %}Department{% endif %} Overview</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261015-brand-logo">
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
@@ -22,8 +22,8 @@
             <div class="overview-page">
                 <header class="overview-hero">
                     <div class="overview-hero-copy">
-                        <span class="overview-eyebrow">Department administration</span>
-                        <h1>Department Overview</h1>
+                        <span class="overview-eyebrow">{% if request.user.role == 'officeadmin' %}Office{% else %}Department{% endif %} administration</span>
+                        <h1>{% if request.user.role == 'officeadmin' %}Office{% else %}Department{% endif %} Overview</h1>
                         <p>{{ college.name|default:"No departments assigned" }}</p>
                     </div>
                     <div class="overview-context" aria-label="Analytics context">
