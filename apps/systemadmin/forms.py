@@ -10,8 +10,8 @@ from apps.core.school_models import validate_school_domain
 
 
 class SchoolForm(forms.ModelForm):
-    domains = forms.CharField(widget=forms.Textarea(attrs={'rows': 3}),
-        help_text='One domain per line. Domains must end in .edu.ph and can belong to only one school.')
+    domains = forms.CharField(label='School email domain', widget=forms.TextInput,
+        help_text='One exact school-owned domain, without @ or https://. Personal email providers are not allowed.')
 
     class Meta:
         model = School
@@ -31,8 +31,8 @@ class SchoolForm(forms.ModelForm):
         domains = [value.lower() for value in re.split(r'[\s,;]+', self.cleaned_data['domains'].strip()) if value]
         if not domains:
             raise ValidationError('Assign at least one institutional domain.')
-        if len(domains) != len(set(domains)):
-            raise ValidationError('Enter each domain only once.')
+        if len(domains) != 1:
+            raise ValidationError('Assign exactly one email domain to this school.')
         for domain in domains:
             validate_school_domain(domain)
         if SchoolDomain.objects.filter(domain__in=domains).exclude(school_id=self.instance.pk).exists():
@@ -40,16 +40,18 @@ class SchoolForm(forms.ModelForm):
         return sorted(domains)
 
     def save(self, *, actor):
-        # New domains go first so replacing the final domain never leaves a gap.
+        # Replace the existing row in place: the database permits one per school.
         with transaction.atomic():
             school = super().save(commit=False)
             school.save(actor=actor)
-            desired = set(self.cleaned_data['domains'])
-            existing = {item.domain: item for item in school.domains.all()}
-            for domain in sorted(desired - existing.keys()):
-                SchoolDomain(school=school, domain=domain).save(actor=actor)
-            for domain in sorted(existing.keys() - desired):
-                existing[domain].delete(actor=actor)
+            domain = self.cleaned_data['domains'][0]
+            existing = list(school.domains.select_for_update())
+            if len(existing) > 1:
+                raise ValidationError('This school has multiple domains. Resolve them before replacing its domain.')
+            row = existing[0] if existing else SchoolDomain(school=school)
+            if row.domain != domain:
+                row.domain = domain
+                row.save(actor=actor)
             return school
 
 

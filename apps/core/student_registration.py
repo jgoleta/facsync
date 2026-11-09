@@ -2,13 +2,12 @@
 from allauth.core.exceptions import ImmediateHttpResponse
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
 from django.shortcuts import redirect
 
 from .models import School, SchoolDomain
+from .school_domains import school_domain_from_email
 
-EDU_ONLY = 'FacSync supports .edu.ph institutional accounts only'
-UNREGISTERED = 'Your institution is not yet registered with FacSync'
+UNREGISTERED = 'Your school’s email domain is not yet registered with FacSync.'
 SUSPENDED = 'Your school’s access to FacSync has been suspended. Please contact your school’s Super Admin.'
 
 
@@ -21,12 +20,9 @@ def student_school(request, email, *, expected_school_id=None, lock=False):
     if not email:
         reject_registration(request, 'Please sign in with a verified Google account.')
     try:
-        validate_email(email)
-    except ValidationError:
-        reject_registration(request, EDU_ONLY)
-    domain = email.rsplit('@', 1)[1].lower()
-    if not domain.endswith('.edu.ph'):
-        reject_registration(request, EDU_ONLY)
+        domain = school_domain_from_email(email)
+    except ValidationError as error:
+        reject_registration(request, ' '.join(error.messages))
     school_id = SchoolDomain.objects.filter(domain=domain).values_list('school_id', flat=True).first()
     if school_id is None:
         reject_registration(request, UNREGISTERED)

@@ -52,6 +52,10 @@
   });
   document.querySelectorAll('form[data-managed-form]').forEach(form => form.addEventListener('submit', async event => {
     event.preventDefault(); if (processing) return;
+    const domainField = form.querySelector('[name="domain"]');
+    if (form.classList.contains('school-details-form') && domainField
+        && domainField.value.trim().toLowerCase() !== (form.dataset.currentDomain || '').trim().toLowerCase()
+        && !window.confirm('Replace your school’s email domain? New students using the old domain will no longer be able to register under this school. Existing accounts keep their school and sign-in access while active.')) return;
     const confirmation = event.submitter?.dataset.confirm;
     if (confirmation && !window.confirm(confirmation)) return;
     const data = new FormData(form); // Capture before disabling controls, including action.

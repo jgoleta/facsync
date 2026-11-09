@@ -1,5 +1,4 @@
 """School identity, scoped maintenance and audited changes."""
-import re
 
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -11,9 +10,9 @@ from .education import default_levels, validate_school_levels, ordered_levels
 
 
 def validate_school_domain(value):
-    pattern = r'(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+edu\.ph'
-    if len(value) > 253 or not re.fullmatch(pattern, value):
-        raise ValidationError('Enter an institutional domain ending in .edu.ph, without @, a URL or a wildcard.')
+    # Keep this import path stable for historical migrations.
+    from .school_domains import validate_school_owned_domain
+    validate_school_owned_domain(value)
 
 
 def require_system_admin(actor):
@@ -156,7 +155,7 @@ class SchoolDomain(models.Model):
         constraints = [
             models.UniqueConstraint(Lower('domain'), name='school_domain_ci_unique'),
             models.CheckConstraint(condition=models.Q(domain=Lower('domain')), name='school_domain_lowercase'),
-            models.CheckConstraint(condition=models.Q(domain__endswith='.edu.ph'), name='school_domain_edu_ph'),
+            models.UniqueConstraint(fields=['school'], name='school_domain_one_per_school'),
         ]
 
     def __str__(self):

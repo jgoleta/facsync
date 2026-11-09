@@ -63,9 +63,10 @@
   function validateDomains(field) {
     if (!field || field.name !== 'domains') return;
     const values = field.value.trim().split(/[\s,;]+/).filter(Boolean).map(value => value.toLowerCase());
-    const validDomain = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+edu\.ph$/;
-    const invalid = values.some(value => value.length > 253 || !validDomain.test(value));
-    const message = invalid ? 'Each domain must end in .edu.ph, without @, a URL or a wildcard.' : '';
+    const validDomain = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+    // Provider/public-suffix policy is checked by the shared server validator.
+    const invalid = values.length !== 1 || values.some(value => value.length > 253 || !validDomain.test(value));
+    const message = invalid ? 'Enter one exact school-owned domain, without @, a URL, an IP address or a wildcard.' : '';
     field.setCustomValidity(message);
     field.setAttribute('aria-invalid', message ? 'true' : 'false');
     const feedback = field.closest('.system-field')?.querySelector('[data-domain-feedback]');
@@ -116,6 +117,8 @@
     const imported = document.importNode(content, true);
     const form = imported.querySelector('form');
     form.action = url;
+    const domainField = form.querySelector('[name="domains"]');
+    if (domainField) form.dataset.currentDomain = domainField.value.trim().toLowerCase();
     document.getElementById('system-modal-title').textContent = content.dataset.formTitle;
     body.replaceChildren(imported);
     form.querySelectorAll('[name="domains"]').forEach(validateDomains);
@@ -238,6 +241,9 @@
     if (processing || form.dataset.processing === 'true') return;
     form.querySelectorAll('[name="domains"]').forEach(validateDomains);
     if (!form.reportValidity()) return;
+    const domainField = form.querySelector('[name="domains"]');
+    if (domainField && form.dataset.currentDomain && domainField.value.trim().toLowerCase() !== form.dataset.currentDomain
+        && !window.confirm('Replace this school’s email domain? New students using the old domain will no longer be able to register under this school. Existing accounts keep their school and sign-in access while active.')) return;
     const submitter = event.submitter || form.querySelector('button[type="submit"], button:not([type])');
     if (form.dataset.confirm) {
       pending = { form, submitter };
