@@ -10,7 +10,7 @@ from apps.core.school_models import SchoolDomain, validate_school_domain
 class SchoolDetailsForm(forms.Form):
     name = forms.CharField(max_length=150, label='School name')
     domain = forms.CharField(max_length=253, label='School email domain',
-        help_text='One domain ending in .edu.ph, without @ or https://.')
+        help_text='One exact school-owned domain, without @ or https://. Personal email providers are not allowed.')
 
     def __init__(self, *args, school, **kwargs):
         self.school = school

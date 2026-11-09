@@ -7,7 +7,7 @@
 {% if request.user.is_authenticated %}
 <div class="school-registration-status school-request-account"><span class="school-request-badge">Already signed in</span><h2>Your account is ready to use</h2><p>You already have a FacSync account. School registration cannot change your role or move your account to another school.</p></div>
 <div class="school-request-actions"><a class="btn-primary" href="{% url 'core:post_login_redirect' %}">Return to your dashboard <span aria-hidden="true">&rarr;</span></a><a class="btn-secondary" href="{% url 'core:landing' %}">Back to home</a></div>
-{% elif not identity %}<p>Representing a school? Verify your institutional Google email, then submit the school's details for manual review.</p><p>FacSync supports .edu.ph institutional accounts only. Verification of your email does not automatically register your school or make you a Super Admin.</p>
+{% elif not identity %}<p>Representing a school? Verify your institutional Google email, then submit the school's details for manual review.</p><p>Use a Google account on your school's own email domain. Personal email providers cannot register a school. Verification of your email does not automatically register your school or make you a Super Admin.</p>
 <form method="post" action="{% url 'core:school_registration_start' %}" data-school-request-submit>{% csrf_token %}<button class="btn-primary" type="submit">Verify with Google</button></form>
 {% else %}<div class="school-registration-identity"><p>Verified email: <strong>{{ identity.email }}</strong></p><p>School domain: <strong>{{ identity.domain }}</strong></p></div>
 {% if application.status == 'pending' or application.status == 'approved' %}

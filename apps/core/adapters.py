@@ -1,6 +1,7 @@
 import logging
 from uuid import uuid4
 
+from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from allauth.core.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.providers.base import AuthError, ProviderException
@@ -12,10 +13,19 @@ from requests.exceptions import RequestException, Timeout
 from .models import Department, FacultyInvite, DeptHeadInvite, Office, OfficeAdminInvite, SuperAdminInvite, School, User
 from .profile_photos import safe_photo_url
 from django.db import transaction
-from .school_scope import school_scope
+from .school_scope import ALL_SCHOOLS, school_scope
 from .student_registration import reject_registration, student_school
 
 logger = logging.getLogger(__name__)
+
+
+class FacSyncAccountAdapter(DefaultAccountAdapter):
+    def generate_unique_username(self, txts, regex=None):
+        # The database's username constraint is global, while User's default
+        # manager is school-scoped. Only this read-only availability check
+        # needs all schools; restore the scope before saving the new account.
+        with school_scope(ALL_SCHOOLS):
+            return super().generate_unique_username(txts, regex)
 
 
 class FacSyncSocialAdapter(DefaultSocialAccountAdapter):

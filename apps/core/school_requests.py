@@ -4,10 +4,9 @@ import time
 from allauth.core.exceptions import ImmediateHttpResponse
 from django.contrib import messages
 from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
 from django.shortcuts import redirect
 
-from .school_models import validate_school_domain
+from .school_domains import school_domain_from_email
 
 INTENT_KEY = 'school_request_intent'
 IDENTITY_KEY = 'school_request_identity'
@@ -15,11 +14,7 @@ IDENTITY_TTL = 3600
 
 
 def email_domain(email):
-    email = str(email or '').strip().lower()
-    validate_email(email)
-    domain = email.rsplit('@', 1)[1]
-    validate_school_domain(domain)
-    return domain
+    return school_domain_from_email(email)
 
 
 def applicant_identity(request):

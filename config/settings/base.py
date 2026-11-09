@@ -185,6 +185,7 @@ LOGIN_URL = 'core:login'
 SOCIALACCOUNT_LOGIN_ON_GET = True
 ACCOUNT_LOGOUT_ON_GET = True
 AUTH_USER_MODEL = 'core.User'
+ACCOUNT_ADAPTER = 'apps.core.adapters.FacSyncAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'apps.core.adapters.FacSyncSocialAdapter'
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')
 BREVO_API_KEY = config('BREVO_API_KEY', default='')

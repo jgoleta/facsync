@@ -9,7 +9,7 @@
             {{ field.label_tag }}{{ field }}
             {% if field.help_text %}<p class="system-hint" id="{{ field.auto_id }}_helptext">{{ field.help_text }}</p>{% endif %}
             {% if field.name == 'code' and not field.field.disabled %}<p class="system-hint">The school code cannot be changed after saving.</p>{% endif %}
-            {% if field.name == 'domains' %}<p class="system-hint">One domain per line, for example adnu.edu.ph. Each domain must end in .edu.ph.</p><p class="system-domain-feedback" data-domain-feedback role="status" hidden></p>{% if school %}<p class="system-hint">Changing domains affects new student registrations. Existing accounts keep their assigned school.</p>{% endif %}{% endif %}
+            {% if field.name == 'domains' %}<p class="system-hint">One exact school-owned domain, for example adnu.edu.ph or mchl.ph.education. Personal email providers are not allowed.</p><p class="system-domain-feedback" data-domain-feedback role="status" hidden></p>{% if school %}<p class="system-hint">Changing the domain stops new student registrations with the old domain. Existing accounts keep their school and sign-in access while their account and school remain active.</p>{% endif %}{% endif %}
             {{ field.errors }}
         </div>{% endfor %}
         {% if tab == 'superadmins' and not form.school %}<p class="system-hint">The sign-in email and school remain attached to this account. Invite a new account for a different school.</p>{% endif %}

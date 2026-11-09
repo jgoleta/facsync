@@ -4,11 +4,11 @@
 <header class="main-header"><div><p class="page-kicker">School administration</p><h1>School Settings</h1><p>{{ request.user.school.name }}</p></div></header>
 <div class="school-settings-grid">
 <section class="management-table-wrapper"><div class="management-table-header"><div><h2>School details</h2><p>Manage your school's name and institutional email domain.</p></div></div>
-<form method="post" class="school-details-form" action="{% url 'superadmin:school_settings' %}" data-managed-form>{% csrf_token %}
+<form method="post" class="school-details-form" action="{% url 'superadmin:school_settings' %}" data-managed-form data-current-domain="{{ details_form.domain.value|default_if_none:'' }}">{% csrf_token %}
 <input type="hidden" name="action" value="school_details">
 {% for field in details_form %}<div class="school-settings-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endfor %}
 <p class="assignment-muted">School code: <strong>{{ request.user.school.code }}</strong> (cannot be changed).</p>
-<p class="assignment-muted">Changing the domain affects future student registrations. Existing accounts remain assigned to this school.</p>
+<p class="assignment-muted">Changing the domain stops new student registrations with the old domain. Existing accounts keep their school and sign-in access while their account and school remain active.</p>
 <p data-form-error class="assignment-error" role="alert" hidden></p>
 <div class="school-settings-actions"><button type="submit" class="btn-primary">Save School Details</button></div>
 </form></section>
