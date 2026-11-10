@@ -1,4 +1,4 @@
-"""Resolve verified student identities against System Admin domain assignments."""
+"""Resolve verified student identities against Super Admin domain assignments."""
 from allauth.core.exceptions import ImmediateHttpResponse
 from django.contrib import messages
 from django.core.exceptions import ValidationError
@@ -8,7 +8,7 @@ from .models import School, SchoolDomain
 from .school_domains import school_domain_from_email
 
 UNREGISTERED = 'Your school’s email domain is not yet registered with FacSync.'
-SUSPENDED = 'Your school’s access to FacSync has been suspended. Please contact your school’s Super Admin.'
+SUSPENDED = 'Your school’s access to FacSync has been suspended. Please contact your school’s School Admin.'
 
 
 def reject_registration(request, message):

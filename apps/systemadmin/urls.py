@@ -1,9 +1,12 @@
 from django.urls import path
 from . import views
 from . import request_views
+from . import onboarding_views
 
 app_name = 'systemadmin'
 urlpatterns = [
+    path('requests/inquiries/<uuid:inquiry_id>/', onboarding_views.inquiry_review, name='inquiry_review'),
+    path('requests/inquiries/<uuid:inquiry_id>/document/', onboarding_views.inquiry_document, name='inquiry_document'),
     path('requests/', request_views.school_requests, name='school_requests'),
     path('requests/<uuid:request_id>/', request_views.request_review, name='request_review'),
     path('', views.manage_schools, name='manage_schools'),

@@ -15,13 +15,13 @@
 <div class="admin-shell">
     <aside class="sidebar">
         <div class="sidebar-header">
-            <a href="{% url 'systemadmin:overview' %}" class="brand">{% include 'components/_facsync_logo.html' %}<span>FacSync Administration</span></a>
+            <a href="{% url 'systemadmin:overview' %}" class="brand">{% include 'components/_facsync_logo.html' %}<span>FacSync Super Admin</span></a>
         </div>
-        <nav class="sidebar-nav" aria-label="FacSync administration">
+        <nav class="sidebar-nav" aria-label="FacSync Super Admin">
             <a href="{% url 'systemadmin:overview' %}" class="nav-item {% if tab == 'overview' %}active{% endif %}" {% if tab == 'overview' %}aria-current="page"{% endif %}>System Overview</a>
             <a href="{% url 'systemadmin:school_requests' %}" class="nav-item {% if tab == 'requests' %}active{% endif %}" {% if tab == 'requests' %}aria-current="page"{% endif %}>School Requests</a>
             <a href="{% url 'systemadmin:manage_schools' %}" class="nav-item {% if tab == 'schools' %}active{% endif %}" {% if tab == 'schools' %}aria-current="page"{% endif %}>Manage Schools</a>
-            <a href="{% url 'systemadmin:manage_superadmins' %}" class="nav-item {% if tab == 'superadmins' %}active{% endif %}" {% if tab == 'superadmins' %}aria-current="page"{% endif %}>Manage Super Admins</a>
+            <a href="{% url 'systemadmin:manage_superadmins' %}" class="nav-item {% if tab == 'superadmins' %}active{% endif %}" {% if tab == 'superadmins' %}aria-current="page"{% endif %}>Manage School Admins</a>
         </nav>
         <div class="sidebar-account">{% include 'components/_account_identity.html' with show_profile_icon=True %}</div>
         <div class="sidebar-divider"></div>
@@ -29,7 +29,7 @@
     </aside>
     <main class="main-content">
         <header class="main-header with-action{% if tab == 'overview' %} system-overview-header{% endif %}">
-            <div><p class="page-kicker">FacSync administration</p><h1>{{ title }}</h1><p>{{ subtitle|default:"Manage schools and their Super Admins." }}</p></div>
+            <div><p class="page-kicker">FacSync Super Admin</p><h1>{{ title }}</h1><p>{{ subtitle|default:"Manage schools and their School Admins." }}</p></div>
             {% block action %}{% endblock %}
         </header>
         <div data-system-messages>{% for message in messages %}<p class="system-message" role="status" data-level="{{ message.tags }}">{{ message }}</p>{% endfor %}</div>
@@ -37,7 +37,7 @@
     </main>
 </div>
 <dialog id="system-form-modal" class="system-modal" aria-labelledby="system-modal-title">
-    <div class="system-modal-header"><div><p class="page-kicker">FACSYNC ADMINISTRATION</p><h2 id="system-modal-title">Loading form</h2></div><button type="button" class="system-close" data-close-modal aria-label="Close">&times;</button></div>
+    <div class="system-modal-header"><div><p class="page-kicker">FACSYNC SUPER ADMIN</p><h2 id="system-modal-title">Loading form</h2></div><button type="button" class="system-close" data-close-modal aria-label="Close">&times;</button></div>
     <div id="system-modal-body"></div>
 </dialog>
 <dialog id="system-confirm-modal" class="system-modal system-confirm" aria-labelledby="system-confirm-title">
@@ -52,6 +52,6 @@
 <div id="system-toast-stack" class="system-toast-stack" aria-live="polite"></div>
 <div id="system-processing" class="system-processing" role="status" hidden><span class="system-spinner" aria-hidden="true"></span><span data-processing-message>Processing request…</span></div>
 <script src="{% static 'js/avatars.js' %}" defer></script>
-<script src="{% static 'systemadmin/js/management.js' %}?v=20261109-school-domains" defer></script>
+<script src="{% static 'systemadmin/js/management.js' %}?v=20261110-readonly-review" defer></script>
 </body>
 </html>

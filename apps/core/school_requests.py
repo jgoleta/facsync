@@ -36,9 +36,13 @@ def capture_applicant(request, sociallogin, verified_email):
     intent = request.session.pop(INTENT_KEY, None)
     request.session.pop(IDENTITY_KEY, None)
     request.session.pop('registration_role', None)
+    from .school_onboarding_views import current_access
+    access = current_access(request)
     try:
         if not isinstance(intent, (int, float)) or not 0 <= time.time() - intent <= 900:
             raise ValidationError('Your verification link expired. Start Google verification again.')
+        if not access or not verified_email or access.inquiry.email.lower() != verified_email.lower():
+            raise ValidationError('Use the Google email that received your current private invitation.')
         if not verified_email:
             raise ValidationError('Use a verified institutional Google account.')
         email_domain(verified_email)
@@ -54,4 +58,5 @@ def capture_applicant(request, sociallogin, verified_email):
         request.session.cycle_key()
         request.session[IDENTITY_KEY] = {'email': verified_email.lower(), 'subject': subject,
             'name': str(sociallogin.account.extra_data.get('name', ''))[:150], 'issued_at': time.time()}
-    raise ImmediateHttpResponse(redirect('core:school_registration'))
+    target = 'core:school_verification' if access and access.purpose == 'verification' else 'core:school_registration'
+    raise ImmediateHttpResponse(redirect(target))

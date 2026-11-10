@@ -19,18 +19,18 @@ def require_system_admin(actor):
     if (actor is None or not actor.pk or actor.role != 'systemadmin'
             or actor.school_id is not None or not actor.is_active
             or actor.account_status != 'active'):
-        raise PermissionDenied('Only a schoolless System Admin can manage schools and domains.')
+        raise PermissionDenied('Only a schoolless Super Admin can manage schools and domains.')
 
 
 class ManagedSchoolQuerySet(models.QuerySet):
     def update(self, **kwargs):
-        raise PermissionDenied('Use an audited school/domain save with a System Admin actor.')
+        raise PermissionDenied('Use an audited school/domain save with a Super Admin actor.')
 
     def bulk_create(self, *args, **kwargs):
-        raise PermissionDenied('Use an audited school/domain save with a System Admin actor.')
+        raise PermissionDenied('Use an audited school/domain save with a Super Admin actor.')
 
     def bulk_update(self, *args, **kwargs):
-        raise PermissionDenied('Use an audited school/domain save with a System Admin actor.')
+        raise PermissionDenied('Use an audited school/domain save with a Super Admin actor.')
 
     def delete(self):
         raise ProtectedError('Schools are suspended, never deleted; domain removal requires an actor.', [])
@@ -53,6 +53,10 @@ class School(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def offers_college(self):
+        return 'college' in (self.educational_levels or [])
 
     def save(self, *args, actor=None, **kwargs):
         require_system_admin(actor)
@@ -83,13 +87,13 @@ class School(models.Model):
                     )
 
     def set_educational_levels(self, levels, *, actor):
-        """School Super Admins may change levels, without school identity privileges."""
+        """School Admins may change levels, without school identity privileges."""
         from .models import User
         from .school_scope import require_school
         require_school(self)
         if actor is None or not User._base_manager.filter(pk=actor.pk, role='superadmin', school_id=self.pk,
                 is_active=True, account_status='active').exists():
-            raise PermissionDenied('Only this school\'s Super Admin can configure educational levels.')
+            raise PermissionDenied('Only this school\'s School Admin can configure educational levels.')
         validate_school_levels(levels)
         levels = ordered_levels(levels)
         with transaction.atomic():
@@ -106,7 +110,7 @@ class School(models.Model):
             self.educational_levels = levels
 
     def set_school_details(self, *, name, domain, actor):
-        """Allow an active school's own Super Admin to replace its name/domain."""
+        """Allow an active school's own School Admin to replace its name/domain."""
         from .models import User
         from .school_scope import require_school
         require_school(self)
@@ -119,7 +123,7 @@ class School(models.Model):
             require_school(locked)
             if actor is None or not User._base_manager.filter(pk=actor.pk, role='superadmin',
                     school_id=locked.pk, is_active=True, account_status='active').exists():
-                raise PermissionDenied('Only this school\'s Super Admin can edit its details.')
+                raise PermissionDenied('Only this school\'s School Admin can edit its details.')
             domains = list(locked.domains.select_for_update().order_by('pk'))
             if len(domains) > 1:
                 raise ValidationError('This school has multiple domains. Contact support before replacing them.')
@@ -127,7 +131,7 @@ class School(models.Model):
             before_domains = [item.domain for item in domains]
             row.domain = domain
             row.full_clean()
-            # Bypass only the System Admin actor gate, after the scoped actor
+            # Bypass only the Super Admin actor gate, after the scoped actor
             # check and model validation above. No code/status/level edits here.
             if locked.name != name:
                 before_name = locked.name

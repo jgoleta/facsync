@@ -8,6 +8,7 @@ from .colleges import get_college_label
 from apps.core.colleges import COLLEGE_CHOICES
 from .school_models import School, SchoolDomain, SchoolChangeLog
 from .school_request_models import SchoolRegistrationRequest
+from .school_onboarding_models import SchoolInquiry, SchoolAccessLink, SchoolInquiryEvent
 from .school_scope import SchoolScopedModel, SchoolUserManager
 from .education import LEVEL_CHOICES, YEAR_CHOICES, default_levels, validate_announcement_levels
 
@@ -19,8 +20,8 @@ class User(AbstractUser, SchoolScopedModel):
         ('faculty', 'Faculty'),
         ('depthead', 'College Head'),
         ('officeadmin', 'Office Admin'),
-        ('superadmin', 'Super Admin'),
-        ('systemadmin', 'System Admin'),
+        ('superadmin', 'School Admin'),
+        ('systemadmin', 'Super Admin'),
     ]
     
     STATUS_CHOICES = [
@@ -99,7 +100,7 @@ class SuperAdminInvite(SchoolScopedModel):
         constraints = [models.UniqueConstraint(models.functions.Lower('email'), name='superadmin_invite_email_ci_unique')]
 
     def __str__(self):
-        return f'Super Admin invite for {self.email} ({self.school.code})'
+        return f'School Admin invite for {self.email} ({self.school.code})'
 
 
 class FacultyInvite(SchoolScopedModel):

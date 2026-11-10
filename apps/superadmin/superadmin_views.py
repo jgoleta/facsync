@@ -1,4 +1,4 @@
-"""School-only Super Admin accounts and invitations; no account removal actions."""
+"""School-only School Admin accounts and invitations; no account removal actions."""
 import logging
 
 from django import forms
@@ -72,7 +72,7 @@ def invite_superadmin(request):
         return JsonResponse({'success': False, 'error': 'This email is already registered or has a pending invitation.'}, status=400)
     sent = _deliver(invite)
     return JsonResponse({'success': True, 'email_sent': sent, 'message':
-        'Super Admin invitation saved and emailed.' if sent else 'Invitation saved, but the email could not be sent. Use Resend email to try again.'})
+        'School Admin invitation saved and emailed.' if sent else 'Invitation saved, but the email could not be sent. Use Resend email to try again.'})
 
 
 @login_required
@@ -100,4 +100,4 @@ def cancel_superadmin_invite(request, invite_id):
             invite.is_active = False
             invite.invited_by = request.user
             invite.save(update_fields=['is_active', 'invited_by'])
-    return JsonResponse({'success': True, 'message': 'Invitation cancelled. It can no longer activate a Super Admin account.'})
+    return JsonResponse({'success': True, 'message': 'Invitation cancelled. It can no longer activate a School Admin account.'})

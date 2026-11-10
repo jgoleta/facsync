@@ -1,8 +1,8 @@
 {% extends "emails/base_email.html" %}
-{% block title %}Your FacSync Super Admin account was deactivated{% endblock %}
-{% block heading %}Your Super Admin account was deactivated{% endblock %}
+{% block title %}Your FacSync School Admin account was deactivated{% endblock %}
+{% block heading %}Your School Admin account was deactivated{% endblock %}
 {% block body %}
 <p>Hi {{ name }},</p>
-<p>Your Super Admin account for <strong>{{ school.name }} ({{ school.code }})</strong> has been deactivated through FacSync Administration.</p>
-<p>You will not be able to sign in until it is reactivated. If you believe this was a mistake, please contact FacSync Administration.</p>
+<p>Your School Admin account for <strong>{{ school.name }} ({{ school.code }})</strong> has been deactivated through FacSync Super Admin.</p>
+<p>You will not be able to sign in until it is reactivated. If you believe this was a mistake, please contact FacSync Super Admin.</p>
 {% endblock %}

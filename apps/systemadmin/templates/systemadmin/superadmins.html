@@ -1,10 +1,10 @@
 {% extends 'systemadmin/base.html' %}
-{% block action %}<a class="btn-primary system-header-action" data-modal-trigger href="{% url 'systemadmin:invite_add' %}">+ Invite Super Admin</a>{% endblock %}
+{% block action %}<a class="btn-primary system-header-action" data-modal-trigger href="{% url 'systemadmin:invite_add' %}">+ Invite School Admin</a>{% endblock %}
 {% block content %}
 <div data-system-directory="superadmins">
 <div class="system-directory-toolbar"><label class="system-school-filter" for="system-school-filter"><span>School — accounts and invitations</span><select id="system-school-filter"><option value="all">All schools</option>{% for school in filter_schools %}<option value="{{ school.pk }}">{{ school.name }}{% if not school.is_active %} (suspended){% endif %}</option>{% endfor %}<option value="unassigned">Unassigned</option></select></label></div>
 <section class="management-table-wrapper system-directory-card" data-directory-section aria-labelledby="superadmin-directory-title">
-    <div class="management-table-header"><div><p class="section-kicker">Super Admin directory</p><h2 id="superadmin-directory-title">Registered Super Admins</h2></div></div>
+    <div class="management-table-header"><div><p class="section-kicker">School Admin directory</p><h2 id="superadmin-directory-title">Registered School Admins</h2></div></div>
     <div class="table-scroll"><table class="system-directory-table">
         <thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">School</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
         <tbody>{% for admin in administrators %}<tr data-directory-row data-school-id="{{ admin.school_id|default:'unassigned' }}">
@@ -14,23 +14,23 @@
             <td><span class="system-pill {% if admin.is_active and admin.account_status == 'active' %}is-active{% else %}is-deactivated{% endif %}">{% if not admin.is_active %}Deactivated{% else %}{{ admin.get_account_status_display }}{% endif %}</span></td>
             <td><div class="system-actions">
                 <a class="btn-secondary" data-modal-trigger href="{% url 'systemadmin:superadmin_edit' admin.pk %}">Edit</a>
-                {% if admin.school %}<form method="post" action="{% url 'systemadmin:superadmin_status' admin.pk %}" data-system-action data-processing-label="Updating Super Admin access…" data-confirm-title="Change Super Admin Access" data-confirm="Change access for {{ admin.email }}?">
+                {% if admin.school %}<form method="post" action="{% url 'systemadmin:superadmin_status' admin.pk %}" data-system-action data-processing-label="Updating School Admin access…" data-confirm-title="Change School Admin Access" data-confirm="Change access for {{ admin.email }}?">
                     {% csrf_token %}{% if admin.account_status == 'active' and admin.is_active %}<button class="btn-secondary system-danger-action" name="action" value="deactivate">Deactivate</button>{% else %}<button class="btn-secondary" name="action" value="reactivate">Reactivate</button>{% endif %}
                 </form>{% endif %}
             </div></td>
         </tr>{% endfor %}
-        {% if not administrators %}<tr><td colspan="5" class="empty-state">No Super Admins yet. Invite your first Super Admin.</td></tr>{% endif %}
-        <tr data-filter-empty hidden><td colspan="5" class="empty-state">No Super Admin accounts match this school.</td></tr>
+        {% if not administrators %}<tr><td colspan="5" class="empty-state">No School Admins yet. Invite your first School Admin.</td></tr>{% endif %}
+        <tr data-filter-empty hidden><td colspan="5" class="empty-state">No School Admin accounts match this school.</td></tr>
         </tbody>
     </table></div>
 </section>
 <section class="management-table-wrapper system-directory-card" data-directory-section aria-labelledby="superadmin-invitations-title">
-    <div class="management-table-header"><div><p class="section-kicker">Awaiting registration</p><h2 id="superadmin-invitations-title">Super Admin Invitations</h2></div><p class="system-hint">Sign in with Google to activate an invitation.</p></div>
+    <div class="management-table-header"><div><p class="section-kicker">Awaiting registration</p><h2 id="superadmin-invitations-title">School Admin Invitations</h2></div><p class="system-hint">Sign in with Google to activate an invitation.</p></div>
     <div class="table-scroll"><table class="system-directory-table">
         <thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">School</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead>
         <tbody>
         {% for invite in invitations %}<tr data-directory-row data-invitation-row data-school-id="{{ invite.school_id }}">
-            <td><div class="system-person"><span class="fs-avatar fs-avatar-table system-initial" aria-hidden="true">{{ invite.email|first|upper }}</span><span><span class="system-person-name">Invited Super Admin</span><span class="system-school-note">Invited {{ invite.created_at|date:'M j, Y' }}</span></span></div></td>
+            <td><div class="system-person"><span class="fs-avatar fs-avatar-table system-initial" aria-hidden="true">{{ invite.email|first|upper }}</span><span><span class="system-person-name">Invited School Admin</span><span class="system-school-note">Invited {{ invite.created_at|date:'M j, Y' }}</span></span></div></td>
             <td class="system-email">{{ invite.email }}</td>
             <td>{{ invite.school.name }}{% if not invite.school.is_active %}<span class="system-school-note">School suspended</span>{% endif %}</td>
             <td><span class="system-pill {% if invite.is_active %}is-invited{% else %}is-deactivated{% endif %}">{% if invite.is_active %}Invited{% else %}Deactivated{% endif %}</span></td>
@@ -40,8 +40,8 @@
                 <form method="post" action="{% url 'systemadmin:invite_status' invite.pk %}" data-system-action data-processing-label="Updating invitation…">{% csrf_token %}{% if invite.is_active %}<button class="btn-secondary" name="action" value="deactivate">Deactivate</button>{% else %}<button class="btn-secondary" name="action" value="reactivate">Reactivate</button>{% endif %}</form>
             </div></td>
         </tr>{% endfor %}
-        {% if not invitations %}<tr><td colspan="5" class="empty-state">No pending Super Admin invitations.</td></tr>{% endif %}
-        <tr data-filter-empty hidden><td colspan="5" class="empty-state">No Super Admin invitations match this school.</td></tr>
+        {% if not invitations %}<tr><td colspan="5" class="empty-state">No pending School Admin invitations.</td></tr>{% endif %}
+        <tr data-filter-empty hidden><td colspan="5" class="empty-state">No School Admin invitations match this school.</td></tr>
         </tbody>
     </table></div>
 </section>

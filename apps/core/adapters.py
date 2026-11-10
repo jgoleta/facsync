@@ -85,7 +85,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
 
     @staticmethod
     def _deny_invite(request):
-        messages.error(request, 'This invitation is unavailable or its school is suspended. Please contact FacSync Administration.')
+        messages.error(request, 'This invitation is unavailable or its school is suspended. Please contact FacSync Super Admin.')
         raise ImmediateHttpResponse(redirect('core:login'))
 
     def _save_student(self, request, sociallogin, form):
@@ -161,7 +161,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                     sociallogin.user.college = None
                     sociallogin.user.title = None
                 if invite.school_id is None or not invite.school.is_active:
-                    messages.error(request, 'Your school’s access to FacSync has been suspended. Please contact your school’s Super Admin.')
+                    messages.error(request, 'Your school’s access to FacSync has been suspended. Please contact your school’s School Admin.')
                     raise ImmediateHttpResponse(redirect('core:login'))
                 head_departments = None
                 if isinstance(invite, (FacultyInvite, DeptHeadInvite)):
@@ -249,12 +249,12 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                 messages.error(request, "Your registration was declined. Please contact your College Head.", extra_tags='registration_status')
                 raise ImmediateHttpResponse(redirect('core:login'))
             elif existing_user.account_status == 'deactivated':
-                messages.error(request, "Your account has been deactivated. Please contact a Super Admin.")
+                messages.error(request, "Your account has been deactivated. Please contact a School Admin.")
                 raise ImmediateHttpResponse(redirect('core:login'))
             if existing_user.role != 'systemadmin' and (
                 existing_user.school_id is None or not existing_user.school.is_active
             ):
-                message = ('Your school’s access to FacSync has been suspended. Please contact your school’s Super Admin.'
+                message = ('Your school’s access to FacSync has been suspended. Please contact your school’s School Admin.'
                            if existing_user.school_id else 'Your account is not assigned to a school. Please contact your administrator.')
                 messages.error(request, message)
                 raise ImmediateHttpResponse(redirect('core:login'))
@@ -282,7 +282,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
         try:
             invite = FacultyInvite.objects.select_related('school').get(email__iexact=email, used=False)
             if invite.school_id is None or not invite.school.is_active:
-                messages.error(request, 'Your school’s access to FacSync has been suspended. Please contact your school’s Super Admin.')
+                messages.error(request, 'Your school’s access to FacSync has been suspended. Please contact your school’s School Admin.')
                 raise ImmediateHttpResponse(redirect('core:login'))
             sociallogin.user.role = 'faculty'
             sociallogin.user.account_status = 'active'
@@ -315,7 +315,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
         try:
             depthead_invite = DeptHeadInvite.objects.select_related('school').get(email__iexact=email, used=False)
             if depthead_invite.school_id is None or not depthead_invite.school.is_active:
-                messages.error(request, 'Your school’s access to FacSync has been suspended. Please contact your school’s Super Admin.')
+                messages.error(request, 'Your school’s access to FacSync has been suspended. Please contact your school’s School Admin.')
                 raise ImmediateHttpResponse(redirect('core:login'))
             sociallogin.user.role = 'depthead'
             sociallogin.user.account_status = 'active'
@@ -335,7 +335,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
         if role == 'faculty':
             for key in ('registration_role', 'pending_faculty_email', 'pending_faculty_name', 'pending_faculty_uid'):
                 request.session.pop(key, None)
-            messages.error(request, "Faculty self-registration is no longer available. If you were invited by a College Head or Super Admin, please check your email for an activation link, or contact them for an invite.")
+            messages.error(request, "Faculty self-registration is no longer available. If you were invited by a College Head or School Admin, please check your email for an activation link, or contact them for an invite.")
             raise ImmediateHttpResponse(redirect('core:register'))
 
         if role != 'student':

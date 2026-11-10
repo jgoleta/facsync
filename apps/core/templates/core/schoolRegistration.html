@@ -1,26 +1,28 @@
 {% load static %}
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FacSync | Request School Registration</title>
-<link rel="stylesheet" href="{% static 'css/base.css' %}"><link rel="stylesheet" href="{% static 'core/css/loginPage.css' %}"><link rel="stylesheet" href="{% static 'core/css/schoolRegistration.css' %}?v=20261107-registration-ui">
+<link rel="stylesheet" href="{% static 'css/base.css' %}"><link rel="stylesheet" href="{% static 'core/css/loginPage.css' %}"><link rel="stylesheet" href="{% static 'core/css/schoolRegistration.css' %}?v=20261110-previews">
 </head><body><main class="school-registration-page"><section class="school-registration-card">
+{% include 'core/partials/school_preview_banner.html' %}
 <a href="{% if request.user.is_authenticated %}{% url 'core:post_login_redirect' %}{% else %}{% url 'core:landing' %}{% endif %}" class="school-registration-brand">{% include 'components/_facsync_logo.html' %}<span>FacSync</span></a><p class="school-registration-kicker">School onboarding</p><h1>Request School Registration</h1>
 {% for message in messages %}{% if message.level >= DEFAULT_MESSAGE_LEVELS.WARNING %}<p role="alert" class="school-registration-notice">{{ message }}</p>{% endif %}{% endfor %}
+{% include 'core/partials/school_onboarding_progress.html' %}
 {% if request.user.is_authenticated %}
 <div class="school-registration-status school-request-account"><span class="school-request-badge">Already signed in</span><h2>Your account is ready to use</h2><p>You already have a FacSync account. School registration cannot change your role or move your account to another school.</p></div>
 <div class="school-request-actions"><a class="btn-primary" href="{% url 'core:post_login_redirect' %}">Return to your dashboard <span aria-hidden="true">&rarr;</span></a><a class="btn-secondary" href="{% url 'core:landing' %}">Back to home</a></div>
-{% elif not identity %}<p>Representing a school? Verify your institutional Google email, then submit the school's details for manual review.</p><p>Use a Google account on your school's own email domain. Personal email providers cannot register a school. Verification of your email does not automatically register your school or make you a Super Admin.</p>
-<form method="post" action="{% url 'core:school_registration_start' %}" data-school-request-submit>{% csrf_token %}<button class="btn-primary" type="submit">Verify with Google</button></form>
+{% elif not identity %}<p>You have been invited to complete school registration. Continue with the Google email that completed verification.</p><p>Use a Google account on your school's own email domain. Personal email providers cannot register a school. Verification of your email does not automatically register your school or make you a School Admin.</p>
+<form method="post" action="{% if preview_mode %}{{ request.path }}{% else %}{% url 'core:school_registration_start' %}{% endif %}" data-school-request-submit>{% csrf_token %}<button class="btn-primary" type="submit"{% if preview_mode %} disabled{% endif %}>Verify with Google</button></form>
 {% else %}<div class="school-registration-identity"><p>Verified email: <strong>{{ identity.email }}</strong></p><p>School domain: <strong>{{ identity.domain }}</strong></p></div>
 {% if application.status == 'pending' or application.status == 'approved' %}
 <section class="school-registration-status" aria-label="Registration status"><h2>{{ application.get_status_display }}</h2><p>{{ application.school_name }} ({{ application.school_code }})</p><p>Reference: <code>{{ application.pk }}</code></p>
-{% if application.status == 'pending' %}<p>Your request is awaiting manual verification. No school or Super Admin account has been created. Return here and verify with the same Google account to check your status.</p>
-{% else %}<p>Your school is registered and its first Super Admin invitation is saved. Sign in normally with <strong>{{ identity.email }}</strong> to activate your Super Admin account.</p><a class="btn-primary" href="{% url 'core:login' %}">Sign in to activate</a>{% endif %}</section>
+{% if application.status == 'pending' %}<p>Your request is awaiting manual verification. No school or School Admin account has been created. The decision and any activation invitation will be sent by email. Contact facsync@gmail.com with your reference if you need an update.</p>
+{% else %}<p>Your school is registered and its first School Admin invitation is saved. Sign in normally with <strong>{{ identity.email }}</strong> to activate your School Admin account.</p><a class="btn-primary" href="{% url 'core:login' %}">Sign in to activate</a>{% endif %}</section>
 {% else %}
 {% if application.status == 'rejected' %}<section class="school-registration-status"><h2>Previous request rejected</h2><p>{{ application.decision_reason|linebreaksbr }}</p><p>You may correct the details below and submit a new request. Your previous decision remains recorded.</p></section>{% endif %}
-<p>Provide an official school contact who can confirm your authority. FacSync Administration will independently verify the contact before approving this request.</p>
-<form method="post" action="{% url 'core:school_registration' %}" class="school-registration-form" data-school-request-submit>{% csrf_token %}{{ form.non_field_errors }}
+<p>Provide an official school contact who can confirm your authority. FacSync Super Admin will independently verify the contact before approving this request.</p>
+<form method="post" action="{% if preview_mode %}{{ request.path }}{% else %}{% url 'core:school_registration' %}{% endif %}" class="school-registration-form" data-school-request-submit>{% csrf_token %}{{ form.non_field_errors }}
 {% for field in form %}{% if field.name == 'educational_levels' %}<fieldset><legend>{{ field.label }}</legend>{{ field }}{{ field.errors }}</fieldset>{% else %}<div class="school-request-field">{{ field.label_tag }}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</div>{% endif %}{% endfor %}
-<p>Submitting a request does not reserve the domain or grant access to any school's data.</p><button class="btn-primary" type="submit">Submit Registration Request</button></form>
+<p>Submitting a request does not reserve the domain or grant access to any school's data.</p><button class="btn-primary" type="submit"{% if preview_mode %} disabled{% endif %}>Submit Registration Request</button></form>
 {% endif %}
-<form method="post" action="{% url 'core:school_registration_reset' %}" class="school-request-switch">{% csrf_token %}<button class="btn-secondary" type="submit">Use a different Google account</button></form>
+<form method="post" action="{% if preview_mode %}{{ request.path }}{% else %}{% url 'core:school_registration_reset' %}{% endif %}" class="school-request-switch">{% csrf_token %}<button class="btn-secondary" type="submit"{% if preview_mode %} disabled{% endif %}>Use a different Google account</button></form>
 {% endif %}{% if not request.user.is_authenticated %}<nav class="school-request-footer" aria-label="Other registration options"><a class="btn-secondary" href="{% url 'core:register' %}">Student registration</a><a class="btn-secondary" href="{% url 'core:login' %}">Sign in</a></nav>{% endif %}
-</section></main><script src="{% static 'core/js/schoolRegistration.js' %}?v=20261107-registration-ui" defer></script></body></html>
+</section></main><script src="{% static 'core/js/schoolRegistration.js' %}?v=20261110-previews" defer></script></body></html>

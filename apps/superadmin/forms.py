@@ -108,11 +108,19 @@ class DepartmentForm(SchoolBoundModelForm):
         super().__init__(*args, **kwargs)
         self.fields['college'].queryset = College.objects.filter(school=self.instance.school)
         self.fields['college'].empty_label = 'No college'
+        if not self.instance.school.offers_college:
+            self.fields.pop('college')
         if self.instance.pk:
             self.fields['code'].disabled = True
 
     def clean_code(self):
         return self.cleaned_data['code'].strip().upper()
+
+    def clean(self):
+        data = super().clean()
+        if not self.instance.school.offers_college and self.data.get('college'):
+            raise forms.ValidationError('College assignments are unavailable while College is not an offered educational level.')
+        return data
 
 
 class HeadAssignmentForm(forms.Form):

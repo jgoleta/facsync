@@ -20,7 +20,12 @@ def available_identity(email):
         raise ValidationError('This email is already registered or has a pending invitation.')
 
 
-def submit_request(identity, data):
+def submit_request(identity, data, *, invitation=None):
+    from .onboarding_services import valid_link
+    if (invitation is None or invitation.purpose != 'registration' or not valid_link(invitation)
+            or invitation.inquiry.email.lower() != identity['email'].lower()
+            or invitation.inquiry.google_subject != identity['subject']):
+        raise PermissionDenied('A verified private registration invitation is required.')
     from apps.core.school_request_forms import SchoolRegistrationForm
     form = SchoolRegistrationForm(data, identity=identity)
     if not form.is_valid():
@@ -47,18 +52,23 @@ def review_request(request_id, *, actor, decision, verification_notes='', decisi
     from apps.core.school_request_forms import SchoolRequestReviewForm
     require_system_admin(actor)
     if current_school() is not None and current_school() is not ALL_SCHOOLS:
-        raise PermissionDenied('Only FacSync Administration can review school requests.')
+        raise PermissionDenied('Only FacSync Super Admin can review school requests.')
     if not User._base_manager.filter(pk=actor.pk, role='systemadmin', school__isnull=True,
             is_active=True, account_status='active').exists():
-        raise PermissionDenied('Only FacSync Administration can review school requests.')
+        raise PermissionDenied('Only FacSync Super Admin can review school requests.')
     form = SchoolRequestReviewForm({'decision': decision, 'verification_notes': verification_notes,
                                    'decision_reason': decision_reason})
     if not form.is_valid():
         raise ValidationError(form.errors.as_data())
     with transaction.atomic():
+        # Lock the inquiry first, using the same lock order as all onboarding transitions.
+        from apps.core.models import SchoolInquiry, SchoolInquiryEvent
+        inquiry = SchoolInquiry.objects.select_for_update().filter(application_id=request_id).first()
         item = SchoolRegistrationRequest.objects.select_for_update().get(pk=request_id)
         if item.status != 'pending':
             return item, False
+        if inquiry and inquiry.stage != 'registration_review':
+            raise ValidationError('This school has not reached final approval.')
         if decision == 'approve':
             available_identity(item.applicant_email)
             domain = email_domain(item.applicant_email)
@@ -85,4 +95,10 @@ def review_request(request_id, *, actor, decision, verification_notes='', decisi
         item.decision_reason = form.cleaned_data['decision_reason']
         item.full_clean()
         item.save()
+        if inquiry:
+            inquiry.stage = 'approved' if decision == 'approve' else 'rejected'
+            inquiry.closed_at = timezone.now()
+            inquiry.save()
+            SchoolInquiryEvent.objects.create(inquiry=inquiry, actor=actor, action='final_' + decision,
+                private_notes=item.verification_notes, applicant_message=item.decision_reason)
         return item, True

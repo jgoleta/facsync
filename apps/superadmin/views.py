@@ -174,6 +174,19 @@ def superadmin_dashboard(request):
             'availability_rate': round((available_count / faculty_count * 100), 0) if faculty_count else 0,
         })
 
+    if not request.user.school.offers_college:
+        departments = Department.objects.all().order_by('name')
+        total_colleges = departments.count()
+        college_data = []
+        for department in departments:
+            faculty_qs = FacultyProfile.objects.filter(user__department=department)
+            count = faculty_qs.count()
+            college_data.append({'code': department.code, 'name': department.name,
+                'total_consultations': ConsultationRequest.objects.filter(faculty__in=faculty_qs).count(),
+                'active_faculty': count,
+                'availability_rate': round(faculty_qs.filter(current_status='available').count() / count * 100, 0) if count else 0})
+        colleges = departments
+
     return render(request, 'superadmin/superadminDashboard.html', {
         'total_colleges': total_colleges,
         'total_faculty': total_faculty,
@@ -185,6 +198,9 @@ def superadmin_dashboard(request):
 @login_required
 @role_required('superadmin')
 def manage_colleges(request):
+    if not request.user.school.offers_college:
+        messages.info(request, 'College management is hidden while College is not an offered level. Existing records are preserved.')
+        return redirect('superadmin:manage_departments')
     colleges = College.objects.all().prefetch_related('departments').order_by('name')
     return render(request, 'superadmin/manageColleges.html', {'colleges': colleges})
 
@@ -271,6 +287,8 @@ def remove_student_superadmin(request, user_id):
 @login_required
 @role_required('superadmin')
 def create_college(request):
+    if not request.user.school.offers_college:
+        return JsonResponse({'error': 'College is not an offered educational level.'}, status=403)
     if request.method == 'POST':
         form = CollegeForm(request.POST)
         if form.is_valid():
@@ -403,6 +421,8 @@ def resend_office_admin_invite(request, invite_id):
 @login_required
 @role_required('superadmin')
 def edit_college(request, college_id):
+    if not request.user.school.offers_college:
+        return JsonResponse({'error': 'College is not an offered educational level.'}, status=403)
     college = get_object_or_404(College, id=college_id)
     if request.method == 'POST':
         form = CollegeForm(request.POST, instance=college)
@@ -418,6 +438,8 @@ def edit_college(request, college_id):
 @login_required
 @role_required('superadmin')
 def delete_college(request, college_id):
+    if not request.user.school.offers_college:
+        return JsonResponse({'error': 'College is not an offered educational level.'}, status=403)
     college = get_object_or_404(College, id=college_id)
     if request.method == 'POST':
         name = college.name

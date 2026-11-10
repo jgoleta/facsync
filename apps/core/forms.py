@@ -22,7 +22,7 @@ class StudentProfileForm(SchoolBoundModelForm):
         self.fields['educational_level'].choices = [('', 'Select your level')] + [(k, v) for k, v in LEVEL_CHOICES if k in offered]
         self.fields['department'].queryset = Department.objects.filter(school=self.instance.school, is_active=True).select_related('college')
         self.fields['department'].empty_label = 'Select your department'
-        self.fields['department'].help_text = 'Only active departments in your school are listed. Contact your Super Admin if yours is missing.'
+        self.fields['department'].help_text = 'Only active departments in your school are listed. Contact your School Admin if yours is missing.'
         self.fields['student_id'].required = True
         self.fields['student_id'].error_messages['required'] = 'Enter your Student ID.'
         if len(offered) == 1:

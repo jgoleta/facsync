@@ -16,7 +16,8 @@ facsync/
 |   |-- faculty/           Faculty workflows and calendar integrations
 |   |-- students/          Student browsing and consultation workflows
 |   |-- depthead/          Department-head administration and analytics
-|   `-- superadmin/        System-wide administration
+|   |-- superadmin/        School Admin management within one school
+|   `-- systemadmin/       Platform Super Admin onboarding and recovery
 |-- templates/             Shared components and emails; reserved base.html
 |-- static/                Shared css/, js/, and images/
 |-- tests/                 Reserved for cross-application tests

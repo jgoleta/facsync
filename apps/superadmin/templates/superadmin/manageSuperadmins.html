@@ -1,28 +1,28 @@
 {% extends 'superadmin/base_management.html' %}
-{% block title %}Manage Super Admins{% endblock %}
+{% block title %}Manage School Admins{% endblock %}
 {% block messages %}{% for message in messages %}{% endfor %}{% endblock %}
 {% block content %}
-<header class="main-header with-action"><div><p class="page-kicker">School administration</p><h1>Manage Super Admins</h1><p>View Super Admin accounts and invite another Super Admin for {{ request.user.school.name }}.</p></div><button class="btn-primary header-action" type="button" data-open-modal="superAdminInviteModal">Invite Super Admin</button></header>
+<header class="main-header with-action"><div><p class="page-kicker">School administration</p><h1>Manage School Admins</h1><p>View School Admin accounts and invite another School Admin for {{ request.user.school.name }}.</p></div><button class="btn-primary header-action" type="button" data-open-modal="superAdminInviteModal">Invite School Admin</button></header>
 <section class="management-table-wrapper" aria-labelledby="superadmin-accounts-heading">
-<div class="management-table-header"><h2 id="superadmin-accounts-heading">Super Admin Accounts</h2></div>
+<div class="management-table-header"><h2 id="superadmin-accounts-heading">School Admin Accounts</h2></div>
 <div class="table-scroll"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th></tr></thead><tbody>
 {% for admin in superadmin_accounts %}<tr><td>{% include 'components/_avatar.html' with photo_url=admin.avatar_url initials=admin.avatar_initials avatar_class='fs-avatar-table' %} {{ admin.get_full_name|default:admin.username }}{% if admin.pk == request.user.pk %} <span class="assignment-pill">You</span>{% endif %}</td><td>{{ admin.email|default:'No email address' }}</td><td><span class="assignment-pill">{% if admin.is_active and admin.account_status == 'active' %}Active{% else %}Deactivated{% endif %}</span></td></tr>
-{% empty %}<tr><td colspan="3" class="empty-state">No Super Admin accounts yet.</td></tr>{% endfor %}
+{% empty %}<tr><td colspan="3" class="empty-state">No School Admin accounts yet.</td></tr>{% endfor %}
 </tbody></table></div></section>
 <section class="management-table-wrapper" aria-labelledby="superadmin-invitations-heading">
-<div class="management-table-header"><div><p class="section-kicker">Awaiting first sign-in</p><h2 id="superadmin-invitations-heading">Super Admin Invitations</h2></div></div>
+<div class="management-table-header"><div><p class="section-kicker">Awaiting first sign-in</p><h2 id="superadmin-invitations-heading">School Admin Invitations</h2></div></div>
 <div class="table-scroll"><table><thead><tr><th>Email</th><th>Invited</th><th>Status</th><th>Actions</th></tr></thead><tbody>
 {% for invite in superadmin_invites %}<tr><td>{{ invite.email }}</td><td>{{ invite.created_at|date:'M j, Y' }}</td><td><span class="assignment-pill">{% if invite.is_active %}Invited{% else %}Cancelled{% endif %}</span></td><td class="actions">{% if invite.is_active %}
 <form method="post" action="{% url 'superadmin:resend_superadmin_invite' invite.pk %}" data-managed-form>{% csrf_token %}<button class="btn-secondary" type="submit">Resend email</button></form>
-<form method="post" action="{% url 'superadmin:cancel_superadmin_invite' invite.pk %}" data-managed-form>{% csrf_token %}<button class="danger" type="submit" data-confirm="Cancel this invitation? This email will no longer be able to activate a Super Admin account using it.">Cancel invitation</button></form>
+<form method="post" action="{% url 'superadmin:cancel_superadmin_invite' invite.pk %}" data-managed-form>{% csrf_token %}<button class="danger" type="submit" data-confirm="Cancel this invitation? This email will no longer be able to activate a School Admin account using it.">Cancel invitation</button></form>
 {% else %}<span class="chart-caption">No longer valid for sign-in</span>{% endif %}</td></tr>
-{% empty %}<tr><td colspan="4" class="empty-state">No Super Admin invitations yet. Invite another Super Admin to help manage your school.</td></tr>{% endfor %}
+{% empty %}<tr><td colspan="4" class="empty-state">No School Admin invitations yet. Invite another School Admin to help manage your school.</td></tr>{% endfor %}
 </tbody></table></div></section>
 {% endblock %}
 {% block modals %}
-<dialog id="superAdminInviteModal" class="management-dialog" aria-labelledby="superadmin-invite-title"><div class="modal-header"><div><h2 id="superadmin-invite-title">Invite Super Admin</h2><p>This invitation is for {{ request.user.school.name }}.</p></div><button type="button" class="modal-close" data-close-modal aria-label="Close">&times;</button></div>
+<dialog id="superAdminInviteModal" class="management-dialog" aria-labelledby="superadmin-invite-title"><div class="modal-header"><div><h2 id="superadmin-invite-title">Invite School Admin</h2><p>This invitation is for {{ request.user.school.name }}.</p></div><button type="button" class="modal-close" data-close-modal aria-label="Close">&times;</button></div>
 <form method="post" action="{% url 'superadmin:invite_superadmin' %}" class="modal-form" data-managed-form>{% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p>
 <div class="modal-form-group"><label for="schoolSuperAdminEmail">Google email</label><input id="schoolSuperAdminEmail" type="email" name="email" maxlength="254" autocomplete="email" required><p>Use the Google account they will sign in with. Any email domain is allowed.</p></div>
-<p>They will receive an email and become a Super Admin for this school when they first sign in with that address.</p>
+<p>They will receive an email and become a School Admin for this school when they first sign in with that address.</p>
 <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn-primary" type="submit">Send Invite</button></div></form></dialog>
 {% endblock %}

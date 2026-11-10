@@ -93,20 +93,20 @@ def prepare_school_write(instance):
             if (not valid_scope or not actor.school_id or instance.school_id != actor.school_id
                     or not User._base_manager.filter(pk=actor.pk, role='superadmin', school_id=actor.school_id,
                         school__is_active=True, is_active=True, account_status='active').exists()):
-                raise PermissionDenied('Super Admins can manage invitations only for their own active school.')
+                raise PermissionDenied('School Admins can manage invitations only for their own active school.')
             if instance.pk and type(instance)._base_manager.filter(pk=instance.pk).exclude(school_id=actor.school_id).exists():
                 raise PermissionDenied('An existing invitation cannot be moved to another school.')
         else:
             require_system_admin(actor)
             if scope is not None and scope is not ALL_SCHOOLS:
-                raise PermissionDenied('Only a System Admin can manage invitations across schools.')
+                raise PermissionDenied('Only a Super Admin can manage invitations across schools.')
     if direct and scope is not None and scope is not ALL_SCHOOLS and instance.school_id is None:
         instance.school_id = scope.pk
     from .department_models import validate_department_links
     validate_department_links(instance)
     if instance._meta.label_lower == 'core.user' and instance.role == 'systemadmin':
         if instance.school_id is not None or (scope is not None and scope is not ALL_SCHOOLS):
-            raise PermissionDenied('System Admin accounts cannot belong to a school or be created by school accounts.')
+            raise PermissionDenied('Super Admin accounts cannot belong to a school or be created by school accounts.')
     schools = [related_school(instance, path) for path in paths]
     # Prevent mixed-participant records even in maintenance/background operations.
     assigned = {value for value in schools if value is not None}

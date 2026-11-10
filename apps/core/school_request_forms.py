@@ -39,14 +39,14 @@ class SchoolRegistrationForm(forms.Form):
     def clean(self):
         data = super().clean()
         if SchoolDomain.objects.filter(domain__iexact=self.identity['domain']).exists():
-            raise ValidationError('This school domain is already registered. Contact your school\'s Super Admin.')
+            raise ValidationError('This school domain is already registered. Contact your school\'s School Admin.')
         return data
 
 
 class SchoolRequestReviewForm(forms.Form):
     decision = forms.ChoiceField(choices=[('approve', 'Approve'), ('reject', 'Reject')])
     verification_notes = forms.CharField(required=False, max_length=2000, widget=forms.Textarea(attrs={'rows': 4}),
-        help_text='Required for approval. Record the official source checked and how authority was confirmed. Private to FacSync Administration.')
+        help_text='Required for approval. Record the official source checked and how authority was confirmed. Private to FacSync Super Admin.')
     decision_reason = forms.CharField(required=False, max_length=1000, widget=forms.Textarea(attrs={'rows': 3}),
         label='Reason shared with applicant', help_text='Required for rejection. Do not include private verification notes.')
 

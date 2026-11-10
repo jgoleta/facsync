@@ -10,7 +10,7 @@ from apps.systemadmin.services import require_replacement_superadmin
 
 
 class Command(BaseCommand):
-    help = 'Preview creation/conversion of a schoolless System Admin. Use explicit settings and --apply to save.'
+    help = 'Preview creation/conversion of a schoolless Super Admin. Use explicit settings and --apply to save.'
 
     def add_arguments(self, parser):
         parser.add_argument('--email', required=True)
@@ -30,13 +30,13 @@ class Command(BaseCommand):
                 raise CommandError('More than one account has this email. Resolve the ambiguity before converting.')
             user = matches[0] if matches else None
             if user and user.role == 'systemadmin' and user.school_id is None:
-                self.stdout.write('This account is already a schoolless System Admin. No changes made.')
+                self.stdout.write('This account is already a schoolless Super Admin. No changes made.')
                 return
             if user:
                 if not options['convert_existing']:
                     raise CommandError('Account exists. Preview again with --convert-existing to convert it.')
                 if user.role != 'superadmin' or not user.school_id or not user.is_active or user.account_status != 'active':
-                    raise CommandError('Only an active school-assigned Super Admin can be converted.')
+                    raise CommandError('Only an active school-assigned School Admin can be converted.')
                 school = School.objects.select_for_update().get(pk=user.school_id)
                 user = User.objects.select_for_update().get(pk=user.pk)
                 if (user.role != 'superadmin' or user.school_id != school.pk
@@ -46,7 +46,7 @@ class Command(BaseCommand):
                     require_replacement_superadmin(user)
                 except ValidationError as error:
                     raise CommandError('; '.join(error.messages)) from error
-                self.stdout.write(f'Convert {email} from {school.code} Super Admin to schoolless System Admin. Another active school Super Admin remains.')
+                self.stdout.write(f'Convert {email} from {school.code} School Admin to schoolless Super Admin. Another active School Admin for the school remains.')
             else:
                 if options['convert_existing']:
                     raise CommandError('No account matches this email. No changes made.')
@@ -61,7 +61,7 @@ class Command(BaseCommand):
                     raise CommandError('; '.join(error.messages)) from error
                 user = User(username=username, email=email)
                 user.set_unusable_password()
-                self.stdout.write(f'Create schoolless System Admin {email} for verified Google login.')
+                self.stdout.write(f'Create schoolless Super Admin {email} for verified Google login.')
             if not options['apply']:
                 self.stdout.write('Preview only. Add --apply with the intended --settings to save.')
                 return
@@ -73,4 +73,4 @@ class Command(BaseCommand):
             user.is_active = True
             user.account_status = 'active'
             user.save()
-            self.stdout.write(self.style.SUCCESS('System Admin saved. Existing Google identity and password were preserved; no Django superuser permissions were granted.'))
+            self.stdout.write(self.style.SUCCESS('Super Admin saved. Existing Google identity and password were preserved; no Django superuser permissions were granted.'))

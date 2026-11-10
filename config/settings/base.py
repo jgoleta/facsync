@@ -134,6 +134,8 @@ SUPABASE_URL = config('SUPABASE_URL', default='').rstrip('/')
 SUPABASE_SECRET_KEY = config('SUPABASE_SECRET_KEY', default='')
 SUPABASE_FACULTY_PHOTO_BUCKET = config('SUPABASE_FACULTY_PHOTO_BUCKET', default='faculty-photos')
 SUPABASE_STUDENT_PHOTO_BUCKET = config('SUPABASE_STUDENT_PHOTO_BUCKET', default='student-photos')
+SUPABASE_SCHOOL_EVIDENCE_BUCKET = config('SUPABASE_SCHOOL_EVIDENCE_BUCKET', default='school-verification')
+SCHOOL_EVIDENCE_CLEANUP_SECRET = config('SCHOOL_EVIDENCE_CLEANUP_SECRET', default='')
 
 SITE_ID = 1
 SITE_URL = config('SITE_URL', default='http://127.0.0.1:8000')

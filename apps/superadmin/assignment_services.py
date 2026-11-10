@@ -1,4 +1,4 @@
-"""Validated assignments shared by Super Admin forms and first-login activation."""
+"""Validated assignments shared by School Admin forms and first-login activation."""
 from django.core.exceptions import ValidationError
 
 from apps.core.models import Department
