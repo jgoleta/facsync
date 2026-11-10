@@ -96,7 +96,7 @@
   }));
   document.querySelectorAll('[data-faculty-filter]').forEach(filter => filter.addEventListener('change', () => {
     const unit = document.querySelector('[data-faculty-filter=unit]').value;
-    const college = document.querySelector('[data-faculty-filter=college]').value;
+    const college = document.querySelector('[data-faculty-filter=college]')?.value || 'all';
     const rows = [...document.querySelectorAll('[data-faculty-row]')];
     rows.forEach(row => row.hidden = (unit !== 'all' && row.dataset.unit !== unit) || (college !== 'all' && row.dataset.college !== college));
     const empty = document.querySelector('[data-faculty-empty]');

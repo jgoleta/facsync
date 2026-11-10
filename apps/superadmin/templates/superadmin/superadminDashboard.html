@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FacSync | Super Admin Dashboard</title>
+    <title>FacSync | School Admin Dashboard</title>
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_main.css' %}?v=20261031-footer" />
     <link rel="stylesheet" href="{% static 'superadmin/css/superadmin_dashboard.css' %}?v=20261014-overview" />
     {% include 'components/_admin_navigation_loading.html' %}
@@ -19,7 +19,7 @@
             <div class="sidebar-header">
                 <a href="{% url 'superadmin:superadmin_dashboard' %}" class="brand">
                     {% include 'components/_facsync_logo.html' %}
-                    <span>FacSync Super Admin</span>
+                    <span>FacSync School Admin</span>
                 </a>
             </div>
             {% include 'superadmin/partials/sidebar_nav.html' %}
@@ -40,9 +40,9 @@
                 <div>
                     <p class="overview-kicker">School administration</p>
                     <h1>School Overview</h1>
-                    <p>Monitor colleges, faculty, and consultations in {{ request.user.school.name }}.</p>
+                    <p>Monitor {% if request.user.school.offers_college %}colleges{% else %}departments{% endif %}, faculty, and consultations in {{ request.user.school.name }}.</p>
                 </div>
-                <span class="admin-identity-badge">Super Admin</span>
+                <span class="admin-identity-badge">School Admin</span>
             </header>
 
             <div class="content-grid">
@@ -57,11 +57,11 @@
                     <div class="summary-cards">
                         <article class="overview-stat-card colleges-card">
                             <div class="stat-icon" aria-hidden="true">C</div>
-                            <div><p class="stat-label">Total Colleges</p><p class="stat">{{ total_colleges }}</p><p class="stat-caption">Colleges in your school</p></div>
+                            <div><p class="stat-label">Total {% if request.user.school.offers_college %}Colleges{% else %}Departments{% endif %}</p><p class="stat">{{ total_colleges }}</p><p class="stat-caption">{% if request.user.school.offers_college %}Colleges{% else %}Departments{% endif %} in your school</p></div>
                         </article>
                         <article class="overview-stat-card faculty-card">
                             <div class="stat-icon" aria-hidden="true">F</div>
-                            <div><p class="stat-label">Active Faculty</p><p class="stat">{{ total_faculty }}</p><p class="stat-caption">Across all colleges</p></div>
+                            <div><p class="stat-label">Active Faculty</p><p class="stat">{{ total_faculty }}</p><p class="stat-caption">Across all {% if request.user.school.offers_college %}colleges{% else %}departments{% endif %}</p></div>
                         </article>
                         <article class="overview-stat-card consultations-card">
                             <div class="stat-icon" aria-hidden="true">Q</div>
@@ -75,15 +75,15 @@
                     <div class="panel-heading">
                         <div>
                             <p class="section-kicker">Explore your school</p>
-                            <h2 id="drill-down-title">College drill-down</h2>
+                            <h2 id="drill-down-title">{% if request.user.school.offers_college %}College{% else %}Department{% endif %} drill-down</h2>
                         </div>
                         <span class="panel-icon" aria-hidden="true">↗</span>
                     </div>
-                    <p>Select a college to view its reports, faculty coverage, and consultation activity.</p>
+                    <p>Select a {% if request.user.school.offers_college %}college{% else %}department{% endif %} to view its faculty coverage and consultation activity.</p>
                     <div class="form-group">
-                        <label for="college-selector">Select College</label>
+                        <label for="college-selector">Select {% if request.user.school.offers_college %}College{% else %}Department{% endif %}</label>
                                                 <select id="college-selector">
-                                                    <option value="">-- Select a College --</option>
+                                                    <option value="">-- Select a {% if request.user.school.offers_college %}College{% else %}Department{% endif %} --</option>
                                                     {% for college in colleges %}
                                                     <option value="{{ college.code }}">{{ college.name }}</option>
                                                     {% endfor %}
@@ -94,7 +94,7 @@
                 <section id="college-view-container" class="college-view" hidden aria-live="polite">
                     <header class="college-view-header">
                         <div>
-                            <p class="section-kicker">Selected college</p>
+                            <p class="section-kicker">Selected {% if request.user.school.offers_college %}college{% else %}department{% endif %}</p>
                             <h2 id="college-view-header"></h2>
                         </div>
                         <span class="section-caption">Overview</span>

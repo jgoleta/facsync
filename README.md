@@ -10,11 +10,15 @@ Google Calendar integration.
 - `apps/core` - shared accounts, notifications, announcements, email, and UI code
 - `apps/faculty` - faculty dashboards, schedules, consultations, and calendar sync
 - `apps/students` - faculty discovery, read-only calendars, booking, and queues
-- `apps/depthead` - college administration, monitoring, and analytics
-- `apps/superadmin` - system-wide administration
+- `apps/depthead` - Department Head and College Head monitoring and analytics for assigned departments
+- `apps/superadmin` - school-scoped School Admin management
+- `apps/systemadmin` - platform Super Admin school onboarding and recovery
 
 See [docs/project_structure.md](docs/project_structure.md) for detailed file
 placement and naming conventions.
+
+See [school onboarding setup](docs/school-onboarding-setup.md) for the private
+verification bucket, invitation flow and safe local rehearsal launcher.
 
 ## Setup
 python -m venv venv
@@ -46,4 +50,3 @@ Run the standalone email utility from the repository root with
 `python -m scripts.test_email` so the project packages are importable.
 
 ## GEMINI_MODEL=gemini
- 

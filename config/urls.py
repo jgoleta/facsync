@@ -29,6 +29,9 @@ urlpatterns = [
     path('systemadmin/', include('apps.systemadmin.urls')),
 ]
 
+if getattr(settings, 'SCHOOL_ONBOARDING_PREVIEWS', False):
+    urlpatterns += [path('dev/school-onboarding/', include('apps.core.school_onboarding_preview_urls'))]
+
 # The app check also keeps these URLs out of production/test settings, even
 # when the shared base configuration has DEBUG enabled.
 if settings.DEBUG and 'debug_toolbar' in settings.INSTALLED_APPS:

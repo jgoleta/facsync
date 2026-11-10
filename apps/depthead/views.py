@@ -207,9 +207,9 @@ def invite_faculty(request):
             if is_ajax:
                 return JsonResponse({
                     'success': False,
-                    'error': 'Your account has no college set. Contact a Super Admin.',
+                    'error': 'Your account has no college set. Contact a School Admin.',
                 }, status=400)
-            messages.error(request, "Your account has no college set. Contact a Super Admin.")
+            messages.error(request, "Your account has no college set. Contact a School Admin.")
             return redirect('depthead:admin_faculty')
         requested_email = request.POST.get('email', '').strip()
         used_invite = FacultyInvite.objects.filter(
@@ -874,7 +874,7 @@ def create_announcement(request):
         return _department_announcement(request)
     if not request.managed_scope:
         return JsonResponse(
-            {'success': False, 'error': "Your account has no college set. Contact a Super Admin."},
+            {'success': False, 'error': "Your account has no college set. Contact a School Admin."},
             status=400
         )
 
@@ -919,7 +919,7 @@ def create_announcement(request):
 def edit_college_description(request):
     college = _target_department(request) if request.user.role == 'depthead' else _managed_unit(request.managed_scope)
     if not college:
-        messages.error(request, "Your college could not be found. Contact a Super Admin.")
+        messages.error(request, "Your college could not be found. Contact a School Admin.")
         return redirect('depthead:college_settings')
 
     if request.method == 'POST':
@@ -949,7 +949,7 @@ def save_schedule_template(request):
         return HttpResponse(status=405)
     college = _managed_unit(request.managed_scope)
     if not college:
-        messages.error(request, 'Your college could not be found. Contact a Super Admin.')
+        messages.error(request, 'Your college could not be found. Contact a School Admin.')
         return redirect('depthead:college_settings')
 
     try:

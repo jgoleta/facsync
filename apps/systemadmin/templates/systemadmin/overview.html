@@ -20,12 +20,12 @@
         </article>
         <article class="system-metric">
             <div class="system-metric-heading">
-                <h3>Total Super Admins</h3>
+                <h3>Total School Admins</h3>
                 <svg class="system-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="7" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M16 4a3 3 0 0 1 0 6M18 15a5 5 0 0 1 3 4v2"/></svg>
             </div>
             <p class="system-metric-value">{{ total_superadmins }}</p>
             <p class="system-metric-detail">School administrators, including deactivated accounts</p>
-            <a class="system-metric-link" href="{% url 'systemadmin:manage_superadmins' %}">Manage Super Admins <span aria-hidden="true">&rarr;</span></a>
+            <a class="system-metric-link" href="{% url 'systemadmin:manage_superadmins' %}">Manage School Admins <span aria-hidden="true">&rarr;</span></a>
         </article>
         <article class="system-metric">
             <div class="system-metric-heading">
@@ -33,10 +33,10 @@
                 <svg class="system-metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
             </div>
             <p class="system-metric-value">{{ pending_invitations }}</p>
-            <p class="system-metric-detail">Active Super Admin invites awaiting sign-in at active schools</p>
+            <p class="system-metric-detail">Active School Admin invites awaiting sign-in at active schools</p>
             <a class="system-metric-link" href="{% url 'systemadmin:manage_superadmins' %}">Review invitations <span aria-hidden="true">&rarr;</span></a>
         </article>
     </div>
-    <p class="system-overview-note">School activity and consultation reports remain in each school’s Super Admin workspace.</p>
+    <p class="system-overview-note">School activity and consultation reports remain in each school’s School Admin workspace.</p>
 </section>
 {% endblock %}

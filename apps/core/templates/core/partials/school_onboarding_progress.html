@@ -1,0 +1,10 @@
+{% if onboarding_progress %}
+<section class="school-progress" aria-label="School registration progress">
+  <div class="school-progress-heading"><span>Registration progress</span><strong>{% if onboarding_progress.complete %}Completed{% else %}Step {{ onboarding_progress.current }} of {{ onboarding_progress.total }}{% endif %}</strong></div>
+  <div class="school-progress-track" role="progressbar" aria-label="School registration" aria-valuemin="1" aria-valuemax="{{ onboarding_progress.total }}" aria-valuenow="{{ onboarding_progress.current }}" aria-valuetext="{% if onboarding_progress.complete %}Approved{% else %}Step {{ onboarding_progress.current }} of {{ onboarding_progress.total }}: {{ onboarding_progress.label }}{% endif %}"><span style="width:{{ onboarding_progress.percent }}%"></span></div>
+  <ol class="school-progress-steps">
+    {% for step in onboarding_progress.steps %}<li class="is-{{ step.state }}"{% if step.number == onboarding_progress.current %} aria-current="step"{% endif %}><span class="school-progress-number" aria-hidden="true">{% if step.state == 'complete' %}&#10003;{% else %}{{ step.number }}{% endif %}</span><span>{{ step.label }}{% if step.state == 'complete' %}<span class="school-progress-sr-only"> (completed)</span>{% endif %}</span></li>{% endfor %}
+  </ol>
+  <p class="school-progress-next"><strong>{{ onboarding_progress.label }}:</strong> {{ onboarding_progress.description }}</p>
+</section>
+{% endif %}

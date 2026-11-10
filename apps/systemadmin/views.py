@@ -39,7 +39,7 @@ def _deliver_deactivation(request, user):
             raise RuntimeError('Email backend did not accept the notice.')
     except Exception as error:
         logger.warning('superadmin_deactivation_email_failed user=%s category=%s', user.pk, type(error).__name__)
-        messages.warning(request, 'The Super Admin was deactivated, but the notification email could not be sent.')
+        messages.warning(request, 'The School Admin was deactivated, but the notification email could not be sent.')
 
 
 def _form_page(request, form, *, title, tab, back, school=None):
@@ -116,8 +116,8 @@ def manage_superadmins(request):
         'administrators': User.objects.filter(role='superadmin').select_related('school').order_by('school__name', 'email'),
         'invitations': SuperAdminInvite.objects.filter(used=False).select_related('school', 'invited_by'),
         'filter_schools': School.objects.all(),
-        'tab': 'superadmins', 'title': 'Manage Super Admins',
-        'subtitle': 'Invite Super Admins and manage their access to each school.',
+        'tab': 'superadmins', 'title': 'Manage School Admins',
+        'subtitle': 'Invite School Admins and manage their access to each school.',
     })
 
 
@@ -145,7 +145,7 @@ def invite_edit(request, invite_id=None):
         else:
             messages.success(request, 'Invitation updated. Reactivate it when ready.')
         return redirect('systemadmin:manage_superadmins')
-    return _form_page(request, form, title='Edit Super Admin Invitation' if invite else 'Invite Super Admin',
+    return _form_page(request, form, title='Edit School Admin Invitation' if invite else 'Invite School Admin',
                       tab='superadmins', back='systemadmin:manage_superadmins')
 
 
@@ -187,9 +187,9 @@ def superadmin_edit(request, user_id):
     form = SuperAdminEditForm(request.POST or None, instance=user)
     if request.method == 'POST' and form.is_valid():
         form.save()
-        messages.success(request, 'Super Admin updated.')
+        messages.success(request, 'School Admin updated.')
         return redirect('systemadmin:manage_superadmins')
-    return _form_page(request, form, title=f'Edit Super Admin: {user.email}',
+    return _form_page(request, form, title=f'Edit School Admin: {user.email}',
                       tab='superadmins', back='systemadmin:manage_superadmins')
 
 
@@ -219,7 +219,7 @@ def superadmin_status(request, user_id):
             messages.error(request, '; '.join(error.messages))
         else:
             notify_deactivation = was_active and action == 'deactivate'
-            messages.success(request, 'Super Admin reactivated.' if user.is_active else 'Super Admin deactivated.')
+            messages.success(request, 'School Admin reactivated.' if user.is_active else 'School Admin deactivated.')
     if notify_deactivation:
         _deliver_deactivation(request, user)
     return redirect('systemadmin:manage_superadmins')

@@ -1,19 +1,19 @@
 {% extends 'superadmin/base_management.html' %}
 {% block title %}Manage Departments{% endblock %}
 {% block content %}
-<header class="main-header"><div><p class="page-kicker">School administration</p><h1>Manage Departments</h1><p>Create departments and optionally group them under a college.</p></div></header>
+<header class="main-header"><div><p class="page-kicker">School administration</p><h1>Manage Departments</h1><p>Create departments{% if request.user.school.offers_college %} and optionally group them under a college{% endif %}.</p></div></header>
 <section class="management-table-wrapper"><div class="management-table-header"><div><p class="section-kicker">Academic structure</p><h2>Departments</h2></div><div class="management-table-header-actions"><button class="btn-primary header-action" data-open-modal="departmentModal" type="button"><span class="header-action-icon" aria-hidden="true">+</span><span>Add Department</span></button></div></div><div class="table-scroll"><table>
-<thead><tr><th>Department</th><th>Code</th><th>College label</th><th>Members</th><th>Heads</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+<thead><tr><th>Department</th><th>Code</th>{% if request.user.school.offers_college %}<th>College label</th>{% endif %}<th>Members</th><th>Heads</th><th>Status</th><th>Actions</th></tr></thead><tbody>
 {% for department in departments %}<tr>
-  <td><strong>{{ department.name }}</strong></td><td>{{ department.code }}</td><td>{{ department.college.name|default:'No college' }}</td><td>{{ department.member_count }}</td><td>{{ department.head_count }}</td><td><span class="assignment-pill">{{ department.is_active|yesno:'Active,Deactivated' }}</span></td>
+  <td><strong>{{ department.name }}</strong></td><td>{{ department.code }}</td>{% if request.user.school.offers_college %}<td>{{ department.college.name|default:'No college' }}</td>{% endif %}<td>{{ department.member_count }}</td><td>{{ department.head_count }}</td><td><span class="assignment-pill">{{ department.is_active|yesno:'Active,Deactivated' }}</span></td>
   <td class="actions"><button type="button" class="btn-secondary" data-open-modal="departmentModal" data-edit-url="{% url 'superadmin:edit_department' department.pk %}" data-name="{{ department.name }}" data-code="{{ department.code }}" data-college="{{ department.college_id|default:'' }}" data-description="{{ department.description }}">Edit</button>
   <form method="post" action="{% url 'superadmin:department_status' department.pk %}" data-managed-form>{% csrf_token %}<input type="hidden" name="action" value="{{ department.is_active|yesno:'deactivate,reactivate' }}"><button class="btn-secondary" type="submit" {% if department.is_active %}data-confirm="Deactivate this department? History is preserved. Active members, heads and pending invitations must be resolved first."{% endif %}>{{ department.is_active|yesno:'Deactivate,Reactivate' }}</button></form>
   <form method="post" action="{% url 'superadmin:delete_department' department.pk %}" data-managed-form>{% csrf_token %}<button class="danger" type="submit" data-confirm="Delete this empty department? Departments with linked accounts or records cannot be deleted.">Delete</button></form></td>
-</tr>{% empty %}<tr><td colspan="7" class="empty-state">No departments yet. Add your first department.</td></tr>{% endfor %}
+</tr>{% empty %}<tr><td colspan="{% if request.user.school.offers_college %}7{% else %}6{% endif %}" class="empty-state">No departments yet. Add your first department.</td></tr>{% endfor %}
 </tbody></table></div></section>
 {% endblock %}
 {% block modals %}
-<dialog id="departmentModal" class="management-dialog"><div class="modal-header"><div><h2 data-modal-title data-create-title="Add Department" data-edit-title="Edit Department">Add Department</h2><p>A college is optional. The department code is locked after creation.</p></div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button></div>
+<dialog id="departmentModal" class="management-dialog"><div class="modal-header"><div><h2 data-modal-title data-create-title="Add Department" data-edit-title="Edit Department">Add Department</h2><p>{% if request.user.school.offers_college %}A college is optional. {% endif %}The department code is locked after creation.</p></div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button></div>
 <form method="post" action="{% url 'superadmin:create_department' %}" data-create-url="{% url 'superadmin:create_department' %}" data-managed-form class="modal-form">{% csrf_token %}
 <p data-form-error class="assignment-error" role="alert" hidden></p>
 {% for field in department_form %}{% if field.name != 'description' %}<div class="modal-form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}{% endfor %}

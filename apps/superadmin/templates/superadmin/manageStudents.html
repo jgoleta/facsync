@@ -20,7 +20,7 @@
             <div class="sidebar-header">
                 <a href="{% url 'superadmin:superadmin_dashboard' %}" class="brand">
                     {% include 'components/_facsync_logo.html' %}
-                    <span>FacSync Super Admin</span>
+                    <span>FacSync School Admin</span>
                 </a>
             </div>
             {% include 'superadmin/partials/sidebar_nav.html' %}
@@ -50,7 +50,7 @@
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
-                            <th>Level / Grade or Year</th><th>Department</th><th>College</th>
+                            <th>Level / Grade or Year</th><th>Department</th>{% if request.user.school.offers_college %}<th>College</th>{% endif %}
                             <th>Status</th><th>Actions</th>
                         </tr>
                     </thead>
@@ -68,7 +68,7 @@
                                             </tr>
                                             {% empty %}
                                             <tr>
-                                                <td colspan="7" class="empty-state">No student accounts yet.</td>
+                                                <td colspan="{% if request.user.school.offers_college %}7{% else %}6{% endif %}" class="empty-state">No student accounts yet.</td>
                                             </tr>
                                             {% endfor %}
                                         </tbody>

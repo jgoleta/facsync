@@ -1,4 +1,5 @@
 (() => {
+  if (document.querySelector('.school-preview-banner')) return;
   document.querySelectorAll('form[data-school-request-submit]').forEach(form => {
     form.addEventListener('submit', event => {
       if (form.dataset.processing === 'true') { event.preventDefault(); return; }

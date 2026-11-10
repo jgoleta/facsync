@@ -80,7 +80,7 @@
   document.addEventListener('change', event => {
     if (modal.contains(event.target)) dirty = true;
     if (event.target.id === 'system-school-filter') filterSchools();
-    if (event.target.id === 'request-status' && event.target.closest('[data-request-filter]')) {
+    if (event.target.matches('select') && event.target.closest('[data-request-filter]')) {
       event.target.form.requestSubmit();
     }
     validateDomains(event.target);
@@ -116,11 +116,16 @@
   function insertForm(content, url, failed = false) {
     const imported = document.importNode(content, true);
     const form = imported.querySelector('form');
+    document.getElementById('system-modal-title').textContent = content.dataset.formTitle;
+    body.replaceChildren(imported);
+    // Later onboarding stages show a summary and a final-review link, not an editable form.
+    if (!form) {
+      body.querySelector('[data-modal-trigger], a[href], button')?.focus();
+      return;
+    }
     form.action = url;
     const domainField = form.querySelector('[name="domains"]');
     if (domainField) form.dataset.currentDomain = domainField.value.trim().toLowerCase();
-    document.getElementById('system-modal-title').textContent = content.dataset.formTitle;
-    body.replaceChildren(imported);
     form.querySelectorAll('[name="domains"]').forEach(validateDomains);
     (failed ? form.querySelector('[aria-invalid="true"], input:not([type="hidden"]):not([disabled]), select, textarea') :
       form.querySelector('input:not([type="hidden"]):not([disabled]), select, textarea'))?.focus();

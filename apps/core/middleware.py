@@ -20,9 +20,9 @@ class SchoolScopeMiddleware:
             elif not system_admin and user.school_id is None:
                 message = 'Your account is not assigned to a school. Please contact your administrator.'
             elif not system_admin and not user.school.is_active:
-                message = 'Your school’s access to FacSync has been suspended. Please contact your school’s Super Admin.'
+                message = 'Your school’s access to FacSync has been suspended. Please contact your school’s School Admin.'
             elif request.path.startswith('/admin/') and not system_admin:
-                message = 'Only authorized FacSync Administration accounts can access database administration.'
+                message = 'Only authorized FacSync Super Admin accounts can access database administration.'
             if message and request.path not in {'/accounts/logout/', '/login/'}:
                 if '/api/' in request.path or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'error': message}, status=403)

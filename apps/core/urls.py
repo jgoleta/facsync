@@ -2,10 +2,16 @@ from django.urls import path
 from . import views
 from . import photo_views
 from . import school_request_views
+from . import school_onboarding_views
+from . import school_onboarding_scheduler
 
 app_name = 'core'
 
 urlpatterns = [
+    path('internal/school-evidence/cleanup/', school_onboarding_scheduler.cleanup_evidence, name='school_evidence_cleanup'),
+    path('school-access/', school_onboarding_views.school_inquiry, name='school_inquiry'),
+    path('school-access/link/<str:token>/', school_onboarding_views.open_school_access, name='school_access_link'),
+    path('school-access/verification/', school_onboarding_views.school_verification, name='school_verification'),
     path('register/school/', school_request_views.school_registration, name='school_registration'),
     path('register/school/verify/', school_request_views.start_school_registration, name='school_registration_start'),
     path('register/school/reset/', school_request_views.reset_school_registration, name='school_registration_reset'),

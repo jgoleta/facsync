@@ -1,0 +1,8 @@
+{% extends 'emails/base_email.html' %}
+{% block title %}{{ heading }}{% endblock %}
+{% block heading %}{{ heading }}{% endblock %}
+{% block body %}<p>Hello {{ inquiry.representative_name }},</p><p>School: <strong>{{ inquiry.school_name }}</strong></p>
+{% if message %}<p>{{ message|linebreaksbr }}</p>{% endif %}
+{% if has_invitation %}<p>Use the Google account <strong>{{ inquiry.email }}</strong> to open your private form. This invitation expires in seven days and can be submitted once. A replacement invitation invalidates the previous link.</p><p>Completing this form does not activate a school. Final Super Admin approval is still required.</p>{% endif %}
+{% if rejected %}<p>This inquiry was not approved. No school or account was created.</p>{% endif %}{% endblock %}
+{% block button %}{% if action_url %}<tr><td align="center" style="padding:16px 40px 32px;"><a href="{{ action_url }}" style="display:inline-block;padding:12px 24px;background:#3b82f6;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:600;">{{ action_label }}</a></td></tr>{% endif %}{% endblock %}

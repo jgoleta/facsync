@@ -10,12 +10,12 @@
   "{% url 'depthead:admin_faculty' %}": ["Manage Faculty", "table"],
   "{% url 'depthead:college_settings' %}": ["{% if request.user.role == 'officeadmin' %}Office Settings{% else %}Department Settings{% endif %}", "form"],
   "{% url 'superadmin:superadmin_dashboard' %}": ["School Overview", "dashboard"],
-  "{% url 'superadmin:manage_colleges' %}": ["Manage Colleges", "table"],
+  {% if request.user.school.offers_college %}"{% url 'superadmin:manage_colleges' %}": ["Manage Colleges", "table"],{% endif %}
   "{% url 'superadmin:manage_departments' %}": ["Manage Departments", "departments"],
   "{% url 'superadmin:school_settings' %}": ["School Settings", "school-settings"],
   "{% url 'superadmin:manage_offices' %}": ["Manage Offices", "table"],
   "{% url 'superadmin:manage_admins' %}": ["Manage Admins", "table"],
-  "{% url 'superadmin:manage_superadmins' %}": ["Manage Super Admins", "superadmins"],
+  "{% url 'superadmin:manage_superadmins' %}": ["Manage School Admins", "superadmins"],
   "{% url 'superadmin:manage_faculty' %}": ["Manage Faculty", "table"],
   "{% url 'superadmin:manage_students' %}": ["Manage Students", "table"]
 }

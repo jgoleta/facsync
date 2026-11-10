@@ -2,6 +2,9 @@
 
 from .base import *  # noqa: F403
 
+# Local visual previews use sample data and never submit onboarding forms.
+SCHOOL_ONBOARDING_PREVIEWS = True
+
 # Close the connection after each request in runserver so reloads and request
 # threads do not exhaust the Supabase session pooler's limited client slots.
 DATABASES = {

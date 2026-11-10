@@ -278,9 +278,9 @@ def send_superadmin_invite_email(email, school):
         return False
     login_url = settings.SITE_URL.rstrip('/') + reverse('core:login')
     return bool(_send_html_email(
-        "You've been invited to FacSync as a Super Admin",
+        "You've been invited to FacSync as a School Admin",
         'superadmin_invite.html', {'school': school, 'login_url': login_url}, [email],
-        text_content=(f'You have been invited as a Super Admin for {school.name} ({school.code}) on FacSync.\n\n'
+        text_content=(f'You have been invited as a School Admin for {school.name} ({school.code}) on FacSync.\n\n'
                       'Sign in with Google using the email address that received this invitation. '
                       f'Your account will activate on your first login.\n\nActivate Account: {login_url}'),
     ))
@@ -290,6 +290,34 @@ def send_school_request_receipt(item):
     return bool(_send_html_email('School registration request received', 'school_request_receipt.html',
         {'application': item, 'status_url': settings.SITE_URL.rstrip('/') + reverse('core:school_registration')},
         [item.applicant_email]))
+
+
+def send_school_inquiry_receipt(item):
+    return bool(_send_html_email('School access inquiry received', 'school_access_update.html',
+        {'heading': 'Inquiry received', 'inquiry': item,
+         'message': 'Your inquiry is awaiting initial review. This has not created a school or reserved its domain.'}, [item.email]))
+
+
+def send_school_inquiry_notification(item):
+    recipients = list(User._base_manager.filter(role='systemadmin', school__isnull=True,
+        is_active=True, account_status='active').exclude(email='').values_list('email', flat=True))
+    if not recipients:
+        return True
+    return bool(_send_html_email('School onboarding awaiting review', 'school_access_update.html',
+        {'heading': 'School onboarding update', 'inquiry': item, 'message': item.get_stage_display(),
+         'action_url': settings.SITE_URL.rstrip('/') + reverse('systemadmin:inquiry_review', args=[item.pk]),
+         'action_label': 'Review inquiry'}, list(dict.fromkeys(recipients))))
+
+
+def send_school_access_update(item, token, applicant_message=''):
+    registration = item.stage == 'registration_wait'
+    heading = ('Complete school registration' if registration else 'Complete school verification') if token else 'School inquiry update'
+    context = {'heading': heading, 'inquiry': item, 'message': applicant_message,
+        'rejected': item.stage == 'rejected', 'has_invitation': bool(token)}
+    if token:
+        context.update(action_url=settings.SITE_URL.rstrip('/') + reverse('core:school_access_link', args=[token]),
+            action_label='Register school' if registration else 'Complete verification')
+    return bool(_send_html_email(heading, 'school_access_update.html', context, [item.email]))
 
 
 def send_school_request_notification(item):
@@ -315,12 +343,12 @@ def send_superadmin_deactivated_email(user):
         return False
     name = user.get_full_name() or user.username
     return bool(_send_html_email(
-        'Your FacSync Super Admin account was deactivated',
+        'Your FacSync School Admin account was deactivated',
         'superadmin_deactivated.html', {'name': name, 'school': user.school}, [email],
-        text_content=(f'Hi {name},\n\nYour Super Admin account for {user.school.name} '
-                      f'({user.school.code}) has been deactivated through FacSync Administration. '
+        text_content=(f'Hi {name},\n\nYour School Admin account for {user.school.name} '
+                      f'({user.school.code}) has been deactivated through FacSync Super Admin. '
                       'You will not be able to sign in until it is reactivated. '
-                      'If you believe this was a mistake, please contact FacSync Administration.'),
+                      'If you believe this was a mistake, please contact FacSync Super Admin.'),
     ))
 
 logger = logging.getLogger(__name__)

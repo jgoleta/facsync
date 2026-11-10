@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods
 
 from apps.core.decorators import role_required
-from apps.core.models import SchoolRegistrationRequest
+from apps.core.models import SchoolRegistrationRequest, SchoolInquiry
 from apps.core.school_request_forms import SchoolRequestReviewForm
 from apps.core.school_request_views import deliver_request_email
 from apps.core.services import send_school_request_rejection
@@ -21,12 +21,22 @@ def school_requests(request):
     status = request.GET.get('status', 'pending')
     if status not in {'pending', 'approved', 'rejected', 'all'}:
         status = 'pending'
-    rows = SchoolRegistrationRequest.objects.select_related('approved_school', 'reviewed_by')
+    rows = SchoolRegistrationRequest.objects.filter(inquiry__isnull=True).select_related('approved_school', 'reviewed_by')
+    stage = request.GET.get('stage', 'open')
+    if stage not in dict(SchoolInquiry.STAGES) and stage not in {'open', 'all'}:
+        stage = 'open'
+    inquiries = SchoolInquiry.objects.select_related('application')
+    if stage == 'open':
+        inquiries = inquiries.exclude(stage__in=['approved', 'rejected'])
+    elif stage != 'all':
+        inquiries = inquiries.filter(stage=stage)
     if status != 'all':
         rows = rows.filter(status=status)
     return render(request, 'systemadmin/requests.html', {'tab': 'requests', 'title': 'School Requests',
-        'subtitle': 'Verify school representatives before creating schools and their first Super Admin invitation.',
-        'applications': Paginator(rows, 25).get_page(request.GET.get('page')), 'status_filter': status})
+        'subtitle': 'Verify school representatives before creating schools and their first School Admin invitation.',
+        'applications': Paginator(rows, 25).get_page(request.GET.get('page')), 'status_filter': status,
+        'inquiries': Paginator(inquiries, 25).get_page(request.GET.get('inquiry_page')),
+        'stage_filter': stage, 'stage_choices': SchoolInquiry.STAGES})
 
 
 @login_required
@@ -49,12 +59,12 @@ def request_review(request, request_id):
             else:
                 if changed:
                     if saved.status == 'approved':
-                        messages.success(request, 'School approved. Its first Super Admin invitation is saved.')
+                        messages.success(request, 'School approved. Its first School Admin invitation is saved.')
                         _deliver_invite(request, saved.invitation)
                     else:
                         messages.success(request, 'Request rejected. No school or account was created.')
                         if not deliver_request_email(send_school_request_rejection, saved):
-                            messages.warning(request, 'The decision is saved, but its email could not be sent. The applicant can still check their status.')
+                            messages.warning(request, 'The decision is saved, but its email could not be sent. Contact the applicant to communicate the decision.')
                 else:
                     messages.info(request, 'This request was already reviewed. No changes were made.')
                 return redirect('systemadmin:school_requests')
