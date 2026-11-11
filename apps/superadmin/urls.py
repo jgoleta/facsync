@@ -6,6 +6,8 @@ from . import superadmin_views
 app_name = 'superadmin'
 
 urlpatterns = [
+    path('superadmins/<int:user_id>/permissions/', superadmin_views.edit_school_admin_permissions, name='edit_school_admin_permissions'),
+    path('superadmins/invites/<int:invite_id>/permissions/', superadmin_views.edit_school_admin_invite_permissions, name='edit_school_admin_invite_permissions'),
     path('superadmins/', superadmin_views.manage_superadmins, name='manage_superadmins'),
     path('superadmins/invite/', superadmin_views.invite_superadmin, name='invite_superadmin'),
     path('superadmins/invites/<int:invite_id>/resend/', superadmin_views.resend_superadmin_invite, name='resend_superadmin_invite'),

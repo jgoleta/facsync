@@ -11,6 +11,7 @@ from .school_request_models import SchoolRegistrationRequest
 from .school_onboarding_models import SchoolInquiry, SchoolAccessLink, SchoolInquiryEvent
 from .school_scope import SchoolScopedModel, SchoolUserManager
 from .education import LEVEL_CHOICES, YEAR_CHOICES, default_levels, validate_announcement_levels
+from .school_admin_access import default_school_admin_permissions, validate_school_admin_permissions
 
 
 class User(AbstractUser, SchoolScopedModel):
@@ -46,6 +47,9 @@ class User(AbstractUser, SchoolScopedModel):
     title = models.CharField(max_length=20, choices=TITLE_CHOICES, blank=True, null=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='student')
     account_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    school_admin_full_access = models.BooleanField(default=True)
+    school_admin_permissions = models.JSONField(default=default_school_admin_permissions,
+        validators=[validate_school_admin_permissions])
     college = models.CharField(max_length=100, blank=True, null=True)
     # Nullable only during the staged rollout; existing records are backfilled.
     school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='users')
@@ -83,6 +87,16 @@ class User(AbstractUser, SchoolScopedModel):
         """Return the full college name, including for legacy CCS records."""
         return get_college_label(self.college)
 
+    @property
+    def school_admin_access(self):
+        from .school_admin_access import feature_access
+        return feature_access(self)
+
+    @property
+    def school_admin_access_label(self):
+        from .school_admin_access import permission_labels
+        return 'Full access' if self.school_admin_full_access else ', '.join(permission_labels(self.school_admin_permissions))
+
     def get_year_level_display(self):
         return dict(YEAR_CHOICES.get(self.educational_level or 'college', [])).get(self.year_level, self.year_level or '')
 
@@ -94,6 +108,14 @@ class SuperAdminInvite(SchoolScopedModel):
     created_at = models.DateTimeField(auto_now_add=True)
     used = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    school_admin_full_access = models.BooleanField(default=True)
+    school_admin_permissions = models.JSONField(default=default_school_admin_permissions,
+        validators=[validate_school_admin_permissions])
+
+    @property
+    def school_admin_access_label(self):
+        from .school_admin_access import permission_labels
+        return 'Full access' if self.school_admin_full_access else ', '.join(permission_labels(self.school_admin_permissions))
 
     class Meta:
         ordering = ['-created_at']

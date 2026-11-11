@@ -156,6 +156,8 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                         self._deny_invite(request)
                     sociallogin.user.school = school
                     sociallogin.user.role = 'superadmin'
+                    sociallogin.user.school_admin_full_access = invite.school_admin_full_access
+                    sociallogin.user.school_admin_permissions = list(invite.school_admin_permissions)
                     sociallogin.user.account_status = 'active'
                     sociallogin.user.profile_completed = True
                     sociallogin.user.college = None
@@ -270,6 +272,8 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                     or not superadmin_invite.is_active or not superadmin_invite.school.is_active):
                 self._deny_invite(request)
             sociallogin.user.role = 'superadmin'
+            sociallogin.user.school_admin_full_access = superadmin_invite.school_admin_full_access
+            sociallogin.user.school_admin_permissions = list(superadmin_invite.school_admin_permissions)
             sociallogin.user.account_status = 'active'
             sociallogin.user.school = superadmin_invite.school
             sociallogin.user.profile_completed = True

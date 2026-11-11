@@ -7,6 +7,7 @@ from django.db import transaction
 from apps.core.invitations import validate_invite_identity
 from apps.core.models import School, SchoolDomain, SuperAdminInvite, User
 from apps.core.school_models import validate_school_domain
+from apps.core.school_admin_access import FEATURES
 
 
 class SchoolForm(forms.ModelForm):
@@ -56,20 +57,30 @@ class SchoolForm(forms.ModelForm):
 
 
 class SuperAdminInviteForm(forms.ModelForm):
+    school_admin_permissions = forms.MultipleChoiceField(choices=FEATURES, required=False, widget=forms.CheckboxSelectMultiple)
     class Meta:
         model = SuperAdminInvite
-        fields = ['email', 'school']
+        fields = ['email', 'school', 'school_admin_full_access', 'school_admin_permissions']
+        labels = {'school_admin_full_access': 'Full School Admin access', 'school_admin_permissions': 'Feature access'}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['school'].queryset = School.objects.filter(is_active=True)
         self.fields['email'].help_text = 'Use the Google account they will sign in with. Any email domain is allowed.'
 
+    def clean_school_admin_permissions(self):
+        return ['overview', *[key for key in self.cleaned_data['school_admin_permissions'] if key != 'overview']]
+
     def clean_email(self):
         return validate_invite_identity(self.cleaned_data['email'].strip().lower(), instance=self.instance)
 
 
 class SuperAdminEditForm(forms.ModelForm):
+    school_admin_permissions = forms.MultipleChoiceField(choices=FEATURES, required=False, widget=forms.CheckboxSelectMultiple)
     class Meta:
         model = User
-        fields = ['first_name', 'last_name']
+        fields = ['first_name', 'last_name', 'school_admin_full_access', 'school_admin_permissions']
+        labels = {'school_admin_full_access': 'Full School Admin access', 'school_admin_permissions': 'Feature access'}
+
+    def clean_school_admin_permissions(self):
+        return ['overview', *[key for key in self.cleaned_data['school_admin_permissions'] if key != 'overview']]

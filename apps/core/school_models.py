@@ -91,8 +91,9 @@ class School(models.Model):
         from .models import User
         from .school_scope import require_school
         require_school(self)
-        if actor is None or not User._base_manager.filter(pk=actor.pk, role='superadmin', school_id=self.pk,
-                is_active=True, account_status='active').exists():
+        from .school_admin_access import has_school_admin_permission
+        persisted_actor = User._base_manager.filter(pk=getattr(actor, 'pk', None), school_id=self.pk).first()
+        if persisted_actor is None or not has_school_admin_permission(persisted_actor, 'settings'):
             raise PermissionDenied('Only this school\'s School Admin can configure educational levels.')
         validate_school_levels(levels)
         levels = ordered_levels(levels)
@@ -121,8 +122,9 @@ class School(models.Model):
         with transaction.atomic():
             locked = type(self).objects.select_for_update().get(pk=self.pk)
             require_school(locked)
-            if actor is None or not User._base_manager.filter(pk=actor.pk, role='superadmin',
-                    school_id=locked.pk, is_active=True, account_status='active').exists():
+            from .school_admin_access import has_school_admin_permission
+            persisted_actor = User._base_manager.filter(pk=getattr(actor, 'pk', None), school_id=locked.pk).first()
+            if persisted_actor is None or not has_school_admin_permission(persisted_actor, 'settings'):
                 raise PermissionDenied('Only this school\'s School Admin can edit its details.')
             domains = list(locked.domains.select_for_update().order_by('pk'))
             if len(domains) > 1:
