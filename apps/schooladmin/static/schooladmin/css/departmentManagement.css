@@ -1,0 +1,66 @@
+.department-management .actions { display:flex; flex-wrap:nowrap; align-items:center; gap:8px; min-width:max-content; }
+.department-management .actions form { display:flex; align-items:center; margin:0; }
+.department-management .btn-primary,
+.department-management .btn-secondary,
+.department-management .actions .danger { width:auto !important; min-height:34px; padding:8px 12px; font-size:.82rem; flex:0 0 auto; }
+.department-management td.actions { vertical-align:middle; white-space:nowrap; }
+.department-management .management-table-header-actions { flex:0 0 auto; }
+.department-management .header-action { min-height:40px; padding:9px 14px; font-size:.85rem; }
+.department-management > .management-table-wrapper + .management-table-wrapper { margin-top:24px; }
+.management-pagination { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:16px 0 0; color:var(--text-secondary); font-size:.85rem; }
+.management-pagination > div { display:flex; gap:8px; }
+.management-pagination a { text-decoration:none; }
+.management-pagination .pagination-disabled { cursor:not-allowed; opacity:.45; }
+.department-management .table-scroll {
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  overscroll-behavior-inline:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-gutter:stable;
+}
+.department-management .table-scroll table { min-width:980px; }
+.department-management .table-scroll tbody tr { border-bottom:1px solid var(--border-color); }
+.department-management .table-scroll tbody tr:last-child { border-bottom:none; }
+.department-management .table-scroll tbody td { border-bottom:0; }
+.school-settings-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; align-items:start; }
+.school-settings-grid .management-table-wrapper { min-width:0; }
+.school-settings-grid .management-table-header p { color:var(--text-secondary); line-height:1.6; }
+.school-details-form { display:grid; gap:18px; }
+.school-settings-field { display:grid; gap:8px; }
+.school-settings-field label { font-size:.88rem; font-weight:600; }
+.school-settings-field input { box-sizing:border-box; width:100%; min-width:0; padding:11px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); font:inherit; }
+.school-settings-field small { color:var(--text-secondary); line-height:1.5; }
+.school-settings-actions { display:flex; justify-content:flex-end; }
+.school-settings-field input:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+.school-settings-grid .education-settings-form { padding:0; display:grid; gap:18px; }
+.school-settings-grid .education-settings-form > p { margin:0; color:var(--text-secondary); line-height:1.6; }
+@media(max-width:1050px) { .school-settings-grid { grid-template-columns:minmax(0,1fr); } }
+.education-settings-form { padding:24px; }
+.education-settings-form fieldset { border:1px solid var(--border-color); border-radius:8px; padding:16px; }
+.education-settings-form label { display:block; margin:10px 0; }
+.assignment-muted { color:var(--text-secondary); font-size:.85rem; margin:6px 0 0; white-space:normal; max-width:28rem; }
+.assignment-pill { display:inline-block; padding:4px 10px; border-radius:999px; background:var(--accent-soft); color:var(--text-primary); font-size:.8rem; }
+.assignment-error { color:var(--danger); white-space:pre-line; }
+.management-dialog { width:min(560px,calc(100vw - 32px)); max-height:85vh; overflow:auto; padding:24px; border:1px solid var(--border-color); border-radius:16px; color:var(--text-primary); background:var(--bg-card); }
+.management-dialog::backdrop { background:color-mix(in srgb,var(--bg-sidebar) 60%,transparent); }
+.management-dialog select[multiple] { min-height:140px; }
+.management-dialog .department-options { margin:0 0 18px; padding:12px; border:1px solid var(--border-color); border-radius:8px; }
+.management-dialog .department-options legend { padding:0 6px; font-weight:600; }
+.management-dialog .department-options-list { display:grid; gap:6px; max-height:240px; overflow:auto; }
+.management-dialog .department-checkbox-option { display:flex; align-items:flex-start; gap:10px; padding:8px; border-radius:6px; cursor:pointer; }
+.management-dialog .department-checkbox-option:hover { background:var(--bg-main); }
+.management-dialog .department-checkbox-option input { width:auto; flex:0 0 auto; margin:3px 0 0; accent-color:var(--primary); }
+.management-dialog .department-checkbox-option small { display:block; margin-top:3px; color:var(--text-secondary); }
+.management-dialog .modal-header { display:flex; justify-content:space-between; gap:16px; }
+.management-dialog .modal-header p { color:var(--text-secondary); }
+.management-dialog .modal-form-group { margin-bottom:18px; }
+.management-dialog .modal-form-group label { display:block; margin-bottom:6px; }
+.management-dialog .modal-form-group input,.management-dialog .modal-form-group select,.management-dialog .modal-form-group textarea { box-sizing:border-box; width:100%; color:var(--text-primary); background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:10px; }
+.management-dialog :disabled { cursor:wait; opacity:.65; }
+.management-loading-content { display:flex; align-items:center; flex-direction:column; gap:12px; color:var(--text-light); }
+.management-toast { position:fixed; bottom:24px; right:24px; z-index:4000; padding:14px 20px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-primary); border-radius:10px; max-width:calc(100vw - 48px); }
+.management-toast.error { color:var(--danger); }
+.management-dialog button[type=submit][disabled]::before { content:''; display:inline-block; width:12px; height:12px; margin-right:8px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .8s linear infinite; }
+@media(max-width:700px) { .department-management .main-header.with-action { align-items:stretch; flex-direction:column; gap:16px; } }

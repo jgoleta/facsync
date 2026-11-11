@@ -1,0 +1,103 @@
+<!doctype html>
+{% load static %}
+<html lang="en">
+
+<head>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
+    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_main.css' %}?v=20261031-footer">
+    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}">
+    <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FacSync | Manage Offices</title>
+    {% include 'components/_admin_navigation_loading.html' %}
+</head>
+
+<body class="college-head-palette">
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-header"><a href="{% url 'superadmin:superadmin_dashboard' %}" class="brand">{% include 'components/_facsync_logo.html' %}<span>FacSync School Admin</span></a></div>
+            {% include 'schooladmin/partials/sidebar_nav.html' %}
+            <div class="sidebar-account">{% include 'components/_account_identity.html' with show_profile_icon=True %}
+            </div>
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-footer"><a href="{% url 'account_logout' %}"
+                    class="nav-item logout-link"><span>Logout</span></a></div>
+        </aside>
+        <main class="main-content">
+            <header class="main-header">
+                <div>
+                    <p class="page-kicker">System administration</p>
+                    <h1>Manage Offices</h1>
+                    <p>Add or remove university offices and review assigned Office Admins.</p>
+                </div>
+            </header>
+            {% for message in messages %}<p role="status" class="message-{{ message.tags }}">{{ message }}</p>{% endfor %}
+            <div class="management-table-wrapper">
+                <div class="management-table-header">
+                    <div>
+                        <p class="section-kicker">Student services directory</p>
+                        <h2>Offices</h2>
+                    </div>
+                    <div class="management-table-header-actions"><button type="button" class="btn-primary header-action"
+                            id="openAddOfficeModal"><span>Add Office</span></button></div>
+                </div>
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Office Name</th>
+                                <th>Code</th>
+                                <th>Office Admin</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for office in offices %}<tr>
+                                <td>{{ office.name }}</td>
+                                <td>{{ office.code }}</td>
+                                <td>{% for admin in office.head_users %}{{ admin.get_full_name|default:admin.username
+                                    }}{% if not forloop.last %}, {% endif %}{% empty %}Not assigned{% endfor %}</td>
+                                <td class="actions">
+                                    <form method="post" action="{% url 'superadmin:delete_office' office.id %}"
+                                        class="inline-form">{% csrf_token %}<button type="submit" class="danger"
+                                            data-confirm="Remove {{ office.name|escapejs }}?">Remove</button></form>
+                                </td>
+                            </tr>{% empty %}<tr>
+                                <td colspan="4" class="empty-state">No offices yet.</td>
+                            </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div id="addOfficeModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <h2>Add Office</h2>
+                    <p>Register a student-service office in the university directory.</p>
+                </div><button type="button" class="modal-close" id="closeAddOfficeModal"
+                    aria-label="Close">&times;</button>
+            </div>
+            <form method="post" action="{% url 'superadmin:create_office' %}" class="settings-form modal-form">{% csrf_token %}<div class="form-group modal-form-group"><label for="add-office-name">Office
+                        Name</label><input type="text" id="add-office-name" name="name" required
+                        placeholder="e.g. Office of Student Affairs"></div>
+                <div class="form-group modal-form-group"><label for="add-office-code">Office Code</label><input
+                        type="text" id="add-office-code" name="code" required maxlength="20" placeholder="e.g. OSA">
+                </div>
+                <div class="form-group modal-form-group"><label for="add-office-description">Description
+                        (optional)</label><textarea id="add-office-description" name="description"></textarea></div>
+                <div class="form-actions modal-actions"><button type="submit" class="btn-primary">Add Office</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% include 'schooladmin/partials/confirmation_modal.html' %}
+    <script src="{% static 'schooladmin/js/departmentManagement.js' %}"></script>
+    <script src="{% static 'schooladmin/js/manageColleges.js' %}"></script>
+</body>
+
+</html>

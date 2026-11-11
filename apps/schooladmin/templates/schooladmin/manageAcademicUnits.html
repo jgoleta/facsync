@@ -1,0 +1,43 @@
+{% extends 'schooladmin/base_management.html' %}
+{% load static %}
+
+{% block title %}Manage Colleges & Departments{% endblock %}
+
+{% block content %}
+<header class="main-header">
+  <div>
+    <p class="page-kicker">School administration</p>
+    <h1>Manage Colleges &amp; Departments</h1>
+    <p>Organize your school directory and maintain its academic units.</p>
+  </div>
+</header>
+
+{% if request.user.school_admin_access.colleges and request.user.school.offers_college %}
+<section class="management-table-wrapper">
+  <div class="management-table-header"><div><p class="section-kicker">University directory</p><h2>Colleges</h2></div><div class="management-table-header-actions"><button type="button" class="btn-primary header-action" id="openAddCollegeModal"><span>Add New College</span></button></div></div>
+  <div class="table-scroll"><table>
+    <thead><tr><th>College Name</th><th>Code</th><th>Actions</th></tr></thead>
+    <tbody>{% for college in colleges %}<tr><td>{{ college.name }}</td><td>{{ college.code }}</td><td class="actions"><form method="post" action="{% url 'superadmin:delete_college' college.id %}" class="inline-form">{% csrf_token %}<button type="submit" class="danger" data-confirm="Remove {{ college.name }}? This cannot be undone.">Remove</button></form></td></tr>{% empty %}<tr><td colspan="3" class="empty-state">No colleges yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <nav class="management-pagination" aria-label="Colleges pagination"><span>Page {{ colleges.number }} of {{ colleges.paginator.num_pages }}</span><div>{% if colleges.has_previous %}<a class="btn-secondary" href="?colleges_page={{ colleges.previous_page_number }}&amp;departments_page={{ request.GET.departments_page|default:1 }}" aria-label="Previous colleges page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if colleges.has_next %}<a class="btn-secondary" href="?colleges_page={{ colleges.next_page_number }}&amp;departments_page={{ request.GET.departments_page|default:1 }}" aria-label="Next colleges page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div></nav>
+</section>
+{% endif %}
+
+{% if request.user.school_admin_access.departments %}
+<section class="management-table-wrapper">
+  <div class="management-table-header"><div><p class="section-kicker">Academic structure</p><h2>Departments</h2></div><div class="management-table-header-actions"><button class="btn-primary header-action" data-open-modal="departmentModal" type="button"><span>Add Department</span></button></div></div>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Department</th><th>Code</th>{% if request.user.school.offers_college %}<th>College label</th>{% endif %}<th>Members</th><th>Heads</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>{% for department in departments %}<tr><td><strong>{{ department.name }}</strong></td><td>{{ department.code }}</td>{% if request.user.school.offers_college %}<td>{{ department.college.name|default:'No college' }}</td>{% endif %}<td>{{ department.member_count }}</td><td>{{ department.head_count }}</td><td><span class="assignment-pill">{{ department.is_active|yesno:'Active,Deactivated' }}</span></td><td class="actions"><button type="button" class="btn-secondary" data-open-modal="departmentModal" data-edit-url="{% url 'superadmin:edit_department' department.pk %}" data-name="{{ department.name }}" data-code="{{ department.code }}" data-college="{{ department.college_id|default:'' }}" data-description="{{ department.description }}">Edit</button><form method="post" action="{% url 'superadmin:department_status' department.pk %}" data-managed-form>{% csrf_token %}<input type="hidden" name="action" value="{{ department.is_active|yesno:'deactivate,reactivate' }}"><button class="btn-secondary" type="submit" {% if department.is_active %}data-confirm="Deactivate this department? History is preserved. Active members, heads and pending invitations must be resolved first."{% endif %}>{{ department.is_active|yesno:'Deactivate,Reactivate' }}</button></form><form method="post" action="{% url 'superadmin:delete_department' department.pk %}" data-managed-form>{% csrf_token %}<button class="danger" type="submit" data-confirm="Remove this empty department? Departments with linked accounts or records cannot be removed.">Remove</button></form></td></tr>{% empty %}<tr><td colspan="{% if request.user.school.offers_college %}7{% else %}6{% endif %}" class="empty-state">No departments yet. Add your first department.</td></tr>{% endfor %}</tbody>
+  </table></div>
+  <nav class="management-pagination" aria-label="Departments pagination"><span>Page {{ departments.number }} of {{ departments.paginator.num_pages }}</span><div>{% if departments.has_previous %}<a class="btn-secondary" href="?departments_page={{ departments.previous_page_number }}&amp;colleges_page={{ request.GET.colleges_page|default:1 }}" aria-label="Previous departments page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if departments.has_next %}<a class="btn-secondary" href="?departments_page={{ departments.next_page_number }}&amp;colleges_page={{ request.GET.colleges_page|default:1 }}" aria-label="Next departments page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div></nav>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block modals %}
+{% if request.user.school_admin_access.colleges and request.user.school.offers_college %}<div id="addCollegeModal" class="modal-overlay hidden"><div class="modal"><div class="modal-header"><div><h2>Add New College</h2><p>Register a college in the university directory.</p></div><button type="button" class="modal-close" id="closeAddCollegeModal" aria-label="Close">&times;</button></div><form method="post" action="{% url 'superadmin:create_college' %}" class="settings-form modal-form">{% csrf_token %}<div class="form-group modal-form-group"><label for="add-college-name">College Name</label><input type="text" id="add-college-name" name="name" required placeholder="e.g. College of Communication Studies"></div><div class="form-group modal-form-group"><label for="add-college-code">College Code</label><input type="text" id="add-college-code" name="code" required maxlength="20" placeholder="e.g. CCS"></div><div class="form-group modal-form-group"><label for="add-college-description">Description (optional)</label><textarea id="add-college-description" name="description"></textarea></div><div class="form-actions modal-actions"><button type="submit" class="btn-primary">Add College</button></div></form></div></div>{% endif %}
+{% if request.user.school_admin_access.departments %}<dialog id="departmentModal" class="management-dialog"><div class="modal-header"><div><h2 data-modal-title data-create-title="Add Department" data-edit-title="Edit Department">Add Department</h2><p>{% if request.user.school.offers_college %}A college is optional. {% endif %}The department code is locked after creation.</p></div><button type="button" class="modal-close" data-close-modal aria-label="Close">&times;</button></div><form method="post" action="{% url 'superadmin:create_department' %}" data-create-url="{% url 'superadmin:create_department' %}" data-managed-form class="modal-form">{% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p>{% for field in department_form %}{% if field.name != 'description' %}<div class="modal-form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}{% endfor %}<div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn-primary" type="submit">Save Department</button></div></form></dialog>{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}<script src="{% static 'schooladmin/js/manageColleges.js' %}"></script>{% endblock %}

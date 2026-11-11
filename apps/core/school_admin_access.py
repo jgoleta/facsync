@@ -31,15 +31,16 @@ def has_school_admin_permission(user, feature):
 # An unknown future School Admin action is denied to limited accounts until classified.
 VIEW_FEATURES = {
     'superadmin_dashboard': 'overview',
-    **dict.fromkeys(['manage_colleges', 'create_college', 'edit_college', 'delete_college'], 'colleges'),
+    **dict.fromkeys(['create_college', 'edit_college', 'delete_college'], 'colleges'),
     **dict.fromkeys(['manage_departments', 'save_department', 'department_status', 'delete_department'], 'departments'),
     **dict.fromkeys(['manage_offices', 'create_office', 'delete_office'], 'offices'),
     **dict.fromkeys(['manage_admins', 'invite_depthead', 'edit_depthead', 'edit_head_invite', 'remove_depthead',
-        'invite_office_admin', 'resend_office_admin_invite'], 'admins'),
-    **dict.fromkeys(['manage_faculty', 'invite_faculty_superadmin', 'assign_faculty', 'remove_faculty_superadmin'], 'faculty'),
+        'delete_depthead', 'remove_office_admin', 'delete_office_admin', 'invite_office_admin', 'resend_office_admin_invite'], 'admins'),
+    **dict.fromkeys(['manage_faculty', 'invite_faculty_superadmin', 'assign_faculty', 'remove_faculty_superadmin', 'delete_faculty_superadmin'], 'faculty'),
     **dict.fromkeys(['manage_students', 'remove_student_superadmin'], 'students'),
     'school_settings': 'settings',
 }
+VIEW_FEATURES['manage_colleges'] = ('colleges', 'departments')
 
 
 def feature_access(user):

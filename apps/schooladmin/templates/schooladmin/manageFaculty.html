@@ -1,0 +1,135 @@
+{% extends 'schooladmin/base_management.html' %}
+{% block title %}Manage Faculty{% endblock %}
+{% block content %}
+<header class="main-header with-action">
+    <div>
+        <p class="page-kicker">School administration</p>
+        <h1>Manage Faculty</h1>
+        <p>Assign faculty to a department or office.{% if request.user.school.offers_college %} College labels follow
+            department grouping.{% endif %}</p>
+    </div>
+</header>
+<section class="management-table-wrapper faculty-invitations-wrapper">
+    <div class="management-table-header">
+        <h2>Faculty Invitations</h2>
+        <div class="management-table-header-actions"><button class="btn-primary header-action" type="button" data-open-modal="facultyInviteModal">Invite Faculty</button></div>
+    </div>
+    <div class="table-scroll">
+        <table>
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Department / Office</th>{% if request.user.school.offers_college %}<th>College label</th>{% endif %}<th>Status</th>
+                </tr>
+            </thead>
+            <tbody>{% for invite in faculty_invites %}<tr>
+                    <td>{{ invite.email }}</td>
+                    <td>{{ invite.unit_label }}</td>{% if request.user.school.offers_college %}<td>{{ invite.department.college.name|default:'No college' }}</td>{% endif %}<td><span
+                            class="assignment-pill">Invited</span></td>
+                </tr>{% empty %}<tr>
+                    <td colspan="{% if request.user.school.offers_college %}4{% else %}3{% endif %}"
+                        class="empty-state">No pending faculty invitations.</td>
+                </tr>{% endfor %}</tbody>
+        </table>
+    </div>
+    <nav class="management-pagination" aria-label="Faculty invitations pagination"><span>Page {{ faculty_invites.number }} of {{ faculty_invites.paginator.num_pages }}</span>
+        <div>{% if faculty_invites.has_previous %}<a class="btn-secondary"
+                href="?faculty_invites_page={{ faculty_invites.previous_page_number }}&amp;faculty_page={{ request.GET.faculty_page|default:1 }}"
+                aria-label="Previous faculty invitations page">&lt;</a>{% else %}<span
+                class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if faculty_invites.has_next %}<a class="btn-secondary"
+                href="?faculty_invites_page={{ faculty_invites.next_page_number }}&amp;faculty_page={{ request.GET.faculty_page|default:1 }}"
+                aria-label="Next faculty invitations page">&gt;</a>{% else %}<span
+                class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
+    </nav>
+</section>
+
+<section class="management-table-wrapper">
+    <div class="management-table-header">
+        <h2>Faculty Accounts</h2>
+    </div>
+    <div class="table-scroll">
+        <table class="faculty-accounts-table">
+            <thead>
+                <tr>
+                    <th>Faculty ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Department / Office</th>{% if request.user.school.offers_college %}<th>College label</th>{% endif %}<th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in active_faculty %}<tr data-faculty-row data-unit="{{ user.unit_value }}"
+                    data-college="{{ user.college_filter }}">
+                    <td>{{ user.faculty_profile.faculty_id|default:'—' }}</td>
+                    <td>{% include 'components/_avatar.html' with photo_url=user.avatar_url initials=user.avatar_initials avatar_class='fs-avatar-table' %} {{ user.get_full_name|default:user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.unit_label }}</td>{% if request.user.school.offers_college %}<td>{{ user.college_label|default:'No college' }}</td>{% endif %}{% comment %}
+                    user.college_label|default:'No college' }}</td>{% endif %}<td>{{
+                        user.faculty_profile.office_location|default:'—' }}</td>
+                    {% endcomment %}<td><span class="assignment-pill">{{ user.get_account_status_display }}</span></td>
+                    <td class="actions">
+                        <form method="post" action="{% url 'superadmin:remove_faculty_superadmin' user.pk %}"
+                            data-managed-form>{% csrf_token %}{% if user.account_status == "deactivated" %}<input
+                                type="hidden" name="action" value="reactivate"><button type="submit"
+                                class="btn-secondary"
+                                data-confirm="Reactivate this faculty account?">Reactivate</button>{% else %}<button
+                                type="submit" class="danger"
+                                data-confirm="Deactivate this faculty account? {{ user.consultation_count }} consultation record(s) will be preserved. Login and new booking access will be removed. Pending and approved appointments will keep their current status.">Deactivate</button>{% endif %}</form>
+                        <form method="post" action="{% url 'superadmin:delete_faculty_superadmin' user.pk %}"
+                            data-managed-form>{% csrf_token %}<button type="submit" class="danger"
+                                data-confirm="Permanently remove this faculty account? This cannot be undone.">Remove</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}<tr>
+                    <td colspan="{% if request.user.school.offers_college %}7{% else %}6{% endif %}"
+                        class="empty-state">No registered faculty accounts yet.</td>
+                </tr>{% endfor %}</tbody>
+        </table>
+    </div>
+    <nav class="management-pagination" aria-label="Faculty accounts pagination"><span>Page {{ active_faculty.number }} of {{ active_faculty.paginator.num_pages }}</span>
+        <div>{% if active_faculty.has_previous %}<a class="btn-secondary"
+                href="?faculty_page={{ active_faculty.previous_page_number }}&amp;faculty_invites_page={{ request.GET.faculty_invites_page|default:1 }}"
+                aria-label="Previous faculty accounts page">&lt;</a>{% else %}<span
+                class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if active_faculty.has_next %}<a class="btn-secondary"
+                href="?faculty_page={{ active_faculty.next_page_number }}&amp;faculty_invites_page={{ request.GET.faculty_invites_page|default:1 }}"
+                aria-label="Next faculty accounts page">&gt;</a>{% else %}<span
+                class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
+    </nav>
+</section>
+{% endblock %}
+{% block modals %}
+<dialog id="facultyInviteModal" class="management-dialog">
+    <div class="modal-header">
+        <div>
+            <h2>Invite Faculty</h2>
+            <p>The faculty member signs in with their invited Google email.</p>
+        </div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button>
+    </div>
+    <form method="post" action="{% url 'superadmin:invite_faculty_superadmin' %}" data-managed-form class="modal-form">
+        {% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p>
+        <div class="modal-form-group"><label for="facultyInviteEmail">Google email</label><input id="facultyInviteEmail"
+                type="email" name="email" required></div>
+        <div class="modal-form-group"><label for="facultyInviteUnit">Department or office</label><select id="facultyInviteUnit" name="unit" required>{% for group,options in faculty_invite_form.fields.unit.choices %}{% if group %}<optgroup label="{{ group }}">{% for value,label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</optgroup>{% else %}<option value="">{{ options }}</option>{% endif %}{% endfor %}
+            </select></div>
+        <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
+                class="btn-primary" type="submit">Send Invite</button></div>
+    </form>
+</dialog>
+<dialog id="facultyAssignmentModal" class="management-dialog">
+    <div class="modal-header">
+        <div>
+            <h2>Edit Faculty Assignment</h2>
+            <p>Transfers are blocked once activity records exist so historical reporting is preserved.</p>
+        </div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button>
+    </div>
+    <form method="post" data-managed-form class="modal-form">{% csrf_token %}<p data-form-error class="assignment-error"
+            role="alert" hidden></p>
+        <div class="modal-form-group"><label for="facultyAssignmentUnit">Department or office</label><select id="facultyAssignmentUnit" name="unit" required>{% for group,options in faculty_invite_form.fields.unit.choices %}{% if group %}<optgroup label="{{ group }}">{% for value,label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</optgroup>{% else %}<option value="">{{ options }}</option>{% endif %}{% endfor %}
+            </select></div>
+        <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
+                class="btn-primary" type="submit">Save Assignment</button></div>
+    </form>
+</dialog>
+{% endblock %}

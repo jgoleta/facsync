@@ -11,7 +11,7 @@ Google Calendar integration.
 - `apps/faculty` - faculty dashboards, schedules, consultations, and calendar sync
 - `apps/students` - faculty discovery, read-only calendars, booking, and queues
 - `apps/depthead` - Department Head and College Head monitoring and analytics for assigned departments
-- `apps/superadmin` - school-scoped School Admin management
+- `apps/schooladmin` - school-scoped School Admin management
 - `apps/systemadmin` - platform Super Admin school onboarding and recovery
 
 See [docs/project_structure.md](docs/project_structure.md) for detailed file

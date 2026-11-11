@@ -1,0 +1,30 @@
+{% load static %}
+<!doctype html><html lang="en"><head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FacSync | {% block title %}School management{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
+  <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_main.css' %}?v=20261031-footer">
+  <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}">
+  <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}?v=20261108-department-row-lines">
+  {% include 'components/_admin_navigation_loading.html' %}
+</head><body class="college-head-palette">
+<div class="admin-shell">
+  <aside class="sidebar">
+    <div class="sidebar-header"><a href="{% url 'superadmin:superadmin_dashboard' %}" class="brand">{% include 'components/_facsync_logo.html' %}<span>FacSync School Admin</span></a></div>
+    {% include 'schooladmin/partials/sidebar_nav.html' %}
+    <div class="sidebar-account">{% include 'components/_account_identity.html' with show_profile_icon=True %}</div>
+    <div class="sidebar-divider"></div><div class="sidebar-footer"><a class="nav-item logout-link" href="{% url 'account_logout' %}"><svg class="logout-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H5v14h4M14 8l4 4-4 4M9 12h9"/></svg><span>Logout</span></a></div>
+  </aside>
+  <main class="main-content department-management">
+    {% block messages %}{% for message in messages %}<p role="status" class="message-{{ message.tags }}">{{ message }}</p>{% endfor %}{% endblock %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% block modals %}{% endblock %}
+{% include 'schooladmin/partials/confirmation_modal.html' %}
+<div id="managementLoading" class="loading-overlay" role="status" aria-live="polite" aria-hidden="true"><div class="management-loading-content"><div class="loading-spinner" aria-hidden="true"></div><p>Saving changes…</p></div></div>
+<script src="{% static 'js/avatars.js' %}?v=20261002"></script>
+<script src="{% static 'schooladmin/js/departmentManagement.js' %}?v=20261111-school-admin-permissions"></script>
+{% block extra_scripts %}{% endblock %}
+</body></html>

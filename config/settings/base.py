@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     'apps.students',
     'apps.faculty',
     'apps.depthead',
-    'apps.superadmin',
+    'apps.schooladmin',
     'apps.systemadmin',
 ]
 

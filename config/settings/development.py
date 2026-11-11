@@ -30,7 +30,7 @@ def show_debug_toolbar(request):
             '/student/api/',
             '/faculty/api/',
             '/depthead/api/',
-            '/superadmin/api/',
+            '/schooladmin/api/',
             '/systemadmin/api/',
         )
     )
