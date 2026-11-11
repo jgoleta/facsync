@@ -186,9 +186,23 @@ def superadmin_edit(request, user_id):
     user = get_object_or_404(User, pk=user_id, role='superadmin')
     form = SuperAdminEditForm(request.POST or None, instance=user)
     if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, 'School Admin updated.')
-        return redirect('systemadmin:manage_superadmins')
+        try:
+            with transaction.atomic():
+                School.objects.select_for_update().get(pk=user.school_id)
+                previous = User.objects.select_for_update().get(pk=user.pk)
+                if previous.school_admin_full_access and not form.cleaned_data['school_admin_full_access']:
+                    require_replacement_superadmin(previous, removing_full_access=True)
+                # Only write the edited fields; do not overwrite a concurrent
+                # account-status change with the form's earlier user snapshot.
+                fields = ['first_name', 'last_name', 'school_admin_full_access', 'school_admin_permissions']
+                for field in fields:
+                    setattr(previous, field, form.cleaned_data[field])
+                previous.save(update_fields=fields)
+        except ValidationError as error:
+            form.add_error(None, error)
+        else:
+            messages.success(request, 'School Admin updated.')
+            return redirect('systemadmin:manage_superadmins')
     return _form_page(request, form, title=f'Edit School Admin: {user.email}',
                       tab='superadmins', back='systemadmin:manage_superadmins')
 

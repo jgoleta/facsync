@@ -1,5 +1,5 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/admin_navigation_loading.css' %}?v=20261108-school-superadmins">
+<link rel="stylesheet" href="{% static 'css/admin_navigation_loading.css' %}?v=20261111-school-admin-permissions">
 <script id="admin-navigation-destinations" type="application/json">
 {
   "{% url 'depthead:admin_dashboard' %}": ["{% if request.user.role == 'officeadmin' %}Office Overview{% else %}Department Overview{% endif %}", "dashboard"],
@@ -20,4 +20,4 @@
   "{% url 'superadmin:manage_students' %}": ["Manage Students", "table"]
 }
 </script>
-<script src="{% static 'js/admin_navigation_loading.js' %}?v=20261108-school-superadmins" defer></script>
+<script src="{% static 'js/admin_navigation_loading.js' %}?v=20261111-school-admin-permissions" defer></script>

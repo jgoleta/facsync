@@ -37,6 +37,10 @@
     const select = form.querySelector('select[name=departments]');
     if (select) [...select.options].forEach(option => option.selected = selected.has(option.value));
     form.querySelectorAll('input[type=checkbox][name=departments]').forEach(box => box.checked = selected.has(box.value));
+    if (button.dataset.permissions !== undefined) {
+      const permissions = new Set(button.dataset.permissions.split(','));
+      form.querySelectorAll('input[type=checkbox][name=permissions]').forEach(box => box.checked = permissions.has(box.value));
+    }
     validateDepartments(form);
     const title = dialog.querySelector('[data-modal-title]');
     if (title) title.textContent = button.dataset.editUrl ? title.dataset.editTitle : title.dataset.createTitle;

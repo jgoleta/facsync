@@ -19,6 +19,11 @@ def role_required(role):
             else:
                 scope = require_school(user.school)
             with school_scope(scope):
+                if role == 'superadmin':
+                    from .school_admin_access import has_school_admin_permission, VIEW_FEATURES
+                    feature = VIEW_FEATURES.get(view_func.__name__, 'school_admins')
+                    if not has_school_admin_permission(user, feature):
+                        raise PermissionDenied('Your School Admin account does not have access to this feature.')
                 if role == 'depthead':
                     from apps.depthead.scope import head_scope
                     request.managed_scope = head_scope(user)

@@ -72,7 +72,7 @@
     } else if (type === 'superadmins') {
       shapes.className = 'admin-navigation-superadmins';
       placeholder(shapes, 'admin-navigation-title');
-      for (const columns of [3, 4]) {
+      for (const columns of [5, 5]) {
         const table = document.createElement('div');
         table.className = 'admin-navigation-block'; shapes.append(table);
         placeholder(table, 'admin-navigation-title');

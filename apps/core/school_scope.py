@@ -92,8 +92,12 @@ def prepare_school_write(instance):
             valid_scope = scope is None or (scope is not ALL_SCHOOLS and scope.pk == actor.school_id)
             if (not valid_scope or not actor.school_id or instance.school_id != actor.school_id
                     or not User._base_manager.filter(pk=actor.pk, role='superadmin', school_id=actor.school_id,
+                        school_admin_full_access=True,
                         school__is_active=True, is_active=True, account_status='active').exists()):
                 raise PermissionDenied('School Admins can manage invitations only for their own active school.')
+            if instance.school_admin_full_access and not (instance.pk and type(instance)._base_manager.filter(
+                    pk=instance.pk, school_admin_full_access=True).exists()):
+                raise PermissionDenied('School-created invitations must use selected feature permissions.')
             if instance.pk and type(instance)._base_manager.filter(pk=instance.pk).exclude(school_id=actor.school_id).exists():
                 raise PermissionDenied('An existing invitation cannot be moved to another school.')
         else:
