@@ -25,7 +25,7 @@ urlpatterns = [
     path('student/', include('apps.students.urls')),
     path('faculty/', include('apps.faculty.urls')),
     path('depthead/', include('apps.depthead.urls')),
-    path('superadmin/', include('apps.superadmin.urls')),
+    path('schooladmin/', include('apps.schooladmin.urls')),
     path('systemadmin/', include('apps.systemadmin.urls')),
 ]
 

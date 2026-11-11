@@ -26,7 +26,7 @@ from django.core.exceptions import PermissionDenied
 from types import SimpleNamespace
 from .scope import DepartmentScope, managed_departments
 from apps.core.models import Department
-from apps.superadmin.assignment_services import lock_departments
+from apps.schooladmin.assignment_services import lock_departments
 from django.db import transaction
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST

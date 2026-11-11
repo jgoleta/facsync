@@ -22,7 +22,10 @@ def role_required(role):
                 if role == 'superadmin':
                     from .school_admin_access import has_school_admin_permission, VIEW_FEATURES
                     feature = VIEW_FEATURES.get(view_func.__name__, 'school_admins')
-                    if not has_school_admin_permission(user, feature):
+                    allowed = (any(has_school_admin_permission(user, item) for item in feature)
+                               if isinstance(feature, (tuple, list, set))
+                               else has_school_admin_permission(user, feature))
+                    if not allowed:
                         raise PermissionDenied('Your School Admin account does not have access to this feature.')
                 if role == 'depthead':
                     from apps.depthead.scope import head_scope
