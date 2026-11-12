@@ -1,5 +1,5 @@
 {% load static %}
-<link rel="stylesheet" href="{% static 'css/admin_navigation_loading.css' %}?v=20261111-school-admin-permissions">
+<link rel="stylesheet" href="{% static 'css/admin_navigation_loading.css' %}?v=20261112-directory-actions">
 <script id="admin-navigation-destinations" type="application/json">
 {
   "{% url 'depthead:admin_dashboard' %}": ["{% if request.user.role == 'officeadmin' %}Office Overview{% else %}Department Overview{% endif %}", "dashboard"],
@@ -10,7 +10,7 @@
   "{% url 'depthead:admin_faculty' %}": ["Manage Faculty", "table"],
   "{% url 'depthead:college_settings' %}": ["{% if request.user.role == 'officeadmin' %}Office Settings{% else %}Department Settings{% endif %}", "form"],
   "{% url 'superadmin:superadmin_dashboard' %}": ["School Overview", "dashboard"],
-  {% if request.user.school.offers_college %}"{% url 'superadmin:manage_colleges' %}": ["Manage Colleges", "table"],{% endif %}
+  "{% url 'superadmin:manage_colleges' %}": ["{% if request.user.school_admin_access.colleges and request.user.school.offers_college %}{% if request.user.school_admin_access.departments %}Manage Colleges & Departments{% else %}Manage Colleges{% endif %}{% else %}Manage Departments{% endif %}", "departments"],
   "{% url 'superadmin:manage_departments' %}": ["Manage Departments", "departments"],
   "{% url 'superadmin:school_settings' %}": ["School Settings", "school-settings"],
   "{% url 'superadmin:manage_offices' %}": ["Manage Offices", "table"],
@@ -20,4 +20,4 @@
   "{% url 'superadmin:manage_students' %}": ["Manage Students", "table"]
 }
 </script>
-<script src="{% static 'js/admin_navigation_loading.js' %}?v=20261111-school-admin-permissions" defer></script>
+<script src="{% static 'js/admin_navigation_loading.js' %}?v=20261112-directory-actions" defer></script>

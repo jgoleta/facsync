@@ -420,3 +420,14 @@ table td:first-child { color: var(--text-primary); font-weight: 750; }
   .modal-actions { flex-direction: column-reverse; }
   .modal-actions button { width: 100%; }
 }
+
+/* Reversible access changes, separate from permanent removal. */
+.college-head-palette { --account-deactivate: #c2410c; }
+.actions button.btn-reactivate, .btn-reactivate { color:var(--text-light); background:var(--success); border:1px solid var(--success); border-radius:6px; padding:6px 10px; cursor:pointer; }
+.actions button.btn-deactivate, .btn-deactivate { color:var(--text-light); background:var(--account-deactivate); border:1px solid var(--account-deactivate); border-radius:6px; padding:6px 10px; cursor:pointer; }
+.directory-filters { display:flex; flex-wrap:wrap; gap:16px; margin:18px 0; }
+.directory-filters label { display:grid; gap:6px; color:var(--text-secondary); font-size:.85rem; min-width:180px; }
+.directory-filters select { padding:8px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); max-width:100%; }
+@media(max-width:600px) { .directory-filters label { min-width:0; width:100%; } }
+
+.department-management [data-managed-form] button[type=submit]:disabled::before { content:''; display:inline-block; width:12px; height:12px; margin-right:6px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .8s linear infinite; }

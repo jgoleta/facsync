@@ -34,6 +34,9 @@ class Department(SchoolScopedModel):
                           .filter(pk=self.college_id).values_list('school_id', flat=True).first()) if self.college_id else None
         if self.college_id and college_school != self.school_id:
             raise ValidationError({'college': 'The college must belong to the department’s school.'})
+        if self.college_id and self.is_active and not self._meta.get_field('college').remote_field.model._base_manager.filter(
+                pk=self.college_id, is_active=True).exists():
+            raise ValidationError({'college': 'Reactivate the college before assigning an active department to it.'})
         if self.pk:
             previous = type(self)._base_manager.filter(pk=self.pk).values('school_id', 'code').first()
             if previous and (previous['school_id'] != self.school_id or previous['code'] != self.code):

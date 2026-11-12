@@ -5,7 +5,7 @@
   <link rel="stylesheet" href="{% static 'css/base.css' %}">
   <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
   <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_main.css' %}?v=20261031-footer">
-  <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}">
+  <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261112-directory-actions">
   <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}?v=20261108-department-row-lines">
   {% include 'components/_admin_navigation_loading.html' %}
 </head><body class="college-head-palette">
@@ -25,6 +25,7 @@
 {% include 'schooladmin/partials/confirmation_modal.html' %}
 <div id="managementLoading" class="loading-overlay" role="status" aria-live="polite" aria-hidden="true"><div class="management-loading-content"><div class="loading-spinner" aria-hidden="true"></div><p>Saving changes…</p></div></div>
 <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
-<script src="{% static 'schooladmin/js/departmentManagement.js' %}?v=20261111-school-admin-permissions"></script>
+<script src="{% static 'schooladmin/js/departmentManagement.js' %}?v=20261112-directory-actions"></script>
+<script src="{% static 'schooladmin/js/directoryFilters.js' %}" defer></script>
 {% block extra_scripts %}{% endblock %}
 </body></html>

@@ -6,7 +6,7 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
     <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_main.css' %}?v=20261031-footer">
-    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}">
+    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261112-directory-actions">
     <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -28,7 +28,7 @@
         <main class="main-content">
             <header class="main-header">
                 <div>
-                    <p class="page-kicker">System administration</p>
+                    <p class="page-kicker">School administration</p>
                     <h1>Manage Offices</h1>
                     <p>Add or remove university offices and review assigned Office Admins.</p>
                 </div>
@@ -49,7 +49,7 @@
                             <tr>
                                 <th>Office Name</th>
                                 <th>Code</th>
-                                <th>Office Admin</th>
+                                <th>Office Admin</th><th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -59,13 +59,13 @@
                                 <td>{{ office.code }}</td>
                                 <td>{% for admin in office.head_users %}{{ admin.get_full_name|default:admin.username
                                     }}{% if not forloop.last %}, {% endif %}{% empty %}Not assigned{% endfor %}</td>
-                                <td class="actions">
+                                <td>{{ office.is_active|yesno:'Active,Deactivated' }}</td><td class="actions">{% include 'schooladmin/partials/unit_status_action.html' with unit=office status_url_name='superadmin:office_status' %}
                                     <form method="post" action="{% url 'superadmin:delete_office' office.id %}"
-                                        class="inline-form">{% csrf_token %}<button type="submit" class="danger"
+                                        class="inline-form" data-managed-form>{% csrf_token %}<button type="submit" class="danger"
                                             data-confirm="Remove {{ office.name|escapejs }}?">Remove</button></form>
                                 </td>
                             </tr>{% empty %}<tr>
-                                <td colspan="4" class="empty-state">No offices yet.</td>
+                                <td colspan="5" class="empty-state">No offices yet.</td>
                             </tr>{% endfor %}
                         </tbody>
                     </table>
@@ -82,7 +82,7 @@
                 </div><button type="button" class="modal-close" id="closeAddOfficeModal"
                     aria-label="Close">&times;</button>
             </div>
-            <form method="post" action="{% url 'superadmin:create_office' %}" class="settings-form modal-form">{% csrf_token %}<div class="form-group modal-form-group"><label for="add-office-name">Office
+            <form method="post" action="{% url 'superadmin:create_office' %}" class="settings-form modal-form" data-managed-form>{% csrf_token %}<div class="form-group modal-form-group"><label for="add-office-name">Office
                         Name</label><input type="text" id="add-office-name" name="name" required
                         placeholder="e.g. Office of Student Affairs"></div>
                 <div class="form-group modal-form-group"><label for="add-office-code">Office Code</label><input
@@ -96,7 +96,8 @@
         </div>
     </div>
     {% include 'schooladmin/partials/confirmation_modal.html' %}
-    <script src="{% static 'schooladmin/js/departmentManagement.js' %}"></script>
+    <div id="managementLoading" class="loading-overlay" aria-hidden="true" role="status"><div class="loading-spinner"></div></div>
+    <script src="{% static 'schooladmin/js/departmentManagement.js' %}?v=20261112-directory-actions"></script>
     <script src="{% static 'schooladmin/js/manageColleges.js' %}"></script>
 </body>
 
