@@ -1,0 +1,6 @@
+<form method="get" class="directory-filters" data-directory-filters aria-label="Filter accounts">
+  {% if faculty_filters and request.user.school.offers_college %}<label>College<select name="college"><option value="">All colleges</option>{% for college in colleges %}<option value="{{ college.pk }}" {% if college_filter == college.pk|stringformat:'s' %}selected{% endif %}>{{ college.name }}</option>{% endfor %}</select></label>{% endif %}
+  <label>Department<select name="department"><option value="">All departments</option>{% if student_filters %}<option value="unassigned" {% if department_filter == 'unassigned' %}selected{% endif %}>No department</option>{% endif %}{% for department in departments %}<option value="{{ department.pk }}" {% if department_filter == department.pk|stringformat:'s' %}selected{% endif %}>{{ department.name }}</option>{% endfor %}</select></label>
+  {% if faculty_filters %}<label>Office<select name="office"><option value="">All offices</option>{% for office in offices %}<option value="{{ office.pk }}" {% if office_filter == office.pk|stringformat:'s' %}selected{% endif %}>{{ office.name }}</option>{% endfor %}</select></label>{% endif %}
+  <noscript><button type="submit" class="btn-secondary">Apply filters</button></noscript>
+</form>

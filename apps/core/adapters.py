@@ -190,7 +190,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                                 school=school, college__code__iexact=invite.college, is_active=True)[:2])
                             if len(candidates) == 1:
                                 department = candidates[0]
-                            elif candidates or not Office.objects.filter(school=school, code__iexact=invite.college).exists():
+                            elif candidates or not Office.objects.filter(school=school, code__iexact=invite.college, is_active=True).exists():
                                 self._deny_invite(request)
                         if department:
                             department = Department.objects.select_for_update().filter(

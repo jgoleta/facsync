@@ -9,6 +9,7 @@
             department grouping.{% endif %}</p>
     </div>
 </header>
+{% include 'schooladmin/partials/directory_filters.html' with faculty_filters=True %}
 <section class="management-table-wrapper faculty-invitations-wrapper">
     <div class="management-table-header">
         <h2>Faculty Invitations</h2>
@@ -34,10 +35,10 @@
     </div>
     <nav class="management-pagination" aria-label="Faculty invitations pagination"><span>Page {{ faculty_invites.number }} of {{ faculty_invites.paginator.num_pages }}</span>
         <div>{% if faculty_invites.has_previous %}<a class="btn-secondary"
-                href="?faculty_invites_page={{ faculty_invites.previous_page_number }}&amp;faculty_page={{ request.GET.faculty_page|default:1 }}"
+                href="?{{ filter_query }}&amp;faculty_invites_page={{ faculty_invites.previous_page_number }}&amp;faculty_page={{ request.GET.faculty_page|default:1 }}"
                 aria-label="Previous faculty invitations page">&lt;</a>{% else %}<span
                 class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if faculty_invites.has_next %}<a class="btn-secondary"
-                href="?faculty_invites_page={{ faculty_invites.next_page_number }}&amp;faculty_page={{ request.GET.faculty_page|default:1 }}"
+                href="?{{ filter_query }}&amp;faculty_invites_page={{ faculty_invites.next_page_number }}&amp;faculty_page={{ request.GET.faculty_page|default:1 }}"
                 aria-label="Next faculty invitations page">&gt;</a>{% else %}<span
                 class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
     </nav>
@@ -70,11 +71,11 @@
                     {% endcomment %}<td><span class="assignment-pill">{{ user.get_account_status_display }}</span></td>
                     <td class="actions">
                         <form method="post" action="{% url 'superadmin:remove_faculty_superadmin' user.pk %}"
-                            data-managed-form>{% csrf_token %}{% if user.account_status == "deactivated" %}<input
+                            data-managed-form>{% csrf_token %}{% if user.account_status == "deactivated" or not user.is_active %}<input
                                 type="hidden" name="action" value="reactivate"><button type="submit"
-                                class="btn-secondary"
+                                class="btn-reactivate"
                                 data-confirm="Reactivate this faculty account?">Reactivate</button>{% else %}<button
-                                type="submit" class="danger"
+                                type="submit" class="btn-deactivate"
                                 data-confirm="Deactivate this faculty account? {{ user.consultation_count }} consultation record(s) will be preserved. Login and new booking access will be removed. Pending and approved appointments will keep their current status.">Deactivate</button>{% endif %}</form>
                         <form method="post" action="{% url 'superadmin:delete_faculty_superadmin' user.pk %}"
                             data-managed-form>{% csrf_token %}<button type="submit" class="danger"
@@ -90,10 +91,10 @@
     </div>
     <nav class="management-pagination" aria-label="Faculty accounts pagination"><span>Page {{ active_faculty.number }} of {{ active_faculty.paginator.num_pages }}</span>
         <div>{% if active_faculty.has_previous %}<a class="btn-secondary"
-                href="?faculty_page={{ active_faculty.previous_page_number }}&amp;faculty_invites_page={{ request.GET.faculty_invites_page|default:1 }}"
+                href="?{{ filter_query }}&amp;faculty_page={{ active_faculty.previous_page_number }}&amp;faculty_invites_page={{ request.GET.faculty_invites_page|default:1 }}"
                 aria-label="Previous faculty accounts page">&lt;</a>{% else %}<span
                 class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if active_faculty.has_next %}<a class="btn-secondary"
-                href="?faculty_page={{ active_faculty.next_page_number }}&amp;faculty_invites_page={{ request.GET.faculty_invites_page|default:1 }}"
+                href="?{{ filter_query }}&amp;faculty_page={{ active_faculty.next_page_number }}&amp;faculty_invites_page={{ request.GET.faculty_invites_page|default:1 }}"
                 aria-label="Next faculty accounts page">&gt;</a>{% else %}<span
                 class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
     </nav>

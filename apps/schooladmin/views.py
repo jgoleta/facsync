@@ -6,7 +6,7 @@ from apps.core.decorators import role_required
 from django.contrib import messages
 from django.http import JsonResponse
 import logging
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
@@ -27,6 +27,22 @@ from apps.core.services import (
 from apps.faculty.models import FacultyProfile, ConsultationRequest
 
 logger = logging.getLogger(__name__)
+
+
+def _choice_filter(request, key, choices):
+    value = request.GET.get(key, '')
+    return value if value.isdecimal() and choices.filter(pk=value).exists() else ''
+
+
+def _department_filter(request, allow_unassigned=False):
+    if allow_unassigned and request.GET.get('department') == 'unassigned':
+        return 'unassigned'
+    return _choice_filter(request, 'department', Department.objects.all())
+
+
+def _filter_query(request, keys):
+    from urllib.parse import urlencode
+    return urlencode({key: request.GET[key] for key in keys if request.GET.get(key)})
 
 
 @login_required
@@ -112,21 +128,14 @@ def edit_depthead(request, user_id):
             with transaction.atomic():
                 departments = lock_departments(form.cleaned_data['departments'], request.user.school)
                 depthead = get_object_or_404(User.objects.select_for_update(), pk=user_id, role='depthead')
-                was_active = depthead.is_active and depthead.account_status == 'active'
                 depthead.title = form.cleaned_data['title']
-                depthead.account_status = form.cleaned_data['account_status']
-                depthead.is_active = depthead.account_status == 'active'
                 first = departments[0]
                 depthead.college = first.college.code if first.college else ''
-                depthead.save(update_fields=['title', 'account_status', 'is_active', 'college'])
+                depthead.save(update_fields=['title', 'college'])
                 depthead.managed_departments.set(departments)
         except ValidationError as error:
             return JsonResponse({'success': False, 'error': ' '.join(error.messages)}, status=400)
-        sent = True
-        if was_active and depthead.account_status == 'deactivated' and depthead.email:
-            sent = _send_saved_email(send_depthead_deactivated_email, depthead)
-        return JsonResponse({'success': True, 'email_sent': sent, 'message':
-            'Head assignments saved.' if sent else 'Head assignments saved, but the deactivation email could not be sent.'})
+        return JsonResponse({'success': True, 'message': 'Head assignments saved. Account status is unchanged.'})
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
 
 
@@ -238,11 +247,13 @@ def superadmin_dashboard(request):
 @login_required
 @role_required('superadmin')
 def manage_colleges(request):
+    if not request.user.school.offers_college and not request.user.school_admin_access['departments']:
+        raise PermissionDenied('College is not an offered educational level.')
     colleges = College.objects.all().prefetch_related('departments').order_by('name')
     from django.db.models import Count
     from .forms import DepartmentForm
     departments = Department.objects.select_related('college').annotate(
-        member_count=Count('members', distinct=True), head_count=Count('head_assignments', distinct=True))
+        member_count=Count('members', distinct=True), head_count=Count('head_assignments', distinct=True)).order_by('name', 'pk')
     colleges_page = Paginator(colleges, 8).get_page(request.GET.get('colleges_page'))
     departments_page = Paginator(departments, 8).get_page(request.GET.get('departments_page'))
     return render(request, 'schooladmin/manageAcademicUnits.html', {
@@ -262,22 +273,29 @@ def manage_offices(request):
 @login_required
 @role_required('superadmin')
 def manage_admins(request):
+    department_filter = _department_filter(request)
     depthead_accounts = list(with_consultation_counts(User.objects.filter(role='depthead')).prefetch_related('managed_departments__college'))
     for user in depthead_accounts:
         user.department_ids = ','.join(str(item.pk) for item in user.managed_departments.all())
         user.department_names = ', '.join(item.name for item in user.managed_departments.all())
         user.college_labels = ', '.join(sorted({item.college.name for item in user.managed_departments.all() if item.college}))
+    if department_filter:
+        depthead_accounts = [user for user in depthead_accounts if department_filter in user.department_ids.split(',')]
     invites = list(DeptHeadInvite.objects.filter(used=False).prefetch_related('departments__college'))
     for invite in invites:
         invite.department_ids = ','.join(str(item.pk) for item in invite.departments.all())
         invite.department_names = ', '.join(item.name for item in invite.departments.all())
         invite.invite_type = 'head'
-    office_admin_accounts = list(User.objects.filter(role='officeadmin').order_by('email'))
+    if department_filter:
+        invites = [invite for invite in invites if department_filter in invite.department_ids.split(',')]
+    office_admin_accounts = list(with_consultation_counts(User.objects.filter(role='officeadmin')).order_by('email'))
     office_invites = list(OfficeAdminInvite.objects.filter(used=False).order_by('email'))
     for invite in office_invites:
         invite.invite_type = 'office'
     admin_invites = sorted(invites + office_invites, key=lambda invite: (invite.email or '').casefold())
     return render(request, 'schooladmin/manageAdmins.html', {
+        'department_filter': department_filter,
+        'filter_query': _filter_query(request, ['department']),
         'depthead_accounts': Paginator(depthead_accounts, 8).get_page(request.GET.get('depthead_page')),
         'admin_invites': Paginator(admin_invites, 8).get_page(request.GET.get('admin_invites_page')),
         'departments': Department.objects.filter(is_active=True).select_related('college'),
@@ -305,12 +323,32 @@ def manage_faculty(request):
         user.unit_label = user.department.name if user.department_id else office.name if office else 'Not assigned'
         user.college_label = user.department.college.name if user.department_id and user.department.college else ''
         user.college_filter = str(user.department.college_id) if user.department_id and user.department.college_id else ''
+    department_filter = _department_filter(request)
+    college_filter = _choice_filter(request, 'college', College.objects.all()) if request.user.school.offers_college else ''
+    office_filter = _choice_filter(request, 'office', Office.objects.all())
+    if department_filter:
+        faculty_users = [user for user in faculty_users if str(user.department_id) == department_filter]
+    if college_filter:
+        faculty_users = [user for user in faculty_users if user.college_filter == college_filter]
+    if office_filter:
+        faculty_users = [user for user in faculty_users if user.unit_value == 'office:' + office_filter]
     invites = list(FacultyInvite.objects.filter(used=False).select_related('department__college'))
     for invite in invites:
         office = offices.get(str(invite.college or '').casefold())
         invite.unit_label = invite.department.name if invite.department_id else office.name if office else invite.college
+        invite.unit_value = f'department:{invite.department_id}' if invite.department_id else f'office:{office.pk}' if office else ''
+        invite.college_filter = str(invite.department.college_id) if invite.department_id and invite.department.college_id else ''
+    if department_filter:
+        invites = [invite for invite in invites if str(invite.department_id) == department_filter]
+    if college_filter:
+        invites = [invite for invite in invites if invite.college_filter == college_filter]
+    if office_filter:
+        invites = [invite for invite in invites if invite.unit_value == 'office:' + office_filter]
 
     return render(request, 'schooladmin/manageFaculty.html', {
+        'department_filter': department_filter, 'college_filter': college_filter, 'office_filter': office_filter,
+        'departments': Department.objects.order_by('name'), 'offices': Office.objects.order_by('name'),
+        'filter_query': _filter_query(request, ['department', 'college', 'office']),
         'active_faculty': Paginator(faculty_users, 12).get_page(request.GET.get('faculty_page')),
         'college_choices': get_unit_choices(),
         'faculty_invite_form': FacultySuperInviteForm(),
@@ -321,8 +359,15 @@ def manage_faculty(request):
 @login_required
 @role_required('superadmin')
 def manage_students(request):
-    student_accounts = with_consultation_counts(User.objects.filter(role='student')).select_related('department__college')
+    student_accounts = with_consultation_counts(User.objects.filter(role='student')).select_related('department__college').order_by('first_name', 'last_name', 'pk')
+    department_filter = _department_filter(request, allow_unassigned=True)
+    if department_filter == 'unassigned':
+        student_accounts = student_accounts.filter(department__isnull=True)
+    elif department_filter:
+        student_accounts = student_accounts.filter(department_id=department_filter)
     return render(request, 'schooladmin/manageStudents.html', {
+        'departments': Department.objects.order_by('name'), 'department_filter': department_filter,
+        'filter_query': _filter_query(request, ['department']),
         'student_accounts': Paginator(student_accounts, 12).get_page(request.GET.get('students_page'))
     })
 
@@ -352,8 +397,12 @@ def create_college(request):
         form = CollegeForm(request.POST)
         if form.is_valid():
             college = form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'College created.'})
             messages.success(request, f"College '{college.name}' created with code {college.code}.")
         else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return form_error(form)
             for error_list in form.errors.values():
                 for error in error_list:
                     messages.error(request, error)
@@ -366,8 +415,12 @@ def create_office(request):
         form = OfficeForm(request.POST)
         if form.is_valid():
             office = form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Office created.'})
             messages.success(request, f"Office '{office.name}' created with code {office.code}.")
         else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return form_error(form)
             for error_list in form.errors.values():
                 for error in error_list:
                     messages.error(request, error)
@@ -397,6 +450,8 @@ def delete_office(request, office_id):
                 messages.error(request, message)
             else:
                 office.delete()
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'success': True, 'message': 'Office removed.'})
                 messages.success(request, f"Office '{office.name}' removed.")
     return redirect('superadmin:manage_offices')
 
@@ -466,7 +521,7 @@ def resend_office_admin_invite(request, invite_id):
     with transaction.atomic():
         get_object_or_404(School.objects.select_for_update(), pk=request.user.school_id, is_active=True)
         invite = get_object_or_404(OfficeAdminInvite.objects.select_for_update(), pk=invite_id, used=False)
-        if (not Office.objects.filter(code__iexact=invite.office).exists()
+        if (not Office.objects.filter(code__iexact=invite.office, is_active=True).exists()
                 or User._base_manager.filter(email__iexact=invite.email).exists()):
             message = 'This invitation is no longer available. Refresh the account list.'
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -504,8 +559,12 @@ def delete_college(request, college_id):
         name = college.name
         try:
             college.delete()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'College removed.'})
             messages.success(request, f"College '{name}' removed.")
         except ProtectedError:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'This college still groups departments. Keep it to preserve their records.'}, status=409)
             messages.error(request, 'This college still groups departments. Reassign those departments before deleting the college.')
     return redirect('superadmin:manage_colleges')
 
@@ -525,9 +584,12 @@ def invite_faculty_superadmin(request):
         if form.is_valid():
             try:
                 with transaction.atomic():
+                    get_object_or_404(School.objects.select_for_update(), pk=request.user.school_id, is_active=True)
                     invite = form.save(commit=False)
                     if invite.department:
                         invite.department = lock_departments([invite.department], request.user.school)[0]
+                    elif not Office.objects.filter(code__iexact=invite.college, is_active=True).exists():
+                        raise ValidationError('Choose an active office.')
                     invite.invited_by = request.user
                     invite.used = False
                     invite.save()

@@ -1,0 +1,5 @@
+<form method="post" action="{% url status_url_name unit.pk %}" data-managed-form>
+  {% csrf_token %}<input type="hidden" name="action" value="{{ unit.is_active|yesno:'deactivate,reactivate' }}">
+  <button type="submit" class="{% if unit.is_active %}btn-deactivate{% else %}btn-reactivate{% endif %}"
+    data-confirm="{% if unit.is_active %}Deactivate {{ unit.name }}? Records are preserved. Active assignments and pending invitations must be resolved first.{% else %}Reactivate {{ unit.name }}? Existing accounts keep their current access status.{% endif %}">{{ unit.is_active|yesno:'Deactivate,Reactivate' }}</button>
+</form>

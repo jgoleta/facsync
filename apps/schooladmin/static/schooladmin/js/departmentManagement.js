@@ -5,6 +5,7 @@
   const confirmSubmit = confirmDialog?.querySelector('[data-confirm-submit]');
   let pendingConfirmation = null;
   function confirmManagementAction(message) {
+    if (pendingConfirmation) return Promise.resolve(false);
     if (!confirmDialog || !confirmSubmit) return Promise.resolve(window.confirm(message));
     confirmMessage.textContent = message;
     confirmDialog.showModal();

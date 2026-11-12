@@ -187,6 +187,7 @@ class College(SchoolScopedModel):
     code = models.CharField(max_length=20, blank=True)
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
     schedule_template = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -222,6 +223,7 @@ class Office(SchoolScopedModel):
     code = models.CharField(max_length=20, blank=True)
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
     schedule_template = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

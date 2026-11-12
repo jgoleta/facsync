@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.views.decorators.http import require_POST
 
 from apps.core.decorators import role_required
-from apps.core.models import Department, User
+from apps.core.models import Department, User, School, Office
 from apps.faculty.models import FacultyProfile
 from .assignment_services import faculty_has_activity, lock_departments
 from .forms import DepartmentForm, FacultyAssignmentForm
@@ -30,6 +30,7 @@ def manage_departments(request):
 def save_department(request, department_id=None):
     try:
         with transaction.atomic():
+            School.objects.select_for_update().get(pk=request.user.school_id)
             department = get_object_or_404(Department.objects.select_for_update(), pk=department_id) if department_id else None
             form = DepartmentForm(request.POST, instance=department)
             if not form.is_valid():
@@ -49,7 +50,10 @@ def department_status(request, department_id):
     if action not in {'deactivate', 'reactivate'}:
         return JsonResponse({'success': False, 'error': 'Choose a valid department action.'}, status=400)
     with transaction.atomic():
+        School.objects.select_for_update().get(pk=request.user.school_id)
         department = get_object_or_404(Department.objects.select_for_update(), pk=department_id)
+        if action == 'reactivate' and department.college_id and not department.college.is_active:
+            return JsonResponse({'success': False, 'error': 'Reactivate the college before reactivating its department.'}, status=409)
         if action == 'deactivate' and department.is_active:
             occupied = (department.members.filter(is_active=True, account_status='active').exists()
                         or department.head_assignments.filter(user__is_active=True, user__account_status='active').exists()
@@ -86,9 +90,12 @@ def assign_faculty(request, user_id):
         return form_error(form)
     try:
         with transaction.atomic():
+            School.objects.select_for_update().get(pk=request.user.school_id)
             department, office = form.cleaned_data['unit']
             if department:
                 department = lock_departments([department], request.user.school)[0]
+            elif not Office.objects.filter(pk=office.pk, is_active=True).exists():
+                raise ValidationError('Choose an active office.')
             user = get_object_or_404(User.objects.select_for_update(), pk=user_id, role='faculty')
             target_code = (department.college.code if department.college else '') if department else office.code
             same = user.department_id == (department.pk if department else None)

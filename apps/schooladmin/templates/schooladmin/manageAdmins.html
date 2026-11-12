@@ -8,6 +8,7 @@
         <p>Assign departments to College Heads and Department Heads, and manage Office Admin access.</p>
     </div>
 </header>
+{% include 'schooladmin/partials/directory_filters.html' %}
 <section class="management-table-wrapper">
     <div class="management-table-header">
         <div>
@@ -59,7 +60,7 @@
         </table>
     </div>
     <nav class="management-pagination" aria-label="Admin invitations pagination"><span>Page {{ admin_invites.number }} of {{ admin_invites.paginator.num_pages }}</span>
-        <div>{% if admin_invites.has_previous %}<a class="btn-secondary" href="?admin_invites_page={{ admin_invites.previous_page_number }}&amp;depthead_page={{ request.GET.depthead_page|default:1 }}&amp;office_admin_page={{ request.GET.office_admin_page|default:1 }}" aria-label="Previous admin invitations page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if admin_invites.has_next %}<a class="btn-secondary" href="?admin_invites_page={{ admin_invites.next_page_number }}&amp;depthead_page={{ request.GET.depthead_page|default:1 }}&amp;office_admin_page={{ request.GET.office_admin_page|default:1 }}" aria-label="Next admin invitations page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
+        <div>{% if admin_invites.has_previous %}<a class="btn-secondary" href="?{{ filter_query }}&amp;admin_invites_page={{ admin_invites.previous_page_number }}&amp;depthead_page={{ request.GET.depthead_page|default:1 }}&amp;office_admin_page={{ request.GET.office_admin_page|default:1 }}" aria-label="Previous admin invitations page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if admin_invites.has_next %}<a class="btn-secondary" href="?{{ filter_query }}&amp;admin_invites_page={{ admin_invites.next_page_number }}&amp;depthead_page={{ request.GET.depthead_page|default:1 }}&amp;office_admin_page={{ request.GET.office_admin_page|default:1 }}" aria-label="Next admin invitations page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
     </nav>
 </section>
 <section class="management-table-wrapper">
@@ -93,10 +94,10 @@
                             data-history-count="{{ admin.consultation_count }}"
                             data-account-status="{{ admin.account_status }}">Edit</button>
                         <form method="post" action="{% url 'superadmin:remove_depthead' admin.pk %}" data-managed-form>
-                            {% csrf_token %}{% if admin.account_status == 'deactivated' %}<input type="hidden"
-                                name="action" value="reactivate"><button class="btn-secondary" type="submit"
+                            {% csrf_token %}{% if admin.account_status == 'deactivated' or not admin.is_active %}<input type="hidden"
+                                name="action" value="reactivate"><button class="btn-reactivate" type="submit"
                                 data-confirm="Reactivate this account?">Reactivate</button>{% else %}<button
-                                class="danger" type="submit"
+                                class="btn-deactivate" type="submit"
                                 data-confirm="Deactivate this account? {{ admin.consultation_count }} consultation record(s) will be preserved. Login and booking access will be removed.">Deactivate</button>{% endif %}</form>
                         <form method="post" action="{% url 'superadmin:delete_depthead' admin.pk %}" data-managed-form>
                             {% csrf_token %}<button class="danger" type="submit"
@@ -111,7 +112,7 @@
         </table>
     </div>
     <nav class="management-pagination" aria-label="Admin accounts pagination"><span>Page {{ depthead_accounts.number }} of {{ depthead_accounts.paginator.num_pages }}</span>
-        <div>{% if depthead_accounts.has_previous %}<a class="btn-secondary" href="?depthead_page={{ depthead_accounts.previous_page_number }}&amp;admin_invites_page={{ request.GET.admin_invites_page|default:1 }}&amp;office_admin_page={{ request.GET.office_admin_page|default:1 }}" aria-label="Previous admin accounts page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if depthead_accounts.has_next %}<a class="btn-secondary" href="?depthead_page={{ depthead_accounts.next_page_number }}&amp;admin_invites_page={{ request.GET.admin_invites_page|default:1 }}&amp;office_admin_page={{ request.GET.office_admin_page|default:1 }}" aria-label="Next admin accounts page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
+        <div>{% if depthead_accounts.has_previous %}<a class="btn-secondary" href="?{{ filter_query }}&amp;depthead_page={{ depthead_accounts.previous_page_number }}&amp;admin_invites_page={{ request.GET.admin_invites_page|default:1 }}&amp;office_admin_page={{ request.GET.office_admin_page|default:1 }}" aria-label="Previous admin accounts page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if depthead_accounts.has_next %}<a class="btn-secondary" href="?{{ filter_query }}&amp;depthead_page={{ depthead_accounts.next_page_number }}&amp;admin_invites_page={{ request.GET.admin_invites_page|default:1 }}&amp;office_admin_page={{ request.GET.office_admin_page|default:1 }}" aria-label="Next admin accounts page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
     </nav>
 </section>
 <section class="management-table-wrapper">
@@ -137,9 +138,9 @@
                     <td><span class="assignment-pill">{{ admin.get_account_status_display }}</span></td>
                     <td class="actions">
                         <form method="post" action="{% url 'superadmin:remove_office_admin' admin.pk %}"
-                            data-managed-form>{% csrf_token %}{% if admin.account_status == 'deactivated' %}<input
-                                type="hidden" name="action" value="reactivate"><button class="btn-secondary"
-                                type="submit" data-confirm="Reactivate this Office Admin account?">Reactivate</button>{% else %}<button class="danger" type="submit" data-confirm="Deactivate this Office Admin account? Login access will be removed.">Deactivate</button>{% endif %}</form>
+                            data-managed-form>{% csrf_token %}{% if admin.account_status == 'deactivated' or not admin.is_active %}<input
+                                type="hidden" name="action" value="reactivate"><button class="btn-reactivate"
+                                type="submit" data-confirm="Reactivate this Office Admin account?">Reactivate</button>{% else %}<button class="btn-deactivate" type="submit" data-confirm="Deactivate this Office Admin account? {{ admin.consultation_count }} consultation record(s) will be preserved. Login and booking access will be removed.">Deactivate</button>{% endif %}</form>
                         <form method="post" action="{% url 'superadmin:delete_office_admin' admin.pk %}"
                             data-managed-form>{% csrf_token %}<button class="danger" type="submit"
                                 data-confirm="Permanently remove this Office Admin account? This cannot be undone.">Remove</button>
@@ -151,7 +152,7 @@
         </table>
     </div>
     <nav class="management-pagination" aria-label="Office Admin accounts pagination"><span>Page {{ office_admin_accounts.number }} of {{ office_admin_accounts.paginator.num_pages }}</span>
-        <div>{% if office_admin_accounts.has_previous %}<a class="btn-secondary" href="?office_admin_page={{ office_admin_accounts.previous_page_number }}&amp;admin_invites_page={{ request.GET.admin_invites_page|default:1 }}&amp;depthead_page={{ request.GET.depthead_page|default:1 }}" aria-label="Previous Office Admin accounts page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if office_admin_accounts.has_next %}<a class="btn-secondary" href="?office_admin_page={{ office_admin_accounts.next_page_number }}&amp;admin_invites_page={{ request.GET.admin_invites_page|default:1 }}&amp;depthead_page={{ request.GET.depthead_page|default:1 }}" aria-label="Next Office Admin accounts page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
+        <div>{% if office_admin_accounts.has_previous %}<a class="btn-secondary" href="?{{ filter_query }}&amp;office_admin_page={{ office_admin_accounts.previous_page_number }}&amp;admin_invites_page={{ request.GET.admin_invites_page|default:1 }}&amp;depthead_page={{ request.GET.depthead_page|default:1 }}" aria-label="Previous Office Admin accounts page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if office_admin_accounts.has_next %}<a class="btn-secondary" href="?{{ filter_query }}&amp;office_admin_page={{ office_admin_accounts.next_page_number }}&amp;admin_invites_page={{ request.GET.admin_invites_page|default:1 }}&amp;depthead_page={{ request.GET.depthead_page|default:1 }}" aria-label="Next Office Admin accounts page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
     </nav>
 </section>
 {% endblock %}
@@ -188,11 +189,6 @@
         <div class="modal-form-group"><label for="headEditTitle">Title</label><select id="headEditTitle" name="title"
                 required>{% for value,label in title_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
         {% include 'schooladmin/partials/department_checkboxes.html' with checkbox_prefix='headEditDepartment' %}
-        <div class="modal-form-group"><label for="headEditStatus">Account status</label><select id="headEditStatus"
-                name="account_status">
-                <option value="active">Active</option>
-                <option value="deactivated">Deactivated</option>
-            </select></div>
         <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
                 class="btn-primary" type="submit">Save Assignments</button></div>
     </form>

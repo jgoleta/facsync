@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Manage Students</title>
     <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_main.css' %}?v=20261031-footer" />
-    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}" />
+    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261112-directory-actions" />
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -47,6 +47,7 @@
                     <p>View, deactivate, or manage student accounts across the system.</p>
                 </div>
             </header>
+{% include 'schooladmin/partials/directory_filters.html' with student_filters=True %}
 
             <div class="management-table-wrapper">
                 <div class="table-scroll" role="region" aria-label="Student accounts" tabindex="0">
@@ -71,11 +72,11 @@
                                 <td>{{ s.department.college.name|default:'—' }}</td>{% endif %}
                                 <td>{{ s.get_account_status_display }}</td>
                                 <td class="actions">
-                                    <button type="button" class="danger btn-remove-trigger-student"
+                                    <button type="button" class="{% if s.account_status == 'deactivated' or not s.is_active %}btn-reactivate{% else %}btn-deactivate{% endif %} btn-remove-trigger-student"
                                         data-history-count="{{ s.consultation_count }}"
-                                        data-action="{% if s.account_status == 'deactivated' %}reactivate{% else %}deactivate{% endif %}"
+                                        data-action="{% if s.account_status == 'deactivated' or not s.is_active %}reactivate{% else %}deactivate{% endif %}"
                                         data-student-name="{{ s.get_full_name|default:s.username }}"
-                                        data-remove-url="{% url 'superadmin:remove_student_superadmin' s.id %}">{% if s.account_status == 'deactivated' %}Reactivate{% else %}Deactivate{% endif %}</button>
+                                        data-remove-url="{% url 'superadmin:remove_student_superadmin' s.id %}">{% if s.account_status == 'deactivated' or not s.is_active %}Reactivate{% else %}Deactivate{% endif %}</button>
                                     <button type="button" class="danger btn-remove-trigger-student btn-delete-student"
                                         data-action="delete"
                                         data-student-name="{{ s.get_full_name|default:s.username }}"
@@ -92,7 +93,7 @@
                     </table>
                 </div>
                 <nav class="management-pagination" aria-label="Student accounts pagination"><span>Page {{ student_accounts.number }} of {{ student_accounts.paginator.num_pages }}</span>
-                    <div>{% if student_accounts.has_previous %}<a class="btn-secondary" href="?students_page={{ student_accounts.previous_page_number }}" aria-label="Previous student accounts page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if student_accounts.has_next %}<a class="btn-secondary" href="?students_page={{ student_accounts.next_page_number }}" aria-label="Next student accounts page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
+                    <div>{% if student_accounts.has_previous %}<a class="btn-secondary" href="?{{ filter_query }}&amp;students_page={{ student_accounts.previous_page_number }}" aria-label="Previous student accounts page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if student_accounts.has_next %}<a class="btn-secondary" href="?{{ filter_query }}&amp;students_page={{ student_accounts.next_page_number }}" aria-label="Next student accounts page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
                 </nav>
             </div>
         </main>
@@ -116,7 +117,8 @@
         <div class="loading-spinner"></div>
     </div>
     <script src="{% static 'js/announcements.js' %}"></script>
-    <script src="{% static 'schooladmin/js/manageStudents.js' %}?v=20261109-account-access"></script>
+    <script src="{% static 'schooladmin/js/manageStudents.js' %}?v=20261112-directory-actions"></script>
+<script src="{% static 'schooladmin/js/directoryFilters.js' %}" defer></script>
 </body>
 
 </html>

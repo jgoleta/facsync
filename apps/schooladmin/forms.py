@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 from apps.core.colleges import get_college_choices, get_unit_choices
 from apps.core.models import College, Department, DeptHeadInvite, FacultyInvite, Office, OfficeAdminInvite, User
 from apps.core.invitations import validate_invite_identity
@@ -78,7 +79,7 @@ class FacultySuperInviteForm(SchoolBoundModelForm):
 
 def academic_unit_choices(school):
     departments = Department.objects.filter(school=school, is_active=True).select_related('college')
-    offices = Office.objects.filter(school=school).order_by('name')
+    offices = Office.objects.filter(school=school, is_active=True).order_by('name')
     return [('', 'Select a department or office'),
             ('Departments', [(f'department:{item.pk}', item.name) for item in departments]),
             ('Offices', [(f'office:{item.pk}', item.name) for item in offices])]
@@ -93,7 +94,7 @@ def resolve_academic_unit(value, school):
         if department:
             return department, None
     elif kind == 'office':
-        office = Office.objects.filter(pk=pk, school=school).first()
+        office = Office.objects.filter(pk=pk, school=school, is_active=True).first()
         if office:
             return None, office
     raise forms.ValidationError('Choose an active department or an office in your school.')
@@ -106,12 +107,17 @@ class DepartmentForm(SchoolBoundModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['college'].queryset = College.objects.filter(school=self.instance.school)
+        self.fields['college'].queryset = College.objects.filter(school=self.instance.school).filter(Q(is_active=True) | Q(pk=self.instance.college_id))
         self.fields['college'].empty_label = 'No college'
         if not self.instance.school.offers_college:
             self.fields.pop('college')
         if self.instance.pk:
             self.fields['code'].disabled = True
+
+    def clean_description(self):
+        if self.instance.pk and 'description' not in self.data:
+            return self.instance.description
+        return self.cleaned_data['description']
 
     def clean_code(self):
         return self.cleaned_data['code'].strip().upper()
@@ -126,7 +132,6 @@ class DepartmentForm(SchoolBoundModelForm):
 class HeadAssignmentForm(forms.Form):
     title = forms.ChoiceField(choices=User.TITLE_CHOICES)
     departments = forms.ModelMultipleChoiceField(queryset=Department.objects.none())
-    account_status = forms.ChoiceField(choices=[('active', 'Active'), ('deactivated', 'Deactivated')])
 
     def __init__(self, *args, school, **kwargs):
         super().__init__(*args, **kwargs)
@@ -154,7 +159,7 @@ class OfficeAdminInviteForm(SchoolBoundModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         from apps.core.models import Office
-        self.fields['office'].choices = [(o.code, o.name) for o in Office.objects.all().order_by('name')]
+        self.fields['office'].choices = [(o.code, o.name) for o in Office.objects.filter(is_active=True).order_by('name')]
 
     def clean_email(self):
         return validate_invite_identity(self.cleaned_data['email'].strip().lower(), instance=self.instance)
