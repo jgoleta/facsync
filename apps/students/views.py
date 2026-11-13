@@ -1,10 +1,10 @@
 import json
-import json
 import uuid
 from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 from apps.core.models import OfficeClosure, Office, College, User
 from apps.core.department_access import unit_closures, faculty_closed
+from apps.core.student_access import StudentEligibility, student_profile_required, profile_ready, profile_response
 from apps.core.services import create_notification, get_active_announcements, active_announcement_queryset
 from apps.core.consultation_emails import queue_consultation_email
 
@@ -21,7 +21,6 @@ from apps.faculty.models import ConsultationRequest, FacultyProfile, ScheduleEve
 from apps.faculty.services.calendar_events import serialize_consultation_event, serialize_schedule_event
 from .models import FacultyStatusSubscription
 from .availability_browser import QUESTIONS, availability_answer
-from apps.depthead.scope import member_scope
 from apps.core.department_updates import UPDATE_QUESTIONS
 from django.views.decorators.http import require_GET
 from django.views.decorators.cache import never_cache
@@ -62,8 +61,8 @@ def _walk_in_json(queue):
         'faculty_note': queue.faculty_note,
     }
 
-def _closed_college_map():
-    closures = OfficeClosure.objects.filter(is_closed=True)
+def _closed_college_map(student=None):
+    closures = (StudentEligibility(student).closures() if student else OfficeClosure.objects.all()).filter(is_closed=True)
     result = {}
     for c in closures:
         office = Office.objects.filter(code__iexact=c.college).first()
@@ -73,16 +72,17 @@ def _closed_college_map():
     return result
 
 def _faculty_for_schedule(request):
+    eligible = StudentEligibility(request.user).faculty()
     faculty_id = request.GET.get('faculty_id')
     faculty_name = (request.GET.get('faculty') or '').strip()
-    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id, user__is_active=True, user__account_status='active') if faculty_id else None
+    faculty = get_object_or_404(eligible.select_related('user'), faculty_id=faculty_id, user__is_active=True, user__account_status='active') if faculty_id else None
     if faculty is None and faculty_name:
-        faculty = FacultyProfile.objects.select_related('user').filter(
+        faculty = eligible.select_related('user').filter(
             user__first_name__iexact=faculty_name,
             user__is_active=True, user__account_status='active',
         ).first()
         if faculty is None:
-            faculty = FacultyProfile.objects.select_related('user').filter(
+            faculty = eligible.select_related('user').filter(
                 user__username__iexact=faculty_name,
                 user__is_active=True, user__account_status='active',
             ).first()
@@ -98,7 +98,7 @@ def _faculty_directory(closed_college_codes=None, student=None):
             .values_list('faculty_id', flat=True)
         )
     directory = []
-    for faculty in FacultyProfile.objects.select_related('user__department__college').filter(user__is_active=True, user__account_status='active'):
+    for faculty in StudentEligibility(student).faculty().select_related('user__department__college'):
         refresh_faculty_status(faculty)
         office = Office.objects.filter(code__iexact=faculty.college_id).first()
         college = College.objects.filter(code__iexact=faculty.college_id).first()
@@ -123,11 +123,14 @@ def _closed_college_codes():
 
 @login_required
 @role_required('student')
+@student_profile_required
 def dashboard(request):
     faculty_directory = _faculty_directory(_closed_college_codes(), request.user)
-    closed_colleges = _closed_college_map()
+    closed_colleges = _closed_college_map(request.user)
     return render(request, 'students/dashboardStudent.html', {
         'faculty_directory': faculty_directory,
+        'existing_walk_ins': WalkInQueue.objects.filter(user=request.user, status__in=['waiting', 'called'])
+            .exclude(faculty_id__in=StudentEligibility(request.user).faculty().values('pk')).select_related('faculty__user'),
         'availability_questions': [(key, text) for key, text in QUESTIONS.items() if key not in UPDATE_QUESTIONS],
         'department_questions': [(key, QUESTIONS[key]) for key in UPDATE_QUESTIONS],
         'closed_colleges': closed_colleges,
@@ -145,6 +148,12 @@ def profile(request):
 @login_required
 @role_required('student')
 def view_schedule(request):
+    queue = WalkInQueue.objects.filter(user=request.user, faculty_id=request.GET.get('faculty_id'),
+        status__in=['waiting', 'called']).select_related('faculty__user').first()
+    if queue and not StudentEligibility(request.user).allows(queue.faculty):
+        return render(request, 'students/existingQueue.html', {'queue': queue})
+    if not profile_ready(request.user):
+        return profile_response(request)
     faculty = _faculty_for_schedule(request)
     if faculty:
         refresh_faculty_status(faculty)
@@ -166,12 +175,13 @@ def view_schedule(request):
 
 @login_required
 @role_required('student')
+@student_profile_required
 def api_schedule_events(request):
     """Return the selected faculty member's published schedule events."""
     if request.method != 'GET':
         return HttpResponse(status=405)
 
-    faculty = get_object_or_404(FacultyProfile, faculty_id=request.GET.get('faculty_id'))
+    faculty = get_object_or_404(StudentEligibility(request.user).faculty(), faculty_id=request.GET.get('faculty_id'))
     events = ScheduleEvent.objects.filter(faculty=faculty).order_by('date', 'start_time')
     calendar_events = [serialize_schedule_event(event) for event in events]
     approved_consultations = ConsultationRequest.objects.filter(
@@ -304,6 +314,8 @@ def api_consultation_requests(request):
     if request.method != 'POST':
         return HttpResponse(status=405)
 
+    if not profile_ready(request.user):
+        return profile_response(request)
     try:
         payload = _json_body(request)
         faculty_id = str(payload.get('faculty_id') or '').strip()
@@ -324,7 +336,7 @@ def api_consultation_requests(request):
     if len(student_message) > CONSULTATION_NOTE_MAX_LENGTH:
         return JsonResponse({'error': CONSULTATION_NOTE_LIMIT_ERROR}, status=400)
 
-    faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id, user__is_active=True, user__account_status='active')
+    faculty = get_object_or_404(StudentEligibility(request.user).faculty().select_related('user'), faculty_id=faculty_id)
     refresh_faculty_status(faculty)
     if faculty.current_status == 'on_leave':
         return JsonResponse(
@@ -353,7 +365,11 @@ def api_consultation_requests(request):
     with transaction.atomic():
         # Serialize this student's submissions, including requests from another tab.
         # Lock an existing row: locking a nonexistent matching request is insufficient.
-        User.objects.select_for_update().get(pk=request.user.pk)
+        from apps.core.models import School
+        School.objects.select_for_update().get(pk=request.user.school_id)
+        student = User.objects.select_for_update().get(pk=request.user.pk)
+        if not StudentEligibility(student).allows(faculty):
+            return JsonResponse({'error': 'This department or office does not serve your educational level.'}, status=403)
         get_object_or_404(User.objects.select_for_update(), pk=faculty.user_id, is_active=True, account_status='active')
         if ConsultationRequest.objects.filter(
             user=request.user, faculty=faculty, date=date_value, start_time=start_time,
@@ -386,6 +402,7 @@ def api_consultation_requests(request):
 
 @login_required
 @role_required('student')
+@student_profile_required
 def home(request):
     """Render student summary counts and the student's college announcement."""
     today = timezone.localdate()
@@ -403,9 +420,7 @@ def home(request):
     student_college = request.user.department.name if request.user.department_id else request.user.school.name
     college_announcement = active_announcement_queryset(request.user.college, audience='students', student=request.user).first()
     available_faculty_count = 0
-    for faculty in FacultyProfile.objects.select_related('user').filter(user__is_active=True, user__account_status='active'):
-        if request.user.educational_level == 'college' and faculty.user.department_id != request.user.department_id:
-            continue
+    for faculty in StudentEligibility(request.user).faculty().select_related('user'):
         refresh_faculty_status(faculty)
         if faculty.current_status == 'available':
             available_faculty_count += 1
@@ -420,12 +435,13 @@ def home(request):
 
 @login_required
 @role_required('student')
+@student_profile_required
 def api_faculty_statuses(request):
     if request.method != 'GET':
         return HttpResponse(status=405)
     return JsonResponse({
         'faculty': _faculty_directory(_closed_college_codes(), request.user),
-        'closed_colleges': _closed_college_map(),
+        'closed_colleges': _closed_college_map(request.user),
     })
 
 
@@ -436,7 +452,10 @@ def api_faculty_status_subscription(request, faculty_id):
     if request.method not in {'GET', 'POST', 'DELETE'}:
         return HttpResponse(status=405)
 
-    faculty = get_object_or_404(FacultyProfile, faculty_id=faculty_id, user__is_active=True, user__account_status='active')
+    if request.method != 'DELETE' and not profile_ready(request.user):
+        return profile_response(request)
+    eligible = FacultyProfile.objects.all() if request.method == 'DELETE' else StudentEligibility(request.user).faculty()
+    faculty = get_object_or_404(eligible, faculty_id=faculty_id)
     subscription = FacultyStatusSubscription.objects.filter(
         student=request.user,
         faculty=faculty,
@@ -446,10 +465,12 @@ def api_faculty_status_subscription(request, faculty_id):
         return JsonResponse({'subscribed': subscription is not None})
 
     if request.method == 'POST':
-        FacultyStatusSubscription.objects.get_or_create(
-            student=request.user,
-            faculty=faculty,
-        )
+        from apps.core.models import School
+        with transaction.atomic():
+            School.objects.select_for_update().get(pk=request.user.school_id)
+            student = User.objects.select_for_update().get(pk=request.user.pk)
+            faculty = get_object_or_404(StudentEligibility(student).faculty(), pk=faculty.pk)
+            FacultyStatusSubscription.objects.get_or_create(student=student, faculty=faculty)
         return JsonResponse({'subscribed': True})
 
     if subscription:
@@ -466,17 +487,24 @@ def api_walk_in_status(request):
 
     faculty_id = request.GET.get('faculty_id')
     faculty = get_object_or_404(FacultyProfile.objects.select_related('user'), faculty_id=faculty_id, user__is_active=True, user__account_status='active')
-    refresh_faculty_status(faculty)
     queue = WalkInQueue.objects.filter(
         faculty=faculty,
         user=request.user,
         status__in=['waiting', 'called'],
     ).first()
+    allowed = StudentEligibility(request.user).allows(faculty)
+    if not allowed and queue is None:
+        if not profile_ready(request.user):
+            return profile_response(request)
+        return JsonResponse({'error': 'This department or office does not serve your educational level.'}, status=403)
+    if allowed:
+        refresh_faculty_status(faculty)
     return JsonResponse({
         'faculty_id': faculty.faculty_id,
         'faculty_name': faculty.user.get_full_name() or faculty.user.username,
-        'faculty_status': faculty.current_status,
-        'walk_ins_enabled': faculty.walk_ins_enabled,
+        'faculty_status': faculty.current_status if allowed else None,
+        'can_join': allowed,
+        'walk_ins_enabled': faculty.walk_ins_enabled if allowed else False,
         'queue': _walk_in_json(queue) if queue else None,
     })
 
@@ -499,11 +527,21 @@ def api_join_walk_in_queue(request):
         return JsonResponse({'error': 'faculty_id is required.'}, status=400)
 
     with transaction.atomic():
+        from apps.core.models import School
+        School.objects.select_for_update().get(pk=request.user.school_id)
+        student = User.objects.select_for_update().get(pk=request.user.pk)
         faculty = get_object_or_404(
             FacultyProfile.objects.select_for_update().select_related('user'),
             faculty_id=faculty_id, user__is_active=True, user__account_status='active',
         )
         get_object_or_404(User.objects.select_for_update(), pk=faculty.user_id, is_active=True, account_status='active')
+        existing = WalkInQueue.objects.filter(faculty=faculty, user=request.user, status__in=['waiting', 'called']).first()
+        if existing:
+            return JsonResponse(_walk_in_json(existing), status=200)
+        if not profile_ready(student):
+            return profile_response(request)
+        if not StudentEligibility(student).allows(faculty):
+            return JsonResponse({'error': 'This department or office does not serve your educational level.'}, status=403)
         refresh_faculty_status(faculty)
         if faculty_closed(faculty):
             return JsonResponse({'error': 'This college is currently closed and not accepting walk-ins.'}, status=409)
@@ -514,14 +552,6 @@ def api_join_walk_in_queue(request):
             )
         if not faculty.walk_ins_enabled:
             return JsonResponse({'error': 'This faculty member is not accepting walk-ins.'}, status=409)
-
-        existing = WalkInQueue.objects.filter(
-            faculty=faculty,
-            user=request.user,
-            status__in=['waiting', 'called'],
-        ).first()
-        if existing:
-            return JsonResponse(_walk_in_json(existing), status=200)
 
         last_position = WalkInQueue.objects.filter(
             faculty=faculty,
@@ -543,15 +573,9 @@ def api_join_walk_in_queue(request):
 @role_required('student')
 @require_GET
 @never_cache
+@student_profile_required
 def availability_browser_api(request):
-    college = member_scope(request.user)
-    if request.user.educational_level != 'college' and not request.user.department_id:
-        from apps.depthead.scope import DepartmentScope
-        from apps.core.models import Department
-        units = list(Department.objects.filter(school=request.user.school, is_active=True).order_by('pk'))
-        college = DepartmentScope(request.user.school_id, tuple(d.pk for d in units), tuple(d.name for d in units), include_offices=True)
-    if not college and not request.user.educational_level:
-        return JsonResponse({'error': 'Your account has no college set.'}, status=400)
+    college = StudentEligibility(request.user).scope()
     metric = request.GET.get('metric', '')
     if metric not in QUESTIONS:
         return JsonResponse({'error': 'Unknown availability question.'}, status=400)

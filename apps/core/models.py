@@ -224,8 +224,14 @@ class Office(SchoolScopedModel):
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    student_levels = models.JSONField(default=list, blank=True, validators=[validate_announcement_levels])
     schedule_template = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def student_levels_label(self):
+        from .education import student_levels_label
+        return student_levels_label(self.student_levels)
 
     class Meta:
         constraints = [

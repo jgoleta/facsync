@@ -1,0 +1,5 @@
+<fieldset class="department-options"><legend>Educational levels served</legend>
+<p>Select at least one level. These settings control student browsing and new requests; existing appointments are preserved.</p>
+<div class="department-options-list">{% for checkbox in field %}<label class="department-checkbox-option">{{ checkbox.tag }} <span>{{ checkbox.choice_label }}</span></label>{% endfor %}</div>
+{% for error in field.errors %}<p class="assignment-error">{{ error }}</p>{% endfor %}
+</fieldset>

@@ -128,6 +128,9 @@ def claim_deliveries():
                 and faculty_user.school.is_active
                 and (row.recipient_id, row.history.faculty_id) in subscriptions
             )
+            if valid:
+                from apps.core.student_access import student_can_access_faculty
+                valid = student_can_access_faculty(row.recipient, row.history.faculty)
             if not valid:
                 row.state, row.reason, row.finished_at = 'cancelled', 'recipient_no_longer_eligible', now
             else:

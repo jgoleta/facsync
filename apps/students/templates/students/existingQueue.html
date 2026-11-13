@@ -1,0 +1,6 @@
+{% load static %}
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FacSync | Existing walk-in</title><link rel="stylesheet" href="{% static 'css/base.css' %}"></head>
+<body><main style="max-width:640px;margin:40px auto;padding:24px">
+<h1>Your existing walk-in</h1><p>This department or office no longer serves your current educational level. Your existing queue entry remains with the faculty member until it is resolved.</p>
+<dl><dt>Faculty</dt><dd>{{ queue.faculty.user.get_full_name|default:queue.faculty.user.username }}</dd><dt>Status</dt><dd>{{ queue.get_status_display }}</dd><dt>Position</dt><dd>{{ queue.position }}</dd>{% if queue.faculty_note %}<dt>Faculty note</dt><dd>{{ queue.faculty_note }}</dd>{% endif %}</dl>
+<a href="{% url 'students:dashboard' %}">Return to your dashboard</a></main></body></html>

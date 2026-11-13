@@ -61,6 +61,10 @@ def faculty_q(scope, prefix=''):
         departments = Q(**{prefix + 'user__department_id__in': scope.department_ids})
         if scope.include_offices:
             departments |= Q(**{prefix + 'user__department__isnull': True})
+        # Student scopes carry the exact eligible faculty, including shared offices.
+        # Head/report scopes retain their existing department behavior.
+        if hasattr(scope, 'student_faculty_ids'):
+            departments &= Q(**{prefix + 'pk__in': scope.student_faculty_ids})
         return departments & Q(**{prefix + 'user__school_id': scope.school_id})
     return Q(**{prefix + 'college_id__iexact': str(scope or '').strip()})
 

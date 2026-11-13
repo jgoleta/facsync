@@ -363,7 +363,8 @@ def get_request_submission_patterns(college_code, period, *, faculty=None):
 @school_service
 def _eligible_faculty(college_code):
     return FacultyProfile.objects.filter(
-        faculty_q(college_code), user__role="faculty",
+        faculty_q(college_code), user__role__in=(['faculty', 'officeadmin']
+            if hasattr(college_code, 'student_faculty_ids') else ['faculty']),
         user__account_status="active",
     )
 

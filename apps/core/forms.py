@@ -5,7 +5,7 @@ from .education import LEVEL_CHOICES, YEAR_CHOICES
 from .colleges import COLLEGE_CHOICES, get_unit_choices
 from django.utils import timezone
 from apps.core.models import CollegeAnnouncement
-from .school_forms import SchoolBoundModelForm
+from .school_forms import SchoolBoundModelForm, UnitStudentLevelsMixin
 
 class StudentProfileForm(SchoolBoundModelForm):
     educational_level = forms.ChoiceField(choices=[], label='Educational level')
@@ -20,9 +20,15 @@ class StudentProfileForm(SchoolBoundModelForm):
         super().__init__(*args, **kwargs)
         offered = self.instance.school.educational_levels
         self.fields['educational_level'].choices = [('', 'Select your level')] + [(k, v) for k, v in LEVEL_CHOICES if k in offered]
-        self.fields['department'].queryset = Department.objects.filter(school=self.instance.school, is_active=True).select_related('college')
+        departments = Department.objects.filter(school=self.instance.school, is_active=True).select_related('college')
+        college_ids = [unit.pk for unit in departments if 'college' in (unit.student_levels or [])]
+        # Retain an existing academic home after its served levels change.
+        # Its current permissions are still enforced separately for new requests.
+        if self.instance.profile_completed and self.instance.educational_level == 'college' and self.instance.department_id:
+            college_ids.append(self.instance.department_id)
+        self.fields['department'].queryset = departments.filter(pk__in=college_ids)
         self.fields['department'].empty_label = 'Select your department'
-        self.fields['department'].help_text = 'Only active departments in your school are listed. Contact your School Admin if yours is missing.'
+        self.fields['department'].help_text = 'Choose your college department. Contact your School Admin if yours is missing.'
         self.fields['student_id'].required = True
         self.fields['student_id'].error_messages['required'] = 'Enter your Student ID.'
         if len(offered) == 1:
@@ -127,10 +133,10 @@ class CollegeDescriptionForm(SchoolBoundModelForm):
         model = College
         fields = ['description']
 
-class OfficeForm(SchoolBoundModelForm):
+class OfficeForm(UnitStudentLevelsMixin, SchoolBoundModelForm):
     class Meta:
         model = Office
-        fields = ['name', 'code', 'description']
+        fields = ['name', 'code', 'description', 'student_levels']
 
     def clean_name(self):
         value = self.cleaned_data['name']

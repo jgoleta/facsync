@@ -39,8 +39,12 @@ def department_update_answer(metric, college, role, source_url, *, student=None)
             if blocks:
                 result['announcements'] = blocks
             return result
-        rows = OfficeClosure.objects.filter(department_id__in=college.department_ids).select_related('department')
-        closed = [f'{row.department.name}: closed. {row.reason}' for row in rows if row.is_closed]
+        if role == 'student' and student is not None:
+            from .student_access import StudentEligibility
+            rows = StudentEligibility(student).closures().select_related('department')
+        else:
+            rows = OfficeClosure.objects.filter(department_id__in=college.department_ids).select_related('department')
+        closed = [f'{row.department.name if row.department_id else row.college}: closed. {row.reason}' for row in rows if row.is_closed]
         return answer('Department booking availability:', closed or ['No department closures are currently recorded.'],
             'A closure stays in effect until an administrator updates it. Individual faculty availability may vary.',
             source_url, 'View department updates', paragraphs=True)

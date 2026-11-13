@@ -6,6 +6,7 @@ from django.db import models
 from django.db.models.functions import Lower
 
 from .school_scope import SchoolScopedModel, prepare_school_write
+from .education import validate_announcement_levels
 
 
 class Department(SchoolScopedModel):
@@ -18,6 +19,7 @@ class Department(SchoolScopedModel):
     name = models.CharField(max_length=150)
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    student_levels = models.JSONField(default=list, blank=True, validators=[validate_announcement_levels])
     schedule_template = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -51,6 +53,11 @@ class Department(SchoolScopedModel):
 
     def __str__(self):
         return self.name
+
+    @property
+    def student_levels_label(self):
+        from .education import student_levels_label
+        return student_levels_label(self.student_levels)
 
 
 class DepartmentHeadAssignment(SchoolScopedModel):

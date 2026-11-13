@@ -56,7 +56,7 @@
                             <span>{{ available_faculty_count }}</span>
                             <small>Faculty available now</small>
                         </div>
-                        {% if student_college %}<small class="summary-college">{{ student_college }}</small>{% endif %}
+                        <small class="summary-college">Serving {{ request.user.get_educational_level_display }} students</small>
                     </div>
                 </div>
             </section>
