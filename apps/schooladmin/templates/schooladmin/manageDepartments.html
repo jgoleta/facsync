@@ -54,7 +54,7 @@ Departments{% endblock %} {% block content %}
             <button type="button" class="btn-secondary" data-open-modal="departmentModal"
               data-edit-url="{% url 'superadmin:edit_department' department.pk %}" data-name="{{ department.name }}"
               data-code="{{ department.code }}" data-college="{{ department.college_id|default:'' }}"
-              data-description="{{ department.description }}">
+              data-description="{{ department.description }}" data-student-levels="{{ department.student_levels|join:',' }}">
               Edit
             </button>
             <form method="post" action="{% url 'superadmin:department_status' department.pk %}" data-managed-form>
@@ -101,7 +101,7 @@ Departments{% endblock %} {% block content %}
     data-create-url="{% url 'superadmin:create_department' %}" data-managed-form class="modal-form">
     {% csrf_token %}
     <p data-form-error class="assignment-error" role="alert" hidden></p>
-    {% for field in department_form %}{% if field.name != 'description' %}
+    {% for field in department_form %}{% if field.name == 'student_levels' %}{% include 'schooladmin/partials/student_levels.html' with field=field %}{% elif field.name != 'description' %}
     <div class="modal-form-group">
       <label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}
     </div>

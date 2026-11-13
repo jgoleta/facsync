@@ -30,3 +30,7 @@ def validate_school_levels(value):
 
 def ordered_levels(value):
     return [key for key, _ in LEVEL_CHOICES if key in value]
+
+
+def student_levels_label(value):
+    return ', '.join(label for key, label in LEVEL_CHOICES if key in (value or [])) or 'No levels configured'

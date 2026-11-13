@@ -7,6 +7,7 @@ from . import directory_views
 app_name = 'superadmin'
 
 urlpatterns = [
+    path('offices/<int:office_id>/levels/', directory_views.edit_office_levels, name='edit_office_levels'),
     path('colleges/<int:college_id>/status/', directory_views.college_status, name='college_status'),
     path('offices/<int:office_id>/status/', directory_views.office_status, name='office_status'),
     path('superadmins/<int:user_id>/permissions/', schooladmin_views.edit_school_admin_permissions, name='edit_school_admin_permissions'),

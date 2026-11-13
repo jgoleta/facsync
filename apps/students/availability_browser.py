@@ -33,12 +33,12 @@ def availability_answer(metric, college, *, student=None):
         return department_update_answer(metric, college, 'student', source, student=student)
     tz = getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)
     basic = student is not None and student.educational_level != 'college'
-    label = 'your school' if basic else 'your department' if isinstance(college, DepartmentScope) else 'your college'
+    label = 'departments and offices serving your educational level' if student is not None else 'your department' if isinstance(college, DepartmentScope) else 'your college'
     today = timezone.localtime(timezone.now(), ZoneInfo(tz)).date()
     closed = OfficeClosure.objects.filter(department_id__in=college.department_ids, is_closed=True).exists() if isinstance(college, DepartmentScope) else OfficeClosure.objects.filter(department__isnull=True, college__iexact=college, is_closed=True).exists()
     if metric == 'available_now':
         note = 'These are based on their latest recorded status. Check with the faculty member before visiting.'
-        if closed and not basic:
+        if closed and student is None:
             return answer('', [f'{label.capitalize()} is currently marked as closed.'],
                           f'Check with {label} before visiting.', source, 'View faculty directory', paragraphs=True)
         faculty = _eligible_faculty(college).filter(current_status='available').select_related('user').order_by('faculty_id')
@@ -73,5 +73,5 @@ def availability_answer(metric, college, *, student=None):
     if not data['faculty_count']:
         lines = []
     if closed:
-        note = ('Some departments are currently closed. ' if basic else f'{label.capitalize()} is currently closed. ') + 'These schedule estimates do not override closures. ' + note
+        note = ('Some eligible departments or offices are currently closed. ' if student is not None else f'{label.capitalize()} is currently closed. ') + 'These schedule estimates do not override closures. ' + note
     return answer(intro, lines, note, source, 'View faculty directory', empty=empty)

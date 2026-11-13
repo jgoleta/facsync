@@ -6,8 +6,8 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
     <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_main.css' %}?v=20261031-footer">
-    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261112-directory-actions">
-    <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}">
+    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261113-student-levels">
+    <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}?v=20261113-student-levels">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FacSync | Manage Offices</title>
@@ -25,7 +25,7 @@
             <div class="sidebar-footer"><a href="{% url 'account_logout' %}"
                     class="nav-item logout-link"><span>Logout</span></a></div>
         </aside>
-        <main class="main-content">
+        <main class="main-content department-management">
             <header class="main-header">
                 <div>
                     <p class="page-kicker">School administration</p>
@@ -33,7 +33,7 @@
                     <p>Add or remove university offices and review assigned Office Admins.</p>
                 </div>
             </header>
-            {% for message in messages %}<p role="status" class="message-{{ message.tags }}">{{ message }}</p>{% endfor %}
+            {% for message in messages %}{% endfor %}
             <div class="management-table-wrapper">
                 <div class="management-table-header">
                     <div>
@@ -55,11 +55,11 @@
                         </thead>
                         <tbody>
                             {% for office in offices %}<tr>
-                                <td>{{ office.name }}</td>
+                                <td>{{ office.name }}<small class="assignment-muted">Serves: {{ office.student_levels_label }}</small></td>
                                 <td>{{ office.code }}</td>
                                 <td>{% for admin in office.head_users %}{{ admin.get_full_name|default:admin.username
                                     }}{% if not forloop.last %}, {% endif %}{% empty %}Not assigned{% endfor %}</td>
-                                <td>{{ office.is_active|yesno:'Active,Deactivated' }}</td><td class="actions">{% include 'schooladmin/partials/unit_status_action.html' with unit=office status_url_name='superadmin:office_status' %}
+                                <td>{{ office.is_active|yesno:'Active,Deactivated' }}</td><td class="actions"><button class="btn-secondary" type="button" data-open-modal="officeLevelsModal" data-edit-url="{% url 'superadmin:edit_office_levels' office.pk %}" data-student-levels="{{ office.student_levels|join:',' }}">Edit levels</button>{% include 'schooladmin/partials/unit_status_action.html' with unit=office status_url_name='superadmin:office_status' %}
                                     <form method="post" action="{% url 'superadmin:delete_office' office.id %}"
                                         class="inline-form" data-managed-form>{% csrf_token %}<button type="submit" class="danger"
                                             data-confirm="Remove {{ office.name|escapejs }}?">Remove</button></form>
@@ -90,14 +90,17 @@
                 </div>
                 <div class="form-group modal-form-group"><label for="add-office-description">Description
                         (optional)</label><textarea id="add-office-description" name="description"></textarea></div>
+                {% include 'schooladmin/partials/student_levels.html' with field=office_form.student_levels %}
                 <div class="form-actions modal-actions"><button type="submit" class="btn-primary">Add Office</button>
                 </div>
             </form>
         </div>
     </div>
+    <dialog id="officeLevelsModal" class="management-dialog" aria-labelledby="office-levels-title"><div class="modal-header"><h2 id="office-levels-title">Edit educational levels served</h2><button type="button" class="modal-close" data-close-modal aria-label="Close">&times;</button></div>
+    <form method="post" data-managed-form class="modal-form">{% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p>{% include 'schooladmin/partials/student_levels.html' with field=office_levels_form.student_levels %}<div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button class="btn-primary" type="submit">Save levels</button></div></form></dialog>
     {% include 'schooladmin/partials/confirmation_modal.html' %}
     <div id="managementLoading" class="loading-overlay" aria-hidden="true" role="status"><div class="loading-spinner"></div></div>
-    <script src="{% static 'schooladmin/js/departmentManagement.js' %}?v=20261112-directory-actions"></script>
+    <script src="{% static 'schooladmin/js/departmentManagement.js' %}?v=20261113-student-levels"></script>
     <script src="{% static 'schooladmin/js/manageColleges.js' %}"></script>
 </body>
 

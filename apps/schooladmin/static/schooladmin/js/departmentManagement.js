@@ -65,6 +65,10 @@
       const permissions = new Set(button.dataset.permissions.split(','));
       form.querySelectorAll('input[type=checkbox][name=permissions]').forEach(box => box.checked = permissions.has(box.value));
     }
+    if (button.dataset.studentLevels !== undefined) {
+      const levels = new Set(button.dataset.studentLevels.split(','));
+      form.querySelectorAll('input[type=checkbox][name=student_levels]').forEach(box => box.checked = levels.has(box.value));
+    }
     validateDepartments(form);
     const title = dialog.querySelector('[data-modal-title]');
     if (title) title.textContent = button.dataset.editUrl ? title.dataset.editTitle : title.dataset.createTitle;

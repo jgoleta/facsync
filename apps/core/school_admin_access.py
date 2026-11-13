@@ -33,7 +33,7 @@ VIEW_FEATURES = {
     'superadmin_dashboard': 'overview',
     **dict.fromkeys(['create_college', 'edit_college', 'delete_college', 'college_status'], 'colleges'),
     **dict.fromkeys(['manage_departments', 'save_department', 'department_status', 'delete_department'], 'departments'),
-    **dict.fromkeys(['manage_offices', 'create_office', 'delete_office', 'office_status'], 'offices'),
+    **dict.fromkeys(['manage_offices', 'create_office', 'delete_office', 'office_status', 'edit_office_levels'], 'offices'),
     **dict.fromkeys(['manage_admins', 'invite_depthead', 'edit_depthead', 'edit_head_invite', 'remove_depthead',
         'delete_depthead', 'remove_office_admin', 'delete_office_admin', 'invite_office_admin', 'resend_office_admin_invite'], 'admins'),
     **dict.fromkeys(['manage_faculty', 'invite_faculty_superadmin', 'assign_faculty', 'remove_faculty_superadmin', 'delete_faculty_superadmin'], 'faculty'),

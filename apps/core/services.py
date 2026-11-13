@@ -60,7 +60,10 @@ def notify_faculty_status_subscribers(faculty, status, *, history=None, deferred
         faculty=faculty,
         student__school_id=school.pk, student__school__is_active=True,
         student__is_active=True, student__account_status='active', student__role='student',
-    ).select_related('student')
+    ).select_related('student__school')
+    from .student_access import student_can_access_faculty
+    subscriptions = [subscription for subscription in subscriptions
+        if student_can_access_faculty(subscription.student, faculty)]
 
     notifications = Notification.objects.bulk_create([
         Notification(
@@ -107,6 +110,9 @@ def notify_faculty_status_subscribers(faculty, status, *, history=None, deferred
         recipients = [subscription.student for subscription in subscriptions if subscription.student.email]
         def send_immediate():
             for student in recipients:
+                current_student = User._base_manager.select_related('school').filter(pk=student.pk).first()
+                if current_student is None or not student_can_access_faculty(current_student, faculty):
+                    continue
                 try:
                     send_faculty_status_email(student, faculty_name, status_label, url)
                 except Exception:

@@ -29,6 +29,7 @@
         </header>
 
         <main class="container dashboard-container">
+            {% if existing_walk_ins %}<section aria-label="Existing walk-ins"><h2>Your existing walk-ins</h2><p>These queue entries remain available until resolved, even if a department or office changes the levels it serves.</p><ul>{% for queue in existing_walk_ins %}<li><a href="{% url 'students:view_schedule' %}?faculty_id={{ queue.faculty_id|urlencode }}">{{ queue.faculty.user.get_full_name|default:queue.faculty.user.username }} ? {{ queue.get_status_display }}, position {{ queue.position }}</a></li>{% endfor %}</ul></section>{% endif %}
             <section class="dashboard-hero">
                 <div class="hero-copy">
                     <p class="eyebrow">Student dashboard</p>

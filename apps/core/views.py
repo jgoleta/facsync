@@ -60,6 +60,8 @@ STATUS_NOTE_DEFAULTS = {
 @login_required
 @never_cache
 def dashboard_public(request):
+    if request.user.role == 'student':
+        return redirect('students:dashboard')
 
     closures = OfficeClosure.objects.filter(is_closed=True)
     if request.user.role == 'depthead':
@@ -214,7 +216,7 @@ def student_profile_setup(request):
     return render(request, 'core/studentProfileSetup.html', {'form': form, 'year_choices': YEAR_CHOICES,
         'single_level_label': LEVELS.get(request.user.school.educational_levels[0]) if len(request.user.school.educational_levels) == 1 else None,
         'department_colleges': {str(d.pk): d.college.name if d.college else 'No college' for d in
-            Department.objects.filter(school=request.user.school, is_active=True).select_related('college')}})
+            form.fields['department'].queryset}})
 
 @login_required
 @role_required('faculty')

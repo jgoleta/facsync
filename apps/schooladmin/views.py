@@ -268,7 +268,10 @@ def manage_offices(request):
     offices = Office.objects.all().order_by('name')
     for office in offices:
         office.head_users = User.objects.filter(role='officeadmin', college__iexact=office.code)
-    return render(request, 'schooladmin/manageOffices.html', {'offices': offices})
+    from .forms import OfficeStudentLevelsForm
+    return render(request, 'schooladmin/manageOffices.html', {'offices': offices,
+        'office_form': OfficeForm(auto_id='createOffice_%s'),
+        'office_levels_form': OfficeStudentLevelsForm(auto_id='editOffice_%s')})
 
 @login_required
 @role_required('superadmin')

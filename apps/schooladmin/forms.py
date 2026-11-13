@@ -3,7 +3,7 @@ from django.db.models import Q
 from apps.core.colleges import get_college_choices, get_unit_choices
 from apps.core.models import College, Department, DeptHeadInvite, FacultyInvite, Office, OfficeAdminInvite, User
 from apps.core.invitations import validate_invite_identity
-from apps.core.school_forms import SchoolBoundModelForm
+from apps.core.school_forms import SchoolBoundModelForm, UnitStudentLevelsMixin
 from apps.core.education import LEVEL_CHOICES
 from apps.core.school_models import SchoolDomain, validate_school_domain
 
@@ -100,10 +100,10 @@ def resolve_academic_unit(value, school):
     raise forms.ValidationError('Choose an active department or an office in your school.')
 
 
-class DepartmentForm(SchoolBoundModelForm):
+class DepartmentForm(UnitStudentLevelsMixin, SchoolBoundModelForm):
     class Meta:
         model = Department
-        fields = ['name', 'code', 'college', 'description']
+        fields = ['name', 'code', 'college', 'description', 'student_levels']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -127,6 +127,12 @@ class DepartmentForm(SchoolBoundModelForm):
         if not self.instance.school.offers_college and self.data.get('college'):
             raise forms.ValidationError('College assignments are unavailable while College is not an offered educational level.')
         return data
+
+
+class OfficeStudentLevelsForm(UnitStudentLevelsMixin, SchoolBoundModelForm):
+    class Meta:
+        model = Office
+        fields = ['student_levels']
 
 
 class HeadAssignmentForm(forms.Form):

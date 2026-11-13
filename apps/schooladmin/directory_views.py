@@ -7,6 +7,8 @@ from django.views.decorators.http import require_POST
 
 from apps.core.decorators import role_required
 from apps.core.models import College, Department, DeptHeadInvite, FacultyInvite, Office, OfficeAdminInvite, School, User
+from .forms import OfficeStudentLevelsForm
+from .department_views import form_error
 
 
 def _change_status(request, model, pk):
@@ -55,3 +57,17 @@ def college_status(request, college_id):
 @require_POST
 def office_status(request, office_id):
     return _change_status(request, Office, office_id)
+
+
+@login_required
+@role_required('superadmin')
+@require_POST
+def edit_office_levels(request, office_id):
+    with transaction.atomic():
+        get_object_or_404(School.objects.select_for_update(), pk=request.user.school_id, is_active=True)
+        office = get_object_or_404(Office.objects.select_for_update(), pk=office_id)
+        form = OfficeStudentLevelsForm(request.POST, instance=office)
+        if not form.is_valid():
+            return form_error(form)
+        form.save()
+    return JsonResponse({'success': True, 'message': 'Educational levels updated. Existing appointments and history are preserved.'})
