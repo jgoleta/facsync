@@ -1,0 +1,90 @@
+{% extends 'systemadmin/base.html' %}
+{% block content %}
+<div data-system-directory="requests">
+    <div class="system-directory-toolbar">
+        <form method="get" class="system-school-filter" data-request-filter><label for="inquiry-stage">School onboarding
+                stage</label><select id="inquiry-stage" name="stage">
+                <option value="open" {% if stage_filter == 'open' %}selected{% endif %}>Open inquiries</option>{% for value,label in stage_choices %}<option value="{{ value }}" {% if stage_filter == value %}selected{% endif %}>{{ label }}</option>{% endfor %}<option value="all" {% if stage_filter == 'all' %}selected{% endif %}>All inquiries</option>
+            </select><noscript><button type="submit" class="btn-secondary">Apply stage</button></noscript></form>
+    </div>
+    <section class="management-table-wrapper system-directory-card">
+        <div class="management-table-header">
+            <h2>School Onboarding</h2>
+        </div>
+        <div class="table-scroll">
+            <table class="system-directory-table">
+                <thead>
+                    <tr>
+                        <th>School</th>
+                        <th>Representative</th>
+                        <th>Submitted</th>
+                        <th>Stage</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>{% for item in inquiries %}<tr>
+                        <td>{{ item.school_name }}</td>
+                        <td>{{ item.representative_name }}<p class="system-hint">{{ item.email }}</p>
+                        </td>
+                        <td>{{ item.created_at|date:'M j, Y H:i' }}</td>
+                        <td><span class="system-pill">{{ item.get_stage_display }}</span></td>
+                        <td><a class="btn-secondary" data-modal-trigger
+                                href="{% url 'systemadmin:inquiry_review' item.pk %}">Review</a></td>
+                    </tr>{% empty %}<tr>
+                        <td colspan="5" class="empty-state">No inquiries match this stage.</td>
+                    </tr>{% endfor %}</tbody>
+            </table>
+        </div>
+        <nav class="management-pagination" aria-label="School onboarding pagination"><span>Page {{ inquiries.number }} of {{ inquiries.paginator.num_pages }}</span><div>{% if inquiries.has_previous %}<a class="btn-secondary" href="?stage={{ stage_filter }}&amp;inquiry_page={{ inquiries.previous_page_number }}&amp;page={{ request.GET.page|default:1 }}" aria-label="Previous School Onboarding page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if inquiries.has_next %}<a class="btn-secondary" href="?stage={{ stage_filter }}&amp;inquiry_page={{ inquiries.next_page_number }}&amp;page={{ request.GET.page|default:1 }}" aria-label="Next School Onboarding page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div></nav>
+    </section>
+    <div class="system-directory-toolbar system-request-toolbar">
+        <form method="get" class="system-school-filter" data-request-filter><label
+                for="request-status">Status</label><select id="request-status" name="status">
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending review</option>
+                <option value="approved" {% if status_filter == 'approved' %}selected{% endif %}>Approved</option>
+                <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All requests</option>
+            </select><noscript><button class="btn-secondary" type="submit">Apply status</button></noscript></form>
+    </div>
+    <section class="management-table-wrapper system-directory-card system-request-card"
+        aria-labelledby="registration-requests-heading">
+        <div class="management-table-header">
+            <h2 id="registration-requests-heading">Earlier Registration Requests</h2>
+        </div>
+        <div class="table-scroll">
+            <table class="system-directory-table">
+                <thead>
+                    <tr>
+                        <th>School</th>
+                        <th>Domain</th>
+                        <th>Representative</th>
+                        <th>Submitted</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in applications %}<tr>
+                        <td><strong>{{ item.school_name }}</strong>
+                            <p class="system-hint">{{ item.school_code }}</p>
+                        </td>
+                        <td>{{ item.domain }}</td>
+                        <td>{{ item.representative_name }}<p class="system-hint">{{ item.applicant_email }}</p>
+                        </td>
+                        <td>{{ item.created_at|date:'M j, Y H:i' }}</td>
+                        <td><span class="system-pill {% if item.status == 'approved' %}is-active{% elif item.status == 'rejected' %}is-deactivated{% else %}is-invited{% endif %}">{{ item.get_status_display }}</span></td>
+                        <td>
+                            <div class="system-actions"><a class="btn-secondary" data-modal-trigger
+                                    href="{% url 'systemadmin:request_review' item.pk %}">{% if item.status == 'pending' %}Review{% else %}View{% endif %}</a></div>
+                        </td>
+                    </tr>
+                    {% empty %}<tr>
+                        <td colspan="6" class="empty-state">No school requests match this status.</td>
+                    </tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <nav class="management-pagination" aria-label="Earlier registration requests pagination"><span>Page {{ applications.number }} of {{ applications.paginator.num_pages }}</span><div>{% if applications.has_previous %}<a class="btn-secondary" href="?status={{ status_filter }}&amp;page={{ applications.previous_page_number }}&amp;inquiry_page={{ request.GET.inquiry_page|default:1 }}" aria-label="Previous Earlier Registration Requests page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if applications.has_next %}<a class="btn-secondary" href="?status={{ status_filter }}&amp;page={{ applications.next_page_number }}&amp;inquiry_page={{ request.GET.inquiry_page|default:1 }}" aria-label="Next Earlier Registration Requests page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div></nav>
+    </section>
+</div>
+{% endblock %}

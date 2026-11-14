@@ -16,7 +16,7 @@
             </div>
             <p class="system-metric-value">{{ total_schools }}</p>
             <p class="system-metric-detail">{{ active_schools }} active <span aria-hidden="true">&middot;</span> {{ suspended_schools }} suspended</p>
-            <a class="system-metric-link" href="{% url 'systemadmin:manage_schools' %}">Manage schools <span aria-hidden="true">&rarr;</span></a>
+            <a class="system-metric-link" href="{% url 'systemadmin:manage_school' %}">Manage schools <span aria-hidden="true">&rarr;</span></a>
         </article>
         <article class="system-metric">
             <div class="system-metric-heading">
@@ -25,7 +25,7 @@
             </div>
             <p class="system-metric-value">{{ total_superadmins }}</p>
             <p class="system-metric-detail">School administrators, including deactivated accounts</p>
-            <a class="system-metric-link" href="{% url 'systemadmin:manage_superadmins' %}">Manage School Admins <span aria-hidden="true">&rarr;</span></a>
+            <a class="system-metric-link" href="{% url 'systemadmin:manage_schooladmins' %}">Manage School Admins <span aria-hidden="true">&rarr;</span></a>
         </article>
         <article class="system-metric">
             <div class="system-metric-heading">
@@ -34,7 +34,7 @@
             </div>
             <p class="system-metric-value">{{ pending_invitations }}</p>
             <p class="system-metric-detail">Active School Admin invites awaiting sign-in at active schools</p>
-            <a class="system-metric-link" href="{% url 'systemadmin:manage_superadmins' %}">Review invitations <span aria-hidden="true">&rarr;</span></a>
+            <a class="system-metric-link" href="{% url 'systemadmin:manage_schooladmins' %}">Review invitations <span aria-hidden="true">&rarr;</span></a>
         </article>
     </div>
     <p class="system-overview-note">School activity and consultation reports remain in each school’s School Admin workspace.</p>

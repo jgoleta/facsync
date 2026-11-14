@@ -32,7 +32,7 @@ def school_requests(request):
         inquiries = inquiries.filter(stage=stage)
     if status != 'all':
         rows = rows.filter(status=status)
-    return render(request, 'systemadmin/requests.html', {'tab': 'requests', 'title': 'School Requests',
+    return render(request, 'systemadmin/school_requests.html', {'tab': 'requests', 'title': 'School Requests',
         'subtitle': 'Verify school representatives before creating schools and their first School Admin invitation.',
         'applications': Paginator(rows, 25).get_page(request.GET.get('page')), 'status_filter': status,
         'inquiries': Paginator(inquiries, 25).get_page(request.GET.get('inquiry_page')),

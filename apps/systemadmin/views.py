@@ -3,6 +3,7 @@ import logging
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
@@ -66,10 +67,11 @@ def overview(request):
 
 @login_required
 @role_required('systemadmin')
-def manage_schools(request):
-    return render(request, 'systemadmin/schools.html', {
-        'schools': School.objects.prefetch_related('domains').annotate(
-            superadmin_count=Count('users', filter=Q(users__role='superadmin'), distinct=True)),
+def manage_school(request):
+    schools = School.objects.order_by('name', 'pk').prefetch_related('domains').annotate(
+        superadmin_count=Count('users', filter=Q(users__role='superadmin'), distinct=True))
+    return render(request, 'systemadmin/manage_school.html', {
+        'schools': Paginator(schools, 10).get_page(request.GET.get('page')),
         'tab': 'schools', 'title': 'Manage Schools',
         'subtitle': 'Manage school details, registration domains and access to FacSync.',
     })
@@ -88,9 +90,9 @@ def school_edit(request, school_id=None):
                            else 'A school code or domain is already in use. Review the latest assignments.')
         else:
             messages.success(request, 'School updated.' if school else 'School created.')
-            return redirect('systemadmin:manage_schools')
+            return redirect('systemadmin:manage_school')
     return _form_page(request, form, title='Edit School' if school else 'Add School',
-                      tab='schools', back='systemadmin:manage_schools', school=school)
+                      tab='schools', back='systemadmin:manage_school', school=school)
 
 
 @login_required
@@ -100,21 +102,30 @@ def school_status(request, school_id):
     with transaction.atomic():
         school = get_object_or_404(School.objects.select_for_update(), pk=school_id)
         action = request.POST.get('action')
-        if action not in {'suspend', 'reactivate'}:
-            messages.error(request, 'Choose suspend or reactivate.')
+        if action not in {'suspend', 'remove', 'reactivate'}:
+            messages.error(request, 'Choose remove, suspend or reactivate.')
         else:
+            # Removal is reversible: retain school records and history while
+            # suspending access.
             school.is_active = action == 'reactivate'
             school.save(actor=request.user, update_fields=['is_active', 'updated_at'])
-            messages.success(request, 'School reactivated.' if school.is_active else 'School suspended. Its users can no longer access FacSync.')
-    return redirect('systemadmin:manage_schools')
+            if school.is_active:
+                messages.success(request, 'School reactivated.')
+            elif action == 'remove':
+                messages.success(request, 'School removed from active access. Its users and data were retained.')
+            else:
+                messages.success(request, 'School suspended. Its users can no longer access FacSync.')
+    return redirect('systemadmin:manage_school')
 
 
 @login_required
 @role_required('systemadmin')
-def manage_superadmins(request):
-    return render(request, 'systemadmin/superadmins.html', {
-        'administrators': User.objects.filter(role='superadmin').select_related('school').order_by('school__name', 'email'),
-        'invitations': SuperAdminInvite.objects.filter(used=False).select_related('school', 'invited_by'),
+def manage_schooladmins(request):
+    administrators = User.objects.filter(role='superadmin').select_related('school').order_by('school__name', 'email')
+    invitations = SuperAdminInvite.objects.filter(used=False).select_related('school', 'invited_by')
+    return render(request, 'systemadmin/manage_schooladmins.html', {
+        'administrators': Paginator(administrators, 10).get_page(request.GET.get('accounts_page')),
+        'invitations': Paginator(invitations, 10).get_page(request.GET.get('invitations_page')),
         'filter_schools': School.objects.all(),
         'tab': 'superadmins', 'title': 'Manage School Admins',
         'subtitle': 'Invite School Admins and manage their access to each school.',
@@ -144,9 +155,9 @@ def invite_edit(request, invite_id=None):
             _deliver_invite(request, saved)
         else:
             messages.success(request, 'Invitation updated. Reactivate it when ready.')
-        return redirect('systemadmin:manage_superadmins')
+        return redirect('systemadmin:manage_schooladmins')
     return _form_page(request, form, title='Edit School Admin Invitation' if invite else 'Invite School Admin',
-                      tab='superadmins', back='systemadmin:manage_superadmins')
+                      tab='superadmins', back='systemadmin:manage_schooladmins')
 
 
 @login_required
@@ -156,16 +167,21 @@ def invite_status(request, invite_id):
     with transaction.atomic():
         invite = get_object_or_404(SuperAdminInvite.objects.select_for_update().select_related('school'), pk=invite_id, used=False)
         action = request.POST.get('action')
-        if action not in {'deactivate', 'reactivate'}:
-            messages.error(request, 'Choose deactivate or reactivate.')
+        if action not in {'deactivate', 'remove', 'reactivate'}:
+            messages.error(request, 'Choose remove, deactivate or reactivate.')
         elif action == 'reactivate' and not invite.school.is_active:
             messages.error(request, 'Reactivate the school before reactivating this invitation.')
         else:
             invite.is_active = action == 'reactivate'
             invite.invited_by = request.user
             invite.save(update_fields=['is_active', 'invited_by'])
-            messages.success(request, 'Invitation reactivated.' if invite.is_active else 'Invitation deactivated.')
-    return redirect('systemadmin:manage_superadmins')
+            if invite.is_active:
+                messages.success(request, 'Invitation reactivated.')
+            elif action == 'remove':
+                messages.success(request, 'Invitation removed. It can no longer be used, and the record was retained.')
+            else:
+                messages.success(request, 'Invitation deactivated.')
+    return redirect('systemadmin:manage_schooladmins')
 
 
 @login_required
@@ -177,7 +193,7 @@ def invite_resend(request, invite_id):
         messages.error(request, 'Reactivate the school before sending this invitation.')
     else:
         _deliver_invite(request, invite)
-    return redirect('systemadmin:manage_superadmins')
+    return redirect('systemadmin:manage_schooladmins')
 
 
 @login_required
@@ -202,9 +218,9 @@ def superadmin_edit(request, user_id):
             form.add_error(None, error)
         else:
             messages.success(request, 'School Admin updated.')
-            return redirect('systemadmin:manage_superadmins')
+            return redirect('systemadmin:manage_schooladmins')
     return _form_page(request, form, title=f'Edit School Admin: {user.email}',
-                      tab='superadmins', back='systemadmin:manage_superadmins')
+                      tab='superadmins', back='systemadmin:manage_schooladmins')
 
 
 @login_required
@@ -219,9 +235,9 @@ def superadmin_status(request, user_id):
         user = get_object_or_404(User.objects.select_for_update(), pk=user_id, role='superadmin', school=school)
         action = request.POST.get('action')
         try:
-            if action not in {'deactivate', 'reactivate'}:
-                raise ValidationError('Choose deactivate or reactivate.')
-            if action == 'deactivate':
+            if action not in {'deactivate', 'remove', 'reactivate'}:
+                raise ValidationError('Choose remove, deactivate or reactivate.')
+            if action in {'deactivate', 'remove'}:
                 require_replacement_superadmin(user)
             elif not school.is_active:
                 raise ValidationError('Reactivate the school before reactivating this account.')
@@ -232,8 +248,13 @@ def superadmin_status(request, user_id):
         except ValidationError as error:
             messages.error(request, '; '.join(error.messages))
         else:
-            notify_deactivation = was_active and action == 'deactivate'
-            messages.success(request, 'School Admin reactivated.' if user.is_active else 'School Admin deactivated.')
+            notify_deactivation = was_active and action in {'deactivate', 'remove'}
+            if user.is_active:
+                messages.success(request, 'School Admin reactivated.')
+            elif action == 'remove':
+                messages.success(request, 'School Admin removed. The account was deactivated and retained for audit history.')
+            else:
+                messages.success(request, 'School Admin deactivated.')
     if notify_deactivation:
         _deliver_deactivation(request, user)
-    return redirect('systemadmin:manage_superadmins')
+    return redirect('systemadmin:manage_schooladmins')

@@ -3,13 +3,13 @@
 <html lang="en">
 
 <head>
-    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261015-brand-logo">
-    <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261015-brand-logo" />
+    <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Trends</title>
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
-    <link rel="stylesheet" href="{% static 'depthead/css/faculty_trends.css' %}">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav" />
+    <link rel="stylesheet" href="{% static 'depthead/css/faculty_trends.css' %}" />
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -20,7 +20,10 @@
         <main class="main-content faculty-trends">
             <header class="main-header">
                 <h1>Faculty Trends</h1>
-                <p>{{ request.managed_scope.name|default:request.user.college_name }} &middot; Active faculty: {{ schedule_availability.faculty_count }}</p>
+                <p>
+                    {{ request.managed_scope.name|default:request.user.college_name }}
+                    &middot; Active faculty: {{ schedule_availability.faculty_count }}
+                </p>
             </header>
 
             <div class="trends-layout">
@@ -28,13 +31,21 @@
                     {% include 'depthead/partials/shared_windows.html' %}
                     <section class="chart-card" aria-labelledby="history-chart-title">
                         <h2 id="history-chart-title">Status availability by faculty</h2>
-                        <p class="chart-caption">Time recorded as Available from Monday up to now. Future hours are not counted.</p>
-                        <p class="period-label">This week: {{ consultation_start|date:"M j" }} &ndash; {{ consultation_end|date:"M j, Y" }} &middot; Asia/Manila</p>
-                        <div class="history-chart-scroll" tabindex="0" role="region" aria-label="Faculty status availability">
+                        <p class="chart-caption">
+                            Time recorded as Available from Monday up to now. Future hours
+                            are not counted.
+                        </p>
+                        <p class="period-label">
+                            This week: {{ consultation_start|date:"M j" }} &ndash; {{ consultation_end|date:"M j, Y" }} &middot; Asia/Manila
+                        </p>
+                        <div class="history-chart-scroll" tabindex="0" role="region"
+                            aria-label="Faculty status availability">
                             <ul class="bar-chart">
                                 {% for bar in chart_bars %}
                                 <li class="bar-row">
-                                    <div class="bar-heading"><span>{{ bar.label }}</span><strong>{% if bar.has_data %}{{ bar.rate }}%{% else %}No status history{% endif %}</strong></div>
+                                    <div class="bar-heading">
+                                        <span>{{ bar.label }}</span><strong>{% if bar.has_data %}{{ bar.rate }}%{% else %}No status history{% endif %}</strong>
+                                    </div>
                                     <div class="bar-track" aria-hidden="true">
                                         {% if bar.has_data %}<div class="bar-fill history-bar{% if bar.rate > 0 %} history-bar-positive{% endif %}" style="width: {{ bar.rate|unlocalize }}%;"></div>{% endif %}
                                     </div>
@@ -44,32 +55,58 @@
                                 {% endfor %}
                             </ul>
                         </div>
-                        <div class="bar-axis" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
+                        <div class="bar-axis" aria-hidden="true">
+                            <span>0%</span><span>50%</span><span>100%</span>
+                        </div>
                     </section>
                 </div>
                 <div class="table-card">
                     <div class="daily-winners-heading">
                         <h2>Most available faculty per day</h2>
-                        <p class="period-label">{{ schedule_availability.week_start|date:"M j" }}&ndash;{{ schedule_availability.week_end|date:"M j, Y" }} &middot; 8am&ndash;5pm ({{ schedule_availability.timezone }}).</p>
+                        <p class="period-label">
+                            {{ schedule_availability.week_start|date:"M j" }}&ndash;{{ schedule_availability.week_end|date:"M j, Y" }} &middot;
+                            8am&ndash;5pm ({{ schedule_availability.timezone }}).
+                        </p>
                     </div>
-                    <p class="chart-note">Ranked by total unscheduled time. Faculty without recorded schedules are excluded. All ties are shown.</p>
+                    <p class="chart-note">
+                        Ranked by total unscheduled time. Faculty without recorded
+                        schedules are excluded. All ties are shown.
+                    </p>
                     <div class="daily-winners" data-timezone="{{ schedule_availability.timezone }}">
                         <div class="winner-tabs" role="tablist" aria-label="Day of the week" hidden>
                             {% for row in schedule_availability.rows %}
-                            <button type="button" id="winner-tab-{{ forloop.counter0 }}" role="tab" aria-controls="winner-panel-{{ forloop.counter0 }}" aria-selected="false" tabindex="-1" data-date="{{ row.date|date:'Y-m-d' }}">{{ row.day|slice:":3" }}</button>
+                            <button type="button" id="winner-tab-{{ forloop.counter0 }}" role="tab"
+                                aria-controls="winner-panel-{{ forloop.counter0 }}" aria-selected="false" tabindex="-1"
+                                data-date="{{ row.date|date:'Y-m-d' }}">
+                                {{ row.day|slice:":3" }}
+                            </button>
                             {% endfor %}
                         </div>
                         {% for row in schedule_availability.rows %}
-                        <section class="winner-panel" id="winner-panel-{{ forloop.counter0 }}" aria-labelledby="winner-title-{{ forloop.counter0 }}">
-                            <h3 id="winner-title-{{ forloop.counter0 }}">{{ row.day }}, {{ row.date|date:"M j" }}</h3>
+                        <section class="winner-panel" id="winner-panel-{{ forloop.counter0 }}"
+                            aria-labelledby="winner-title-{{ forloop.counter0 }}">
+                            <h3 id="winner-title-{{ forloop.counter0 }}">
+                                {{ row.day }}, {{ row.date|date:"M j" }}
+                            </h3>
                             {% if row.winners %}
-                            <p class="winner-duration">Unscheduled time: <strong>{{ row.open_display }} per faculty</strong></p>
+                            <p class="winner-duration">
+                                Unscheduled time:
+                                <strong>{{ row.open_display }} per faculty</strong>
+                            </p>
                             <ul class="winner-list">
-                                {% for name in row.winners %}<li>{{ name }}</li>{% endfor %}
+                                {% for name in row.winners %}
+                                <li>{{ name }}</li>
+                                {% endfor %}
                             </ul>
-                            <p class="chart-note">All listed faculty share the highest total unscheduled time for this day.</p>
+                            <p class="chart-note">
+                                All listed faculty share the highest total unscheduled time
+                                for this day.
+                            </p>
                             {% else %}
-                            <p class="empty-state">{% if not schedule_availability.faculty_count %}No faculty data{% else %}{{ row.ranking_empty }}{% endif %}</p>
+                            <p class="empty-state">
+                                {% if not schedule_availability.faculty_count %}No faculty
+                                data{% else %}{{ row.ranking_empty }}{% endif %}
+                            </p>
                             {% endif %}
                         </section>
                         {% endfor %}
@@ -78,14 +115,41 @@
                 </div>
 
                 <section class="table-card" aria-labelledby="faculty-detail-title">
-                    <h2 id="faculty-detail-title">Faculty activity and consultations</h2>
-                    <p class="chart-caption">This week: {{ consultation_start|date:"M j" }} &ndash; {{ consultation_end|date:"M j, Y" }} &middot; Asia/Manila. Status updates count from Monday up to now. Completion uses appointments this week; approval time uses requests approved this week.</p>
-                    <p class="chart-note">Updates/day uses the time elapsed this week. Upcoming appointments are not completed yet.</p>
-                    <div class="table-scroll" tabindex="0" role="region" aria-label="Faculty activity and consultation details">
+                    <h2 id="faculty-detail-title">
+                        Faculty activity and consultations
+                    </h2>
+                    <p class="chart-caption">
+                        This week: {{ consultation_start|date:"M j" }} &ndash; {{ consultation_end|date:"M j, Y" }} &middot; Asia/Manila. Status
+                        updates count from Monday up to now. Completion uses appointments
+                        this week; approval time uses requests approved this week.
+                    </p>
+                    <p class="chart-note">
+                        Updates/day uses the time elapsed this week. Upcoming appointments
+                        are not completed yet.
+                    </p>
+                    <div class="table-scroll" tabindex="0" role="region"
+                        aria-label="Faculty activity and consultation details">
                         <table class="faculty-detail-table">
                             <thead>
-                                <tr><th scope="col" rowspan="2">Faculty</th><th scope="colgroup" colspan="2">Status activity &middot; This week</th><th scope="colgroup" colspan="2" class="consultation-column consultation-divider">Consultations &middot; This week</th></tr>
-                                <tr><th scope="col">Last recorded update</th><th scope="col">Updates/day</th><th scope="col" class="consultation-column consultation-divider">Completion rate</th><th scope="col" class="consultation-column">Avg. time to approval</th></tr>
+                                <tr>
+                                    <th scope="col" rowspan="2">Faculty</th>
+                                    <th scope="colgroup" colspan="2">
+                                        Status activity &middot; This week
+                                    </th>
+                                    <th scope="colgroup" colspan="2" class="consultation-column consultation-divider">
+                                        Consultations &middot; This week
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <th scope="col">Last recorded update</th>
+                                    <th scope="col">Updates/day</th>
+                                    <th scope="col" class="consultation-column consultation-divider">
+                                        Completion rate
+                                    </th>
+                                    <th scope="col" class="consultation-column">
+                                        Avg. time to approval
+                                    </th>
+                                </tr>
                             </thead>
                             <tbody>
                                 {% for t in trends %}
@@ -93,10 +157,20 @@
                                     <th scope="row">{{ t.name }}</th>
                                     <td>{{ t.last_update_display }}</td>
                                     <td class="numeric">{{ t.updates_per_day }}</td>
-                                    <td class="numeric consultation-column consultation-divider">{% if t.completion_rate is not None %}{{ t.completion_rate }}%{% else %}No data{% endif %}</td>
-                                    <td class="numeric consultation-column">{% if t.avg_response_hours is not None %}{{ t.avg_response_hours }}h{% else %}No data{% endif %}</td>
+                                    <td class="numeric consultation-column consultation-divider">
+                                        {% if t.completion_rate is not None %}{{ t.completion_rate }}%{% else %}No data{% endif %}
+                                    </td>
+                                    <td class="numeric consultation-column">
+                                        {% if t.avg_response_hours is not None %}{{ t.avg_response_hours }}h{% else %}No data{% endif %}
+                                    </td>
                                 </tr>
-                                {% empty %}<tr><td colspan="5" class="empty-state">No faculty data yet.</td></tr>{% endfor %}
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="empty-state">
+                                        No faculty data yet.
+                                    </td>
+                                </tr>
+                                {% endfor %}
                             </tbody>
                         </table>
                     </div>
@@ -107,4 +181,5 @@
     <script src="{% static 'depthead/js/faculty_trends.js' %}" defer></script>
     <script src="{% static 'depthead/js/shared_windows.js' %}" defer></script>
 </body>
+
 </html>
