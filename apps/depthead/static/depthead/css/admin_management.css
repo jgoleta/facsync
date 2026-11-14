@@ -31,6 +31,14 @@
   border-color: #d1d5db;
 }
 
+.schedule-template-modal .schedule-template-restore-defaults { color: var(--primary); border: 1px solid var(--primary); }
+.schedule-template-modal .schedule-template-add { color: var(--primary); border: 1px solid var(--primary); }
+.schedule-template-modal .schedule-template-restore-defaults:hover,
+.schedule-template-modal .schedule-template-add:hover,
+.schedule-template-modal .schedule-template-download:hover { background-color: #f8fafc; }
+.schedule-template-modal .schedule-template-add:hover { border-color: var(--primary-dark); color: var(--primary-dark); }
+.schedule-template-modal .schedule-template-download { color: var(--primary); border: 1px solid var(--primary); }
+
 .management-table-wrapper {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);

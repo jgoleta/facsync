@@ -1,4 +1,6 @@
 .faculty-transition.student-transition {
+  overflow: hidden;
+  overscroll-behavior: none;
   box-sizing: border-box;
   padding: 0;
   background: var(--page-bg, var(--text-light));
