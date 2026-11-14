@@ -1,0 +1,144 @@
+{% extends 'systemadmin/base.html' %} {% block action %}<a
+  class="btn-primary system-header-action"
+  data-modal-trigger
+  href="{% url 'systemadmin:school_add' %}"
+  >+ Add School</a
+>{% endblock %} {% block content %}
+<div data-system-directory="schools">
+  <section
+    class="management-table-wrapper system-directory-card"
+    aria-labelledby="school-directory-title"
+  >
+    <div class="management-table-header">
+      <div>
+        <p class="section-kicker">School directory</p>
+        <h2 id="school-directory-title">Registered Schools</h2>
+      </div>
+      <p class="system-hint">
+        {{ schools.paginator.count }} school{{ schools.paginator.count|pluralize }}
+      </p>
+    </div>
+    <div class="table-scroll">
+      <table class="system-directory-table">
+        <thead>
+          <tr>
+            <th scope="col">School</th>
+            <th scope="col">Code</th>
+            <th scope="col">Domains</th>
+            <th scope="col">School Admins</th>
+            <th scope="col">Status</th>
+            <th scope="col">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for school in schools %}
+          <tr data-school-id="{{ school.pk }}">
+            <td>
+              <div class="system-person">
+                <span
+                  class="fs-avatar fs-avatar-table system-initial"
+                  aria-hidden="true"
+                  >{{ school.name|first|upper }}</span
+                ><span class="system-person-name">{{ school.name }}</span>
+              </div>
+            </td>
+            <td><span class="system-code">{{ school.code }}</span></td>
+            <td>
+              <div class="system-domain-list">
+                {% for domain in school.domains.all %}<span
+                  class="system-domain-chip"
+                  >{{ domain.domain }}</span
+                >{% empty %}<span class="system-hint">No domain assigned</span
+                >{% endfor %}
+              </div>
+            </td>
+            <td>
+              <span
+                class="system-count"
+                title="Existing School Admin accounts, including deactivated accounts; invitations excluded"
+                >{{ school.superadmin_count }}</span
+              >
+            </td>
+            <td>
+              <span
+                class="system-pill {% if school.is_active %}is-active{% else %}is-suspended{% endif %}"
+                >{% if school.is_active %}Active{% else %}Suspended{% endif %}</span
+              >
+            </td>
+            <td>
+              <div class="system-actions">
+                <a
+                  class="btn-secondary"
+                  data-modal-trigger
+                  href="{% url 'systemadmin:school_edit' school.pk %}"
+                  >Edit</a
+                >
+                {% if school.is_active %}
+                <form
+                  method="post"
+                  action="{% url 'systemadmin:school_status' school.pk %}"
+                  data-system-action
+                  data-processing-label="Updating school access…"
+                  data-confirm-title="Suspend School"
+                  data-confirm="Suspend {{ school.name }}? Its users will lose access to FacSync until the school is reactivated. Existing accounts and data will be retained."
+                >
+                  {% csrf_token %}<button
+                    class="btn-secondary system-danger-action"
+                    name="action"
+                    value="suspend"
+                  >
+                    Suspend
+                  </button>
+                </form>
+                <form
+                  method="post"
+                  action="{% url 'systemadmin:school_status' school.pk %}"
+                  data-system-action
+                  data-processing-label="Removing school…"
+                  data-confirm-title="Remove School"
+                  data-confirm="Remove {{ school.name }} from active access? Its users and data will be retained, and the school can be reactivated later."
+                >
+                  {% csrf_token %}<button
+                    class="btn-secondary system-danger-action"
+                    name="action"
+                    value="remove"
+                  >
+                    Remove
+                  </button>
+                </form>
+                {% else %}
+                <form
+                  method="post"
+                  action="{% url 'systemadmin:school_status' school.pk %}"
+                  data-system-action
+                  data-processing-label="Updating school access…"
+                >
+                  {% csrf_token %}<button
+                    class="btn-secondary"
+                    name="action"
+                    value="reactivate"
+                  >
+                    Reactivate
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+          {% if not schools %}
+          <tr>
+            <td colspan="6" class="empty-state">
+              No schools yet. Add your first school.
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+    <nav class="management-pagination" aria-label="Registered schools pagination"><span>Page {{ schools.number }} of {{ schools.paginator.num_pages }}</span>
+      <div>{% if schools.has_previous %}<a class="btn-secondary" href="?page={{ schools.previous_page_number }}" aria-label="Previous registered schools page">&lt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&lt;</span>{% endif %}{% if schools.has_next %}<a class="btn-secondary" href="?page={{ schools.next_page_number }}" aria-label="Next registered schools page">&gt;</a>{% else %}<span class="btn-secondary pagination-disabled" aria-disabled="true">&gt;</span>{% endif %}</div>
+    </nav>
+  </section>
+</div>
+{% endblock %}

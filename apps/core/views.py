@@ -172,7 +172,7 @@ def post_login_redirect(request):
     user = request.user
 
     if user.role == 'systemadmin':
-        return redirect('systemadmin:manage_schools')
+        return redirect('systemadmin:manage_school')
 
     if not user.profile_completed:
         if user.role == 'student':

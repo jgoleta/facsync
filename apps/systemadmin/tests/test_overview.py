@@ -41,8 +41,8 @@ class SystemOverviewTests(TestCase):
         response = self.client.get(self.url)
         self.assertEqual(response.context['total_superadmins'], 0)
         self.assertEqual(response.context['pending_invitations'], 0)
-        self.assertContains(response, reverse('systemadmin:manage_schools'))
-        self.assertContains(response, reverse('systemadmin:manage_superadmins'))
+        self.assertContains(response, reverse('systemadmin:manage_school'))
+        self.assertContains(response, reverse('systemadmin:manage_schooladmins'))
 
     def test_school_roles_cannot_access_platform_totals(self):
         for role in ('student', 'faculty', 'depthead', 'superadmin'):
@@ -74,7 +74,7 @@ class SystemOverviewTests(TestCase):
 
     def test_systemadmin_pages_share_logo_and_overview_navigation(self):
         self.client.force_login(self.operator)
-        for name in ('overview', 'manage_schools', 'manage_superadmins'):
+        for name in ('overview', 'manage_school', 'manage_schooladmins'):
             with self.subTest(page=name):
                 response = self.client.get(reverse('systemadmin:' + name))
                 self.assertContains(response, self.url)

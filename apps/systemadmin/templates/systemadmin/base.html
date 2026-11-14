@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
     <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_main.css' %}?v=20261031-footer">
     <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}">
-    <link rel="stylesheet" href="{% static 'systemadmin/css/systemadmin.css' %}?v=20261109-school-domains">
+    <link rel="stylesheet" href="{% static 'systemadmin/css/systemadmin.css' %}?v=20261114-pagination">
 </head>
 <body class="college-head-palette systemadmin-area">
 <div class="admin-shell">
@@ -20,8 +20,8 @@
         <nav class="sidebar-nav" aria-label="FacSync Super Admin">
             <a href="{% url 'systemadmin:overview' %}" class="nav-item {% if tab == 'overview' %}active{% endif %}" {% if tab == 'overview' %}aria-current="page"{% endif %}>System Overview</a>
             <a href="{% url 'systemadmin:school_requests' %}" class="nav-item {% if tab == 'requests' %}active{% endif %}" {% if tab == 'requests' %}aria-current="page"{% endif %}>School Requests</a>
-            <a href="{% url 'systemadmin:manage_schools' %}" class="nav-item {% if tab == 'schools' %}active{% endif %}" {% if tab == 'schools' %}aria-current="page"{% endif %}>Manage Schools</a>
-            <a href="{% url 'systemadmin:manage_superadmins' %}" class="nav-item {% if tab == 'superadmins' %}active{% endif %}" {% if tab == 'superadmins' %}aria-current="page"{% endif %}>Manage School Admins</a>
+            <a href="{% url 'systemadmin:manage_school' %}" class="nav-item {% if tab == 'schools' %}active{% endif %}" {% if tab == 'schools' %}aria-current="page"{% endif %}>Manage Schools</a>
+            <a href="{% url 'systemadmin:manage_schooladmins' %}" class="nav-item {% if tab == 'superadmins' %}active{% endif %}" {% if tab == 'superadmins' %}aria-current="page"{% endif %}>Manage School Admins</a>
         </nav>
         <div class="sidebar-account">{% include 'components/_account_identity.html' with show_profile_icon=True %}</div>
         <div class="sidebar-divider"></div>

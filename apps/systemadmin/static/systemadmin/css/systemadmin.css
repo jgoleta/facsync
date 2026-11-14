@@ -96,6 +96,7 @@
 .system-school-filter select { width: min(260px, 100%); padding: 10px 32px 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--card-bg); color: var(--text-primary); font: inherit; }
 .system-directory-table .system-actions { min-width: 170px; }
 .systemadmin-area .system-danger-action { color: var(--danger); }
+.systemadmin-area .management-pagination { padding-left: 20px; padding-right: 20px; padding-bottom: 20px; }
 .systemadmin-area button:disabled { cursor: wait; opacity: .65; }
 .system-modal { width: min(720px, calc(100vw - 32px)); max-height: calc(100dvh - 48px); padding: 28px; border: 1px solid var(--border-color); border-radius: 16px; background: var(--card-bg); color: var(--text-primary); overflow: auto; box-shadow: 0 24px 80px color-mix(in srgb, var(--bg-sidebar) 25%, transparent); }
 .system-modal::backdrop { background: color-mix(in srgb, var(--bg-sidebar) 65%, transparent); }
