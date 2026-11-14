@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav" />
     <link
       rel="stylesheet"
-      href="{% static 'depthead/css/admin_management.css' %}?v=20261031-schedule-preview-position-fix"
+      href="{% static 'depthead/css/admin_management.css' %}?v=20261114-schedule-template-add-green"
     />
     <link
       rel="stylesheet"
@@ -187,11 +187,10 @@
             {% endfor %}
           </div>
           <input type="hidden" name="template_columns" id="scheduleTemplateColumns">
-          <button type="button" class="btn-secondary schedule-template-add" id="addScheduleTemplateAttribute">+ Add attribute</button>
           <div class="modal-actions">
-            <button type="button" class="btn-secondary" id="resetScheduleTemplate">Restore Defaults</button>
-            <button type="button" class="btn-secondary" id="cancelScheduleTemplate">Cancel</button>
-            <a class="btn-secondary" href="{% url 'depthead:faculty_schedule_template' %}" download>Download CSV Template</a>
+            <button type="button" class="btn-secondary schedule-template-add" id="addScheduleTemplateAttribute">+ Add attribute</button>
+            <button type="button" class="btn-secondary schedule-template-restore-defaults" id="resetScheduleTemplate">Restore Defaults</button>
+            <a class="btn-secondary schedule-template-download" href="{% url 'depthead:faculty_schedule_template' %}" download>Download CSV Template</a>
             <button type="submit" class="btn-primary">Save Template</button>
           </div>
         </form>

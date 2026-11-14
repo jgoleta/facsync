@@ -11,7 +11,6 @@
         const scheduleTemplateModal = document.getElementById('scheduleTemplateModal');
         const openScheduleTemplateModal = document.getElementById('openScheduleTemplateModal');
         const closeScheduleTemplateModal = document.getElementById('closeScheduleTemplateModal');
-        const cancelScheduleTemplate = document.getElementById('cancelScheduleTemplate');
         const resetScheduleTemplate = document.getElementById('resetScheduleTemplate');
         const scheduleTemplateFields = document.getElementById('scheduleTemplateFields');
         const scheduleTemplateColumns = document.getElementById('scheduleTemplateColumns');
@@ -37,7 +36,6 @@
             });
         }
         if (closeScheduleTemplateModal) closeScheduleTemplateModal.addEventListener('click', closeScheduleTemplateModalFn);
-        if (cancelScheduleTemplate) cancelScheduleTemplate.addEventListener('click', closeScheduleTemplateModalFn);
         if (resetScheduleTemplate) {
             resetScheduleTemplate.addEventListener('click', () => {
                 const defaults = [
