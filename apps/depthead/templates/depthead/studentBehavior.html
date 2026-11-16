@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Student Behavior</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}?v=20261107-date-popup">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_analytics.css' %}?v=20261116-summary-row">
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -74,6 +74,7 @@
                     </table>
                 </div>
 
+                <div class="student-behavior-summary-row">
                 <div class="table-card peak-submission-card">
                     <h3>Peak Request Submission Month</h3>
                     <p class="peak-period-display">{{ peak_period_label }}</p>
@@ -116,6 +117,7 @@
                     </div>
                 </div>
 
+                </div>
             </div>
         </main>
     </div>

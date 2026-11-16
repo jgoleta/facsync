@@ -184,7 +184,8 @@ table td:first-child {
 }
 
 .student-behavior-grid > .chart-card,
-.student-behavior-grid > .table-card {
+.student-behavior-grid > .table-card,
+.student-behavior-summary-row > .table-card {
     min-width: 0;
     padding: 20px;
 }
@@ -230,9 +231,13 @@ table td:first-child {
     line-height: 1.5;
 }
 
-.student-behavior-grid > .peak-submission-card,
-.student-behavior-grid > .student-frequency-card {
-    align-self: start;
+.student-behavior-summary-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+    align-items: stretch;
+    min-width: 0;
 }
 
 .student-frequency-scroll {
@@ -260,7 +265,8 @@ table td:first-child {
 }
 
 @media (max-width: 1199px) {
-    .student-behavior-grid {
+    .student-behavior-grid,
+    .student-behavior-summary-row {
         grid-template-columns: minmax(0, 1fr);
     }
 }
