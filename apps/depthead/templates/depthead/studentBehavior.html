@@ -24,6 +24,11 @@
             </header>
 
             <div class="analytics-grid student-behavior-grid">
+                <div class="table-card">
+                    <h3>Consultation Satisfaction</h3>
+                    <p class="chart-caption">Completed consultations scheduled {{ topics_period_start|date:"M j, Y" }} &ndash; {{ topics_period_end|date:"M j, Y" }} · Your assigned departments or office</p>
+                    {% include 'components/_satisfaction_summary.html' %}
+                </div>
                 <div class="chart-card">
                     <h3>Scheduled Consultation Requests Over Time</h3>
                     <div class="chart-graphic" role="img" aria-label="Consultation frequency over time chart">

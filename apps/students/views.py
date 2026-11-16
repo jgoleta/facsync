@@ -292,7 +292,36 @@ def _consultation_json(consultation):
         'google_meet_link': consultation.google_meet_link if consultation.status == 'approved' else '',
         'student_message': consultation.student_message,
         'faculty_note': consultation.faculty_note,
+        'satisfaction_rating': consultation.satisfaction_rating,
+        'rating_editable': consultation.rating_editable,
+        'rating_edit_deadline': consultation.rating_edit_deadline.isoformat() if consultation.rating_edit_deadline else None,
     }
+
+
+@login_required
+@role_required('student')
+@require_http_methods(['POST'])
+@csrf_protect
+def rate_consultation(request, request_id):
+    try:
+        rating = _json_body(request).get('rating')
+    except ValueError as error:
+        return JsonResponse({'error': str(error)}, status=400)
+    if type(rating) is not int or not 1 <= rating <= 10:
+        return JsonResponse({'error': 'Choose a whole-number rating from 1 to 10.'}, status=400)
+    with transaction.atomic():
+        consultation = get_object_or_404(ConsultationRequest.objects.select_for_update(),
+            pk=request_id, user=request.user)
+        if consultation.status != 'completed':
+            return JsonResponse({'error': 'Only completed consultations can be rated.'}, status=409)
+        now = timezone.now()
+        if consultation.rating_submitted_at and now >= consultation.rating_edit_deadline:
+            return JsonResponse({'error': 'The 48-hour editing window has ended. Your rating is locked.'}, status=409)
+        consultation.satisfaction_rating = rating
+        consultation.rating_submitted_at = consultation.rating_submitted_at or now
+        consultation.rating_updated_at = now
+        consultation.save(update_fields=['satisfaction_rating', 'rating_submitted_at', 'rating_updated_at'])
+    return JsonResponse({'success': True, **_consultation_json(consultation)})
 
 
 @login_required
@@ -371,6 +400,10 @@ def api_consultation_requests(request):
         if not StudentEligibility(student).allows(faculty):
             return JsonResponse({'error': 'This department or office does not serve your educational level.'}, status=403)
         get_object_or_404(User.objects.select_for_update(), pk=faculty.user_id, is_active=True, account_status='active')
+        from apps.faculty.services.consultation_conflicts import booking_conflict_payload
+        conflict = booking_conflict_payload(faculty, date_value, start_time, end_time, consultation_type)
+        if conflict:
+            return JsonResponse(conflict, status=409)
         if ConsultationRequest.objects.filter(
             user=request.user, faculty=faculty, date=date_value, start_time=start_time,
             status__in=['pending', 'approved', 'cancellation_requested'],

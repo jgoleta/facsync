@@ -9,6 +9,7 @@
     <title>FacSync | My Consultations</title>
     <link rel="stylesheet" href="{% static 'students/css/consultationRequests.css' %}?v=20261108-pagination">
     <link rel="stylesheet" href="{% static 'css/consultation_notes.css' %}?v=20261021-consultation-notes">
+    <link rel="stylesheet" href="{% static 'students/css/consultationRatings.css' %}?v=20261116">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     {% include 'components/_student_navigation_loading.html' %}
 </head>
@@ -88,6 +89,15 @@
                             {% endif %}
                             {% if consultation.student_message %}<p class="request-message consultation-note" data-note-clamp><strong>Your Message:</strong> {{ consultation.student_message }}</p>{% endif %}
                             {% if consultation.faculty_note %}<p class="faculty-note consultation-note" data-note-clamp><strong>Faculty Note:</strong> {{ consultation.faculty_note }}</p>{% endif %}
+                            {% if consultation.status == 'completed' %}
+                            <div class="consultation-rating">
+                                {% if consultation.satisfaction_rating %}<p><strong>Your satisfaction rating:</strong> {{ consultation.satisfaction_rating }}/10</p>{% endif %}
+                                {% if consultation.rating_editable %}
+                                <button type="button" class="rating-open-btn" data-rating-url="{% url 'students:rate_consultation' consultation.request_id %}" data-rating="{{ consultation.satisfaction_rating|default_if_none:'' }}" data-faculty="{{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}">{% if consultation.satisfaction_rating %}Edit rating{% else %}Rate consultation{% endif %}</button>
+                                {% if consultation.rating_edit_deadline %}<p>You can edit until {{ consultation.rating_edit_deadline|date:"M j, Y, g:i A" }}.</p>{% endif %}
+                                {% else %}<p>Your rating is locked. The 48-hour editing window has ended.</p>{% endif %}
+                            </div>
+                            {% endif %}
                         </div>
                         <p class="request-id"><span>Request ID</span> {{ consultation.request_id }}</p>
                     </li>
@@ -109,6 +119,23 @@
             </div>
         </div>
     </div>
+    <dialog id="consultationRatingDialog" class="rating-dialog" aria-labelledby="ratingTitle" aria-describedby="ratingHelp">
+        <form id="consultationRatingForm">
+            {% csrf_token %}
+            <h2 id="ratingTitle">Rate your consultation</h2>
+            <p id="ratingFaculty"></p>
+            <p id="ratingHelp">How satisfied were you with this consultation? Rating is optional. You can edit for 48 hours after your first submission. Faculty and department admins see combined results only, after at least five ratings.</p>
+            <fieldset class="rating-options">
+                <legend>Satisfaction score</legend>
+                {% for digit in '123456789' %}<label><input type="radio" name="rating" value="{{ digit }}" required><span>{{ digit }}</span></label>{% endfor %}
+                <label><input type="radio" name="rating" value="10" required><span>10</span></label>
+            </fieldset>
+            <div class="rating-scale"><span>1 — Very dissatisfied</span><span>10 — Very satisfied</span></div>
+            <p id="ratingError" role="alert" hidden></p>
+            <div class="rating-actions"><button type="button" id="closeRatingDialog">Cancel</button><button type="submit" id="saveRating">Submit rating</button></div>
+        </form>
+    </dialog>
+    <script src="{% static 'students/js/consultationRatings.js' %}?v=20261116" defer></script>
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
     <script src="{% static 'js/consultation_notes.js' %}?v=20261021-consultation-notes"></script>
     <script src="{% static 'students/js/consultationRequests.js' %}?v=20261108-pagination"></script>

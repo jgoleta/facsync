@@ -30,7 +30,6 @@ from django.utils import timezone
 
 from .services.google_calendar import (
     GoogleCalendarError,
-    consultation_has_calendar_conflict,
     create_consultation_event,
     consultation_meet_link,
     create_google_event,
@@ -52,6 +51,7 @@ from .services.calendar_events import (
     serialize_schedule_event,
 )
 from .services.schedule_duplicates import schedule_event_duplicate, schedule_event_key
+from .services.consultation_conflicts import booking_conflict_payload
 from .models import (
     ConsultationRequest,
     FacultyProfile,
@@ -654,7 +654,10 @@ def dashboard(request):
                 'posted_at': announcement.posted_at.strftime('%b %d, %Y'),
             })
 
+    from .services.satisfaction import satisfaction_summary
+    satisfaction_consultations = faculty_consultations.filter(department_id=request.user.department_id)
     return render(request, 'faculty/dashboardFaculty.html', {
+        'satisfaction': satisfaction_summary(satisfaction_consultations),
         'analytics_questions': [{'metric': key, 'group': group, 'question': question} for key, (group, question) in FACULTY_BROWSER_QUESTIONS.items()],
         'faculty_profile': faculty_profile,
         'consultation_note_max_length': CONSULTATION_NOTE_MAX_LENGTH,
@@ -1849,6 +1852,10 @@ def _consultation_values(payload, existing):
         values['start_time'] = existing.start_time
     if 'end_time' not in values:
         values['end_time'] = existing.end_time
+    if any(value and value.tzinfo is not None for value in (values['start_time'], values['end_time'])):
+        raise ValueError('Use local consultation times without a timezone offset.')
+    if values['end_time'] and not values['start_time']:
+        raise ValueError('A consultation start time is required when an end time is provided.')
     if values['start_time'] and values['end_time'] and values['end_time'] <= values['start_time']:
         raise ValueError('Consultation must end after it starts.')
     return values
@@ -1890,6 +1897,7 @@ def _notify_consultation_student(consultation, subject, body):
 @login_required
 @role_required('faculty')
 @csrf_protect
+@transaction.atomic
 def api_consultation(request, request_id):
     """Approve, decline, reschedule, cancel, or inspect a consultation request."""
     consultation = get_object_or_404(
@@ -1900,6 +1908,13 @@ def api_consultation(request, request_id):
     is_student = request.user == consultation.user
     if not is_faculty and not is_student:
         return JsonResponse({'error': 'You cannot modify this consultation.'}, status=403)
+
+    if request.method in {'POST', 'PATCH', 'DELETE'}:
+        from apps.core.models import User
+        # Same existing-row lock used by student submissions. Re-read the
+        # appointment after waiting so concurrent decisions cannot use stale state.
+        User.objects.select_for_update().get(pk=consultation.faculty.user_id)
+        consultation = get_object_or_404(ConsultationRequest.objects.select_for_update(), pk=request_id)
 
     connection = GoogleCalendarConnection.objects.filter(
         user=consultation.faculty.user,
@@ -1934,18 +1949,11 @@ def api_consultation(request, request_id):
                 'calendar_connection_required': True,
             }, status=409)
         rejecting_cancellation = old_status == 'cancellation_requested' and new_status == 'approved'
-        if new_status == 'approved' and sync_enabled and not rejecting_cancellation:
-            try:
-                has_calendar_conflict = consultation_has_calendar_conflict(connection, consultation)
-            except GoogleCalendarError as exc:
-                return JsonResponse({
-                    'error': f'Unable to check Google Calendar: {exc}',
-                }, status=409)
-            if has_calendar_conflict:
-                return JsonResponse({
-                    'error': 'The faculty calendar has an overlapping event.',
-                    'calendar_conflict': True,
-                }, status=409)
+        if new_status == 'approved':
+            conflict = booking_conflict_payload(consultation.faculty, consultation.date, consultation.start_time,
+                consultation.end_time, consultation.consultation_type, exclude_request_id=consultation.pk)
+            if conflict:
+                return JsonResponse(conflict, status=409)
         consultation.status = new_status
         if new_status == 'approved' and not consultation.approved_at:
             consultation.approved_at = timezone.now()
@@ -2023,6 +2031,10 @@ def api_consultation(request, request_id):
             return HttpResponseBadRequest(str(exc))
         for field, value in values.items():
             setattr(consultation, field, value)
+        conflict = booking_conflict_payload(consultation.faculty, consultation.date, consultation.start_time,
+            consultation.end_time, consultation.consultation_type, exclude_request_id=consultation.pk)
+        if conflict:
+            return JsonResponse(conflict, status=409)
         consultation.calendar_sync_status = 'not_configured'
         consultation.calendar_sync_error = ''
         if sync_enabled:

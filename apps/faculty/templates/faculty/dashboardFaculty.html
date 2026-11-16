@@ -191,6 +191,11 @@
                         <a href="{% url 'faculty:booking_management' %}" class="secondary-button">View Walk-ins</a>
                     </div>
                 </div>
+                <div class="card-section">
+                    <h2>Consultation Satisfaction</h2>
+                    <p>Your completed consultations in your current department or office · All time</p>
+                    {% include 'components/_satisfaction_summary.html' %}
+                </div>
                 <div class="card-section announcement-history-section">
                     <div class="section-heading">
                         <div>
