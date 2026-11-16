@@ -615,7 +615,11 @@ def student_behavior(request):
     )
     student_frequency = get_student_request_frequency_display(consultations_qs)
 
+    from apps.faculty.services.satisfaction import satisfaction_summary
+    satisfaction = satisfaction_summary(get_base_consultation_queryset(college_code).filter(
+        date__gte=month_starts[0], date__lte=today))
     return render(request, 'depthead/studentBehavior.html', {
+        'satisfaction': satisfaction,
         'line_points': line_points,
         'polyline_str': polyline_str,
         'peak_period_label': peak_period_label,

@@ -1,0 +1,9 @@
+<div class="satisfaction-summary">
+    {% if satisfaction.has_enough_data %}
+    <p><strong>{{ satisfaction.average|floatformat:1 }} / 10</strong> average satisfaction</p>
+    {% else %}
+    <p>Not enough data yet.</p>
+    {% endif %}
+    <p>{{ satisfaction.response_count }} rating{{ satisfaction.response_count|pluralize }}. At least {{ satisfaction.minimum_responses }} ratings are needed to show an average.</p>
+    <p>Only combined results are shown. Individual ratings and student identities are not displayed.</p>
+</div>

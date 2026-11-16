@@ -268,11 +268,31 @@ class ConsultationRequest(SchoolScopedModel):
     last_calendar_sync_at = models.DateTimeField(null=True, blank=True)
     requested_at = models.DateTimeField(auto_now_add=True)
     approved_at = models.DateTimeField(null=True, blank=True)
+    satisfaction_rating = models.PositiveSmallIntegerField(null=True, blank=True)
+    rating_submitted_at = models.DateTimeField(null=True, blank=True)
+    rating_updated_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def rating_edit_deadline(self):
+        from datetime import timedelta
+        return self.rating_submitted_at + timedelta(hours=48) if self.rating_submitted_at else None
+
+    @property
+    def rating_editable(self):
+        return self.status == 'completed' and (
+            self.rating_submitted_at is None or timezone.now() < self.rating_edit_deadline)
 
     class Meta:
         ordering = ['-date']
         verbose_name = 'Consultation Request'
         verbose_name_plural = 'Consultation Requests'
+        constraints = [
+            models.CheckConstraint(condition=(
+                models.Q(satisfaction_rating__isnull=True, rating_submitted_at__isnull=True, rating_updated_at__isnull=True)
+                | models.Q(satisfaction_rating__isnull=False, satisfaction_rating__gte=1, satisfaction_rating__lte=10,
+                           rating_submitted_at__isnull=False, rating_updated_at__isnull=False)
+            ), name='consultation_rating_valid'),
+        ]
 
     def __str__(self):
         """Display the consultation identifier and faculty member."""
