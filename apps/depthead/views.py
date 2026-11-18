@@ -1,5 +1,5 @@
 from apps.core.account_lifecycle import access_response, with_consultation_counts
-from apps.core.role_access import role_filter, has_role
+from apps.core.role_access import role_filter, has_role, available_roles
 import csv
 import json
 import logging
@@ -8,7 +8,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 from apps.core.decorators import role_required
-from apps.core.models import User, FacultyInvite, OfficeClosure, CollegeAnnouncement, College, Office, School
+from apps.core.models import User, UserRole, FacultyInvite, OfficeClosure, CollegeAnnouncement, College, Office, School
 from apps.core.forms import CollegeAnnouncementForm, CollegeDescriptionForm, OfficeDescriptionForm
 from django.contrib import messages
 from .forms import FacultyInviteForm, OfficeClosureForm, SharedWindowForm
@@ -28,7 +28,7 @@ from types import SimpleNamespace
 from .scope import DepartmentScope, managed_departments
 from apps.core.models import Department
 from apps.schooladmin.assignment_services import lock_departments
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models.deletion import ProtectedError
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
@@ -225,9 +225,11 @@ def invite_faculty(request):
                 from .faculty_access import add_faculty_access
                 try:
                     existing_user, label = add_faculty_access(request.user, existing_user.pk,
-                        form.cleaned_data.get('department'))
+                        form.cleaned_data.get('department'), faculty_id=form.cleaned_data.get('faculty_id'))
                 except ValidationError as error:
                     form.add_error(None, error)
+                except IntegrityError:
+                    form.add_error(None, 'The Faculty ID or account changed. Refresh and try again.')
             if not form.errors:
                 message = f"{existing_user.get_full_name() or existing_user.email} was added as Faculty."
                 try:
@@ -317,6 +319,27 @@ def delete_faculty(request, user_id):
         return JsonResponse({'success': False, 'error':
             'This faculty account has consultation history or protected linked records and cannot be removed. Deactivate the account instead.'}, status=409)
     return JsonResponse({'success': True, 'message': 'Faculty account permanently removed.'})
+
+
+@login_required
+@role_required('depthead')
+@require_POST
+def remove_faculty_role(request, user_id):
+    """Withdraw Faculty access while preserving the account and its history."""
+    with transaction.atomic():
+        School.objects.select_for_update().get(pk=request.user.school_id)
+        target = get_object_or_404(User.objects.select_for_update().filter(role_filter('faculty')),
+            pk=user_id, **_user_scope(request))
+        if not any(role != 'faculty' for role, _ in available_roles(target)):
+            return JsonResponse({'success': False, 'error':
+                'This account has no other enabled role. Use Deactivate to preserve history or Remove for an eligible permanent deletion.'}, status=409)
+        assignment, created = UserRole.objects.get_or_create(user=target, role='faculty',
+            defaults={'is_active': False, 'assigned_by': request.user})
+        if not created:
+            assignment.is_active = False
+            assignment.save(update_fields=['is_active'])
+    return JsonResponse({'success': True, 'message':
+        'Faculty access removed. Other roles, the Faculty profile, and consultation history are preserved.'})
 
 
 @login_required

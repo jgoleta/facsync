@@ -1,4 +1,4 @@
-{% load static %}
+{% load static role_tags %}
 <!doctype html>
 <html lang="en">
   <head>
@@ -88,6 +88,7 @@
                 <td>{{ user.email }} <span class="assignment-pill">{{ user.get_account_status_display }}</span></td>
                 <td>{{ user.faculty_profile.office_location|default:'—' }}</td>
                 <td class="actions">
+                  <div class="actions-content">
                   {% if user.faculty_profile %}
                   <div class="faculty-schedule-actions">
                     <button
@@ -148,6 +149,16 @@
                       data-faculty-name="{{ user.get_full_name|default:user.username }}"
                       data-access-action="delete">Remove</button>
                   </form>
+                  {% available_user_roles user as faculty_roles %}
+                  {% if faculty_roles|length > 1 %}
+                  <form method="post" class="remove-faculty-role-form"
+                    action="{% url 'depthead:remove_faculty_role' user.id %}" style="display: inline">
+                    {% csrf_token %}
+                    <button type="submit" class="danger"
+                      data-faculty-name="{{ user.get_full_name|default:user.username }}">Remove Faculty role</button>
+                  </form>
+                  {% endif %}
+                  </div>
                 </td>
               </tr>
               {% empty %}
@@ -246,6 +257,11 @@
               required
             />
           </div>
+          <div class="modal-form-group">
+            <label for="{{ faculty_invite_form.faculty_id.id_for_label }}">Faculty ID</label>
+            {{ faculty_invite_form.faculty_id }}
+            <small class="form-hint">Required when adding an existing account as Faculty.</small>
+          </div>
           {% if faculty_invite_form.department %}<div class="modal-form-group"><label for="{{ faculty_invite_form.department.id_for_label }}">Department</label>{{ faculty_invite_form.department }}</div>{% endif %}
           <div class="modal-actions">
             <button type="submit" class="btn-primary">Send Invite</button>
@@ -342,6 +358,6 @@
     </div>
 
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
-    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261118-restore-remove"></script>
+    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261118-faculty-role-merge"></script>
   </body>
 </html>

@@ -188,6 +188,32 @@
             });
         });
 
+        document.querySelectorAll('.remove-faculty-role-form').forEach((form) => {
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const button = form.querySelector('button[type="submit"]');
+                const name = button?.dataset.facultyName || 'this faculty member';
+                const prompt = `Remove Faculty access from ${name}? Their account, other roles, Faculty profile and consultation history will be preserved.`;
+                if (!window.confirm(prompt)) return;
+                button.disabled = true;
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCsrfToken()},
+                        body: new FormData(form),
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.success) throw new Error(data.error || 'Unable to remove Faculty access.');
+                    showCrudToast(data.message || 'Faculty access removed.');
+                    window.setTimeout(() => window.location.reload(), 900);
+                } catch (error) {
+                    button.disabled = false;
+                    showCrudToast(error.message, true);
+                }
+            });
+        });
+
         if (closeRemoveFacultyConfirm) closeRemoveFacultyConfirm.addEventListener('click', closeRemoveFacultyConfirmation);
         if (removeFacultyConfirmModal) {
             removeFacultyConfirmModal.addEventListener('click', (event) => {
