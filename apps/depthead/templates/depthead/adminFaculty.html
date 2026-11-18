@@ -88,6 +88,7 @@
                 <td>{{ user.email }} <span class="assignment-pill">{{ user.get_account_status_display }}</span></td>
                 <td>{{ user.faculty_profile.office_location|default:'—' }}</td>
                 <td class="actions">
+                  <div class="actions-content">
                   {% if user.faculty_profile %}
                   <div class="faculty-schedule-actions">
                     <button
@@ -141,6 +142,18 @@
                       {% if user.account_status == 'deactivated' %}Reactivate{% else %}Deactivate{% endif %}
                     </button>
                   </form>
+                  <form method="post" class="crud-action-form remove-faculty-role-form" action="{% url 'depthead:remove_faculty_role' user.id %}" style="display: inline">
+                    {% csrf_token %}
+                    <button
+                      type="submit"
+                      class="danger"
+                      data-faculty-name="{{ user.get_full_name|default:user.username }}"
+                      data-remove-mode="{% if user.role == 'faculty' %}account{% else %}faculty-role{% endif %}"
+                    >
+                      Remove Faculty
+                    </button>
+                  </form>
+                  </div>
                 </td>
               </tr>
               {% empty %}
@@ -238,6 +251,11 @@
               placeholder="maria.santos@university.edu"
               required
             />
+          </div>
+          <div class="modal-form-group">
+            <label for="{{ faculty_invite_form.faculty_id.id_for_label }}">Faculty ID</label>
+            {{ faculty_invite_form.faculty_id }}
+            <small class="form-hint">Required when adding an existing account as Faculty.</small>
           </div>
           {% if faculty_invite_form.department %}<div class="modal-form-group"><label for="{{ faculty_invite_form.department.id_for_label }}">Department</label>{{ faculty_invite_form.department }}</div>{% endif %}
           <div class="modal-actions">

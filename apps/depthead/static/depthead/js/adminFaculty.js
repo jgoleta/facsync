@@ -183,6 +183,34 @@
             });
         });
 
+        document.querySelectorAll('.remove-faculty-role-form').forEach((form) => {
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const button = form.querySelector('button[type="submit"]');
+                const name = button?.dataset.facultyName || 'this faculty member';
+                const mode = button?.dataset.removeMode === 'account';
+                const prompt = mode
+                    ? `Permanently delete ${name}'s Faculty account and profile? This cannot be undone.`
+                    : `Remove Faculty access and profile from ${name}? Their Admin account and other roles will be preserved.`;
+                if (!window.confirm(prompt)) return;
+                button.disabled = true;
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        headers: {'X-Requested-With': 'XMLHttpRequest'},
+                        body: new FormData(form),
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data.success) throw new Error(data.error || 'Unable to remove Faculty access.');
+                    showCrudToast(data.message || 'Faculty access removed.');
+                    window.setTimeout(() => window.location.reload(), 900);
+                } catch (error) {
+                    button.disabled = false;
+                    showCrudToast(error.message, true);
+                }
+            });
+        });
+
         if (closeRemoveFacultyConfirm) closeRemoveFacultyConfirm.addEventListener('click', closeRemoveFacultyConfirmation);
         if (removeFacultyConfirmModal) {
             removeFacultyConfirmModal.addEventListener('click', (event) => {

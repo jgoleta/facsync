@@ -24,6 +24,7 @@ from apps.faculty.views import (
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import PermissionDenied
+from django.db.models.deletion import ProtectedError
 from types import SimpleNamespace
 from .scope import DepartmentScope, managed_departments
 from apps.core.models import Department
@@ -221,37 +222,44 @@ def invite_faculty(request):
             form = FacultyInviteForm(request.POST, user=request.user)
             if form.is_valid():
                 department = form.cleaned_data.get('department')
-                faculty_id = f'FAC-{existing_user.pk}'
-                with transaction.atomic():
-                    faculty_role, _ = UserRole.objects.get_or_create(
-                        user=existing_user,
-                        role='faculty',
-                        defaults={'assigned_by': request.user},
-                    )
-                    if not faculty_role.is_active:
-                        faculty_role.is_active = True
-                        faculty_role.assigned_by = request.user
-                        faculty_role.save(update_fields=['is_active', 'assigned_by'])
-                    existing_user.department = department or existing_user.department
-                    existing_user.college = (department.college.code if department and department.college else request.managed_scope)
-                    existing_user.save(update_fields=['department', 'college'])
-                    FacultyProfile.objects.get_or_create(
-                        user=existing_user,
-                        defaults={'faculty_id': faculty_id, 'college_id': existing_user.college or ''},
-                    )
-                message = f"{existing_user.get_full_name() or existing_user.email} was added as Faculty."
-                try:
-                    email_sent = send_faculty_role_added_email(
-                        existing_user,
-                        department.name if department else request.managed_scope,
-                    )
-                except Exception:
-                    logger.exception('Existing account Faculty access email failed.')
-                    email_sent = False
-                if is_ajax:
-                    return JsonResponse({'success': True, 'message': message, 'existing_account': True, 'email_sent': email_sent}, status=200)
-                messages.success(request, message + ('' if email_sent else ' Confirmation email could not be sent.'))
-                return redirect('depthead:admin_faculty')
+                faculty_id = form.cleaned_data.get('faculty_id')
+                if not faculty_id:
+                    error = 'Enter the Faculty ID for this existing account.'
+                    if is_ajax:
+                        return JsonResponse({'success': False, 'error': error}, status=400)
+                    messages.error(request, error)
+                    return redirect('depthead:admin_faculty')
+                else:
+                    with transaction.atomic():
+                        faculty_role, _ = UserRole.objects.get_or_create(
+                            user=existing_user,
+                            role='faculty',
+                            defaults={'assigned_by': request.user},
+                        )
+                        if not faculty_role.is_active:
+                            faculty_role.is_active = True
+                            faculty_role.assigned_by = request.user
+                            faculty_role.save(update_fields=['is_active', 'assigned_by'])
+                        existing_user.department = department or existing_user.department
+                        existing_user.college = (department.college.code if department and department.college else request.managed_scope)
+                        existing_user.save(update_fields=['department', 'college'])
+                        FacultyProfile.objects.get_or_create(
+                            user=existing_user,
+                            defaults={'faculty_id': faculty_id, 'college_id': existing_user.college or ''},
+                        )
+                    message = f"{existing_user.get_full_name() or existing_user.email} was added as Faculty."
+                    try:
+                        email_sent = send_faculty_role_added_email(
+                            existing_user,
+                            department.name if department else request.managed_scope,
+                        )
+                    except Exception:
+                        logger.exception('Existing account Faculty access email failed.')
+                        email_sent = False
+                    if is_ajax:
+                        return JsonResponse({'success': True, 'message': message, 'existing_account': True, 'email_sent': email_sent}, status=200)
+                    messages.success(request, message + ('' if email_sent else ' Confirmation email could not be sent.'))
+                    return redirect('depthead:admin_faculty')
         used_invite = FacultyInvite.objects.filter(
             email__iexact=requested_email,
             used=True,
@@ -302,6 +310,43 @@ def remove_faculty(request, user_id):
     if request.method == 'POST':
         return access_response(faculty_user, reactivate=request.POST.get('action') == 'reactivate')
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+
+@login_required
+@role_required('depthead')
+def remove_faculty_role(request, user_id):
+    """Permanently remove Faculty access, preserving other roles when present."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+    faculty_user = get_object_or_404(
+        User.objects.filter(role_filter('faculty')),
+        id=user_id,
+        **_user_scope(request),
+    )
+    other_roles = faculty_user.role != 'faculty' or UserRole.objects.filter(
+        user=faculty_user, is_active=True,
+    ).exclude(role='faculty').exists()
+    try:
+        with transaction.atomic():
+            profile = FacultyProfile.objects.filter(user=faculty_user).first()
+            if profile:
+                profile.delete()
+            if other_roles:
+                UserRole.objects.filter(
+                    user=faculty_user, role='faculty', is_active=True,
+                ).update(is_active=False)
+            else:
+                faculty_user.delete()
+    except ProtectedError:
+        return JsonResponse({
+            'success': False,
+            'error': 'This Faculty record has linked consultation history and cannot be permanently removed. Use Deactivate instead.',
+        }, status=409)
+    action = 'Faculty access removed' if other_roles else 'Faculty account permanently removed'
+    return JsonResponse({
+        'success': True,
+        'message': f"{action} for {faculty_user.get_full_name() or faculty_user.username}.",
+    })
 
 
 @login_required
