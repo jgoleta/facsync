@@ -123,11 +123,18 @@ def validate_department_links(instance):
         owner_school = getattr(instance, 'school_id', None)
     if owner_school != department.school_id:
         raise ValidationError('The department must belong to the record’s school.')
-    is_faculty = instance.role == 'faculty'
-    if label == 'core.user' and not is_faculty and getattr(instance, 'pk', None):
-        is_faculty = instance.role_assignments.filter(role='faculty', is_active=True).exists()
-    if label == 'core.user' and not (is_faculty or instance.role == 'student'):
-        raise ValidationError('Academic home departments are for faculty and students; heads use assignments.')
+    if label == 'core.user':
+        is_faculty = instance.role == 'faculty'
+        if not is_faculty and getattr(instance, 'pk', None):
+            is_faculty = instance.role_assignments.filter(role='faculty', is_active=True).exists()
+        if not (is_faculty or instance.role == 'student'):
+            # Withdrawing Faculty access must not erase its historical home or
+            # prevent the remaining administrator role from saving login data.
+            retained_home = (instance.pk and instance.role_assignments.filter(role='faculty').exists()
+                and type(instance)._base_manager.filter(pk=instance.pk, role=instance.role,
+                    department_id=department_id, school_id=owner_school).exists())
+            if not retained_home:
+                raise ValidationError('Academic home departments are for faculty and students; heads use assignments.')
     if label in {'core.user', 'core.facultyinvite', 'core.departmentheadassignment', 'core.departmentinviteassignment'}:
         if not department.is_active:
             raise ValidationError('Choose an active department.')

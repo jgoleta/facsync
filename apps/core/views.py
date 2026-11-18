@@ -173,6 +173,8 @@ def post_login_redirect(request):
     user = request.user
 
     roles = available_roles(user)
+    if not roles:
+        return render(request, 'core/roleAccessUnavailable.html', status=403)
     stored_role = request.session.get('active_role')
     selected = active_role(request)
     if len(roles) > 1 and stored_role not in {role for role, _ in roles}:
@@ -222,7 +224,7 @@ def switch_role(request):
     selected = request.POST.get('role')
     if any(role == selected for role, _ in available_roles(request.user)):
         request.session['active_role'] = selected
-    return redirect(request.POST.get('next') or 'core:post_login_redirect')
+    return redirect('core:post_login_redirect')
 
 @login_required
 @role_required('student')
