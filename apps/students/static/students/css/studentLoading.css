@@ -541,9 +541,11 @@
 
 .student-requests-panel {
   display: grid;
+  min-width: 0;
   gap: 20px;
   padding: 24px;
   border-radius: 18px;
+  overflow: hidden;
 }
 
 .student-requests-toolbar {
@@ -583,6 +585,7 @@
 
 .student-requests-grid {
   display: grid;
+  min-width: 0;
   grid-template-columns: minmax(0, 1fr);
   gap: 20px;
 }
@@ -592,9 +595,11 @@
   align-items: flex-start;
   gap: 16px;
   min-height: 170px;
+  min-width: 0;
   padding: 20px;
   border-radius: 14px;
   background: var(--text-light);
+  overflow: hidden;
 }
 
 .student-request-status {
@@ -621,6 +626,12 @@
   min-width: 0;
   flex: 1 1 auto;
   gap: 9px;
+}
+
+.student-request-status,
+.student-request-info,
+.student-request-card .request-id {
+  max-width: 100%;
 }
 
 .student-request-faculty {

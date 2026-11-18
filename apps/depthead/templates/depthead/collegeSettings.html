@@ -22,7 +22,10 @@
                 <p class="settings-eyebrow">Office administration</p>
                 <h1>Office Settings</h1>
                 <p>Manage your college profile, booking availability, and announcements.</p>
-                <span class="settings-college-label">{{ request.managed_scope.name|default:request.user.college_name }}</span>
+                <div class="settings-header-meta">
+                    <span class="settings-college-label">{{ request.managed_scope.name|default:request.user.college_name }}</span>
+                    <span class="settings-save-note">Changes apply to this office</span>
+                </div>
             </header>
 
             <div class="settings-grid">

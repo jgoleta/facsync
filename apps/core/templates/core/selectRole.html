@@ -1,0 +1,37 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FacSync | Choose role</title>
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/loginPage.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/selectRole.css' %}">
+</head>
+<body>
+<main class="role-page">
+    <section class="role-card" aria-labelledby="role-title">
+        <div class="role-brand" aria-label="FacSync">{% include 'components/_facsync_logo.html' %}<span>FacSync</span></div>
+        <div class="role-card-content">
+            <p class="role-eyebrow">Welcome back</p>
+            <h1 id="role-title">Choose how to continue</h1>
+            <p class="role-description">This account has more than one role. Select the workspace you want to use.</p>
+        </div>
+        <form method="post" class="role-options">
+            {% csrf_token %}
+            {% for role, label in roles %}
+            <button type="submit" name="role" value="{{ role }}" class="role-button">
+                <span class="role-button-copy">
+                    <strong>{{ label }}</strong>
+                    <small>{% if role == 'faculty' %}Manage your schedule and consultations{% elif role == 'depthead' %}Manage your department and faculty{% elif role == 'officeadmin' %}Manage your office operations{% elif role == 'superadmin' %}Manage school-wide settings{% elif role == 'student' %}Browse faculty and request consultations{% else %}Manage FacSync schools{% endif %}</small>
+                </span>
+                <span class="role-arrow" aria-hidden="true">&rarr;</span>
+            </button>
+            {% endfor %}
+        </form>
+        <p class="role-footer">You can switch roles later from your account menu.</p>
+    </section>
+</main>
+</body>
+</html>

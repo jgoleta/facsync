@@ -12,6 +12,7 @@ from django.db.models import Count, Q, OuterRef, Subquery
 from django.utils import timezone
 
 from apps.core.models import College
+from apps.core.role_access import role_filter
 from apps.depthead.scope import DepartmentScope, faculty_q, history_q
 from apps.faculty.models import ConsultationRequest, FacultyProfile, StatusHistory, WalkInQueue
 
@@ -362,9 +363,9 @@ def get_request_submission_patterns(college_code, period, *, faculty=None):
 
 @school_service
 def _eligible_faculty(college_code):
+    roles = ['faculty', 'officeadmin'] if hasattr(college_code, 'student_faculty_ids') else ['faculty']
     return FacultyProfile.objects.filter(
-        faculty_q(college_code), user__role__in=(['faculty', 'officeadmin']
-            if hasattr(college_code, 'student_faculty_ids') else ['faculty']),
+        faculty_q(college_code), *[role_filter(role, 'user__') for role in roles],
         user__account_status="active",
     )
 

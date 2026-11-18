@@ -1,6 +1,7 @@
 from functools import wraps
 from django.core.exceptions import PermissionDenied
 from .school_scope import ALL_SCHOOLS, require_school, school_scope
+from .role_access import has_role
 
 def role_required(role):
     def decorator(view_func):
@@ -10,7 +11,7 @@ def role_required(role):
             allowed_roles = {role}
             if role in {'depthead', 'faculty'}:
                 allowed_roles.add('officeadmin')
-            if not user.is_authenticated or user.role not in allowed_roles or not user.is_active or user.account_status != 'active':
+            if not user.is_authenticated or not any(has_role(user, item) for item in allowed_roles) or not user.is_active or user.account_status != 'active':
                 raise PermissionDenied
             if role == 'systemadmin':
                 if user.school_id is not None:

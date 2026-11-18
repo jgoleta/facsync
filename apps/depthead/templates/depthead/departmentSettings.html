@@ -11,7 +11,7 @@
 {% include 'components/_admin_navigation_loading.html' %}
 </head><body class="college-settings-page department-settings-page"><div class="admin-shell">
 {% include 'depthead/partials/sidebar.html' %}
-<main class="main-content"><header class="main-header"><p class="settings-eyebrow">Department administration</p><h1>Department Settings</h1><p>Manage the departments assigned to you. Each action affects only the named department.</p></header>
+<main class="main-content"><header class="main-header"><p class="settings-eyebrow">Department administration</p><h1>Department Settings</h1><p>Manage the departments assigned to you. Each action affects only the named department.</p><div class="settings-header-meta"><span class="settings-college-label">{{ panels|length }} assigned department{{ panels|length|pluralize }}</span><span class="settings-save-note">Changes apply per department</span></div></header>
 <div class="department-settings-layout" data-settings-key="{{ request.user.pk }}:{{ request.user.school_id }}">{% if panels %}<div class="department-settings-stack">
 {% with panel=panels.0 %}
 <section class="settings-card"><header class="settings-section-heading"><p class="settings-eyebrow">Profile</p><h2>Department details</h2><p>Update the introduction for the selected department.</p></header>

@@ -54,9 +54,13 @@
                         </div>
                         <div class="visual-stat">
                             <span>{{ available_faculty_count }}</span>
-                            <small>Faculty available now</small>
+                            <small>Total Faculty available now</small>
                         </div>
-                        <small class="summary-college">Serving {{ request.user.get_educational_level_display }} students</small>
+                        <div class="visual-stat">
+                            <span>{{ department_faculty_count }}</span>
+                            <small>Faculty available within your department</small>
+                        </div>
+                        <small class="summary-college">{{ student_college }}</small>
                     </div>
                 </div>
             </section>

@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserChangeForm
 from django.core.exceptions import ValidationError
 from apps.systemadmin.services import require_replacement_superadmin
-from .models import User, FacultyInvite, DeptHeadInvite, OfficeAdminInvite, OfficeClosure, CollegeAnnouncement, Office
+from .models import User, UserRole, FacultyInvite, DeptHeadInvite, OfficeAdminInvite, OfficeClosure, CollegeAnnouncement, Office
 
 
 class SystemAwareUserChangeForm(UserChangeForm):
@@ -37,6 +37,7 @@ class CustomUserAdmin(UserAdmin):
     list_display = ('username', 'email', 'role', 'account_status', 'is_staff')
 
 admin.site.register(User, CustomUserAdmin)
+admin.site.register(UserRole)
 admin.site.register(FacultyInvite)
 admin.site.register(DeptHeadInvite)
 admin.site.register(OfficeAdminInvite)

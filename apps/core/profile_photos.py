@@ -13,6 +13,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 
 logger = logging.getLogger(__name__)
+from .role_access import has_role
 MAX_PHOTO_BYTES = 2 * 1024 * 1024
 MAX_PHOTO_PIXELS = 16_000_000
 FORMATS = {'jpg': 'JPEG', 'jpeg': 'JPEG', 'png': 'PNG', 'webp': 'WEBP'}
@@ -113,7 +114,7 @@ class PhotoStorage:
 
     def upload(self, user, content):
         bucket = self.bucket(user.role)
-        public = user.role == 'faculty'
+        public = has_role(user, 'faculty')
         self.check_visibility(bucket, public=public)
         path = f'{user.pk}/{uuid.uuid4().hex}.webp'
         self.request('POST', f'object/{bucket}/{path}', data=content,

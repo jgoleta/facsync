@@ -16,6 +16,7 @@ from .forms import DeptHeadInviteForm, FacultySuperInviteForm, OfficeAdminInvite
 from .assignment_services import lock_departments
 from .department_views import form_error
 from apps.core.models import User, College, Department, DeptHeadInvite, Office, FacultyInvite, OfficeAdminInvite, OfficeClosure, CollegeAnnouncement, School
+from apps.core.role_access import role_filter
 from apps.core.forms import CollegeForm, OfficeForm
 from apps.core.services import (
     send_depthead_invite_email,
@@ -205,7 +206,7 @@ def delete_office_admin(request, user_id):
 def superadmin_dashboard(request):
     colleges = College.objects.all().order_by('name')
     total_colleges = colleges.count()
-    total_faculty = User.objects.filter(role='faculty', account_status='active').count()
+    total_faculty = User.objects.filter(role_filter('faculty'), account_status='active').distinct().count()
     total_consultations = ConsultationRequest.objects.count()
 
     college_data = []
@@ -314,7 +315,7 @@ def manage_admins(request):
 @role_required('superadmin')
 def manage_faculty(request):
     faculty_users = list(with_consultation_counts(User.objects.filter(
-        role='faculty',
+        role_filter('faculty'),
     )).select_related('faculty_profile', 'department__college').order_by(
         'college', 'first_name', 'last_name', 'username'
     ))
@@ -626,7 +627,7 @@ def invite_faculty_superadmin(request):
 @login_required
 @role_required('superadmin')
 def remove_faculty_superadmin(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty')
+    faculty_user = get_object_or_404(User.objects.filter(role_filter('faculty')), id=user_id)
     if request.method == 'POST':
         return access_response(faculty_user, reactivate=request.POST.get('action') == 'reactivate')
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
@@ -635,7 +636,7 @@ def remove_faculty_superadmin(request, user_id):
 @login_required
 @role_required('superadmin')
 def delete_faculty_superadmin(request, user_id):
-    faculty_user = get_object_or_404(User, id=user_id, role='faculty')
+    faculty_user = get_object_or_404(User.objects.filter(role_filter('faculty')), id=user_id)
     if request.method == 'POST':
         try:
             with transaction.atomic():

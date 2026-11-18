@@ -34,9 +34,10 @@ def change_access(user, *, reactivate=False):
             if target.department_id and (not target.department.is_active or (
                     target.department.college_id and not target.department.college.is_active)):
                 raise ValidationError('Reactivate the assigned department and college before restoring account access.')
-            if target.role == 'depthead' and target.managed_departments.filter(is_active=False).exists():
+            from .role_access import has_role
+            if has_role(target, 'depthead') and target.managed_departments.filter(is_active=False).exists():
                 raise ValidationError('Reactivate assigned departments before restoring account access.')
-            if target.role in {'faculty', 'officeadmin'} and not target.department_id and Office.objects.filter(
+            if (has_role(target, 'faculty') or has_role(target, 'officeadmin')) and not target.department_id and Office.objects.filter(
                     code__iexact=target.college or '', is_active=False).exists():
                 raise ValidationError('Reactivate the assigned office before restoring account access.')
         was_active = target.is_active and target.account_status == 'active'
@@ -46,10 +47,11 @@ def change_access(user, *, reactivate=False):
         if changed:
             target.save(update_fields=['is_active', 'account_status'])
     sent = True
-    if was_active and not reactivate and target.email and target.role in {'faculty', 'depthead'}:
+    from .role_access import has_role
+    if was_active and not reactivate and target.email and (has_role(target, 'faculty') or has_role(target, 'depthead')):
         from .services import send_faculty_deactivated_email, send_depthead_deactivated_email
         try:
-            sent = (send_faculty_deactivated_email(target) if target.role == 'faculty'
+            sent = (send_faculty_deactivated_email(target) if has_role(target, 'faculty')
                     else send_depthead_deactivated_email(target))
         except Exception:
             sent = False

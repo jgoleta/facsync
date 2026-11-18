@@ -9,6 +9,7 @@ from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.urls import reverse
 from .school_scope import school_service, require_school
+from .role_access import role_filter, roles_filter
 
 
 def create_notification(recipient, notification_type, title, message, url=''):
@@ -24,13 +25,13 @@ def create_notification(recipient, notification_type, title, message, url=''):
 @school_service
 def notify_college_users(college, notification_type, title, message, url='', exclude_user_id=None, roles=('student', 'faculty', 'officeadmin'), *, department=None, student_levels=None):
     recipients = User.objects.filter(
-        role__in=roles,
+        roles_filter(roles),
         account_status='active',
-    )
+    ).distinct()
     if department and student_levels is not None:
         from .student_announcements import student_recipients
         from django.db.models import Q
-        recipients = recipients.filter(Q(role='faculty', department=department) | student_recipients(department, student_levels))
+        recipients = recipients.filter(role_filter('faculty') & Q(department=department) | student_recipients(department, student_levels)).distinct()
     else:
         recipients = recipients.filter(department=department) if department else recipients.filter(department__isnull=True, college=college)
     if exclude_user_id:
@@ -221,6 +222,23 @@ def send_faculty_invite_email(email, college):
     ))
 
 
+def send_faculty_role_added_email(user, college):
+    """Notify an existing account that Faculty access was added."""
+    email = (user.email or '').strip()
+    if not email:
+        return False
+    login_url = settings.SITE_URL.rstrip('/') + reverse('core:login')
+    return bool(_send_html_email(
+        'Faculty access added to your FacSync account',
+        'faculty_role_added.html',
+        {'name': user.get_full_name() or user.username, 'college': college, 'login_url': login_url},
+        [email],
+        text_content=(f'Hi {user.get_full_name() or user.username},\n\n'
+                      f'Faculty access has been added to your FacSync account for {college}. '
+                      f'Sign in to FacSync at {login_url} and choose Faculty when prompted.'),
+    ))
+
+
 def send_faculty_deactivated_email(user):
     return send_faculty_removed_email(user.email, user.get_full_name() or user.username)
 
@@ -365,8 +383,8 @@ def _email_college_faculty(college, subject, template, context, *, department=No
     if not college and department is None:
         return
     recipients = User.objects.filter(
-        role='faculty', account_status='active', is_active=True,
-    ).exclude(email='')
+        role_filter('faculty'), account_status='active', is_active=True,
+    ).distinct().exclude(email='')
     recipients = recipients.filter(department=department) if department else recipients.filter(department__isnull=True, college__iexact=college)
     backend = get_connection()
     batch_sender = getattr(backend, 'send_personalized_batch', None)

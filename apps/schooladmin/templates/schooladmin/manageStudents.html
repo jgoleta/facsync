@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Manage Students</title>
     <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_main.css' %}?v=20261031-footer" />
-    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261112-directory-actions" />
+    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261118-deactivate-remove-style" />
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -71,7 +71,8 @@
                                 <td>{{ s.department.name|default:'—' }}</td>{% if request.user.school.offers_college %}
                                 <td>{{ s.department.college.name|default:'—' }}</td>{% endif %}
                                 <td>{{ s.get_account_status_display }}</td>
-                                <td class="actions">
+                                <td class="actions-cell">
+                                    <div class="actions">
                                     <button type="button" class="{% if s.account_status == 'deactivated' or not s.is_active %}btn-reactivate{% else %}btn-deactivate{% endif %} btn-remove-trigger-student"
                                         data-history-count="{{ s.consultation_count }}"
                                         data-action="{% if s.account_status == 'deactivated' or not s.is_active %}reactivate{% else %}deactivate{% endif %}"
@@ -81,6 +82,7 @@
                                         data-action="delete"
                                         data-student-name="{{ s.get_full_name|default:s.username }}"
                                         data-remove-url="{% url 'superadmin:remove_student_superadmin' s.id %}">Remove</button>
+                                    </div>
                                 </td>
                             </tr>
                             {% empty %}
