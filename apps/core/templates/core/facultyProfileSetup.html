@@ -19,7 +19,7 @@
                 <p>Just a few more details before you get started</p>
             </div>
 
-            <form method="post" id="faculty-profile-form">
+            <form method="post" id="faculty-profile-form"{% if preview_mode %} onsubmit="return false"{% endif %}>
                 {% csrf_token %}
                 {{ form.non_field_errors }}
                 <div class="form-group">
@@ -32,11 +32,11 @@
                     {{ form.office_location }}
                     {{ form.office_location.errors }}
                 </div>
-                <button type="submit" class="btn-primary">Continue to Dashboard</button>
+                <button type="{% if preview_mode %}button{% else %}submit{% endif %}" class="btn-primary">Continue to Dashboard</button>
             </form>
         </div>
     </div>
-<script src="{% static 'core/js/facultyProfileSetup.js' %}?v=20261109-setup-safety"></script>
+{% if not preview_mode %}<script src="{% static 'core/js/facultyProfileSetup.js' %}?v=20261109-setup-safety"></script>{% endif %}
 </body>
 
 </html>

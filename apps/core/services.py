@@ -214,7 +214,7 @@ def send_faculty_invite_email(email, college):
     if not email:
         return False
     return bool(_send_html_email(
-        "You've been invited to FacSync",
+        "You’re invited to join FacSync as a faculty member",
         'faculty_invite.html',
         {'college': college},
         [email],
