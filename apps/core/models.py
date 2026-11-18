@@ -1,7 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from datetime import timedelta
 from django.utils import timezone
-from django.db import models
+from django.db import models, transaction
 from django.conf import settings
 from .colleges import get_college_label
 
@@ -100,6 +100,23 @@ class User(AbstractUser, SchoolScopedModel):
     def get_year_level_display(self):
         return dict(YEAR_CHOICES.get(self.educational_level or 'college', [])).get(self.year_level, self.year_level or '')
 
+    def clean(self):
+        super().clean()
+        self.validate_assigned_roles()
+
+    def validate_assigned_roles(self):
+        from .role_access import validate_role_combination
+        assigned = self.role_assignments.filter(is_active=True).values_list('role', flat=True) if self.pk else []
+        validate_role_combination(self.role, assigned)
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            previous = type(self)._base_manager.select_for_update().filter(pk=self.pk).first() if self.pk else None
+            fields = kwargs.get('update_fields')
+            if previous is None or ((fields is None or 'role' in fields) and previous.role != self.role):
+                self.validate_assigned_roles()
+            return super().save(*args, **kwargs)
+
 
 class UserRole(models.Model):
     """An additional role assigned to an existing account."""
@@ -121,6 +138,20 @@ class UserRole(models.Model):
 
     def __str__(self):
         return f'{self.user} - {self.get_role_display()}'
+
+    def clean(self):
+        super().clean()
+        if self.user_id and self.is_active:
+            from .role_access import validate_role_combination
+            user = User._base_manager.get(pk=self.user_id)
+            assigned = type(self).objects.filter(user_id=self.user_id, is_active=True).exclude(pk=self.pk).values_list('role', flat=True)
+            validate_role_combination(user.role, [*assigned, self.role])
+
+    def save(self, *args, **kwargs):
+        with transaction.atomic():
+            User._base_manager.select_for_update().get(pk=self.user_id)
+            self.full_clean()
+            return super().save(*args, **kwargs)
 
 class SuperAdminInvite(SchoolScopedModel):
     school = models.ForeignKey(School, on_delete=models.PROTECT, related_name='superadmin_invites')

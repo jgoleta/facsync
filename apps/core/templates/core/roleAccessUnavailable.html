@@ -1,0 +1,22 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FacSync | Access unavailable</title>
+    <link rel="stylesheet" href="{% static 'core/css/loginPage.css' %}">
+    <link rel="stylesheet" href="{% static 'core/css/selectRole.css' %}">
+</head>
+<body>
+<main class="role-page">
+    <section class="role-card" aria-labelledby="access-title">
+        <div class="role-card-content">
+            <h1 id="access-title">Access unavailable</h1>
+            <p>No enabled role is available for your account. Please contact your School Admin or FacSync support.</p>
+            <a href="{% url 'account_logout' %}" class="role-button">Logout</a>
+        </div>
+    </section>
+</main>
+</body>
+</html>

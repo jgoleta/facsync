@@ -1,4 +1,4 @@
-{% load static %}
+{% load static role_tags %}
 <!doctype html>
 <html lang="en">
   <head>
@@ -142,17 +142,22 @@
                       {% if user.account_status == 'deactivated' %}Reactivate{% else %}Deactivate{% endif %}
                     </button>
                   </form>
-                  <form method="post" class="crud-action-form remove-faculty-role-form" action="{% url 'depthead:remove_faculty_role' user.id %}" style="display: inline">
+                  <form method="post" class="crud-action-form remove-faculty-form"
+                    action="{% url 'depthead:delete_faculty' user.id %}" style="display: inline">
                     {% csrf_token %}
-                    <button
-                      type="submit"
-                      class="danger"
+                    <button type="submit" class="danger remove-faculty-trigger"
                       data-faculty-name="{{ user.get_full_name|default:user.username }}"
-                      data-remove-mode="{% if user.role == 'faculty' %}account{% else %}faculty-role{% endif %}"
-                    >
-                      Remove Faculty
-                    </button>
+                      data-access-action="delete">Remove</button>
                   </form>
+                  {% available_user_roles user as faculty_roles %}
+                  {% if faculty_roles|length > 1 %}
+                  <form method="post" class="remove-faculty-role-form"
+                    action="{% url 'depthead:remove_faculty_role' user.id %}" style="display: inline">
+                    {% csrf_token %}
+                    <button type="submit" class="danger"
+                      data-faculty-name="{{ user.get_full_name|default:user.username }}">Remove Faculty role</button>
+                  </form>
+                  {% endif %}
                   </div>
                 </td>
               </tr>
@@ -328,7 +333,7 @@
             &times;
           </button>
         </div>
-        <p class="remove-confirm-warning">
+        <p class="remove-confirm-warning" id="facultyRemovalWarning">
           Consultation history and schedules are preserved. Access can be restored by an authorized administrator.
         </p>
         <div class="modal-actions">
@@ -353,6 +358,6 @@
     </div>
 
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
-    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261109-account-access"></script>
+    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261118-faculty-role-merge"></script>
   </body>
 </html>

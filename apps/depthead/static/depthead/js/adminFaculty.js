@@ -174,8 +174,13 @@
                 event.preventDefault();
                 pendingRemoveForm = button.closest('.remove-faculty-form');
                 const activating = button.dataset.accessAction === 'reactivate';
-                document.getElementById('removeFacultyConfirmTitle').textContent = activating ? 'Reactivate Faculty' : 'Deactivate Faculty';
-                document.getElementById('facultyAccessWarning').textContent = activating ? 'Restore access for ' : `${button.dataset.historyCount} consultation record(s) will be preserved. Login and new booking access will be removed. Pending and approved appointments will keep their current status. Deactivate `;
+                const deleting = button.dataset.accessAction === 'delete';
+                document.getElementById('removeFacultyConfirmTitle').textContent = deleting ? 'Permanently Remove Faculty' : activating ? 'Reactivate Faculty' : 'Deactivate Faculty';
+                document.getElementById('facultyAccessWarning').textContent = deleting ? 'Permanently remove the account for ' : activating ? 'Restore access for ' : `${button.dataset.historyCount} consultation record(s) will be preserved. Login and new booking access will be removed. Pending and approved appointments will keep their current status. Deactivate `;
+                document.getElementById('facultyRemovalWarning').textContent = deleting
+                    ? 'This cannot be undone. The account and associated schedules and queue entries will be deleted. Accounts with consultation history or other roles cannot be removed here.'
+                    : 'Consultation history and schedules are preserved. Access can be restored by an authorized administrator.';
+                confirmRemoveFaculty.textContent = deleting ? 'Remove permanently' : 'Confirm';
                 if (removeFacultyName) {
                     removeFacultyName.textContent = button.dataset.facultyName || 'this faculty member';
                 }
@@ -188,16 +193,14 @@
                 event.preventDefault();
                 const button = form.querySelector('button[type="submit"]');
                 const name = button?.dataset.facultyName || 'this faculty member';
-                const mode = button?.dataset.removeMode === 'account';
-                const prompt = mode
-                    ? `Permanently delete ${name}'s Faculty account and profile? This cannot be undone.`
-                    : `Remove Faculty access and profile from ${name}? Their Admin account and other roles will be preserved.`;
+                const prompt = `Remove Faculty access from ${name}? Their account, other roles, Faculty profile and consultation history will be preserved.`;
                 if (!window.confirm(prompt)) return;
                 button.disabled = true;
                 try {
                     const response = await fetch(form.action, {
                         method: 'POST',
-                        headers: {'X-Requested-With': 'XMLHttpRequest'},
+                        credentials: 'same-origin',
+                        headers: {'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCsrfToken()},
                         body: new FormData(form),
                     });
                     const data = await response.json();

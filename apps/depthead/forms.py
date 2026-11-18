@@ -90,7 +90,11 @@ class FacultyInviteForm(SchoolBoundModelForm):
         value = self.cleaned_data['faculty_id'].strip()
         if value:
             from apps.faculty.models import FacultyProfile
-            if FacultyProfile._base_manager.filter(pk=value).exists():
+            profiles = FacultyProfile._base_manager.filter(pk=value)
+            email = self.cleaned_data.get('email')
+            if email:
+                profiles = profiles.exclude(user__email__iexact=email, user__school_id=self.instance.school_id)
+            if profiles.exists():
                 raise forms.ValidationError('This faculty identifier is unavailable.')
         return value
 

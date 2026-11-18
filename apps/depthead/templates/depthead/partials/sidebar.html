@@ -1,3 +1,4 @@
+{% load role_tags %}
 {% with current_url=request.resolver_match.url_name %}
 <aside class="sidebar">
     <div class="sidebar-header">
@@ -45,7 +46,8 @@
 
     <div class="sidebar-footer">
         {% include 'components/_account_identity.html' with show_profile_icon=True %}
-        {% if request.session.active_role %}
+        {% available_user_roles request.user as role_options %}
+        {% if role_options|length > 1 %}
         <a href="{% url 'core:select_role' %}" class="nav-item switch-role-link">
             <span>Switch role</span>
         </a>

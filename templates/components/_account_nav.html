@@ -6,18 +6,24 @@
         </svg>
     </button>
     <div id="accountNavActions" class="account-nav-actions" hidden>
-        {% if request.session.active_role %}
+        {% available_user_roles request.user as role_options %}
+        {% current_workspace request as workspace %}
+        {% if role_options|length > 1 %}
         <a href="{% url 'core:select_role' %}" class="nav-btn">Switch role</a>
         {% endif %}
-        {% if request.user|user_has_role:'student' and not request.user|user_has_role:'faculty' %}
+        {% if workspace == 'student' %}
         <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
         <a href="{% url 'students:profile' %}" class="nav-btn">Profile</a>
-        {% elif request.user|user_has_role:'faculty' or request.user|user_has_role:'officeadmin' %}
+        {% elif workspace == 'faculty' %}
         <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
+        {% elif workspace == 'officeadmin' and request.user|user_can_access_role:'faculty' %}
+        <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
+        {% elif workspace == 'depthead' or workspace == 'officeadmin' %}
+        <a href="{% url 'depthead:admin_dashboard' %}" class="nav-btn">Dashboard</a>
+        {% elif workspace == 'superadmin' %}
+        <a href="{% url 'superadmin:superadmin_dashboard' %}" class="nav-btn">Dashboard</a>
         {% endif %}
         <a href="{% url 'account_logout' %}" class="nav-btn logout-btn">Logout</a>
     </div>
 </div>
 <script src="{% static 'js/account-nav.js' %}?v=20261002"></script>
-
-  
