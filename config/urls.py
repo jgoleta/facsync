@@ -32,6 +32,11 @@ urlpatterns = [
 if getattr(settings, 'SCHOOL_ONBOARDING_PREVIEWS', False):
     urlpatterns += [path('dev/school-onboarding/', include('apps.core.school_onboarding_preview_urls'))]
 
+if (settings.DEBUG and settings.SETTINGS_MODULE == 'config.settings.development'
+        and getattr(settings, 'PROFILE_SETUP_PREVIEWS', False)):
+    from apps.core.profile_setup_previews import faculty_profile_preview
+    urlpatterns += [path('dev/profile-setup/faculty/', faculty_profile_preview, name='faculty_profile_preview')]
+
 # The app check also keeps these URLs out of production/test settings, even
 # when the shared base configuration has DEBUG enabled.
 if settings.DEBUG and 'debug_toolbar' in settings.INSTALLED_APPS:
