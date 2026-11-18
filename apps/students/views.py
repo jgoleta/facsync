@@ -453,14 +453,18 @@ def home(request):
     student_college = request.user.department.name if request.user.department_id else request.user.school.name
     college_announcement = active_announcement_queryset(request.user.college, audience='students', student=request.user).first()
     available_faculty_count = 0
+    department_faculty_count = 0
     for faculty in StudentEligibility(request.user).faculty().select_related('user'):
         refresh_faculty_status(faculty)
         if faculty.current_status == 'available':
             available_faculty_count += 1
+            if request.user.department_id and faculty.user.department_id == request.user.department_id:
+                department_faculty_count += 1
 
     return render(request, 'students/homeStudent.html', {
         'upcoming_booking_count': upcoming_booking_count,
         'available_faculty_count': available_faculty_count,
+        'department_faculty_count': department_faculty_count,
         'student_college': student_college,
         'college_announcement': college_announcement,
     })

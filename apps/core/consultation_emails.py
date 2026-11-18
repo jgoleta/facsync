@@ -11,6 +11,7 @@ from apps.faculty.models import ConsultationRequest
 from .models import School
 from .school_scope import require_school, school_scope
 from .services import _send_html_email
+from .role_access import has_role
 
 logger = logging.getLogger(__name__)
 TOPIC = 'facsync-consultation-emails'
@@ -27,7 +28,7 @@ EVENTS = {
 def _recipient(consultation, event):
     student, faculty = consultation.user, consultation.faculty.user
     school = require_school(student.school)
-    if faculty.school_id != school.pk or student.role != 'student' or faculty.role not in {'faculty', 'officeadmin'}:
+    if faculty.school_id != school.pk or student.role != 'student' or not (has_role(faculty, 'faculty') or has_role(faculty, 'officeadmin')):
         raise ValueError('Consultation participants do not match the school and roles.')
     recipient = faculty if event == 'requested' else student
     if any(not user.is_active or user.account_status != 'active' for user in (student, faculty)):

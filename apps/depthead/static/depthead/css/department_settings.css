@@ -4,6 +4,24 @@
 .department-settings-layout > .empty-state { grid-column:1 / -1; }
 @media(max-width:1100px) { .department-settings-page .department-settings-layout { grid-template-columns:minmax(0,1fr); } }
 .department-settings-page .settings-card { background:var(--bg-card); border-color:var(--border-color); }
+.department-settings-page .main-header { border:0; padding-bottom:0; margin-bottom:28px; }
+.department-settings-page .main-header h1 { margin:6px 0 10px; font-size:clamp(1.65rem,3vw,2.1rem); letter-spacing:-.035em; }
+.department-settings-page .settings-eyebrow { margin:0 0 7px; color:#2563eb; font-size:.72rem; font-weight:750; text-transform:uppercase; letter-spacing:.1em; }
+.department-settings-page .settings-card { padding:26px; border-radius:18px; box-shadow:0 4px 18px rgba(15,23,42,.035); }
+.department-settings-page .settings-section-heading { margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--border-color); }
+.department-settings-page .settings-section-heading h2 { margin:0 0 8px; font-size:1.18rem; letter-spacing:-.02em; }
+.department-settings-page .settings-section-heading > p:last-child { margin:0; font-size:.88rem; line-height:1.6; }
+.department-settings-page .settings-form { gap:20px; }
+.department-settings-page .form-group { gap:7px; }
+.department-settings-page .form-group label { font-size:.84rem; color:var(--text-primary); }
+.department-settings-page .form-group input:not([type=checkbox]),
+.department-settings-page .form-group select,
+.department-settings-page .form-group textarea { min-height:44px; padding:11px 12px; border-radius:10px; font:inherit; line-height:1.5; }
+.department-settings-page .form-group textarea { min-height:120px; }
+.department-settings-page :is(input,textarea,select,button):focus-visible { outline:3px solid #93c5fd; outline-offset:3px; }
+.department-settings-page .form-actions { margin:0; padding-top:18px; border-top:1px solid var(--border-color); }
+.department-settings-page .primary-button { min-height:44px; padding:11px 18px; border-radius:10px; }
+.department-settings-page .announcements-heading { margin-top:28px; padding-top:24px; border-top:1px solid var(--border-color); }
 .department-settings-page .settings-section-heading { border-color:var(--border-color); }
 .department-settings-page .settings-section-heading h3 { margin:0 0 8px; font-size:1.1rem; }
 .department-settings-page .settings-form .primary-button { width:auto !important; }
@@ -20,3 +38,8 @@
 .department-settings-page .department-announcements { max-width:none; }
 .department-settings-page .assignment-error { color:var(--danger); }
 @media(max-width:540px) { .department-settings-page .form-actions .primary-button { max-width:100%; white-space:normal; } }
+@media(max-width:540px) {
+    .department-settings-page .settings-card { padding:20px 16px; }
+    .department-settings-page .settings-header-meta { align-items:flex-start; flex-direction:column; gap:6px; }
+    .department-settings-page .form-actions .primary-button { width:100% !important; }
+}

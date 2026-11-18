@@ -9,6 +9,7 @@ from django.views.decorators.http import require_POST
 from apps.core.decorators import role_required
 from apps.core.models import Department, User, School, Office
 from apps.faculty.models import FacultyProfile
+from apps.core.role_access import role_filter
 from .assignment_services import faculty_has_activity, lock_departments
 from .forms import DepartmentForm, FacultyAssignmentForm
 
@@ -96,7 +97,7 @@ def assign_faculty(request, user_id):
                 department = lock_departments([department], request.user.school)[0]
             elif not Office.objects.filter(pk=office.pk, is_active=True).exists():
                 raise ValidationError('Choose an active office.')
-            user = get_object_or_404(User.objects.select_for_update(), pk=user_id, role='faculty')
+            user = get_object_or_404(User.objects.select_for_update().filter(role_filter('faculty')), pk=user_id)
             target_code = (department.college.code if department.college else '') if department else office.code
             same = user.department_id == (department.pk if department else None)
             if not department:

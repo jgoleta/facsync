@@ -123,7 +123,10 @@ def validate_department_links(instance):
         owner_school = getattr(instance, 'school_id', None)
     if owner_school != department.school_id:
         raise ValidationError('The department must belong to the record’s school.')
-    if label == 'core.user' and instance.role not in {'faculty', 'student'}:
+    is_faculty = instance.role == 'faculty'
+    if label == 'core.user' and not is_faculty and getattr(instance, 'pk', None):
+        is_faculty = instance.role_assignments.filter(role='faculty', is_active=True).exists()
+    if label == 'core.user' and not (is_faculty or instance.role == 'student'):
         raise ValidationError('Academic home departments are for faculty and students; heads use assignments.')
     if label in {'core.user', 'core.facultyinvite', 'core.departmentheadassignment', 'core.departmentinviteassignment'}:
         if not department.is_active:

@@ -84,7 +84,7 @@
       block('action-copy medium'),
       block('student-home-action-footer', [shape('action-link'), shape('action-arrow')])
     ]));
-    const stats = Array.from({ length: 2 }, () => block('student-home-stat', [shape('stat-value'), shape('stat-label')]));
+    const stats = Array.from({ length: 3 }, () => block('student-home-stat', [shape('stat-value'), shape('stat-label')]));
     return block('student-home-layout', [
       block('student-home-announcement', [shape('announcement-icon'), block('student-home-announcement-copy', [shape('announcement-title'), shape('announcement-text')])]),
       block('student-home-intro', [

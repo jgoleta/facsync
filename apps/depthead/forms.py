@@ -1,9 +1,10 @@
 from django import forms
 from django.core.validators import MaxValueValidator
-from apps.core.models import Department, FacultyInvite, OfficeClosure
+from apps.core.models import Department, FacultyInvite, OfficeClosure, User
 from .services.shared_windows import DURATION_CHOICES
 from datetime import date, timedelta
 from apps.core.school_forms import SchoolBoundModelForm
+from apps.core.role_access import has_role
 
 
 class AnalyticsDateRangeForm(forms.Form):
@@ -68,7 +69,8 @@ class FacultyInviteForm(SchoolBoundModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
-        if user and user.role == 'depthead':
+        self.user = user
+        if user and has_role(user, 'depthead'):
             from .scope import managed_departments
             self.fields['department'].queryset = managed_departments(user)
             self.fields['department'].required = True
@@ -77,7 +79,11 @@ class FacultyInviteForm(SchoolBoundModelForm):
 
     def clean_email(self):
         from apps.core.invitations import validate_invite_identity
-        return validate_invite_identity(self.cleaned_data['email'], instance=self.instance)
+        email = self.cleaned_data['email']
+        existing = User._base_manager.filter(email__iexact=email).first()
+        if existing and self.user and existing.school_id == self.user.school_id:
+            return email
+        return validate_invite_identity(email, instance=self.instance)
 
 class OfficeClosureForm(SchoolBoundModelForm):
     class Meta:

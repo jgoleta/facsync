@@ -14,6 +14,7 @@ from django.urls import reverse
 
 from .education import YEAR_CHOICES
 from apps.depthead.scope import DepartmentScope
+from .role_access import roles_filter
 
 
 def profile_ready(student):
@@ -68,8 +69,9 @@ class StudentEligibility:
     def faculty(self, queryset=None):
         from apps.faculty.models import FacultyProfile
         queryset = queryset if queryset is not None else FacultyProfile.objects.all()
-        return queryset.filter(user__school_id=self.student.school_id, user__is_active=True,
-            user__account_status='active', user__role__in=['faculty', 'officeadmin']).annotate(
+        return queryset.filter(roles_filter(['faculty', 'officeadmin'], 'user__'),
+            user__school_id=self.student.school_id, user__is_active=True,
+            user__account_status='active').annotate(
                 _access_office=Lower(Coalesce(NullIf('user__college', Value('')), 'college_id'))).filter(
                     Q(user__department_id__in=self.department_ids)
                     | Q(user__department__isnull=True, _access_office__in=self.office_codes))

@@ -100,6 +100,28 @@ class User(AbstractUser, SchoolScopedModel):
     def get_year_level_display(self):
         return dict(YEAR_CHOICES.get(self.educational_level or 'college', [])).get(self.year_level, self.year_level or '')
 
+
+class UserRole(models.Model):
+    """An additional role assigned to an existing account."""
+
+    ROLE_CHOICES = User.ROLE_CHOICES
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='role_assignments')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
+    is_active = models.BooleanField(default=True)
+    assigned_at = models.DateTimeField(auto_now_add=True)
+    assigned_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='roles_assigned',
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'role'], name='user_role_unique'),
+        ]
+
+    def __str__(self):
+        return f'{self.user} - {self.get_role_display()}'
+
 class SuperAdminInvite(SchoolScopedModel):
     school = models.ForeignKey(School, on_delete=models.PROTECT, related_name='superadmin_invites')
     email = models.EmailField()

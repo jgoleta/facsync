@@ -16,6 +16,7 @@ from .models import Notification
 from apps.core.colleges import get_college_label
 from .decorators import role_required
 from django.views.decorators.cache import never_cache
+from .role_access import active_role, available_roles, has_role
 
 def active_announcements(request):
     """Keep college announcements unavailable to visitors of the public dashboard."""
@@ -60,11 +61,11 @@ STATUS_NOTE_DEFAULTS = {
 @login_required
 @never_cache
 def dashboard_public(request):
-    if request.user.role == 'student':
+    if has_role(request.user, 'student') and not has_role(request.user, 'faculty'):
         return redirect('students:dashboard')
 
     closures = OfficeClosure.objects.filter(is_closed=True)
-    if request.user.role == 'depthead':
+    if has_role(request.user, 'depthead'):
         from apps.depthead.scope import managed_departments
         closures = closures.filter(department__in=managed_departments(request.user))
 
@@ -83,7 +84,7 @@ def dashboard_public(request):
         .select_related('user')
         .filter(user__account_status='active')
     )
-    if request.user.role == 'depthead':
+    if has_role(request.user, 'depthead'):
         faculty_profiles = faculty_profiles.filter(user__department__in=managed_departments(request.user))
 
     faculty_cards = []
@@ -114,7 +115,7 @@ def dashboard_public(request):
 @login_required
 @require_http_methods(['GET', 'POST', 'DELETE'])
 def notifications_api(request):
-    if request.user.role not in {'student', 'faculty', 'officeadmin'}:
+    if not any(has_role(request.user, role) for role in {'student', 'faculty', 'officeadmin'}):
         return JsonResponse({'error': 'Notifications are unavailable for this account.'}, status=403)
 
     if request.method == 'GET':
@@ -171,27 +172,57 @@ def register_student(request):
 def post_login_redirect(request):
     user = request.user
 
-    if user.role == 'systemadmin':
+    roles = available_roles(user)
+    stored_role = request.session.get('active_role')
+    selected = active_role(request)
+    if len(roles) > 1 and stored_role not in {role for role, _ in roles}:
+        request.session.pop('active_role', None)
+        return redirect('core:select_role')
+
+    if selected == 'systemadmin':
         return redirect('systemadmin:manage_school')
 
     if not user.profile_completed:
-        if user.role == 'student':
+        if selected == 'student':
             return redirect('core:student_profile_setup')
-        elif user.role in {'faculty', 'officeadmin'}:
+        elif selected in {'faculty', 'officeadmin'}:
             return redirect('core:faculty_profile_setup')
 
-    if user.role == 'student':
+    if selected == 'student':
         return redirect('students:home')
-    elif user.role == 'faculty':
+    elif selected == 'faculty':
         return redirect('faculty:dashboard')
-    elif user.role == 'depthead':
+    elif selected == 'depthead':
         return redirect('depthead:admin_dashboard')
-    elif user.role == 'officeadmin':
+    elif selected == 'officeadmin':
         return redirect('depthead:admin_dashboard')
-    elif user.role == 'superadmin':
+    elif selected == 'superadmin':
         return redirect('superadmin:superadmin_dashboard')
 
     return redirect('core:landing')
+
+
+@login_required
+def select_role(request):
+    roles = available_roles(request.user)
+    if len(roles) <= 1:
+        return redirect('core:post_login_redirect')
+    if request.method == 'POST':
+        selected = request.POST.get('role')
+        if any(role == selected for role, _ in roles):
+            request.session['active_role'] = selected
+            return redirect('core:post_login_redirect')
+    return render(request, 'core/selectRole.html', {'roles': roles})
+
+
+@login_required
+def switch_role(request):
+    if request.method != 'POST':
+        return redirect('core:post_login_redirect')
+    selected = request.POST.get('role')
+    if any(role == selected for role, _ in available_roles(request.user)):
+        request.session['active_role'] = selected
+    return redirect(request.POST.get('next') or 'core:post_login_redirect')
 
 @login_required
 @role_required('student')
@@ -221,7 +252,7 @@ def student_profile_setup(request):
 @login_required
 @role_required('faculty')
 def faculty_profile_setup(request):
-    destination = 'depthead:admin_dashboard' if request.user.role == 'officeadmin' else 'faculty:dashboard'
+    destination = 'depthead:admin_dashboard' if has_role(request.user, 'officeadmin') and not has_role(request.user, 'faculty') else 'faculty:dashboard'
     if FacultyProfile.objects.filter(user=request.user).exists():
         return redirect(destination)
     if request.method == 'POST':

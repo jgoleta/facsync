@@ -248,8 +248,9 @@ table td:first-child { color: var(--text-primary); font-weight: 750; }
 .student-accounts-table td.actions button { margin: 0; }
 .faculty-accounts-table { min-width: 980px; }
 .faculty-accounts-table tbody td { padding: 16px; }
-.faculty-accounts-table td.actions { min-width: max-content; white-space: nowrap; flex-wrap: nowrap; }
-.faculty-accounts-table td.actions button { margin: 0; }
+.faculty-accounts-table td.actions-cell { min-width: max-content; white-space: nowrap; }
+.faculty-accounts-table td.actions-cell .actions { flex-wrap: nowrap; }
+.faculty-accounts-table td.actions-cell button { margin: 0; }
 .college-head-palette .actions .edit-depthead-btn {
   border-color: var(--primary-light);
   background: var(--primary-light);
@@ -423,8 +424,10 @@ table td:first-child { color: var(--text-primary); font-weight: 750; }
 
 /* Reversible access changes, separate from permanent removal. */
 .college-head-palette { --account-deactivate: #c2410c; }
-.actions button.btn-reactivate, .btn-reactivate { color:var(--text-light); background:var(--success); border:1px solid var(--success); border-radius:6px; padding:6px 10px; cursor:pointer; }
-.actions button.btn-deactivate, .btn-deactivate { color:var(--text-light); background:var(--account-deactivate); border:1px solid var(--account-deactivate); border-radius:6px; padding:6px 10px; cursor:pointer; }
+.actions button.btn-reactivate, .btn-reactivate { color:#15803d; background:#f0fdf4; border:1px solid #86efac; border-radius:7px; padding:8px 13px; cursor:pointer; }
+.actions button.btn-reactivate:hover, .btn-reactivate:hover { background:#dcfce7; border-color:#4ade80; }
+.actions button.btn-deactivate, .btn-deactivate { color:#be123c; background:#fff1f2; border:1px solid #fecdd3; border-radius:7px; padding:8px 13px; cursor:pointer; }
+.actions button.btn-deactivate:hover, .btn-deactivate:hover { background:#ffe4e6; }
 .directory-filters { display:flex; flex-wrap:wrap; gap:16px; margin:18px 0; }
 .directory-filters label { display:grid; gap:6px; color:var(--text-secondary); font-size:.85rem; min-width:180px; }
 .directory-filters select { padding:8px 12px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-card); color:var(--text-primary); max-width:100%; }

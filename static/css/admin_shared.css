@@ -74,3 +74,4 @@
   outline-offset: 2px;
 }
 .logout-icon { flex-shrink: 0; }
+.sidebar .switch-role-link { margin-bottom: 12px; }

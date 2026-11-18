@@ -1,0 +1,141 @@
+:root {
+    --role-ink: #12233f;
+    --role-muted: #65738a;
+    --role-blue: #1769e0;
+    --role-border: #dfe7f2;
+    --role-surface: #ffffff;
+    --role-background: #f3f7fc;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    color: var(--role-ink);
+    background:
+        radial-gradient(circle at 10% 0%, rgba(65, 145, 255, .16), transparent 34rem),
+        linear-gradient(145deg, #f8fbff 0%, var(--role-background) 100%);
+}
+
+.role-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 32px 20px;
+}
+
+.role-card {
+    width: min(100%, 540px);
+    overflow: hidden;
+    background: var(--role-surface);
+    border: 1px solid rgba(223, 231, 242, .9);
+    border-radius: 24px;
+    box-shadow: 0 24px 70px rgba(32, 67, 113, .14);
+}
+
+/* The shared login stylesheet gives role cards a hover treatment; this page's
+   outer card is a container, so keep it visually static. */
+.role-card:hover,
+.role-card:active {
+    border-color: rgba(223, 231, 242, .9);
+    background: var(--role-surface);
+    transform: none;
+}
+
+.role-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 22px 28px;
+    color: var(--role-blue);
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    border-bottom: 1px solid #edf1f7;
+}
+
+.role-brand svg,
+.role-brand img { width: 30px; height: 30px; }
+
+.role-card-content { padding: 34px 36px 20px; }
+
+.role-eyebrow {
+    margin: 0 0 8px;
+    color: var(--role-blue);
+    font-size: .75rem;
+    font-weight: 800;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+}
+
+.role-card h1 {
+    margin: 0;
+    color: var(--role-ink);
+    font-size: clamp(1.7rem, 4vw, 2.15rem);
+    line-height: 1.15;
+}
+
+.role-description {
+    margin: 12px 0 0;
+    color: var(--role-muted);
+    font-size: .98rem;
+    line-height: 1.55;
+}
+
+.role-options {
+    display: grid;
+    gap: 12px;
+    padding: 8px 36px 28px;
+}
+
+.role-button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    min-height: 76px;
+    padding: 16px 18px 16px 20px;
+    color: var(--role-ink);
+    text-align: left;
+    background: #fff;
+    border: 1px solid var(--role-border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease;
+}
+
+.role-button:hover,
+.role-button:focus-visible {
+    background: #f8fbff;
+    border-color: #8db9f5;
+    box-shadow: 0 8px 22px rgba(23, 105, 224, .12);
+    outline: none;
+    transform: translateY(-1px);
+}
+
+.role-button:focus-visible { box-shadow: 0 0 0 4px rgba(23, 105, 224, .18); }
+
+.role-button-copy { display: grid; gap: 5px; }
+.role-button strong { font-size: 1rem; }
+.role-button small { color: var(--role-muted); font-size: .82rem; line-height: 1.35; }
+.role-arrow { color: var(--role-blue); font-size: 1.35rem; font-weight: 700; }
+
+.role-footer {
+    margin: 0;
+    padding: 0 36px 30px;
+    color: #8995a7;
+    font-size: .78rem;
+    text-align: center;
+}
+
+@media (max-width: 520px) {
+    .role-page { padding: 16px; }
+    .role-card { border-radius: 18px; }
+    .role-brand { padding: 18px 22px; }
+    .role-card-content { padding: 28px 22px 18px; }
+    .role-options { padding: 6px 22px 24px; }
+    .role-footer { padding: 0 22px 24px; }
+    .role-button { min-height: 70px; padding: 14px 15px; }
+}
