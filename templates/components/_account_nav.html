@@ -10,7 +10,7 @@
         <a href="{% url 'core:select_role' %}" class="nav-btn">Switch role</a>
         {% endif %}
         {% if request.user|user_has_role:'student' and not request.user|user_has_role:'faculty' %}
-        <a href="{% url 'students:home' %}" class="nav-btn">Home</a>
+        <a href="{% url 'students:profile' %}" class="nav-btn">Profile</a>
         {% elif request.user|user_has_role:'faculty' or request.user|user_has_role:'officeadmin' %}
         <a href="{% url 'faculty:profile' %}" class="nav-btn">Profile</a>
         {% endif %}
