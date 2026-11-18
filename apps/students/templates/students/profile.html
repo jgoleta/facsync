@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FacSync | My Profile</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261015-brand-logo">
-    <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}">
+    <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}?v=20260905-profile-refresh">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}">
     {% include 'components/_student_navigation_loading.html' %}
 </head>
@@ -20,14 +20,42 @@
             </nav>
         </header>
         <main class="profile-shell">
-            <header class="profile-header"><div><span class="eyebrow">Student account</span><h1>Profile</h1><p>Manage your profile picture.</p></div></header>
-            <section class="profile-card">
+            <header class="profile-header">
+                <div><span class="eyebrow">Student portal</span><h1>Profile</h1><p>Keep your student details up to date.</p></div>
+                <span class="account-badge">Student account</span>
+            </header>
+            <div class="profile-grid">
+            <section class="profile-card personal-info-card" aria-labelledby="student-details-title">
                 <div class="profile-picture-section">
-                    <span data-own-avatar>{% include 'components/_avatar.html' with photo_url=request.user.avatar_url initials=request.user.avatar_initials avatar_class='fs-avatar-profile' %}</span>
-                    <div class="profile-identity"><strong>{{ request.user.get_full_name|default:request.user.username }}</strong><span>{{ request.user.email }}</span><span>{{ request.user.school.name }}</span><span>{{ request.user.get_educational_level_display }} · {{ request.user.get_year_level_display }}</span>{% if request.user.department_id %}<span>{{ request.user.department.name }}</span>{% if request.user.department.college_id %}<span>{{ request.user.department.college.name }}</span>{% endif %}{% endif %}<span>Student ID: {{ request.user.student_id }}</span><a href="{% url 'core:student_profile_setup' %}">Update student details</a></div>
+                    <span data-own-avatar>{% include 'components/_avatar.html' with photo_url=request.user.avatar_url initials=request.user.avatar_initials avatar_class='profile-avatar profile-avatar-placeholder' %}</span>
+                    <div class="profile-identity"><span class="identity-label">Signed in as</span><strong>{{ request.user.get_full_name|default:request.user.username }}</strong><span>{{ request.user.school.name }}</span></div>
                 </div>
-                {% include 'components/_photo_editor.html' %}
+                <div class="card-heading"><div><span class="section-label">Account details</span><h2 id="student-details-title">Student information</h2></div><p>Your name and email are managed through your account.</p></div>
+                <div class="info-grid">
+                    <div class="info-group"><label>Name</label><p>{{ request.user.get_full_name|default:request.user.username }}</p></div>
+                    <div class="info-group"><label>Email</label><p class="breakable-text">{{ request.user.email }}</p></div>
+                    <div class="info-group"><label>School</label><p>{{ request.user.school.name }}</p></div>
+                    <div class="info-group"><label>Student ID</label><p>{{ request.user.student_id|default:'Not provided' }}</p></div>
+                    <div class="info-group"><label>Educational level</label><p>{{ request.user.get_educational_level_display|default:'Not provided' }}</p></div>
+                    <div class="info-group"><label>Grade / year</label><p>{{ request.user.get_year_level_display|default:'Not provided' }}</p></div>
+                    {% if request.user.department_id %}
+                    <div class="info-group"><label>Department</label><p>{{ request.user.department.name }}</p></div>
+                    {% if request.user.department.college_id %}<div class="info-group"><label>College</label><p>{{ request.user.department.college.name }}</p></div>{% endif %}
+                    {% endif %}
+                </div>
+                <a href="{% url 'core:student_profile_setup' %}" class="profile-link"><span>Update student details</span><span aria-hidden="true">&rarr;</span></a>
             </section>
+            <aside class="side-column">
+                <section class="profile-card quick-links-card" aria-labelledby="student-tools-title">
+                    <div class="card-heading compact-heading"><div><span class="section-label">Shortcuts</span><h2 id="student-tools-title">Student tools</h2></div></div>
+                    <nav class="card-actions-vertical" aria-label="Student tools">
+                        <a href="{% url 'students:home' %}" class="profile-link"><span>Home</span><span aria-hidden="true">&rarr;</span></a>
+                        <a href="{% url 'students:dashboard' %}" class="profile-link"><span>Dashboard</span><span aria-hidden="true">&rarr;</span></a>
+                        <a href="{% url 'students:consultation_requests' %}" class="profile-link"><span>Consultation Requests</span><span aria-hidden="true">&rarr;</span></a>
+                    </nav>
+                </section>
+            </aside>
+            </div>
         </main>
     </div>
     <script src="{% static 'js/notifications.js' %}"></script>
