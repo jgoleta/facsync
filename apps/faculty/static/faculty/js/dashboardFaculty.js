@@ -19,6 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const completedModal = document.getElementById('completedConsultationsModal');
     const openCompletedModalButton = document.getElementById('openCompletedConsultations');
     const closeCompletedModalButton = document.getElementById('closeCompletedConsultations');
+    const deleteCompletedModal = document.getElementById('deleteCompletedConsultationModal');
+    const cancelDeleteCompletedButton = document.getElementById('cancelDeleteCompletedConsultation');
+    const confirmDeleteCompletedButton = document.getElementById('confirmDeleteCompletedConsultation');
+    let pendingCompletedDelete;
     let selectedStatus = document.querySelector('.status-btn.active')?.dataset.status || 'not_set';
 
     if (statusExpiresAt?.dataset.currentExpiry) {
@@ -221,13 +225,41 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === 'Escape' && !completedModal?.classList.contains('hidden')) {
             setCompletedModalOpen(false);
         }
+        if (event.key === 'Escape' && !deleteCompletedModal?.classList.contains('hidden')) {
+            closeCompletedDeleteConfirmation(false);
+        }
+    });
+
+    function closeCompletedDeleteConfirmation(confirmed) {
+        deleteCompletedModal?.classList.add('hidden');
+        document.body.style.overflow = '';
+        if (pendingCompletedDelete) {
+            const resolve = pendingCompletedDelete;
+            pendingCompletedDelete = null;
+            resolve(confirmed);
+        }
+    }
+
+    function showCompletedDeleteConfirmation() {
+        return new Promise((resolve) => {
+            pendingCompletedDelete = resolve;
+            deleteCompletedModal?.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            cancelDeleteCompletedButton?.focus();
+        });
+    }
+
+    cancelDeleteCompletedButton?.addEventListener('click', () => closeCompletedDeleteConfirmation(false));
+    confirmDeleteCompletedButton?.addEventListener('click', () => closeCompletedDeleteConfirmation(true));
+    deleteCompletedModal?.addEventListener('click', (event) => {
+        if (event.target === deleteCompletedModal) closeCompletedDeleteConfirmation(false);
     });
 
     document.querySelectorAll('[data-delete-completed]').forEach((button) => {
         button.addEventListener('click', async () => {
             const item = button.closest('.completed-consultation-item');
             const requestId = item?.dataset.requestId;
-            if (!requestId || !window.confirm('Delete this completed consultation permanently?')) return;
+            if (!requestId || !(await showCompletedDeleteConfirmation())) return;
 
             button.disabled = true;
             facultyFeedback?.showLoading('Deleting completed consultation...');
