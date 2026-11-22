@@ -292,7 +292,7 @@ document.querySelectorAll('.crud-action-form').forEach((form) => {
         setCrudLoading(true, 'Updating faculty account...');
 
         try {
-            const response = await fetch(form.action, {
+            const response = await fetch(form.getAttribute('action'), {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
