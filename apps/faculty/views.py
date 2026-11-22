@@ -1,5 +1,5 @@
 from .services.consultation_browser import QUESTIONS as FACULTY_BROWSER_QUESTIONS, consultation_browser_answer
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_GET, require_http_methods
 import csv
 import io
 import json
@@ -1892,6 +1892,44 @@ def _notify_consultation_student(consultation, subject, body):
         logging.getLogger(__name__).warning(
             'consultation_status_email_failed category=%s', type(error).__name__,
         )
+
+
+@login_required
+@role_required('faculty')
+@csrf_protect
+@require_http_methods(['POST'])
+def api_bulk_delete_consultations(request):
+    """Delete multiple completed consultations owned by the signed-in faculty member."""
+    try:
+        payload = _json_body(request)
+    except ValueError as exc:
+        return HttpResponseBadRequest(str(exc))
+    request_ids = payload.get('request_ids') if isinstance(payload, dict) else None
+    if not isinstance(request_ids, list) or not request_ids:
+        return JsonResponse({'error': 'Select at least one completed consultation.'}, status=400)
+    request_ids = list(dict.fromkeys(str(item) for item in request_ids if item))
+    if not request_ids or len(request_ids) > 100:
+        return JsonResponse({'error': 'Select between 1 and 100 consultations.'}, status=400)
+    with transaction.atomic():
+        consultations = list(ConsultationRequest.objects.select_for_update().filter(
+            request_id__in=request_ids, faculty__user=request.user, status='completed',
+        ).select_related('faculty'))
+        if len(consultations) != len(request_ids):
+            return JsonResponse({'error': 'Only your completed consultations can be deleted.'}, status=409)
+        for consultation in consultations:
+            if consultation.google_event_id:
+                connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+                if not connection or (
+                    consultation.google_calendar_id
+                    and consultation.google_calendar_id != connection.calendar_id
+                ):
+                    return JsonResponse({'error': 'Reconnect the original calendar before deleting the selected consultations.'}, status=409)
+                try:
+                    delete_consultation_event(connection, consultation)
+                except GoogleCalendarError:
+                    return JsonResponse({'error': 'Unable to remove a linked calendar event. Please try again later.'}, status=502)
+        ConsultationRequest.objects.filter(request_id__in=request_ids, faculty__user=request.user).delete()
+    return JsonResponse({'success': True, 'deleted': len(request_ids)})
 
 
 @login_required
