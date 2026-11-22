@@ -43,6 +43,8 @@
                         <p id="requestResultCount">{{ consultations|length }} request{{ consultations|length|pluralize }}</p>
                     </div>
                     <div class="filter-control">
+                        <label class="bulk-select-control"><input type="checkbox" id="selectAllConsultations"> Select all deletable</label>
+                        <button type="button" id="bulkDeleteConsultations" class="bulk-delete-btn" disabled>Delete selected</button>
                         <label for="statusFilter">Filter by status</label>
                         <select id="statusFilter" class="filter-dropdown" aria-controls="consultationRequestList">
                             <option value="all">All</option>
@@ -58,6 +60,7 @@
                     {% for consultation in consultations %}
                     <li class="request-item" data-request-id="{{ consultation.request_id }}" data-status="{{ consultation.status }}" data-meet-link="{{ consultation.google_meet_link }}">
                         <div class="request-status">
+                            {% if consultation.status != 'pending' and consultation.status != 'approved' and consultation.status != 'cancellation_requested' %}<label class="request-select-label"><input type="checkbox" class="request-select" aria-label="Select consultation with {{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }} for deletion"></label>{% endif %}
                             <span class="status-badge status-{{ consultation.status }}">{{ consultation.get_status_display }}</span>
                             {% if consultation.status != 'pending' and consultation.status != 'approved' and consultation.status != 'cancellation_requested' %}<button type="button" class="delete-request-btn" aria-label="Delete request with {{ consultation.faculty.user.get_full_name|default:consultation.faculty.user.username }}" title="Delete request" data-delete-url="{% url 'students:api_delete_consultation' consultation.request_id %}">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
