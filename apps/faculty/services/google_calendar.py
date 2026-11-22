@@ -591,11 +591,13 @@ def delete_consultation_event(connection, consultation):
         google_request(
             connection,
             'DELETE',
-            f'/calendars/{connection.calendar_id}/events/{consultation.google_event_id}',
+            f'/calendars/{consultation.google_calendar_id or connection.calendar_id}/events/{consultation.google_event_id}',
             params={'sendUpdates': 'none'},
         )
     except GoogleCalendarError as exc:
-        if '(404)' not in str(exc):
+        # Google may report an event that was removed elsewhere as either 404
+        # or 410. In both cases the requested end state is already satisfied.
+        if not any(code in str(exc) for code in ('(404)', '(410)')):
             raise
 
 
