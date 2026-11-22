@@ -19,6 +19,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const completedModal = document.getElementById('completedConsultationsModal');
     const openCompletedModalButton = document.getElementById('openCompletedConsultations');
     const closeCompletedModalButton = document.getElementById('closeCompletedConsultations');
+    const completedConsultationList = document.querySelector('.completed-consultation-list');
+    const completedConsultationPagination = document.getElementById('completedConsultationPagination');
+    const COMPLETED_CONSULTATIONS_PER_PAGE = 8;
+    let completedConsultationPage = 1;
+    const deleteCompletedModal = document.getElementById('deleteCompletedConsultationModal');
+    const cancelDeleteCompletedButton = document.getElementById('cancelDeleteCompletedConsultation');
+    const confirmDeleteCompletedButton = document.getElementById('confirmDeleteCompletedConsultation');
+    const deleteCompletedConsultationTitle = document.getElementById('deleteCompletedConsultationTitle');
+    const deleteCompletedConsultationMessage = document.getElementById('deleteCompletedConsultationMessage');
+    const selectAllCompletedConsultations = document.getElementById('selectAllCompletedConsultations');
+    const bulkDeleteCompletedConsultations = document.getElementById('bulkDeleteCompletedConsultations');
+    const completedSelectionSummary = document.getElementById('completedSelectionSummary');
+    const completedConsultationCount = document.getElementById('completedConsultationCount');
+    let pendingCompletedDelete;
     let selectedStatus = document.querySelector('.status-btn.active')?.dataset.status || 'not_set';
 
     if (statusExpiresAt?.dataset.currentExpiry) {
@@ -221,13 +235,92 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.key === 'Escape' && !completedModal?.classList.contains('hidden')) {
             setCompletedModalOpen(false);
         }
+        if (event.key === 'Escape' && !deleteCompletedModal?.classList.contains('hidden')) {
+            closeCompletedDeleteConfirmation(false);
+        }
+    });
+
+    function renderCompletedConsultationPagination(pageCount) {
+        if (!completedConsultationPagination) return;
+        completedConsultationPagination.replaceChildren();
+        pageCount = Math.max(1, pageCount);
+        const addPageButton = (label, page, ariaLabel) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'completed-page-button';
+            button.textContent = label;
+            button.setAttribute('aria-label', ariaLabel);
+            button.disabled = page < 1 || page > pageCount;
+            button.addEventListener('click', () => {
+                completedConsultationPage = page;
+                applyCompletedConsultationPagination();
+            });
+            completedConsultationPagination.appendChild(button);
+        };
+        addPageButton('‹', completedConsultationPage - 1, 'Previous completed consultation page');
+        for (let page = 1; page <= pageCount; page += 1) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `completed-page-button${page === completedConsultationPage ? ' active' : ''}`;
+            button.textContent = String(page);
+            button.setAttribute('aria-label', `Completed consultation page ${page}`);
+            button.setAttribute('aria-current', page === completedConsultationPage ? 'page' : 'false');
+            button.addEventListener('click', () => {
+                completedConsultationPage = page;
+                applyCompletedConsultationPagination();
+            });
+            completedConsultationPagination.appendChild(button);
+        }
+        addPageButton('›', completedConsultationPage + 1, 'Next completed consultation page');
+    }
+
+    function applyCompletedConsultationPagination() {
+        const items = [...(completedConsultationList?.querySelectorAll('.completed-consultation-item') || [])];
+        const pageCount = Math.ceil(items.length / COMPLETED_CONSULTATIONS_PER_PAGE);
+        completedConsultationPage = pageCount ? Math.min(completedConsultationPage, pageCount) : 1;
+        const first = (completedConsultationPage - 1) * COMPLETED_CONSULTATIONS_PER_PAGE;
+        const visible = new Set(items.slice(first, first + COMPLETED_CONSULTATIONS_PER_PAGE));
+        items.forEach(item => { item.style.display = visible.has(item) ? '' : 'none'; });
+        renderCompletedConsultationPagination(pageCount);
+    }
+
+    applyCompletedConsultationPagination();
+
+    function closeCompletedDeleteConfirmation(confirmed) {
+        deleteCompletedModal?.classList.add('hidden');
+        document.body.style.overflow = '';
+        if (pendingCompletedDelete) {
+            const resolve = pendingCompletedDelete;
+            pendingCompletedDelete = null;
+            resolve(confirmed);
+        }
+    }
+
+    function showCompletedDeleteConfirmation(title, message) {
+        return new Promise((resolve) => {
+            pendingCompletedDelete = resolve;
+            if (deleteCompletedConsultationTitle) deleteCompletedConsultationTitle.textContent = title;
+            if (deleteCompletedConsultationMessage) deleteCompletedConsultationMessage.textContent = message;
+            deleteCompletedModal?.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            cancelDeleteCompletedButton?.focus();
+        });
+    }
+
+    cancelDeleteCompletedButton?.addEventListener('click', () => closeCompletedDeleteConfirmation(false));
+    confirmDeleteCompletedButton?.addEventListener('click', () => closeCompletedDeleteConfirmation(true));
+    deleteCompletedModal?.addEventListener('click', (event) => {
+        if (event.target === deleteCompletedModal) closeCompletedDeleteConfirmation(false);
     });
 
     document.querySelectorAll('[data-delete-completed]').forEach((button) => {
         button.addEventListener('click', async () => {
             const item = button.closest('.completed-consultation-item');
             const requestId = item?.dataset.requestId;
-            if (!requestId || !window.confirm('Delete this completed consultation permanently?')) return;
+            if (!requestId || !(await showCompletedDeleteConfirmation(
+                'Delete completed consultation?',
+                'This consultation will be permanently deleted. This action cannot be undone.',
+            ))) return;
 
             button.disabled = true;
             facultyFeedback?.showLoading('Deleting completed consultation...');
@@ -242,12 +335,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.remove();
                 const remaining = document.querySelectorAll('.completed-consultation-item').length;
                 if (openCompletedModalButton) openCompletedModalButton.textContent = `Completed (${remaining})`;
+                if (completedConsultationCount) completedConsultationCount.textContent = remaining;
                 if (remaining === 0) {
                     document.querySelector('.completed-consultation-list')?.insertAdjacentHTML(
                         'beforeend',
-                        '<li class="completed-empty-state">No completed consultations yet.</li>',
+                        '<li class="completed-empty-state"><span class="completed-empty-icon" aria-hidden="true">✓</span><strong>No completed consultations yet</strong><span>Completed consultations will appear here for easy reference.</span></li>',
                     );
                 }
+                applyCompletedConsultationPagination();
                 facultyFeedback?.showToast('Completed consultation deleted.');
             } catch (error) {
                 button.disabled = false;
@@ -256,6 +351,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 facultyFeedback?.hideLoading();
             }
         });
+    });
+
+    function selectedCompletedItems() {
+        return [...(completedConsultationList?.querySelectorAll('.completed-select:checked') || [])]
+            .map(input => input.closest('.completed-consultation-item')).filter(Boolean);
+    }
+
+    function updateCompletedSelection() {
+        const selectable = [...(completedConsultationList?.querySelectorAll('.completed-select') || [])];
+        const selected = selectedCompletedItems();
+        if (bulkDeleteCompletedConsultations) {
+            bulkDeleteCompletedConsultations.disabled = selected.length === 0;
+            bulkDeleteCompletedConsultations.textContent = selected.length ? `Delete selected (${selected.length})` : 'Delete selected';
+        }
+        if (completedSelectionSummary) {
+            completedSelectionSummary.textContent = selected.length
+                ? `${selected.length} consultation${selected.length === 1 ? '' : 's'} selected`
+                : 'No consultations selected';
+        }
+        if (selectAllCompletedConsultations) {
+            selectAllCompletedConsultations.checked = selectable.length > 0 && selected.length === selectable.length;
+            selectAllCompletedConsultations.indeterminate = selected.length > 0 && selected.length < selectable.length;
+            selectAllCompletedConsultations.disabled = selectable.length === 0;
+        }
+    }
+
+    completedConsultationList?.addEventListener('change', event => {
+        if (event.target.matches('.completed-select')) updateCompletedSelection();
+    });
+    selectAllCompletedConsultations?.addEventListener('change', () => {
+        completedConsultationList?.querySelectorAll('.completed-select').forEach(input => {
+            input.checked = selectAllCompletedConsultations.checked;
+        });
+        updateCompletedSelection();
+    });
+    bulkDeleteCompletedConsultations?.addEventListener('click', async () => {
+        const items = selectedCompletedItems();
+        if (!items.length || !(await showCompletedDeleteConfirmation(
+            'Delete selected completed consultations?',
+            `You are about to permanently delete ${items.length} completed consultation${items.length === 1 ? '' : 's'}. This action cannot be undone.`,
+        ))) return;
+        const feedback = window.facultyFeedback;
+        bulkDeleteCompletedConsultations.disabled = true;
+        feedback?.showLoading('Deleting completed consultations...');
+        try {
+            const response = await fetch('/faculty/api/consultations/bulk-delete/', {
+                method: 'POST',
+                headers: {'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json'},
+                body: JSON.stringify({request_ids: items.map(item => item.dataset.requestId)}),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'Unable to delete the selected consultations.');
+            items.forEach(item => item.remove());
+            const remaining = document.querySelectorAll('.completed-consultation-item').length;
+            if (openCompletedModalButton) openCompletedModalButton.textContent = `Completed (${remaining})`;
+            if (completedConsultationCount) completedConsultationCount.textContent = remaining;
+            if (!remaining) completedConsultationList?.insertAdjacentHTML('beforeend', '<li class="completed-empty-state"><span class="completed-empty-icon" aria-hidden="true">✓</span><strong>No completed consultations yet</strong><span>Completed consultations will appear here for easy reference.</span></li>');
+            completedConsultationPage = 1;
+            applyCompletedConsultationPagination();
+            updateCompletedSelection();
+            feedback?.showToast(`${data.deleted || items.length} completed consultations deleted.`);
+        } catch (error) {
+            updateCompletedSelection();
+            feedback?.showToast(error.message, true);
+        } finally {
+            feedback?.hideLoading();
+        }
     });
 
     // --- Consultation Request Filtering and Actions ---

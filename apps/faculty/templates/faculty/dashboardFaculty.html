@@ -246,19 +246,23 @@
                 <div>
                     <span class="eyebrow">Consultation history</span>
                     <h2 id="completedConsultationsTitle">Completed Consultations</h2>
-                    <p>All consultations you have marked as completed.</p>
+                    <p><span id="completedConsultationCount">{{ completed_consultations|length }}</span> consultation{{ completed_consultations|length|pluralize }} marked as completed.</p>
                 </div>
                 <button type="button" id="closeCompletedConsultations" class="modal-close-btn"
                     aria-label="Close completed consultations">&times;</button>
+            </div>
+            <div class="completed-modal-toolbar">
+                <label class="completed-select-all"><input type="checkbox" id="selectAllCompletedConsultations"> <span>Select all on this page</span></label>
+                <span id="completedSelectionSummary" class="completed-selection-summary">No consultations selected</span>
+                <button type="button" id="bulkDeleteCompletedConsultations" class="delete-completed-btn" disabled>Delete selected</button>
             </div>
             <ul class="completed-consultation-list">
                 {% for consultation in completed_consultations %}
                 <li class="completed-consultation-item" data-request-id="{{ consultation.request_id }}">
                     <div class="completed-consultation-topline">
-                        <strong>{{ consultation.user.get_full_name|default:consultation.user.username }}</strong>
+                        <div class="completed-consultation-person"><label class="completed-select-label"><input type="checkbox" class="completed-select" aria-label="Select completed consultation for deletion"></label><strong>{{ consultation.user.get_full_name|default:consultation.user.username }}</strong></div>
                         <div class="completed-consultation-actions">
                             <span class="consultation-status status-completed">Completed</span>
-                            <button type="button" class="delete-completed-btn" data-delete-completed aria-label="Delete completed consultation with {{ consultation.user.get_full_name|default:consultation.user.username }}">Delete</button>
                         </div>
                     </div>
                     <p>
@@ -278,9 +282,22 @@
                     {% endif %}
                 </li>
                 {% empty %}
-                <li class="completed-empty-state">No completed consultations yet.</li>
+                <li class="completed-empty-state"><span class="completed-empty-icon" aria-hidden="true">✓</span><strong>No completed consultations yet</strong><span>Completed consultations will appear here for easy reference.</span></li>
                 {% endfor %}
             </ul>
+            <nav id="completedConsultationPagination" class="completed-consultation-pagination" aria-label="Completed consultation pages"></nav>
+        </div>
+    </div>
+
+    <div id="deleteCompletedConsultationModal" class="modal-overlay hidden" role="dialog" aria-modal="true"
+        aria-labelledby="deleteCompletedConsultationTitle">
+        <div class="modal completed-delete-confirm-modal">
+            <h2 id="deleteCompletedConsultationTitle">Delete completed consultation?</h2>
+            <p id="deleteCompletedConsultationMessage">This consultation will be permanently deleted. This action cannot be undone.</p>
+            <div class="completed-delete-confirm-actions">
+                <button type="button" id="cancelDeleteCompletedConsultation" class="btn-secondary">Keep consultation</button>
+                <button type="button" id="confirmDeleteCompletedConsultation" class="btn-danger">Delete consultation</button>
+            </div>
         </div>
     </div>
 

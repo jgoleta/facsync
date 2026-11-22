@@ -40,6 +40,12 @@
   position: relative;
 }
 
+.bulk-select-control { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 0.78rem; font-weight: 700; }
+.bulk-delete-btn { min-height: 42px; padding: 9px 12px; border: 1px solid #f0b7b1; border-radius: 10px; color: #b42318; background: #fff7f5; cursor: pointer; font-weight: 700; }
+.bulk-delete-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.request-select-label { display: inline-flex; margin-right: 8px; }
+.request-select { width: 17px; height: 17px; accent-color: var(--primary); }
+
 .filter-control::after {
   content: '▾';
   position: absolute;

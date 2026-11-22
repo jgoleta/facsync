@@ -30,6 +30,7 @@ urlpatterns = [
     path('api/events/', views.api_schedule_events, name='api_schedule_events'),
     path('api/events/bulk-delete/', views.api_schedule_events_bulk_delete, name='api_schedule_events_bulk_delete'),
     path('api/events/<int:pk>/', views.api_schedule_event_detail, name='api_schedule_event_detail'),
+    path('api/consultations/bulk-delete/', views.api_bulk_delete_consultations, name='api_bulk_delete_consultations'),
     path('api/consultations/<str:request_id>/', views.api_consultation, name='api_consultation'),
     path('announcements/active/', views.active_announcements, name='active_announcements'),
 ]

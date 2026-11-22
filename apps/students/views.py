@@ -268,6 +268,51 @@ def api_delete_consultation(request, request_id):
 @role_required('student')
 @require_http_methods(['POST'])
 @csrf_protect
+def api_bulk_delete_consultations(request):
+    """Delete multiple owned, non-active consultation requests atomically."""
+    try:
+        payload = _json_body(request)
+    except ValueError as exc:
+        return HttpResponseBadRequest(str(exc))
+    request_ids = payload.get('request_ids') if isinstance(payload, dict) else None
+    if not isinstance(request_ids, list) or not request_ids:
+        return JsonResponse({'error': 'Select at least one consultation to delete.'}, status=400)
+    request_ids = list(dict.fromkeys(str(item) for item in request_ids if item))
+    if not request_ids or len(request_ids) > 100:
+        return JsonResponse({'error': 'Select between 1 and 100 consultations.'}, status=400)
+
+    with transaction.atomic():
+        consultations = list(ConsultationRequest.objects.select_for_update().filter(
+            request_id__in=request_ids, user=request.user,
+        ).select_related('faculty'))
+        if len(consultations) != len(request_ids):
+            return JsonResponse({'error': 'One or more selected consultations are no longer available.'}, status=409)
+        for consultation in consultations:
+            if consultation.status in {'pending', 'approved', 'cancellation_requested'}:
+                return JsonResponse({'error': 'Pending or active consultations cannot be deleted.'}, status=409)
+            if consultation.google_event_id:
+                connection = GoogleCalendarConnection.objects.filter(
+                    user_id=consultation.faculty.user_id,
+                ).first()
+                if not connection or (
+                    consultation.google_calendar_id
+                    and consultation.google_calendar_id != connection.calendar_id
+                ):
+                    return JsonResponse({'error': 'Reconnect the faculty calendar before deleting the selected consultations.'}, status=409)
+                try:
+                    delete_consultation_event(connection, consultation)
+                except GoogleCalendarError:
+                    return JsonResponse({'error': 'Unable to remove a linked calendar event. Please try again later.'}, status=502)
+        ConsultationRequest.objects.filter(
+            request_id__in=request_ids, user=request.user,
+        ).delete()
+    return JsonResponse({'success': True, 'deleted': len(request_ids)})
+
+
+@login_required
+@role_required('student')
+@require_http_methods(['POST'])
+@csrf_protect
 def api_request_consultation_cancellation(request, request_id):
     """Reject student cancellation attempts; consultations cannot be cancelled by students."""
     return JsonResponse(

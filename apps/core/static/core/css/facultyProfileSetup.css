@@ -1,3 +1,4 @@
+#faculty-profile-form .form-group { margin-bottom: 18px; }
 #faculty-profile-form .errorlist {
   color: var(--danger);
   font-size: 0.875rem;

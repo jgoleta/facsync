@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const actionMessage = document.getElementById('consultationActionMessage');
     const cancelActionButton = document.getElementById('cancelConsultationAction');
     const confirmActionButton = document.getElementById('confirmConsultationAction');
+    const selectAllConsultations = document.getElementById('selectAllConsultations');
+    const bulkDeleteConsultations = document.getElementById('bulkDeleteConsultations');
     let resolveActionConfirmation;
 
     function closeActionModal(confirmed) {
@@ -36,6 +38,78 @@ document.addEventListener('DOMContentLoaded', () => {
     confirmActionButton?.addEventListener('click', () => closeActionModal(true));
     actionModal?.addEventListener('click', event => {
         if (event.target === actionModal) closeActionModal(false);
+    });
+
+    function selectedRequests() {
+        return [...(requestList?.querySelectorAll('.request-select:checked') || [])]
+            .map(input => input.closest('.request-item'))
+            .filter(Boolean);
+    }
+
+    function updateBulkSelection() {
+        const selectable = [...(requestList?.querySelectorAll('.request-select') || [])];
+        const selected = selectedRequests();
+        if (bulkDeleteConsultations) {
+            bulkDeleteConsultations.disabled = selected.length === 0;
+            bulkDeleteConsultations.textContent = selected.length
+                ? `Delete selected (${selected.length})`
+                : 'Delete selected';
+        }
+        if (selectAllConsultations) {
+            selectAllConsultations.checked = selectable.length > 0 && selected.length === selectable.length;
+            selectAllConsultations.indeterminate = selected.length > 0 && selected.length < selectable.length;
+            selectAllConsultations.disabled = selectable.length === 0;
+        }
+    }
+
+    requestList?.addEventListener('change', event => {
+        if (event.target.matches('.request-select')) updateBulkSelection();
+    });
+    selectAllConsultations?.addEventListener('change', () => {
+        requestList?.querySelectorAll('.request-select').forEach(input => {
+            input.checked = selectAllConsultations.checked;
+        });
+        updateBulkSelection();
+    });
+
+    bulkDeleteConsultations?.addEventListener('click', async () => {
+        const items = selectedRequests();
+        if (!items.length || !(await showActionModal(
+            'Delete selected consultations?',
+            `You are about to permanently delete ${items.length} consultation request${items.length === 1 ? '' : 's'}. Any linked calendar appointments will also be removed. This cannot be undone.`,
+            'Delete Selected',
+        ))) return;
+        bulkDeleteConsultations.disabled = true;
+        const feedback = window.studentFeedback;
+        feedback?.showLoading('Deleting selected consultations...');
+        try {
+            const cookie = document.cookie.split('; ').find(value => value.startsWith('csrftoken='));
+            const response = await fetch('/student/api/consultation-requests/bulk-delete/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': cookie ? decodeURIComponent(cookie.slice('csrftoken='.length)) : '',
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ request_ids: items.map(item => item.dataset.requestId) }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(data.error || 'Unable to delete the selected requests.');
+            items.forEach(item => item.remove());
+            if (!requestList.querySelector('.request-item') && !requestList.querySelector('.empty-state')) {
+                const empty = document.createElement('li');
+                empty.className = 'empty-state';
+                empty.textContent = 'You have no active consultation requests.';
+                requestList.appendChild(empty);
+            }
+            updateBulkSelection();
+            applyFilter();
+            feedback?.showToast(`${data.deleted || items.length} consultation request${(data.deleted || items.length) === 1 ? '' : 's'} deleted.`);
+        } catch (error) {
+            updateBulkSelection();
+            feedback?.showToast(error.message, true);
+        } finally {
+            feedback?.hideLoading();
+        }
     });
     document.addEventListener('keydown', event => {
         if (event.key === 'Escape' && actionModal && !actionModal.classList.contains('hidden')) {
@@ -147,6 +221,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (requestResultCount) {
             requestResultCount.textContent = `${matchingItems.length} request${matchingItems.length === 1 ? '' : 's'}`;
         }
+        updateBulkSelection();
     }
 
     if (statusFilter) {

@@ -13,6 +13,7 @@ from unittest.mock import patch
 from ..models import ConsultationRequest, FacultyProfile, GoogleCalendarConnection, WalkInQueue
 from ..models import ScheduleEvent
 from ..services.google_calendar import google_event_payload, refresh_faculty_status, sync_google_calendar
+from ..services.google_calendar import GoogleCalendarError, delete_consultation_event
 
 
 class FacultyViewTests(TestCase):
@@ -1624,3 +1625,15 @@ class FacultyViewTests(TestCase):
         self.assertEqual(consultation.status, 'cancelled')
         self.assertIsNone(consultation.google_event_id)
         delete_event.assert_called_once()
+
+    @patch('apps.faculty.services.google_calendar.google_request')
+    def test_completing_consultation_succeeds_when_google_event_is_already_deleted(self, google_request):
+        from types import SimpleNamespace
+        connection = SimpleNamespace(calendar_id='primary')
+        consultation = SimpleNamespace(google_event_id='deleted-event', google_calendar_id='primary')
+        google_request.side_effect = GoogleCalendarError(
+            'Google Calendar request failed (410): Resource has been deleted.'
+        )
+
+        delete_consultation_event(connection, consultation)
+        google_request.assert_called_once()
