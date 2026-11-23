@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20260903-responsive-nav" />
     <link
       rel="stylesheet"
-      href="{% static 'depthead/css/admin_management.css' %}?v=20261114-schedule-template-add-green"
+      href="{% static 'depthead/css/admin_management.css' %}?v=20261123-faculty-status-column"
     />
     <link
       rel="stylesheet"
@@ -74,6 +74,7 @@
                 <th>Name</th>
                 <th>Email</th>
                 <th>Office/Room</th>
+                <th>Status</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -85,8 +86,9 @@
                   {% include 'components/_avatar.html' with photo_url=user.avatar_url initials=user.avatar_initials avatar_class='fs-avatar-table' %}
                   {{ user.get_full_name|default:user.username }}
                 </td>
-                <td>{{ user.email }} <span class="assignment-pill">{{ user.get_account_status_display }}</span></td>
+                <td>{{ user.email }}</td>
                 <td>{{ user.faculty_profile.office_location|default:'—' }}</td>
+                <td><span class="status-tag {{ user.account_status }}">{{ user.get_account_status_display }}</span></td>
                 <td class="actions">
                   <div class="actions-content">
                   {% if user.faculty_profile %}
@@ -164,7 +166,7 @@
               </tr>
               {% empty %}
               <tr>
-                <td colspan="5" class="empty-state">
+                <td colspan="6" class="empty-state">
                   No registered faculty accounts.
                 </td>
               </tr>
