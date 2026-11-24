@@ -167,6 +167,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                     messages.error(request, 'Your school’s access to FacSync has been suspended. Please contact your school’s School Admin.')
                     raise ImmediateHttpResponse(redirect('core:login'))
                 head_departments = None
+                faculty_home = None
                 if isinstance(invite, (FacultyInvite, DeptHeadInvite)):
                     if self._verified_google_email(sociallogin) != invite.email.lower():
                         self._deny_invite(request)
@@ -182,6 +183,12 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                         sociallogin.user.department = None
                         first = head_departments[0]
                         sociallogin.user.college = first.college.code if first.college else ''
+                        if invite.include_faculty_access:
+                            faculty_home = next((d for d in head_departments if d.pk == invite.faculty_department_id), None)
+                            if (not invite.faculty_id or faculty_home is None
+                                    or (faculty_home.college_id and not faculty_home.college.is_active)):
+                                messages.error(request, 'Your invitation needs a Faculty department review. Ask your School Admin to edit and resend it.')
+                                raise ImmediateHttpResponse(redirect('core:login'))
                     else:
                         department = invite.department
                         if department is None:
@@ -205,19 +212,22 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                     saved = super().save_user(request, sociallogin, form)
                     if head_departments is not None:
                         saved.managed_departments.set(head_departments)
-                    if isinstance(invite, (DeptHeadInvite, OfficeAdminInvite)):
+                    if isinstance(invite, OfficeAdminInvite) or (isinstance(invite, DeptHeadInvite) and invite.include_faculty_access):
                         if not invite.faculty_id:
                             self._deny_invite(request)
                         faculty_college = (
-                            head_departments[0].college.code
-                            if isinstance(invite, DeptHeadInvite) and head_departments[0].college
-                            else invite.office
+                            (faculty_home.college.code if faculty_home.college_id else '')
+                            if isinstance(invite, DeptHeadInvite) else invite.office
                         )
                         UserRole.objects.get_or_create(
                             user=saved,
                             role='faculty',
                             defaults={'assigned_by': invite.invited_by},
                         )
+                        if faculty_home is not None:
+                            saved.department = faculty_home
+                            saved.college = faculty_college
+                            saved.save(update_fields=['department', 'college'])
                         FacultyProfile.objects.create(
                             faculty_id=invite.faculty_id,
                             user=saved,

@@ -58,6 +58,12 @@
 .management-dialog .modal-form-group { margin-bottom:18px; }
 .management-dialog .modal-form-group label { display:block; margin-bottom:6px; }
 .management-dialog .modal-form-group input,.management-dialog .modal-form-group select,.management-dialog .modal-form-group textarea { box-sizing:border-box; width:100%; color:var(--text-primary); background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:10px; }
+.management-dialog .faculty-access-option { display:flex; align-items:flex-start; gap:12px; margin:0 0 18px; padding:14px; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-main); cursor:pointer; }
+.management-dialog .faculty-access-option input[type=checkbox] { box-sizing:border-box; width:20px; height:20px; flex:0 0 20px; margin:1px 0 0; padding:0; accent-color:var(--primary); cursor:pointer; }
+.management-dialog .faculty-access-option strong { display:block; font-size:.9rem; font-weight:600; line-height:1.5; }
+.management-dialog .faculty-access-option small { display:block; margin-top:4px; color:var(--text-secondary); font-size:.8rem; font-weight:400; line-height:1.5; }
+.management-dialog .faculty-access-option:has(input:checked) { border-color:var(--primary); }
+.management-dialog .faculty-access-option:focus-within { outline:2px solid var(--primary); outline-offset:2px; }
 .management-dialog :disabled { cursor:wait; opacity:.65; }
 .management-loading-content { display:flex; align-items:center; flex-direction:column; gap:12px; color:var(--text-light); }
 .management-toast { position:fixed; bottom:24px; right:24px; z-index:4000; padding:14px 20px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-primary); border-radius:10px; max-width:calc(100vw - 48px); }

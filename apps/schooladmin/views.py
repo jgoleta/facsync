@@ -81,8 +81,7 @@ def school_settings(request):
 
 def _send_saved_email(sender, *args):
     try:
-        sender(*args)
-        return True
+        return sender(*args) is not False
     except Exception as error:
         logger.warning('admin_assignment_email_failed category=%s', type(error).__name__)
         return False
@@ -105,7 +104,8 @@ def _save_head_invitation(request, invite=None):
     except (ValidationError, IntegrityError) as error:
         message = ' '.join(error.messages) if isinstance(error, ValidationError) else 'This invitation already exists. Refresh and try again.'
         return JsonResponse({'success': False, 'error': message}, status=400)
-    sent = _send_saved_email(send_depthead_invite_email, saved.email, ', '.join(d.name for d in departments), saved.title)
+    sent = _send_saved_email(send_depthead_invite_email, saved.email, ', '.join(d.name for d in departments),
+        saved.title, saved.include_faculty_access, saved.faculty_department.name if saved.faculty_department_id else '')
     return JsonResponse({'success': True, 'email_sent': sent, 'message':
         'Head invitation saved and emailed.' if sent else 'Head invitation saved, but the email could not be sent.'})
 

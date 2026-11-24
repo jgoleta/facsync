@@ -1,4 +1,5 @@
 {% extends 'schooladmin/base_management.html' %}
+{% load static %}
 {% block title %}Manage Admins{% endblock %}
 {% block content %}
 <header class="main-header with-action">
@@ -35,12 +36,14 @@
                 {% for invite in admin_invites %}{% if invite.invite_type == 'head' %}<tr>
                     <td>Head</td>
                     <td>{{ invite.email }}</td>
-                    <td>{{ invite.department_names|default:'Not assigned' }}</td>
+                    <td>{{ invite.department_names|default:'Not assigned' }}{% if invite.include_faculty_access %}<br><small>Faculty: {{ invite.faculty_department.name|default:'Department needs review — edit this invitation' }}</small>{% else %}<br><small>Admin access only</small>{% endif %}</td>
                     <td>{{ invite.get_title_display }}</td>
                     <td><span class="assignment-pill">Invited</span></td>
                     <td><button class="btn-secondary" type="button" data-open-modal="headInviteModal"
                             data-edit-url="{% url 'superadmin:edit_head_invite' invite.pk %}"
                             data-email="{{ invite.email }}" data-title="{{ invite.title }}"
+                            data-include-faculty-access="{{ invite.include_faculty_access|yesno:'true,false' }}"
+                            data-faculty-id="{{ invite.faculty_id }}" data-faculty-department="{{ invite.faculty_department_id|default:'' }}"
                             data-departments="{{ invite.department_ids }}">Edit and email</button></td>
                 </tr>{% else %}<tr>
                     <td>Office Admin</td>
@@ -172,8 +175,16 @@
         <div class="modal-form-group"><label for="headInviteTitle">Title</label><select id="headInviteTitle"
                 name="title" required>{% for value,label in title_choices %}<option value="{{ value }}">{{ label }}
                 </option>{% endfor %}</select></div>
-        <div class="modal-form-group"><label for="headInviteFacultyId">Faculty ID</label><input id="headInviteFacultyId" name="faculty_id" type="text" maxlength="64" required><small class="form-hint">This admin will also receive Faculty access.</small></div>
         {% include 'schooladmin/partials/department_checkboxes.html' with checkbox_prefix='headInviteDepartment' %}
+        <label class="faculty-access-option" for="headIncludeFaculty">
+            <input id="headIncludeFaculty" name="include_faculty_access" type="checkbox" aria-describedby="headFacultyAccessHint">
+            <span><strong>Also give Faculty access</strong><small id="headFacultyAccessHint">Leave unchecked for admin access only.</small></span>
+        </label>
+        <div id="headFacultyFields" hidden>
+            <div class="modal-form-group"><label for="headInviteFacultyId">Faculty ID</label><input id="headInviteFacultyId" name="faculty_id" type="text" maxlength="64" disabled><small class="form-hint">Enter a unique Faculty ID manually.</small></div>
+            <div class="modal-form-group"><label for="headFacultyDepartment">Faculty department</label><select id="headFacultyDepartment" name="faculty_department" disabled><option value="">Choose a Faculty department</option>{% for department in departments %}<option value="{{ department.pk }}" data-college="{{ department.college.name|default:'No College' }}">{{ department.name }}</option>{% endfor %}</select><small class="form-hint">Choose their Faculty home from the departments selected above.</small></div>
+            <p class="form-hint">Faculty college: <strong id="headFacultyCollege">Select a department</strong></p>
+        </div>
         <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
                 class="btn-primary" type="submit">Save and Send Invite</button></div>
     </form>
@@ -211,3 +222,4 @@
     </form>
 </dialog>
 {% endblock %}
+{% block extra_scripts %}<script src="{% static 'schooladmin/js/headFacultyAccess.js' %}?v=20261124-head-faculty-assignment"></script>{% endblock %}
