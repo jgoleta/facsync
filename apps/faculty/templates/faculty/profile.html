@@ -87,6 +87,17 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="info-group editable-info-group" id="consultation-note-group">
+                            <label for="consultation-note-input">Consultation note</label>
+                            <div class="editable-field">
+                                <p id="consultation-note-text">{{ faculty_profile.consultation_note|default:"Not provided" }}</p>
+                                <input type="text" id="consultation-note-input" class="hidden" maxlength="255" value="{{ faculty_profile.consultation_note|default:'' }}" placeholder="e.g. Usually available Tue/Thu afternoons">
+                                <div class="field-actions">
+                                    <button type="button" id="edit-consultation-note-btn" class="edit-btn">Edit</button>
+                                    <button type="button" id="save-consultation-note-btn" class="save-btn hidden">Save</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="biography-section info-group" id="biography-group">

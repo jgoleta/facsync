@@ -19,6 +19,7 @@ class FacultyProfile(SchoolScopedModel):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='faculty_profile', db_column='user_id')
     college_id = models.CharField(max_length=64, db_column='college_id')
     office_location = models.CharField(max_length=128, blank=True)
+    consultation_note = models.CharField(max_length=255, blank=True)
     biography = models.TextField(blank=True)
     current_status = models.CharField(max_length=16, choices=STATUS_CHOICES, default='not_set')
     status_note = models.TextField(blank=True)

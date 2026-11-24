@@ -75,6 +75,13 @@ class StudentScheduleTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Schedule Faculty')
+        self.faculty.consultation_note = 'Usually available Tue/Thu afternoons'
+        self.faculty.save(update_fields=['consultation_note'])
+        response = self.client.get(
+            reverse('students:view_schedule'),
+            {'faculty_id': self.faculty.faculty_id},
+        )
+        self.assertContains(response, 'Consultation note: Usually available Tue/Thu afternoons')
         self.assertContains(response, 'maxlength="200"')
         self.assertContains(response, '0/200')
 

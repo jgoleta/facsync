@@ -1132,6 +1132,18 @@ class FacultyViewTests(TestCase):
             'Room 204',
         )
 
+        response = self.client.post(
+            reverse('faculty:profile'),
+            {'field': 'consultation_note', 'value': 'Usually available Tue/Thu afternoons'},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['value'], 'Usually available Tue/Thu afternoons')
+        self.assertEqual(
+            FacultyProfile.objects.get(pk='faculty-profile-save-test').consultation_note,
+            'Usually available Tue/Thu afternoons',
+        )
+
     def test_schedule_page_renders(self):
         user = get_user_model().objects.create_user(
             username='faculty-schedule-test',
@@ -1142,6 +1154,7 @@ class FacultyViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'faculty/scheduleFaculty.html')
         self.assertContains(response, f'href="{reverse("faculty:booking_management")}"')
+        self.assertContains(response, 'schedule-consultation-note')
 
     def _make_csv_faculty(self, suffix='csv'):
         user = get_user_model().objects.create_user(

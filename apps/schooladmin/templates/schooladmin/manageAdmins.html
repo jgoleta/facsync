@@ -172,6 +172,7 @@
         <div class="modal-form-group"><label for="headInviteTitle">Title</label><select id="headInviteTitle"
                 name="title" required>{% for value,label in title_choices %}<option value="{{ value }}">{{ label }}
                 </option>{% endfor %}</select></div>
+        <div class="modal-form-group"><label for="headInviteFacultyId">Faculty ID</label><input id="headInviteFacultyId" name="faculty_id" type="text" maxlength="64" required><small class="form-hint">This admin will also receive Faculty access.</small></div>
         {% include 'schooladmin/partials/department_checkboxes.html' with checkbox_prefix='headInviteDepartment' %}
         <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
                 class="btn-primary" type="submit">Save and Send Invite</button></div>
@@ -204,6 +205,7 @@
         <div class="modal-form-group"><label for="officeAdminOffice">Office</label><select id="officeAdminOffice"
                 name="office" required>{% for value,label in office_admin_form.office.field.choices %}<option
                     value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+        <div class="modal-form-group"><label for="officeAdminFacultyId">Faculty ID</label><input id="officeAdminFacultyId" name="faculty_id" type="text" maxlength="64" required><small class="form-hint">This admin will also receive Faculty access.</small></div>
         <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
                 class="btn-primary" type="submit">Send Invite</button></div>
     </form>

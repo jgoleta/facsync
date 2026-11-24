@@ -31,10 +31,11 @@ class SchoolEducationForm(forms.Form):
 
 class DeptHeadInviteForm(SchoolBoundModelForm):
     title = forms.ChoiceField(choices=User.TITLE_CHOICES, required=True)
+    faculty_id = forms.CharField(max_length=64, required=True, label='Faculty ID')
 
     class Meta:
         model = DeptHeadInvite
-        fields = ['email', 'departments', 'title']
+        fields = ['email', 'departments', 'title', 'faculty_id']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -52,6 +53,13 @@ class DeptHeadInviteForm(SchoolBoundModelForm):
 
     def clean_email(self):
         return validate_invite_identity(self.cleaned_data['email'].strip().lower(), instance=self.instance)
+
+    def clean_faculty_id(self):
+        value = self.cleaned_data['faculty_id'].strip()
+        from apps.faculty.models import FacultyProfile
+        if FacultyProfile._base_manager.filter(pk=value).exists():
+            raise forms.ValidationError('This Faculty ID is already in use.')
+        return value
 
 class FacultySuperInviteForm(SchoolBoundModelForm):
     unit = forms.ChoiceField(choices=[], label='Department or office')
@@ -157,10 +165,11 @@ class FacultyAssignmentForm(forms.Form):
 
 class OfficeAdminInviteForm(SchoolBoundModelForm):
     office = forms.ChoiceField(choices=[])
+    faculty_id = forms.CharField(max_length=64, required=True, label='Faculty ID')
 
     class Meta:
         model = OfficeAdminInvite
-        fields = ['email', 'office']
+        fields = ['email', 'office', 'faculty_id']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -169,3 +178,10 @@ class OfficeAdminInviteForm(SchoolBoundModelForm):
 
     def clean_email(self):
         return validate_invite_identity(self.cleaned_data['email'].strip().lower(), instance=self.instance)
+
+    def clean_faculty_id(self):
+        value = self.cleaned_data['faculty_id'].strip()
+        from apps.faculty.models import FacultyProfile
+        if FacultyProfile._base_manager.filter(pk=value).exists():
+            raise forms.ValidationError('This Faculty ID is already in use.')
+        return value

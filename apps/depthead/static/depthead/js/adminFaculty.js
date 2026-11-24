@@ -140,7 +140,7 @@
             event.preventDefault();
             const submitButton = facultyForm.querySelector('button[type="submit"]');
             if (submitButton) submitButton.disabled = true;
-            setCrudLoading(true, 'Sending faculty invitation...');
+            setCrudLoading(true, 'Adding or inviting faculty...');
 
             try {
                 const response = await fetch(facultyForm.action, {
@@ -159,12 +159,14 @@
                 }
 
                 closeFacultyModalFn();
-                showCrudToast(data.message || 'Faculty invitation created.');
+                showCrudToast(data.message || (data.existing_account
+                    ? 'Faculty access added.'
+                    : 'Faculty invitation created.'));
                 if (data.email_sent === false) showEmailFailureNote();
                 window.setTimeout(() => window.location.reload(), data.email_sent === false ? 3000 : 1100);
             } catch (error) {
                 setCrudLoading(false);
-                showCrudToast(error.message || 'Unable to create the faculty invitation.', true);
+                showCrudToast(error.message || 'Unable to add or invite the faculty account.', true);
                 if (submitButton) submitButton.disabled = false;
             }
         });

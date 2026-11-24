@@ -678,3 +678,165 @@
     gap: 8px;
   }
 }
+.schedule-consultation-note {
+  align-items: flex-start;
+  background: #f7fbff;
+  border: 1px solid #d9e8f7;
+  border-radius: 12px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  max-width: 620px;
+  padding: 11px 12px;
+}
+
+.schedule-consultation-note-icon {
+  align-items: center;
+  background: #dceeff;
+  border-radius: 50%;
+  color: var(--accent);
+  display: inline-flex;
+  flex: 0 0 22px;
+  font-size: .78rem;
+  font-weight: 800;
+  height: 22px;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.schedule-consultation-note-content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.schedule-consultation-note-label {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.schedule-consultation-note-help,
+.schedule-consultation-note-count {
+  font-size: .76rem;
+}
+
+.schedule-consultation-note-text {
+  color: #334155;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.schedule-consultation-note-count {
+  align-self: flex-end;
+  color: #64748b;
+}
+
+.schedule-consultation-note textarea {
+  border: 1px solid #b9cbe0;
+  border-radius: 7px;
+  box-sizing: border-box;
+  font: inherit;
+  line-height: 1.35;
+  margin-top: 5px;
+  min-height: 58px;
+  padding: 8px 9px;
+  resize: vertical;
+  width: 100%;
+}
+
+.schedule-consultation-note textarea:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+  outline: none;
+}
+
+.schedule-consultation-note-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.schedule-consultation-note button {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.schedule-consultation-note input {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  min-width: min(360px, 100%);
+  padding: 7px 9px;
+}
+
+.schedule-consultation-note button {
+  font-size: .8rem;
+  padding: 6px 10px;
+}
+
+@media (max-width: 640px) {
+  .schedule-consultation-note {
+    flex-wrap: wrap;
+  }
+
+  .schedule-consultation-note-actions {
+    flex-basis: 100%;
+    margin-left: 32px;
+  }
+}
+
+/* The note sits at the top of the overview sidebar, so make it read as a
+   lightweight section rather than another calendar action. */
+.schedule-shell > .legend-card > .schedule-consultation-note {
+  border: 0;
+  border-bottom: 1px solid #dce7f2;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  max-width: none;
+  padding: 16px 18px 15px;
+}
+
+.schedule-shell > .legend-card > .schedule-consultation-note .schedule-consultation-note-content {
+  gap: 3px;
+}
+
+.schedule-shell > .legend-card > .schedule-consultation-note .schedule-consultation-note-label {
+  font-size: .9rem;
+}
+
+.schedule-shell > .legend-card > .schedule-consultation-note .schedule-consultation-note-help {
+  line-height: 1.35;
+}
+
+.schedule-shell > .legend-card > .schedule-consultation-note .schedule-consultation-note-actions {
+  flex-basis: 100%;
+  margin-left: 32px;
+  margin-top: 5px;
+}
+
+.schedule-shell > .legend-card > .schedule-consultation-note .schedule-consultation-note-actions button {
+  border-radius: 6px;
+  font-size: .72rem;
+  line-height: 1.2;
+  min-height: 0;
+  padding: 5px 8px;
+  width: auto !important;
+}
+
+.schedule-shell > .legend-card > .schedule-consultation-note .schedule-consultation-note-actions button.hidden {
+  display: none !important;
+}
+
+.schedule-shell > .legend-card > .schedule-consultation-note .schedule-consultation-note-actions .secondary-button {
+  background: #fff;
+}
+
+.schedule-shell > .legend-card > .schedule-consultation-note textarea {
+  background: #fff;
+  margin-top: 7px;
+}

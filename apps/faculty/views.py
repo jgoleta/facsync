@@ -837,6 +837,8 @@ def profile(request):
         field = request.POST.get('field')
         if field == 'office_location':
             faculty_profile.office_location = request.POST.get('value', '').strip()[:128]
+        elif field == 'consultation_note':
+            faculty_profile.consultation_note = request.POST.get('value', '').strip()[:255]
         elif field == 'biography':
             faculty_profile.biography = request.POST.get('value', '').strip()
         else:

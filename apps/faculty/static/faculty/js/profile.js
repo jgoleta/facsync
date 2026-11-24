@@ -66,6 +66,38 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Consultation Note Editing ---
+    const consultationNoteGroup = document.getElementById('consultation-note-group');
+    if (consultationNoteGroup) {
+        const noteText = document.getElementById('consultation-note-text');
+        const noteInput = document.getElementById('consultation-note-input');
+        const editBtn = document.getElementById('edit-consultation-note-btn');
+        const saveBtn = document.getElementById('save-consultation-note-btn');
+
+        editBtn.addEventListener('click', () => {
+            noteText.classList.add('hidden');
+            editBtn.classList.add('hidden');
+            noteInput.classList.remove('hidden');
+            saveBtn.classList.remove('hidden');
+            noteInput.focus();
+        });
+
+        saveBtn.addEventListener('click', async () => {
+            try {
+                const consultationNote = noteInput.value.trim();
+                await saveProfileField('consultation_note', consultationNote);
+                noteText.textContent = consultationNote || 'Not provided';
+                noteText.classList.remove('hidden');
+                editBtn.classList.remove('hidden');
+                noteInput.classList.add('hidden');
+                saveBtn.classList.add('hidden');
+                facultyFeedback?.showToast('Consultation note saved successfully.');
+            } catch (error) {
+                facultyFeedback?.showToast(error.message, true);
+            }
+        });
+    }
+
     // --- Biography Editing ---
 
     // Register controls for viewing and updating the faculty biography.

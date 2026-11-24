@@ -10,7 +10,8 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect, render
 from django.contrib import messages
 from requests.exceptions import RequestException, Timeout
-from .models import Department, FacultyInvite, DeptHeadInvite, Office, OfficeAdminInvite, SuperAdminInvite, School, User
+from .models import Department, FacultyInvite, DeptHeadInvite, Office, OfficeAdminInvite, SuperAdminInvite, School, User, UserRole
+from apps.faculty.models import FacultyProfile
 from .profile_photos import safe_photo_url
 from django.db import transaction
 from .school_scope import ALL_SCHOOLS, school_scope
@@ -204,6 +205,24 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                     saved = super().save_user(request, sociallogin, form)
                     if head_departments is not None:
                         saved.managed_departments.set(head_departments)
+                    if isinstance(invite, (DeptHeadInvite, OfficeAdminInvite)):
+                        if not invite.faculty_id:
+                            self._deny_invite(request)
+                        faculty_college = (
+                            head_departments[0].college.code
+                            if isinstance(invite, DeptHeadInvite) and head_departments[0].college
+                            else invite.office
+                        )
+                        UserRole.objects.get_or_create(
+                            user=saved,
+                            role='faculty',
+                            defaults={'assigned_by': invite.invited_by},
+                        )
+                        FacultyProfile.objects.create(
+                            faculty_id=invite.faculty_id,
+                            user=saved,
+                            college_id=faculty_college,
+                        )
                     if isinstance(invite, SuperAdminInvite):
                         if saved.email.lower() != invite.email.lower():
                             self._deny_invite(request)

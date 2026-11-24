@@ -76,6 +76,44 @@
   color: var(--muted);
 }
 
+.student-consultation-note {
+  align-items: flex-start;
+  background: #f7fbff;
+  border-bottom: 1px solid #dce7f2;
+  color: #526581;
+  display: flex;
+  gap: 10px;
+  padding: 16px 18px 15px;
+}
+
+.student-consultation-note-icon {
+  align-items: center;
+  background: #dceeff;
+  border-radius: 50%;
+  color: var(--accent);
+  display: inline-flex;
+  flex: 0 0 22px;
+  font-size: .78rem;
+  font-weight: 800;
+  height: 22px;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.student-consultation-note-label {
+  color: var(--text);
+  display: block;
+  font-size: .9rem;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.student-consultation-note p {
+  line-height: 1.4;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .header-meta {
   display: flex;
   gap: 8px;
@@ -96,9 +134,15 @@
   color: #16213e;
 }
 .faculty-photo-small {
+  background: #cdd9ee;
+  display: inline-grid;
+  place-items: center;
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  color: #526581;
+  font-size: .8rem;
+  font-weight: 700;
 }
 
 .faculty-pill,

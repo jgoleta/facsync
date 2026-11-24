@@ -183,8 +183,10 @@
     const main = document.querySelector('main');
     if (!config || !main) return;
     const destinations = JSON.parse(config.textContent);
-    let overlay, timer, previous;
+    let overlay, timer, showTimer, previous;
     function reset() {
+      clearTimeout(showTimer);
+      showTimer = null;
       if (!overlay) return;
       overlay.remove(); overlay = null;
       clearTimeout(timer);
@@ -210,18 +212,20 @@
       const url = new URL(link.href, location.href);
       if (url.origin !== location.origin || url.hash || url.href === location.href || !destinations[url.pathname]) return;
       reset();
-      previous = { visibility: main.style.visibility, inert: main.inert };
       const [title, type] = destinations[url.pathname];
-      overlay = skeleton(title, type, true);
-      overlay.classList.add('faculty-transition');
-      document.body.append(overlay);
-      position();
-      previous.rootOverflow = document.documentElement.style.overflow;
-      previous.bodyOverflow = document.body.style.overflow;
-      document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
-      main.style.visibility = 'hidden'; main.inert = true;
-      timer = setTimeout(reset, 15000);
+      showTimer = setTimeout(() => {
+        previous = { visibility: main.style.visibility, inert: main.inert };
+        overlay = skeleton(title, type, true);
+        overlay.classList.add('faculty-transition');
+        document.body.append(overlay);
+        position();
+        previous.rootOverflow = document.documentElement.style.overflow;
+        previous.bodyOverflow = document.body.style.overflow;
+        document.documentElement.style.overflow = 'hidden';
+        document.body.style.overflow = 'hidden';
+        main.style.visibility = 'hidden'; main.inert = true;
+        timer = setTimeout(reset, 15000);
+      }, 180);
       queueMicrotask(() => { if (event.defaultPrevented) reset(); });
     });
     window.addEventListener('pageshow', reset);

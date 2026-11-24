@@ -198,6 +198,7 @@ class DeptHeadInvite(SchoolScopedModel):
     departments = models.ManyToManyField('core.Department', through='core.DepartmentInviteAssignment',
                                          related_name='head_invites', blank=True)
     title = models.CharField(max_length=20, choices=User.TITLE_CHOICES, blank=True, null=True)
+    faculty_id = models.CharField(max_length=64, blank=True, default='')
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='depthead_invites_sent')
     created_at = models.DateTimeField(auto_now_add=True)
     used = models.BooleanField(default=False)
@@ -209,6 +210,7 @@ class OfficeAdminInvite(SchoolScopedModel):
     school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='office_admin_invites')
     email = models.EmailField(unique=True)
     office = models.CharField(max_length=100)
+    faculty_id = models.CharField(max_length=64, blank=True, default='')
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='office_admin_invites_sent')
     created_at = models.DateTimeField(auto_now_add=True)
     used = models.BooleanField(default=False)
