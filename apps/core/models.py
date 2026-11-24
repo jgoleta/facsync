@@ -199,6 +199,9 @@ class DeptHeadInvite(SchoolScopedModel):
                                          related_name='head_invites', blank=True)
     title = models.CharField(max_length=20, choices=User.TITLE_CHOICES, blank=True, null=True)
     faculty_id = models.CharField(max_length=64, blank=True, default='')
+    include_faculty_access = models.BooleanField(default=False)
+    faculty_department = models.ForeignKey('core.Department', on_delete=models.PROTECT,
+        null=True, blank=True, related_name='faculty_head_invites')
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='depthead_invites_sent')
     created_at = models.DateTimeField(auto_now_add=True)
     used = models.BooleanField(default=False)

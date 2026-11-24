@@ -269,14 +269,15 @@ def send_faculty_status_email(student, faculty_name, status_label, url):
         fail_silently=True,
     )
 
-def send_depthead_invite_email(email, college, title):
+def send_depthead_invite_email(email, college, title, include_faculty_access=False, faculty_department=''):
     title_label = dict(User.TITLE_CHOICES).get(title, 'College Head')
-    _send_html_email(
+    return bool(_send_html_email(
         "You've been invited to FacSync",
         'depthead_invite.html',
-        {'college': college, 'title_label': title_label},
+        {'college': college, 'title_label': title_label, 'include_faculty_access': include_faculty_access,
+         'faculty_department': faculty_department},
         [email],
-    )
+    ))
 
 def send_office_admin_invite_email(email, office):
     return _send_html_email(

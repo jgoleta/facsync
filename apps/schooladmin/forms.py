@@ -31,17 +31,18 @@ class SchoolEducationForm(forms.Form):
 
 class DeptHeadInviteForm(SchoolBoundModelForm):
     title = forms.ChoiceField(choices=User.TITLE_CHOICES, required=True)
-    faculty_id = forms.CharField(max_length=64, required=True, label='Faculty ID')
+    faculty_id = forms.CharField(max_length=64, required=False, label='Faculty ID')
 
     class Meta:
         model = DeptHeadInvite
-        fields = ['email', 'departments', 'title', 'faculty_id']
+        fields = ['email', 'departments', 'title', 'include_faculty_access', 'faculty_id', 'faculty_department']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['departments'].queryset = Department.objects.filter(
             school=self.instance.school, is_active=True).select_related('college')
         self.fields['departments'].required = True
+        self.fields['faculty_department'].queryset = self.fields['departments'].queryset
 
     def clean(self):
         data = super().clean()
@@ -49,17 +50,33 @@ class DeptHeadInviteForm(SchoolBoundModelForm):
         if departments:
             first = departments[0]
             self.instance.college = first.college.code if first.college else ''
+        if data.get('include_faculty_access'):
+            faculty_id = (data.get('faculty_id') or '').strip()
+            if not faculty_id:
+                self.add_error('faculty_id', 'Enter a Faculty ID when including Faculty access.')
+            else:
+                from apps.faculty.models import FacultyProfile
+                reserved = DeptHeadInvite._base_manager.filter(used=False, faculty_id=faculty_id).exclude(pk=self.instance.pk).exists()
+                reserved = reserved or OfficeAdminInvite._base_manager.filter(used=False, faculty_id=faculty_id).exists()
+                if FacultyProfile._base_manager.filter(pk=faculty_id).exists() or reserved:
+                    self.add_error('faculty_id', 'This Faculty ID is already in use.')
+            home = data.get('faculty_department')
+            if departments:
+                if home is None and len(departments) == 1:
+                    home = data['faculty_department'] = departments[0]
+                if home is None:
+                    self.add_error('faculty_department', 'Choose the Faculty home department.')
+                elif home.pk not in {d.pk for d in departments}:
+                    self.add_error('faculty_department', 'Choose one of the departments this administrator will manage.')
+                elif home.college_id and not home.college.is_active:
+                    self.add_error('faculty_department', 'Choose a department in an active college.')
+        else:
+            data['faculty_id'] = ''
+            data['faculty_department'] = None
         return data
 
     def clean_email(self):
         return validate_invite_identity(self.cleaned_data['email'].strip().lower(), instance=self.instance)
-
-    def clean_faculty_id(self):
-        value = self.cleaned_data['faculty_id'].strip()
-        from apps.faculty.models import FacultyProfile
-        if FacultyProfile._base_manager.filter(pk=value).exists():
-            raise forms.ValidationError('This Faculty ID is already in use.')
-        return value
 
 class FacultySuperInviteForm(SchoolBoundModelForm):
     unit = forms.ChoiceField(choices=[], label='Department or office')
