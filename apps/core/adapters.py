@@ -212,6 +212,9 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                     saved = super().save_user(request, sociallogin, form)
                     if head_departments is not None:
                         saved.managed_departments.set(head_departments)
+                    if isinstance(invite, FacultyInvite) and invite.prepare_test_requests:
+                        from apps.faculty.models import FacultyTestSetup
+                        FacultyTestSetup.objects.get_or_create(user=saved)
                     if isinstance(invite, OfficeAdminInvite) or (isinstance(invite, DeptHeadInvite) and invite.include_faculty_access):
                         if not invite.faculty_id:
                             self._deny_invite(request)

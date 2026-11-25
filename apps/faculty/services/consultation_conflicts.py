@@ -58,7 +58,8 @@ def _google_interval(item):
         raise GoogleCalendarError('Unable to read calendar availability.') from error
 
 
-def booking_conflict(faculty, day, start_time, end_time, consultation_type, *, exclude_request_id=None):
+def booking_conflict(faculty, day, start_time, end_time, consultation_type, *, exclude_request_id=None,
+                     google_events=None):
     if has_appointment_conflict(faculty, day, start_time, end_time, exclude_request_id=exclude_request_id):
         return 'appointment'
     start, end = consultation_interval(day, start_time, end_time)
@@ -87,8 +88,9 @@ def booking_conflict(faculty, day, start_time, end_time, consultation_type, *, e
     if exclude_request_id:
         excluded_google_id = ConsultationRequest.objects.filter(pk=exclude_request_id, faculty=faculty,
             google_calendar_id=connection.calendar_id).values_list('google_event_id', flat=True).first()
-    for item in list_google_events(connection,
-            time_min=start.replace(tzinfo=zone).isoformat(), time_max=end.replace(tzinfo=zone).isoformat()):
+    items = google_events if google_events is not None else list_google_events(connection,
+        time_min=start.replace(tzinfo=zone).isoformat(), time_max=end.replace(tzinfo=zone).isoformat())
+    for item in items:
         if (item.get('status') == 'cancelled' or item.get('transparency') == 'transparent'
                 or any(person.get('self') and person.get('responseStatus') == 'declined'
                        for person in item.get('attendees', []))):

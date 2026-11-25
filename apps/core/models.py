@@ -187,6 +187,7 @@ class FacultyInvite(SchoolScopedModel):
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='invites_sent')
     created_at = models.DateTimeField(auto_now_add=True)
     used = models.BooleanField(default=False)  
+    prepare_test_requests = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Invite for {self.email} ({self.college})"
