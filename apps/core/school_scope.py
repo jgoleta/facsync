@@ -22,6 +22,7 @@ PATHS = {
     'core.officeclosure': ('school_id',), 'core.collegeannouncement': ('school_id',),
     'core.notification': ('recipient__school_id',), 'core.demodatabatch': ('college__school_id',),
     'faculty.facultyprofile': ('user__school_id',),
+    'faculty.facultytestsetup': ('user__school_id',),
     'faculty.googlecalendarconnection': ('user__school_id',),
     'faculty.statushistory': ('faculty__user__school_id',),
     'faculty.scheduleevent': ('faculty__user__school_id',),
