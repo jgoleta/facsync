@@ -192,7 +192,11 @@ document.addEventListener("DOMContentLoaded", () => {
           ? `Google sync failed: ${data.sync_error}`
           : `Google Calendar synced · ${events.length} event${events.length === 1 ? '' : 's'}`;
         calendarSyncStatus.className = `calendar-sync-status${data.sync_error ? ' error' : ''}`;
-        if (!data.sync_error && !data.sync_performed) {
+        if (sync && !data.calendar_connected) {
+          calendarSyncStatus.textContent = '';
+          calendarSyncStatus.className = 'calendar-sync-status';
+        }
+        if (!data.sync_error && !data.sync_performed && !(sync && !data.calendar_connected)) {
           calendarSyncStatus.textContent = !data.calendar_connected
             ? 'Connect Google Calendar in your profile to import events.'
             : !data.sync_enabled
@@ -479,11 +483,13 @@ document.addEventListener("DOMContentLoaded", () => {
   if (viewUploadPreviewBtn) {
     viewUploadPreviewBtn.addEventListener("click", async () => {
       viewUploadPreviewBtn.disabled = true;
+      showScheduleCrudLoading("Loading upload preview...");
       try {
         await loadSchedulePreview();
       } catch (error) {
         facultyFeedback?.showToast(error.message, true);
       } finally {
+        hideScheduleCrudLoading();
         viewUploadPreviewBtn.disabled = false;
       }
     });
@@ -1376,7 +1382,10 @@ document.addEventListener("DOMContentLoaded", () => {
     syncCalendarBtn.addEventListener('click', async () => {
       syncCalendarBtn.disabled = true;
       syncCalendarBtn.textContent = 'Syncing...';
-      await fetchEventsFromApi(true);
+      const data = await fetchEventsFromApi(true);
+      if (data && !data.calendar_connected) {
+        facultyFeedback?.showToast('Please connect Google Calendar first in your profile before syncing.', true);
+      }
       syncCalendarBtn.disabled = false;
       syncCalendarBtn.textContent = '↻ Sync';
     });

@@ -37,9 +37,9 @@
             </header>
 
             {% if messages %}
-            <div class="page-alerts" aria-live="polite">
+            <div id="profile-messages" hidden>
                 {% for message in messages %}
-                <div class="page-alert page-alert-{{ message.tags|default:'error' }}">{{ message }}</div>
+                <span data-message="{{ message }}" data-level="{{ message.tags|default:'error' }}"></span>
                 {% endfor %}
             </div>
             {% endif %}
@@ -183,7 +183,7 @@
         </main>
     </div>
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'faculty/js/profile.js' %}?v=20260905-profile-refresh"></script>
+    <script src="{% static 'faculty/js/profile.js' %}?v=20261126-calendar-toast"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 </html>

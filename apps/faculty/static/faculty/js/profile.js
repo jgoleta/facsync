@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const facultyFeedback = window.facultyFeedback;
+    document.querySelectorAll('#profile-messages [data-message]').forEach((message) => {
+        facultyFeedback?.showToast(message.dataset.message, message.dataset.level?.includes('error'));
+    });
 
     // --- Profile API Helpers ---
 

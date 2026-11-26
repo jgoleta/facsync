@@ -15,8 +15,12 @@ from .forms import DepartmentForm, FacultyAssignmentForm
 
 
 def form_error(form):
-    return JsonResponse({'success': False, 'error': ' '.join(
-        str(error) for errors in form.errors.values() for error in errors), 'errors': form.errors}, status=400)
+    message = ' '.join(str(error) for errors in form.errors.values() for error in errors)
+    if any(constraint in message for constraint in ('college_school_code_unique', 'college_school_name_unique')):
+        message = 'This College already exist'
+    elif any(constraint in message for constraint in ('department_school_code_unique', 'department_school_name_unique')):
+        message = 'This Department already exist'
+    return JsonResponse({'success': False, 'error': message, 'errors': form.errors}, status=400)
 
 
 @login_required

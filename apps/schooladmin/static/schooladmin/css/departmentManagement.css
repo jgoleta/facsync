@@ -67,7 +67,7 @@
 .management-dialog :disabled { cursor:wait; opacity:.65; }
 .management-loading-content { display:flex; align-items:center; flex-direction:column; gap:12px; color:var(--text-light); }
 .management-toast { position:fixed; bottom:24px; right:24px; z-index:4000; padding:14px 20px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-primary); border-radius:10px; max-width:calc(100vw - 48px); }
-.management-toast.error { color:var(--danger); }
+.management-toast.error { color:#fff; background:var(--danger); border-color:var(--danger); }
 .management-dialog button[type=submit][disabled]::before { content:''; display:inline-block; width:12px; height:12px; margin-right:8px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .8s linear infinite; }
 @media(max-width:700px) { .department-management .main-header.with-action { align-items:stretch; flex-direction:column; gap:16px; } }
 

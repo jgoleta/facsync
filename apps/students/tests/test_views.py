@@ -82,8 +82,8 @@ class StudentScheduleTests(TestCase):
             {'faculty_id': self.faculty.faculty_id},
         )
         self.assertContains(response, 'Consultation note: Usually available Tue/Thu afternoons')
-        self.assertContains(response, 'maxlength="200"')
-        self.assertContains(response, '0/200')
+        self.assertContains(response, 'maxlength="100"')
+        self.assertContains(response, '0/100')
 
     def test_consultation_booking_requires_and_saves_agenda(self):
         self.client.force_login(self.student)
@@ -106,9 +106,9 @@ class StudentScheduleTests(TestCase):
         self.assertEqual(consultation.agenda, 'project_consultation')
         self.assertEqual(response.json()['agenda_label'], 'Project Consultation')
 
-    def test_consultation_booking_accepts_a_200_character_message(self):
+    def test_consultation_booking_accepts_a_100_character_message(self):
         self.client.force_login(self.student)
-        note = 'x' * 200
+        note = 'x' * 100
         response = self.client.post(
             reverse('students:api_consultation_requests'),
             data=json.dumps({
@@ -124,7 +124,7 @@ class StudentScheduleTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(ConsultationRequest.objects.get().student_message, note)
 
-    def test_consultation_booking_rejects_a_201_character_message(self):
+    def test_consultation_booking_rejects_a_101_character_message(self):
         self.client.force_login(self.student)
         response = self.client.post(
             reverse('students:api_consultation_requests'),
@@ -133,13 +133,13 @@ class StudentScheduleTests(TestCase):
                 'date': date.today().isoformat(),
                 'start_time': '10:00',
                 'agenda': 'project_consultation',
-                'message': 'x' * 201,
+                'message': 'x' * 101,
             }),
             content_type='application/json',
         )
 
         self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()['error'], 'Note must be 200 characters or fewer.')
+        self.assertEqual(response.json()['error'], 'Note must be 100 characters or fewer.')
         self.assertFalse(ConsultationRequest.objects.exists())
 
     def test_whitespace_only_consultation_message_is_saved_as_empty(self):

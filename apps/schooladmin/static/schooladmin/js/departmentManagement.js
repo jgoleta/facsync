@@ -40,6 +40,13 @@
     item.setAttribute('role', error ? 'alert' : 'status'); item.textContent = message;
     document.body.appendChild(item); setTimeout(() => item.remove(), 5000);
   }
+  function userFacingError(message) {
+    if (['college_school_code_unique', 'college_school_name_unique'].some(constraint => message.includes(constraint)))
+      return 'This College already exist';
+    if (['department_school_code_unique', 'department_school_name_unique'].some(constraint => message.includes(constraint)))
+      return 'This Department already exist';
+    return message;
+  }
   try {
     const warning = sessionStorage.getItem('managementDeliveryWarning');
     if (warning) { sessionStorage.removeItem('managementDeliveryWarning'); toast(warning, true); }
@@ -115,8 +122,8 @@
       }
       setTimeout(() => window.location.reload(), 800);
     } catch (failure) {
-      const message = failure instanceof TypeError ? 'The connection was interrupted. Check the list before retrying; the change may have been saved.' : failure.message;
-      if (error) { error.textContent = message; error.hidden = false; } else toast(message, true);
+      const message = userFacingError(failure instanceof TypeError ? 'The connection was interrupted. Check the list before retrying; the change may have been saved.' : failure.message);
+      if (error && form.dataset.toastErrors !== 'true') { error.textContent = message; error.hidden = false; } else toast(message, true);
     } finally {
       if (!succeeded) { processing = false; enabled.forEach(input => input.disabled = false); form.removeAttribute('aria-busy'); overlay?.classList.remove('show'); overlay?.setAttribute('aria-hidden','true'); }
     }

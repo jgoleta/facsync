@@ -365,13 +365,17 @@ def manage_faculty(request):
 def manage_students(request):
     student_accounts = with_consultation_counts(User.objects.filter(role='student')).select_related('department__college').order_by('first_name', 'last_name', 'pk')
     department_filter = _department_filter(request, allow_unassigned=True)
+    college_filter = _choice_filter(request, 'college', College.objects.all()) if request.user.school.offers_college else ''
     if department_filter == 'unassigned':
         student_accounts = student_accounts.filter(department__isnull=True)
     elif department_filter:
         student_accounts = student_accounts.filter(department_id=department_filter)
+    if college_filter:
+        student_accounts = student_accounts.filter(department__college_id=college_filter)
     return render(request, 'schooladmin/manageStudents.html', {
         'departments': Department.objects.order_by('name'), 'department_filter': department_filter,
-        'filter_query': _filter_query(request, ['department']),
+        'college_filter': college_filter, 'colleges': College.objects.order_by('name'),
+        'filter_query': _filter_query(request, ['department', 'college']),
         'student_accounts': Paginator(student_accounts, 12).get_page(request.GET.get('students_page'))
     })
 

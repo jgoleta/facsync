@@ -61,7 +61,7 @@ function getStatusLabel(status) {
     virtual_only: "Virtual only",
     on_leave: "On leave",
     unavailable: "Unavailable",
-  }[status] || "Status unavailable";
+  }[status] || "Status Not Set";
 }
 
 function populateColleges() {
