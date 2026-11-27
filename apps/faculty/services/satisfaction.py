@@ -2,6 +2,7 @@
 from django.db.models import Avg, Count
 
 MINIMUM_RATINGS = 5
+MAXIMUM_RATING = 5
 
 
 def satisfaction_summary(consultations):
@@ -12,5 +13,6 @@ def satisfaction_summary(consultations):
         'response_count': result['response_count'],
         'minimum_responses': MINIMUM_RATINGS,
         'has_enough_data': enough,
-        'average': round(result['average'], 1) if enough else None,
+        'maximum_rating': MAXIMUM_RATING,
+        'average': min(round(result['average'], 1), MAXIMUM_RATING) if enough else None,
     }

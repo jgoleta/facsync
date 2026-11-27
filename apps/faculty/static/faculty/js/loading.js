@@ -35,6 +35,31 @@
       ])
     ]);
   }
+  function studentSchedulePage() {
+    const days = Array.from({ length: 35 }, (_, index) => {
+      const cell = block('student-schedule-day', [shape('day-label')]);
+      if (index > 6 && index % 4 !== 1) {
+        cell.append(block('student-schedule-event', [shape(), shape('short')]));
+      }
+      return cell;
+    });
+    return block('faculty-skeleton-layout student-schedule-layout', [
+      block('student-schedule-card', [
+        block('student-schedule-header', [
+          block('student-schedule-heading', [shape('eyebrow'), shape('schedule-title'), shape('schedule-subtitle')]),
+          block('student-schedule-faculty', [shape('faculty-avatar'), block('faculty-copy', [shape('faculty-name'), shape('faculty-status')]), shape('notify-button')]),
+        ]),
+        block('student-schedule-controls', [shape('view-button active'), shape('view-button'), shape('view-button')]),
+        block('student-schedule-calendar', days),
+      ]),
+      block('student-schedule-sidebar', [
+        block('student-schedule-note', [shape('note-icon'), block('note-copy', [shape('note-label'), shape('note-line'), shape('note-line short')])]),
+        block('student-schedule-legend', [shape('legend-kicker'), shape('legend-title'), shape('legend-copy'), block('legend-items', [shape(), shape(), shape()])]),
+        block('student-schedule-queue', [shape('queue-title'), shape('queue-copy'), shape('queue-status'), shape('queue-button')]),
+        block('student-schedule-actions', [shape('action-button'), shape('action-link')]),
+      ]),
+    ]);
+  }
   function dashboardPage() {
     const statuses = ['available', 'busy', 'virtual', 'leave', 'unavailable'].map(type => shape(`status-${type}`));
     const metrics = Array.from({ length: 3 }, () => block('faculty-skeleton-metric', [shape('metric-value'), shape('metric-label')]));
@@ -54,8 +79,8 @@
     ]);
   }
   function profilePage() {
-    const detailFields = Array.from({ length: 4 }, (_, index) => block('faculty-skeleton-profile-field', [shape('field-label'), block('field-value', [shape(index % 2 ? 'medium' : '')])]));
-    const syncOptions = Array.from({ length: 2 }, () => block('faculty-skeleton-sync-option', [block('sync-copy', [shape('medium'), shape('short')]), shape('toggle')]));
+    const detailFields = Array.from({ length: 5 }, (_, index) => block('faculty-skeleton-profile-field', [shape('field-label'), block('field-value', [shape(index % 2 ? 'medium' : '')])]));
+    const syncOptions = [block('faculty-skeleton-sync-preference', [shape('medium'), shape('short'), shape('short')])];
     const shortcuts = Array.from({ length: 3 }, () => block('faculty-skeleton-shortcut', [shape(), shape('arrow')]));
     return block('faculty-skeleton-layout profile-page', [
       block('faculty-skeleton-profile-header', [block('profile-header-copy', [shape('eyebrow'), shape('profile-title'), shape('subtitle')]), shape('account-badge')]),
@@ -70,6 +95,27 @@
           block('shortcuts-card', [block('aside-heading', [shape('eyebrow'), shape('section-title')]), ...shortcuts])
         ])
       ])
+    ]);
+  }
+  function queuePage() {
+    const queueItems = Array.from({ length: 3 }, () => block('faculty-skeleton-queue-item', [
+      block('queue-item-copy', [shape('queue-item-title'), shape('queue-item-meta'), shape('queue-item-note')]),
+      block('queue-item-actions', [shape(), shape()]),
+    ]));
+    return block('faculty-skeleton-layout queue-page', [
+      block('queue-page-heading', [
+        block('queue-heading-copy', [shape('eyebrow'), shape('queue-title'), shape('queue-subtitle')]),
+        block('queue-page-actions', [shape('queue-toggle'), shape('queue-button'), shape('queue-button')]),
+      ]),
+      block('queue-overview-skeleton', [
+        block('queue-overview-panel availability', [shape('overview-icon'), block('overview-copy', [shape('overview-label'), shape('overview-value')])]),
+        block('queue-overview-panel', [shape('overview-label'), shape('overview-stat')]),
+        block('queue-overview-panel overview-update', [shape('overview-label'), shape('overview-value'), shape('overview-note')]),
+      ]),
+      block('queue-card-skeleton', [
+        block('queue-card-heading', [shape('section-title'), shape('section-copy')]),
+        ...queueItems,
+      ]),
     ]);
   }
   function studentHomePage() {
@@ -140,14 +186,14 @@
       ])
     ]);
   }
-  function skeleton(title, type, fullPage = false) {
+  function skeleton(title, type, fullPage = false, studentPage = false) {
     const box = document.createElement('section');
     box.className = `faculty-skeleton faculty-skeleton-${type}`;
     const status = document.createElement('p');
     status.setAttribute('role', 'status');
     status.textContent = `Loading ${title}…`;
     box.append(status);
-    const layout = fullPage && type === 'calendar' ? schedulePage() : fullPage && type === 'dashboard' ? dashboardPage() : fullPage && type === 'profile' ? profilePage() : fullPage && type === 'student-home' ? studentHomePage() : fullPage && type === 'student-dashboard' ? studentDashboardPage() : fullPage && type === 'student-requests' ? studentRequestsPage() : (() => {
+    const layout = fullPage && type === 'calendar' ? (studentPage ? studentSchedulePage() : schedulePage()) : fullPage && type === 'dashboard' ? dashboardPage() : fullPage && type === 'profile' ? profilePage() : fullPage && type === 'queue' ? queuePage() : fullPage && type === 'student-home' ? studentHomePage() : fullPage && type === 'student-dashboard' ? studentDashboardPage() : fullPage && type === 'student-requests' ? studentRequestsPage() : (() => {
       const shapes = document.createElement('div');
       shapes.className = 'faculty-skeleton-shapes';
       for (let i = 0; i < (type === 'calendar' ? 35 : 4); i++) {
@@ -159,12 +205,12 @@
     })();
     layout.setAttribute('aria-hidden', 'true');
     box.append(layout);
-    if (type.startsWith('student-')) box.classList.add('student-transition');
+    if (studentPage || type.startsWith('student-')) box.classList.add('student-transition');
     return box;
   }
   window.facultyInitialLoading = window.pageInitialLoading = (region, title, type) => {
     if (!region) return () => {};
-    const box = skeleton(title, type);
+    const box = skeleton(title, type, false, Boolean(document.getElementById('student-navigation-destinations')));
     const children = Array.from(region.children);
     const saved = children.map(child => [child, child.style.visibility, child.inert]);
     saved.forEach(([child]) => { child.style.visibility = 'hidden'; child.inert = true; });
@@ -200,9 +246,10 @@
       const rect = main.getBoundingClientRect();
       const header = document.querySelector('.topbar')?.getBoundingClientRect();
       const top = Math.max(0, header?.bottom || 0, rect.top);
-      const isDashboard = overlay.classList.contains('faculty-skeleton-dashboard');
-      const width = isDashboard ? Math.min(innerWidth * 0.96, 1600) : rect.width;
-      const left = isDashboard ? (innerWidth - width) / 2 : rect.left;
+      // Cover the complete content viewport. A narrower skeleton left strips
+      // exposed the previous page while navigation was in progress.
+      const width = innerWidth;
+      const left = 0;
       Object.assign(overlay.style, { left: `${left}px`, top: `${top}px`, width: `${width}px`, height: `${Math.max(0, innerHeight - top)}px` });
     }
     document.addEventListener('click', event => {
@@ -213,19 +260,22 @@
       if (url.origin !== location.origin || url.hash || url.href === location.href || !destinations[url.pathname]) return;
       reset();
       const [title, type] = destinations[url.pathname];
-      showTimer = setTimeout(() => {
-        previous = { visibility: main.style.visibility, inert: main.inert };
-        overlay = skeleton(title, type, true);
-        overlay.classList.add('faculty-transition');
-        document.body.append(overlay);
-        position();
-        previous.rootOverflow = document.documentElement.style.overflow;
-        previous.bodyOverflow = document.body.style.overflow;
-        document.documentElement.style.overflow = 'hidden';
-        document.body.style.overflow = 'hidden';
-        main.style.visibility = 'hidden'; main.inert = true;
-        timer = setTimeout(reset, 15000);
-      }, 180);
+      const studentPage = Boolean(document.getElementById('student-navigation-destinations'));
+      // Start the transition during the click event so the current page is
+      // hidden before the browser paints another frame. Delaying this by a
+      // timer briefly exposed the previous page behind the destination
+      // skeleton on fast navigation.
+      previous = { visibility: main.style.visibility, inert: main.inert };
+      overlay = skeleton(title, type, true, studentPage);
+      overlay.classList.add('faculty-transition');
+      document.body.append(overlay);
+      previous.rootOverflow = document.documentElement.style.overflow;
+      previous.bodyOverflow = document.body.style.overflow;
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+      main.style.visibility = 'hidden'; main.inert = true;
+      position();
+      timer = setTimeout(reset, 15000);
       queueMicrotask(() => { if (event.defaultPrevented) reset(); });
     });
     window.addEventListener('pageshow', reset);

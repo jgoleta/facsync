@@ -618,10 +618,10 @@ def dashboard(request):
     faculty_consultations = ConsultationRequest.objects.filter(faculty=faculty_profile) if faculty_profile else ConsultationRequest.objects.none()
     consultation_requests = faculty_consultations.exclude(
         status__in={'completed', 'declined', 'cancelled'},
-    ).select_related('user').order_by('-date', '-start_time')
+    ).select_related('user').order_by('date', 'start_time', 'requested_at', 'request_id')
     completed_consultations = faculty_consultations.filter(
         status='completed',
-    ).select_related('user').order_by('-date', '-start_time')
+    ).select_related('user').order_by('date', 'start_time', 'requested_at', 'request_id')
     today = timezone.localdate()
     consultation_counts = faculty_consultations.aggregate(
         pending=Count('request_id', filter=Q(status='pending')),
@@ -1161,6 +1161,14 @@ def api_walk_in_preference(request):
     if not isinstance(enabled, bool):
         return JsonResponse({'error': 'enabled must be true or false.'}, status=400)
 
+    if enabled:
+        refresh_faculty_status(faculty)
+        if faculty.current_status != 'available':
+            return JsonResponse({
+                'error': 'Set your faculty status to Available before enabling walk-ins.',
+                'status_required': 'available',
+            }, status=409)
+
     faculty.walk_ins_enabled = enabled
     faculty.save(update_fields=['walk_ins_enabled'])
     return JsonResponse({'walk_ins_enabled': faculty.walk_ins_enabled})
@@ -1372,12 +1380,15 @@ def calendar_preference(request):
         try:
             sync_google_calendar(request.user)
         except GoogleCalendarError as exc:
+            connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
             return JsonResponse({
-                'sync_enabled': True,
+                'sync_enabled': bool(connection),
+                'connected': connection is not None,
                 'error': str(exc),
             }, status=502)
+        connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
     return JsonResponse({
-        'sync_enabled': True,
+        'sync_enabled': bool(connection),
         'connected': connection is not None,
         'last_synced_at': connection.last_synced_at.isoformat() if connection and connection.last_synced_at else None,
     })
@@ -1408,6 +1419,13 @@ def api_schedule_events(request):
                 sync_error = str(exc)
         elif sync_requested and not calendar_connected:
             sync_error = 'Connect Google Calendar before syncing.'
+
+        # Token expiry/invalid_grant handling may remove the connection while
+        # the sync is running. Re-read it so the response cannot claim that a
+        # calendar is still connected after the local credential was cleared.
+        connection = GoogleCalendarConnection.objects.filter(user=request.user).first()
+        calendar_connected = connection is not None
+        sync_enabled = bool(connection)
 
         events = list(ScheduleEvent.objects.filter(faculty=faculty))
         approved_consultations = list(

@@ -1,6 +1,6 @@
 <div class="satisfaction-summary">
     {% if satisfaction.has_enough_data %}
-    <p><strong>{{ satisfaction.average|floatformat:1 }} / 10</strong> average satisfaction</p>
+    <p><strong>{{ satisfaction.average|floatformat:1 }} / {{ satisfaction.maximum_rating }}</strong> average satisfaction</p>
     {% else %}
     <p>Not enough data yet.</p>
     {% endif %}

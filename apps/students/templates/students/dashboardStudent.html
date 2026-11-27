@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Student Dashboard - Faculty</title>
     <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}?v=20260819-status-colors">
-    <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20260903-status-labels">
+    <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20261127-busy-status-shadow">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     <link rel="stylesheet" href="{% static 'css/announcements.css' %}">
     <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}?v=20261014-modal">
@@ -77,6 +77,7 @@
             <div id="collegeStatusBanner" class="hidden"></div>
 
             <section id="facultyGrid" class="grid" aria-live="polite" aria-label="Faculty availability cards">
+                <p class="faculty-directory-loading" role="status">Loading faculty availability&hellip;</p>
             </section>
             <nav id="facultyPagination" class="faculty-pagination" aria-label="Faculty pages"></nav>
             </section>
@@ -87,7 +88,7 @@
     {{ closed_colleges|json_script:"closed-colleges" }}
 
     <script src="{% static 'students/js/studentFeedback.js' %}?v=20260827-student-feedback"></script>
-    <script src="{% static 'students/js/dashboardStudent.js' %}?v=20261126-status-not-set"></script>
+    <script src="{% static 'students/js/dashboardStudent.js' %}?v=20261127-schedule-loading"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 {% url 'students:active_announcements' as announcement_fetch_url %}
     {% include 'partials/announcementModal.html' %}

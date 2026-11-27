@@ -10,6 +10,7 @@ from apps.core.consultation_emails import queue_consultation_email
 
 from django.contrib.auth.decorators import login_required
 from apps.core.decorators import role_required
+from django.conf import settings
 from django.db import transaction
 from django.http import HttpResponse, HttpResponseBadRequest, JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -97,23 +98,46 @@ def _faculty_directory(closed_college_codes=None, student=None):
             FacultyStatusSubscription.objects.filter(student=student)
             .values_list('faculty_id', flat=True)
         )
+    offices = {
+        office.code.casefold(): office
+        for office in Office.objects.filter(school_id=student.school_id).only('code', 'name')
+    } if student else {}
+    colleges = {
+        college.code.casefold(): college
+        for college in College.objects.filter(school_id=student.school_id).only('code', 'name')
+    } if student else {}
+    closed_units = OfficeClosure.objects.filter(
+        school_id=student.school_id, is_closed=True,
+    ).values_list('department_id', 'college') if student else []
+    closed_department_ids = {department_id for department_id, _ in closed_units if department_id}
+    closed_office_codes = {
+        str(college_code).strip().casefold()
+        for department_id, college_code in closed_units
+        if not department_id and college_code
+    }
     directory = []
     for faculty in StudentEligibility(student).faculty().select_related('user__department__college'):
         refresh_faculty_status(faculty)
-        office = Office.objects.filter(code__iexact=faculty.college_id).first()
-        college = College.objects.filter(code__iexact=faculty.college_id).first()
+        unit_code = str(faculty.college_id or '').strip().casefold()
+        office = offices.get(unit_code)
+        college = colleges.get(unit_code)
+        is_department = bool(faculty.user.department_id)
+        is_closed = (
+            faculty.user.department_id in closed_department_ids
+            if is_department else unit_code in closed_office_codes
+        )
         directory.append({
             'faculty_id': faculty.faculty_id,
             'name': faculty.user.get_full_name() or faculty.user.username,
             'photo_url': faculty.user.avatar_url,
             'college': faculty.user.department.name if faculty.user.department_id else office.name if office else college.name if college else faculty.college_name,
             'college_label': faculty.user.department.college.name if faculty.user.department_id and faculty.user.department.college_id else '',
-            'unit_type': 'office' if office and not faculty.user.department_id else 'college',
+            'unit_type': 'office' if office and not is_department else 'college',
             'status': faculty.current_status,
-            'note': 'Department closed' if faculty_closed(faculty) else faculty.status_note,
+            'note': 'Department closed' if is_closed else faculty.status_note,
             'walk_ins_enabled': faculty.walk_ins_enabled,
             'updated_at': faculty.status_updated_at.isoformat() if faculty.status_updated_at else None,
-            'is_college_closed': faculty_closed(faculty),
+            'is_college_closed': is_closed,
             'is_subscribed': faculty.faculty_id in subscribed_faculty_ids,
         })
     return directory
@@ -125,10 +149,12 @@ def _closed_college_codes():
 @role_required('student')
 @student_profile_required
 def dashboard(request):
-    faculty_directory = _faculty_directory(_closed_college_codes(), request.user)
+    # Keep the first HTML response small so the dashboard can paint immediately.
+    # The browser loads the directory through api_faculty_statuses after first
+    # paint, which also ensures the initial cards use a fresh status snapshot.
     closed_colleges = _closed_college_map(request.user)
     return render(request, 'students/dashboardStudent.html', {
-        'faculty_directory': faculty_directory,
+        'faculty_directory': [],
         'existing_walk_ins': WalkInQueue.objects.filter(user=request.user, status__in=['waiting', 'called'])
             .exclude(faculty_id__in=StudentEligibility(request.user).faculty().values('pk')).select_related('faculty__user'),
         'availability_questions': [(key, text) for key, text in QUESTIONS.items() if key not in UPDATE_QUESTIONS],
@@ -155,8 +181,6 @@ def view_schedule(request):
     if not profile_ready(request.user):
         return profile_response(request)
     faculty = _faculty_for_schedule(request)
-    if faculty:
-        refresh_faculty_status(faculty)
     closure = None
     if faculty:
         closure = unit_closures(faculty.user).filter(is_closed=True).first()
@@ -215,7 +239,9 @@ def consultation_requests(request):
     """Show only the signed-in student's consultation requests."""
     consultations = ConsultationRequest.objects.filter(
         user=request.user,
-    ).select_related('faculty__user')
+    ).select_related('faculty__user').order_by(
+        'date', 'start_time', 'requested_at', 'request_id',
+    )
     for consultation in consultations:
         if consultation.status == 'approved' and not consultation.google_meet_link:
             connection = GoogleCalendarConnection.objects.filter(user_id=consultation.faculty.user_id).first()
@@ -352,8 +378,8 @@ def rate_consultation(request, request_id):
         rating = _json_body(request).get('rating')
     except ValueError as error:
         return JsonResponse({'error': str(error)}, status=400)
-    if type(rating) is not int or not 1 <= rating <= 10:
-        return JsonResponse({'error': 'Choose a whole-number rating from 1 to 10.'}, status=400)
+    if type(rating) is not int or not 1 <= rating <= 5:
+        return JsonResponse({'error': 'Choose a whole-number rating from 1 to 5.'}, status=400)
     with transaction.atomic():
         consultation = get_object_or_404(ConsultationRequest.objects.select_for_update(),
             pk=request_id, user=request.user)
@@ -376,7 +402,9 @@ def api_consultation_requests(request):
     """List or create consultation requests owned by the signed-in student."""
     consultations = ConsultationRequest.objects.filter(
         user=request.user,
-    ).select_related('faculty__user')
+    ).select_related('faculty__user').order_by(
+        'date', 'start_time', 'requested_at', 'request_id',
+    )
 
     if request.method == 'GET':
         for consultation in consultations:
@@ -400,7 +428,10 @@ def api_consultation_requests(request):
     except (TypeError, ValueError, KeyError) as exc:
         return JsonResponse({'error': 'A valid faculty, date, and start time are required.'}, status=400)
 
-    appointment_start = timezone.make_aware(datetime.combine(date_value, start_time), ZoneInfo('Asia/Manila'))
+    appointment_timezone = ZoneInfo(
+        getattr(settings, 'GOOGLE_CALENDAR_TIME_ZONE', settings.TIME_ZONE)
+    )
+    appointment_start = timezone.make_aware(datetime.combine(date_value, start_time), appointment_timezone)
     if appointment_start <= timezone.now():
         return JsonResponse({'error': 'Choose a future consultation date and time.'}, status=400)
     if date_value.weekday() == 6 or not time(9) <= start_time <= time(17):
@@ -458,6 +489,7 @@ def api_consultation_requests(request):
             request_id=uuid.uuid4().hex,
             user=request.user,
             faculty=faculty,
+            department_id=faculty.user.department_id,
             date=date_value,
             start_time=start_time,
             end_time=end_time,
@@ -497,14 +529,13 @@ def home(request):
 
     student_college = request.user.department.name if request.user.department_id else request.user.school.name
     college_announcement = active_announcement_queryset(request.user.college, audience='students', student=request.user).first()
-    available_faculty_count = 0
-    department_faculty_count = 0
-    for faculty in StudentEligibility(request.user).faculty().select_related('user'):
-        refresh_faculty_status(faculty)
-        if faculty.current_status == 'available':
-            available_faculty_count += 1
-            if request.user.department_id and faculty.user.department_id == request.user.department_id:
-                department_faculty_count += 1
+    eligible_faculty = StudentEligibility(request.user).faculty()
+    available_faculty = eligible_faculty.filter(current_status='available')
+    available_faculty_count = available_faculty.count()
+    department_faculty_count = (
+        available_faculty.filter(user__department_id=request.user.department_id).count()
+        if request.user.department_id else 0
+    )
 
     return render(request, 'students/homeStudent.html', {
         'upcoming_booking_count': upcoming_booking_count,
@@ -534,9 +565,9 @@ def api_faculty_status_subscription(request, faculty_id):
     if request.method not in {'GET', 'POST', 'DELETE'}:
         return HttpResponse(status=405)
 
-    if request.method != 'DELETE' and not profile_ready(request.user):
+    if not profile_ready(request.user):
         return profile_response(request)
-    eligible = FacultyProfile.objects.all() if request.method == 'DELETE' else StudentEligibility(request.user).faculty()
+    eligible = StudentEligibility(request.user).faculty()
     faculty = get_object_or_404(eligible, faculty_id=faculty_id)
     subscription = FacultyStatusSubscription.objects.filter(
         student=request.user,

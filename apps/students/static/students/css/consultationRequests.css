@@ -484,12 +484,12 @@ body {
   flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  gap: 16px;
+  gap: 12px;
   overflow: hidden;
   box-sizing: border-box;
   height: 100%;
-  min-height: 270px;
-  padding: 19px;
+  min-height: 230px;
+  padding: 16px;
   border-radius: 16px;
   background: #fff;
   box-shadow: 0 7px 20px rgba(15, 38, 71, 0.05);
@@ -520,7 +520,7 @@ body {
   display: flex;
   align-items: center;
   gap: 11px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   padding-right: 0;
 }
 
@@ -564,14 +564,32 @@ body {
 }
 
 .request-info .request-time {
-  margin-bottom: 14px;
-  padding: 11px 12px;
+  margin: 0 0 12px;
+  padding: 9px 10px;
   border: 1px solid #dce8f6;
   border-radius: 11px;
   background: #f3f8ff;
   color: #38506d;
   font-size: 0.84rem;
   line-height: 1.5;
+}
+
+/* Keep completed-rating content evenly separated from the appointment date
+   and from the other controls, regardless of optional card text. */
+.request-info .consultation-rating {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+
+.request-info .consultation-rating p {
+  margin: 0;
+}
+
+.request-info .consultation-rating .rating-open-btn {
+  margin: 0;
 }
 
 .detail-label {
@@ -586,22 +604,32 @@ body {
 
 .request-info .request-message,
 .request-info .faculty-note {
-  margin-top: 12px;
-  padding: 10px 11px;
+  margin: 0;
+  padding: 8px 10px;
   border: 0;
   border-radius: 10px;
   background: #f8fafc;
-  font-size: 0.84rem;
-  line-height: 1.5;
+  font-size: 0.8rem;
+  line-height: 1.35;
 }
 
 .request-info .faculty-note {
   background: #eef6ff;
 }
 
+.request-notes-slot {
+  display: flex;
+  min-height: 64px;
+  max-height: 64px;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
 .request-item > .request-id {
   margin: 0;
-  padding-top: 12px;
+  padding-top: 8px;
   border-top: 1px dashed #d8e2ef;
   font-size: 0.7rem;
   color: var(--muted);
@@ -616,23 +644,35 @@ body {
 }
 
 .request-status {
-  position: static;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 40px;
   min-width: 0;
+}
+
+.request-status .status-badge {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
+.request-status .request-select-label {
+  margin: 0 auto 0 0;
+}
+
+.request-status .delete-request-btn {
+  margin-left: auto;
 }
 
 .request-item .delete-request-btn:focus-visible {
   outline: 3px solid #175fbb;
   outline-offset: 3px;
-}
-
-.request-status .status-badge {
-  padding: 5px 10px;
-  font-size: 0.72rem;
-  letter-spacing: 0.02em;
 }
 
 .empty-state,

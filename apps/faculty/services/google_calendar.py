@@ -104,7 +104,13 @@ def callback_url(request):
     configured_url = getattr(settings, 'GOOGLE_CALENDAR_REDIRECT_URI', '')
     if configured_url:
         return configured_url
-    return request.build_absolute_uri(reverse('faculty:calendar_connect'))
+    callback_path = reverse('faculty:calendar_connect')
+    build_absolute_uri = getattr(request, 'build_absolute_uri', None)
+    if callable(build_absolute_uri):
+        return build_absolute_uri(callback_path)
+    # Keep OAuth URL generation usable for non-request callers when an
+    # explicit redirect URI was not configured.
+    return f"{getattr(settings, 'SITE_URL', '').rstrip('/')}{callback_path}"
 
 
 def start_oauth(request):
@@ -1019,7 +1025,7 @@ def disconnect_google_calendar(user):
 
     faculty = FacultyProfile.objects.filter(user=user).first()
     if faculty:
-        faculty.sync_enabled = True
+        faculty.sync_enabled = False
         faculty.last_calendar_sync_at = None
         faculty.save(update_fields=['sync_enabled', 'last_calendar_sync_at'])
         ScheduleEvent.objects.filter(

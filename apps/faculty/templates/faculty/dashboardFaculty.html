@@ -8,10 +8,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Dashboard</title>
     <link rel="stylesheet" href="{% static 'faculty/css/dashboardFaculty.css' %}?v=20261126-delete-cursor">
-    <link rel="stylesheet" href="{% static 'css/consultation_notes.css' %}?v=20261021-consultation-notes">
+    <link rel="preload" as="style" href="{% static 'css/consultation_notes.css' %}?v=20261021-consultation-notes" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{% static 'css/consultation_notes.css' %}?v=20261021-consultation-notes"></noscript>
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
-    <link rel="stylesheet" href="{% static 'css/announcements.css' %}?v=20260917-faculty-announcement-ui">
-    <link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}?v=20261014-modal">
+    <link rel="preload" as="style" href="{% static 'css/announcements.css' %}?v=20260917-faculty-announcement-ui" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{% static 'css/announcements.css' %}?v=20260917-faculty-announcement-ui"></noscript>
+    <link rel="preload" as="style" href="{% static 'depthead/css/analytics_browser.css' %}?v=20261014-modal" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{% static 'depthead/css/analytics_browser.css' %}?v=20261014-modal"></noscript>
     {% include 'components/_faculty_navigation_loading.html' %}
 </head>
 

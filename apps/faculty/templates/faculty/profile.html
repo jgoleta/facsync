@@ -7,13 +7,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FacSync | My Profile</title>
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261015-brand-logo">
-    <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}?v=20260905-profile-refresh">
+    <link rel="stylesheet" href="{% static 'faculty/css/profile.css' %}?v=20261127-calendar-confirmation">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     {% include 'components/_faculty_navigation_loading.html' %}
 </head>
 
 <body>
     <div class="hidden">{% csrf_token %}</div>
+    <div id="calendarConfirmModal" class="profile-confirm-modal hidden" role="dialog" aria-modal="true" aria-labelledby="calendarConfirmTitle" aria-describedby="calendarConfirmMessage">
+        <div class="profile-confirm-card">
+            <button type="button" id="closeCalendarConfirm" class="profile-confirm-close" aria-label="Close confirmation">&times;</button>
+            <span class="section-label">Google Calendar</span>
+            <h2 id="calendarConfirmTitle">Connect Google Calendar?</h2>
+            <p id="calendarConfirmMessage">FacSync will use your Google Calendar to synchronize schedule and consultation events.</p>
+            <div class="profile-confirm-actions">
+                <button type="button" id="confirmCalendarAction" class="btn-primary">Continue</button>
+            </div>
+        </div>
+    </div>
     <div class="page-shell">
         <header class="topbar">
             <a href="{% url 'faculty:dashboard' %}" class="brand">
@@ -84,17 +95,6 @@
                                 <div class="field-actions">
                                     <button type="button" id="edit-office-btn" class="edit-btn">Edit</button>
                                     <button type="button" id="save-office-btn" class="save-btn hidden">Save</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="info-group editable-info-group" id="consultation-note-group">
-                            <label for="consultation-note-input">Consultation note</label>
-                            <div class="editable-field">
-                                <p id="consultation-note-text">{{ faculty_profile.consultation_note|default:"Not provided" }}</p>
-                                <input type="text" id="consultation-note-input" class="hidden" maxlength="255" value="{{ faculty_profile.consultation_note|default:'' }}" placeholder="e.g. Usually available Tue/Thu afternoons">
-                                <div class="field-actions">
-                                    <button type="button" id="edit-consultation-note-btn" class="edit-btn">Edit</button>
-                                    <button type="button" id="save-consultation-note-btn" class="save-btn hidden">Save</button>
                                 </div>
                             </div>
                         </div>
@@ -183,7 +183,7 @@
         </main>
     </div>
     <script src="{% static 'faculty/js/facultyFeedback.js' %}?v=20260827-shared-feedback"></script>
-    <script src="{% static 'faculty/js/profile.js' %}?v=20261126-calendar-toast"></script>
+    <script src="{% static 'faculty/js/profile.js' %}?v=20261127-calendar-no-cancel"></script>
     <script src="{% static 'js/notifications.js' %}"></script>
 </body>
 </html>

@@ -202,13 +202,6 @@ function attachCardHandlers() {
       );
     }),
   );
-  facultyGrid.querySelectorAll(".btn.view").forEach((b) =>
-    b.addEventListener("click", (e) => {
-      const id = e.target.dataset.id;
-      const card = facultyGrid.querySelector(`.card[data-id="${id}"]`);
-      window.location.href = `/student/view-schedule/?faculty_id=${encodeURIComponent(id)}`;
-    }),
-  );
   facultyGrid.querySelectorAll(".card-notify").forEach((button) => {
     button.addEventListener("click", async (event) => {
       event.preventDefault();
@@ -293,7 +286,7 @@ function renderFacultyDirectory() {
         </div>
         <div class="meta">${escapeHtml(faculty.updated_at ? `Last updated: ${parseISOToDisplay(faculty.updated_at)}` : "No recent status update")}</div>
         <div class="card-actions">
-          <button type="button" class="btn view" data-id="${escapeHtml(faculty.faculty_id)}">View Schedule</button>
+          <a class="btn view" href="${escapeHtml(`/student/view-schedule/?faculty_id=${encodeURIComponent(faculty.faculty_id)}`)}">View Schedule</a>
         </div>
       </div>
     </article>
@@ -353,5 +346,6 @@ loadCardsFromDOM();
 // The public dashboard uses server-rendered cards and cannot access the
 // student-only faculty status endpoint. Keep background polling for students.
 if (!document.body.classList.contains("public-dashboard")) {
+  window.setTimeout(refreshFacultyDirectory, 0);
   window.setInterval(refreshFacultyDirectory, 10000);
 }

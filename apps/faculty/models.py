@@ -302,7 +302,7 @@ class ConsultationRequest(SchoolScopedModel):
         constraints = [
             models.CheckConstraint(condition=(
                 models.Q(satisfaction_rating__isnull=True, rating_submitted_at__isnull=True, rating_updated_at__isnull=True)
-                | models.Q(satisfaction_rating__isnull=False, satisfaction_rating__gte=1, satisfaction_rating__lte=10,
+                | models.Q(satisfaction_rating__isnull=False, satisfaction_rating__gte=1, satisfaction_rating__lte=5,
                            rating_submitted_at__isnull=False, rating_updated_at__isnull=False)
             ), name='consultation_rating_valid'),
         ]
