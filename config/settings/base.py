@@ -169,7 +169,10 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+# FacSync appointment times, availability windows, analytics, and calendar
+# payloads are expressed in Philippine local time. Keep Django's localdate()
+# and localtime() aligned with the product's canonical timezone as well.
+TIME_ZONE = config('TIME_ZONE', default='Asia/Manila')
 
 USE_I18N = True
 

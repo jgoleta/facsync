@@ -12,6 +12,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const availabilityDot = document.getElementById('availabilityDot');
     const queueCountLarge = document.getElementById('queueCountLarge');
     const lastUpdated = document.getElementById('lastUpdated');
+    const walkInStatusConfirmModal = document.getElementById('walkInStatusConfirmModal');
+    const closeWalkInStatusConfirm = document.getElementById('closeWalkInStatusConfirm');
+    const setWalkInAvailable = document.getElementById('setWalkInAvailable');
+    let walkInStatusConfirmResolver = null;
+    let walkInStatusConfirmPreviousFocus = null;
 
     let initialQueueLoad = true;
 
@@ -20,6 +25,31 @@ document.addEventListener('DOMContentLoaded', () => {
         const cookie = document.cookie.split('; ').find((row) => row.startsWith('csrftoken='));
         return cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
     }
+
+    function closeWalkInStatusModal(changeStatus = false) {
+        walkInStatusConfirmModal?.classList.add('hidden');
+        document.body.style.overflow = '';
+        const resolver = walkInStatusConfirmResolver;
+        walkInStatusConfirmResolver = null;
+        walkInStatusConfirmPreviousFocus?.focus();
+        walkInStatusConfirmPreviousFocus = null;
+        resolver?.(changeStatus);
+    }
+
+    function askToChangeWalkInStatus() {
+        if (!walkInStatusConfirmModal) return Promise.resolve(false);
+        walkInStatusConfirmPreviousFocus = document.activeElement;
+        walkInStatusConfirmModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        setWalkInAvailable?.focus();
+        return new Promise((resolve) => { walkInStatusConfirmResolver = resolve; });
+    }
+
+    setWalkInAvailable?.addEventListener('click', () => closeWalkInStatusModal(true));
+    closeWalkInStatusConfirm?.addEventListener('click', () => closeWalkInStatusModal(false));
+    walkInStatusConfirmModal?.addEventListener('click', (event) => {
+        if (event.target === walkInStatusConfirmModal) closeWalkInStatusModal(false);
+    });
 
     // Escape student-provided values before inserting them into queue markup.
     function escapeHtml(value) {
@@ -102,9 +132,33 @@ document.addEventListener('DOMContentLoaded', () => {
     if (walkInToggle) {
         walkInToggle.addEventListener('change', async () => {
             const enabled = walkInToggle.checked;
+            const shouldAskForAvailable = enabled && walkInToggle.dataset.currentStatus !== 'available';
+            const changeStatus = shouldAskForAvailable ? await askToChangeWalkInStatus() : false;
+            if (shouldAskForAvailable && !changeStatus) {
+                walkInToggle.checked = false;
+                return;
+            }
             walkInToggle.disabled = true;
             facultyFeedback?.showLoading('Updating walk-in availability...');
             try {
+                if (changeStatus) {
+                    const statusResponse = await fetch('/faculty/api/status/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCsrfToken(),
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            status: 'available',
+                            manual_override: true,
+                            note: walkInToggle.dataset.statusNote || '',
+                        }),
+                    });
+                    const statusData = await statusResponse.json().catch(() => ({}));
+                    if (!statusResponse.ok) throw new Error(statusData.error || 'Unable to change your status to Available.');
+                    walkInToggle.dataset.currentStatus = statusData.status || 'available';
+                }
+
                 const response = await fetch('/faculty/api/walk-ins/preference/', {
                     method: 'POST',
                     headers: {
@@ -115,9 +169,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 const data = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(data.error || 'Unable to update walk-in availability.');
+
                 walkInToggle.checked = data.walk_ins_enabled;
                 await loadQueue();
-                facultyFeedback?.showToast('Walk-in availability updated successfully.');
+                facultyFeedback?.showToast(changeStatus
+                    ? 'Walk-in availability enabled and status changed to Available.'
+                    : 'Walk-in availability updated successfully.');
             } catch (error) {
                 walkInToggle.checked = !enabled;
                 walkInStatus.textContent = error.message;

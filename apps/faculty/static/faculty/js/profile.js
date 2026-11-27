@@ -143,6 +143,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const syncToggle = document.getElementById('calendar-sync-toggle');
     const lastSync = document.getElementById('calendar-last-sync');
     const syncError = document.getElementById('calendar-sync-error');
+    const calendarConfirmModal = document.getElementById('calendarConfirmModal');
+    const closeCalendarConfirm = document.getElementById('closeCalendarConfirm');
+    const confirmCalendarAction = document.getElementById('confirmCalendarAction');
+    const calendarConfirmTitle = document.getElementById('calendarConfirmTitle');
+    const calendarConfirmMessage = document.getElementById('calendarConfirmMessage');
+    let calendarConfirmResolver = null;
+    let calendarConfirmPreviousFocus = null;
+
+    function closeCalendarConfirmModal(confirmed = false) {
+        calendarConfirmModal?.classList.add('hidden');
+        document.body.style.overflow = '';
+        const resolver = calendarConfirmResolver;
+        calendarConfirmResolver = null;
+        calendarConfirmPreviousFocus?.focus();
+        calendarConfirmPreviousFocus = null;
+        resolver?.(confirmed);
+    }
+
+    function askCalendarConfirmation(action) {
+        if (!calendarConfirmModal) return Promise.resolve(false);
+        const connecting = action === 'connect';
+        calendarConfirmTitle.textContent = connecting ? 'Connect Google Calendar?' : 'Disconnect Google Calendar?';
+        calendarConfirmMessage.textContent = connecting
+            ? 'FacSync will use your Google Calendar to synchronize schedule and consultation events.'
+            : 'FacSync copies will be removed, but your Google Calendar events will remain in Google Calendar.';
+        confirmCalendarAction.textContent = connecting ? 'Connect Calendar' : 'Disconnect Calendar';
+        confirmCalendarAction.classList.toggle('btn-danger', !connecting);
+        calendarConfirmPreviousFocus = document.activeElement;
+        calendarConfirmModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        confirmCalendarAction.focus();
+        return new Promise((resolve) => { calendarConfirmResolver = resolve; });
+    }
+
+    confirmCalendarAction?.addEventListener('click', () => closeCalendarConfirmModal(true));
+    closeCalendarConfirm?.addEventListener('click', () => closeCalendarConfirmModal(false));
+    calendarConfirmModal?.addEventListener('click', (event) => {
+        if (event.target === calendarConfirmModal) closeCalendarConfirmModal(false);
+    });
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !calendarConfirmModal?.classList.contains('hidden')) {
+            closeCalendarConfirmModal(false);
+        }
+    });
 
     // Update the calendar connection controls to match the current connection state.
     function setCalendarConnected(isConnected) {
@@ -164,14 +208,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (connectBtn && disconnectBtn && calendarStatus) {
-        connectBtn.addEventListener('click', () => {
-            window.location.href = '/faculty/calendar/connect';
+        connectBtn.addEventListener('click', async () => {
+            if (await askCalendarConfirmation('connect')) {
+                window.location.href = '/faculty/calendar/connect';
+            }
         });
 
         disconnectBtn.addEventListener('click', async () => {
-            if (!confirm('Disconnect Google Calendar? FacSync copies will be removed, but your Google events will remain in Google Calendar.')) {
-                return;
-            }
+            if (!await askCalendarConfirmation('disconnect')) return;
             facultyFeedback?.showLoading('Disconnecting Google Calendar...');
             try {
                 const response = await fetch('/faculty/calendar/disconnect/', {

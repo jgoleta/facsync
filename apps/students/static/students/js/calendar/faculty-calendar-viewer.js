@@ -63,6 +63,19 @@ function getCsrfToken() {
   return cookie ? decodeURIComponent(cookie.split("=")[1]) : "";
 }
 
+async function readApiResponse(response, fallbackMessage) {
+  const body = await response.text();
+  try {
+    return body ? JSON.parse(body) : {};
+  } catch (error) {
+    return {
+      error: response.ok
+        ? fallbackMessage
+        : `The server could not complete the request (${response.status}). Please try again.`,
+    };
+  }
+}
+
 function updateFacultyStatusSubscriptionButton(subscribed) {
   if (!facultyStatusNotify) return;
   facultyStatusNotify.dataset.subscribed = String(subscribed);
@@ -90,7 +103,7 @@ if (facultyStatusNotify) {
           headers: { "X-CSRFToken": getCsrfToken() },
         },
       );
-      const data = await response.json();
+      const data = await readApiResponse(response, "Unable to update notification preference.");
       if (!response.ok) throw new Error(data.error || "Unable to update notification preference.");
       updateFacultyStatusSubscriptionButton(data.subscribed);
       studentFeedback?.showToast(
@@ -211,7 +224,7 @@ async function loadWalkInStatus() {
     const response = await fetch(
       `/student/api/walk-ins/status/?faculty_id=${encodeURIComponent(facultyId)}`,
     );
-    const data = await response.json();
+    const data = await readApiResponse(response, "Unable to check walk-in availability.");
     if (!response.ok)
       throw new Error(data.error || "Unable to check walk-in availability.");
     renderWalkInState(data);
@@ -245,7 +258,7 @@ async function loadFacultySchedule() {
       `/student/api/schedule-events/?faculty_id=${encodeURIComponent(facultyId)}`,
       { cache: "no-store" },
     );
-    const data = await response.json();
+    const data = await readApiResponse(response, "Unable to load schedule.");
     if (!response.ok) throw new Error(data.error || "Unable to load schedule.");
 
     facultySchedule.schedule = window.FacSyncCalendar.buildSchedule(data.events || []);
@@ -591,7 +604,7 @@ if (joinQueueBtn) {
         },
         body: JSON.stringify({ faculty_id: facultyId }),
       });
-      const data = await response.json().catch(() => ({}));
+      const data = await readApiResponse(response, "Unable to join the walk-in queue.");
       if (!response.ok)
         throw new Error(data.error || "Unable to join the walk-in queue.");
       await loadWalkInStatus();
@@ -623,7 +636,7 @@ if (cancelQueueBtn) {
           body: JSON.stringify({ action: "cancel" }),
         },
       );
-      const data = await response.json().catch(() => ({}));
+      const data = await readApiResponse(response, "Unable to leave the queue.");
       if (!response.ok)
         throw new Error(data.error || "Unable to leave the queue.");
       await loadWalkInStatus();
@@ -712,7 +725,7 @@ if (consultationForm) {
           message: document.getElementById("message").value,
         }),
       });
-      const data = await response.json().catch(() => ({}));
+      const data = await readApiResponse(response, "Unable to book the consultation.");
       if (!response.ok)
         throw new Error(data.error || "Unable to book the consultation.");
       consultationModal.classList.add("hidden");

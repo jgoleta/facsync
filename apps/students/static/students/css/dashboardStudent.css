@@ -217,6 +217,14 @@
   gap: 16px;
 }
 
+.student-dashboard .faculty-directory-loading {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 34px 20px;
+  color: var(--dashboard-muted);
+  text-align: center;
+}
+
 .student-dashboard .card {
   min-width: 0;
   min-height: 224px;
@@ -239,7 +247,7 @@
 }
 
 .student-dashboard .card[data-status="busy"] {
-  box-shadow: inset 5px 0 0 0 #ffc107;
+  box-shadow: inset 5px 0 0 0 #fd7e14;
 }
 
 .student-dashboard .card[data-status="virtual"],
@@ -313,6 +321,12 @@
 .student-dashboard .status-badge {
   width: 9px;
   height: 9px;
+}
+
+/* Keep the student directory's busy indicator aligned with the faculty
+   dashboard's active Busy button. */
+.student-dashboard .status-badge.status-busy {
+  background: #fd7e14;
 }
 
 .student-dashboard .status-label {

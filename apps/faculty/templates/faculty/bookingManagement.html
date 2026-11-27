@@ -7,13 +7,24 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Walk-in Services</title>
-    <link rel="stylesheet" href="{% static 'faculty/css/bookingManagement.css' %}?v=20260819-responsive">
+    <link rel="stylesheet" href="{% static 'faculty/css/bookingManagement.css' %}?v=20261127-status-modal">
     <link rel="stylesheet" href="{% static 'css/notifications.css' %}?v=20260819-responsive">
     {% include 'components/_faculty_navigation_loading.html' %}
 </head>
 
 <body>
     <div class="hidden">{% csrf_token %}</div>
+    <div id="walkInStatusConfirmModal" class="walk-in-status-modal hidden" role="dialog" aria-modal="true" aria-labelledby="walkInStatusConfirmTitle" aria-describedby="walkInStatusConfirmMessage">
+        <div class="walk-in-status-modal-card">
+            <button type="button" id="closeWalkInStatusConfirm" class="walk-in-status-modal-close" aria-label="Close status confirmation">&times;</button>
+            <span class="eyebrow">Walk-in availability</span>
+            <h2 id="walkInStatusConfirmTitle">Change your faculty status?</h2>
+            <p id="walkInStatusConfirmMessage">Your status is not set to Available. Change it to Available before enabling the walk-in queue?</p>
+            <div class="walk-in-status-modal-actions">
+                <button type="button" id="setWalkInAvailable" class="btn-primary">Change to Available</button>
+            </div>
+        </div>
+    </div>
     <div class="page-shell">
         <header class="topbar">
             <a href="{% url 'faculty:dashboard' %}" class="brand">
@@ -37,7 +48,10 @@
                     <div class="walk-in-control">
                         <span>Accepting walk-ins</span>
                         <label class="switch" title="Toggle walk-in queue availability">
-                            <input id="walkInToggle" type="checkbox" {% if faculty_profile.walk_ins_enabled %}checked{% endif %}>
+                            <input id="walkInToggle" type="checkbox"
+                                data-current-status="{{ faculty_profile.current_status|default:'not_set' }}"
+                                data-status-note="{{ faculty_profile.status_note|default:'' }}"
+                                {% if faculty_profile.walk_ins_enabled %}checked{% endif %}>
                             <span class="slider round"></span>
                         </label>
                     </div>

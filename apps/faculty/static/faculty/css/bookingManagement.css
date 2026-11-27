@@ -19,6 +19,69 @@ body {
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
+.walk-in-status-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 38, 77, 0.46);
+}
+
+.walk-in-status-modal.hidden {
+  display: none;
+}
+
+.walk-in-status-modal-card {
+  position: relative;
+  width: min(100%, 470px);
+  padding: 30px;
+  border: 1px solid var(--queue-border);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(8, 38, 77, 0.22);
+}
+
+.walk-in-status-modal-card h2 {
+  margin: 8px 0 10px;
+  color: var(--queue-navy);
+}
+
+.walk-in-status-modal-card p {
+  margin: 0;
+  color: var(--queue-muted);
+  line-height: 1.6;
+}
+
+.walk-in-status-modal-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--queue-muted);
+  font-size: 1.7rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.walk-in-status-modal-close:hover,
+.walk-in-status-modal-close:focus-visible {
+  background: var(--queue-blue-soft);
+  color: var(--queue-navy);
+}
+
+.walk-in-status-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
 .booking-container {
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
@@ -525,6 +588,18 @@ body {
 }
 
 @media (max-width: 480px) {
+  .walk-in-status-modal-card {
+    padding: 26px 20px 20px;
+  }
+
+  .walk-in-status-modal-actions {
+    flex-direction: column-reverse;
+  }
+
+  .walk-in-status-modal-actions > * {
+    width: 100%;
+  }
+
   .page-actions {
     align-items: stretch;
     flex-direction: column;
