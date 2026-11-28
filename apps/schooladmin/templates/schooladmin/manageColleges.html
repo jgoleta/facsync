@@ -9,8 +9,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Manage Colleges</title>
     <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_main.css' %}?v=20261031-footer" />
-    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261118-deactivate-remove-style" />
-    <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}?v=20261113-student-levels" />
+    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261128-student-toast-colors" />
+    <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}?v=20261128-student-toast-colors" />
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -117,10 +117,6 @@
                 <div class="form-group modal-form-group">
                     <label for="add-college-code">College Code</label>
                     <input type="text" id="add-college-code" name="code" required maxlength="20" placeholder="e.g. CCS">
-                </div>
-                <div class="form-group modal-form-group">
-                    <label for="add-college-description">Description (optional)</label>
-                    <textarea id="add-college-description" name="description"></textarea>
                 </div>
                 <div class="form-actions modal-actions">
                     <button type="submit" class="btn-primary">Add College</button>

@@ -56,6 +56,7 @@
 .management-dialog .modal-header { display:flex; justify-content:space-between; gap:16px; }
 .management-dialog .modal-header p { color:var(--text-secondary); }
 .management-dialog .modal-form-group { margin-bottom:18px; }
+.management-dialog .modal-form-group[hidden] { display:none !important; }
 .management-dialog .modal-form-group label { display:block; margin-bottom:6px; }
 .management-dialog .modal-form-group input,.management-dialog .modal-form-group select,.management-dialog .modal-form-group textarea { box-sizing:border-box; width:100%; color:var(--text-primary); background:var(--bg-card); border:1px solid var(--border-color); border-radius:8px; padding:10px; }
 .management-dialog .faculty-access-option { display:flex; align-items:flex-start; gap:12px; margin:0 0 18px; padding:14px; border:1px solid var(--border-color); border-radius:10px; background:var(--bg-main); cursor:pointer; }
@@ -64,10 +65,11 @@
 .management-dialog .faculty-access-option small { display:block; margin-top:4px; color:var(--text-secondary); font-size:.8rem; font-weight:400; line-height:1.5; }
 .management-dialog .faculty-access-option:has(input:checked) { border-color:var(--primary); }
 .management-dialog .faculty-access-option:focus-within { outline:2px solid var(--primary); outline-offset:2px; }
-.management-dialog :disabled { cursor:wait; opacity:.65; }
+.management-dialog :disabled { cursor:default; opacity:.65; }
 .management-loading-content { display:flex; align-items:center; flex-direction:column; gap:12px; color:var(--text-light); }
-.management-toast { position:fixed; bottom:24px; right:24px; z-index:4000; padding:14px 20px; border:1px solid var(--border-color); background:var(--bg-card); color:var(--text-primary); border-radius:10px; max-width:calc(100vw - 48px); }
-.management-toast.error { color:#fff; background:var(--danger); border-color:var(--danger); }
+.management-toast { position:fixed; bottom:24px; right:24px; z-index:4000; padding:14px 20px; background:var(--success); color:var(--text-light); border-radius:8px; max-width:calc(100vw - 48px); box-shadow:0 8px 24px rgba(0,0,0,0.2); font-weight:600; pointer-events:none; animation:management-toast-enter 0.25s ease; }
+@keyframes management-toast-enter { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.management-toast.error { background:var(--danger); }
 .management-dialog button[type=submit][disabled]::before { content:''; display:inline-block; width:12px; height:12px; margin-right:8px; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; animation:spin .8s linear infinite; }
 @media(max-width:700px) { .department-management .main-header.with-action { align-items:stretch; flex-direction:column; gap:16px; } }
 

@@ -4,38 +4,43 @@
 <title>FacSync | Department Settings</title>
 <link rel="stylesheet" href="{% static 'css/base.css' %}">
 <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
-<link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}">
+<link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20261128-department-view">
 <link rel="stylesheet" href="{% static 'depthead/css/admin_settings.css' %}?v=20261106-settings-ui">
 <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}?v=20261106-settings-ui">
-<link rel="stylesheet" href="{% static 'depthead/css/department_settings.css' %}?v=20261106-settings-selectors">
+<link rel="stylesheet" href="{% static 'depthead/css/department_settings.css' %}?v=20261128-settings-refresh">
 {% include 'components/_admin_navigation_loading.html' %}
 </head><body class="college-settings-page department-settings-page"><div class="admin-shell">
 {% include 'depthead/partials/sidebar.html' %}
-<main class="main-content"><header class="main-header"><p class="settings-eyebrow">Department administration</p><h1>Department Settings</h1><p>Manage the departments assigned to you. Each action affects only the named department.</p><div class="settings-header-meta"><span class="settings-college-label">{{ panels|length }} assigned department{{ panels|length|pluralize }}</span><span class="settings-save-note">Changes apply per department</span></div></header>
+<main class="main-content"><header class="main-header settings-hero"><div class="settings-hero-copy"><p class="settings-eyebrow">Department administration</p><h1>Department Settings</h1><p>Manage the profile, booking availability, and announcements for your active department.</p></div><div class="settings-header-meta"><span class="settings-college-label"><span class="selected-department-dot" aria-hidden="true"></span>{{ request.managed_scope.name }}</span><span class="settings-save-note">Active department</span></div></header>
+{% if request.department_view_choices|length > 1 %}
+<section class="settings-card department-view-settings"><header class="settings-section-heading"><div><p class="settings-eyebrow">Workspace</p><h2>Department view</h2><p>Choose the department used across all College Head admin pages.</p></div></header>
+<form class="settings-form" method="post" action="{% url 'depthead:select_department_view' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'depthead:college_settings' %}">
+<div class="department-view-controls"><div class="form-group"><label for="department-view">Select department</label><select id="department-view" name="department_id">{% for department in request.department_view_choices %}<option value="{{ department.pk }}"{% if request.department_view_id == department.pk %} selected{% endif %}>{{ department.name }}</option>{% endfor %}</select></div><button type="submit" class="primary-button">Switch Department</button></div></form></section>
+{% endif %}
 <div class="department-settings-layout" data-settings-key="{{ request.user.pk }}:{{ request.user.school_id }}">{% if panels %}<div class="department-settings-stack">
 {% with panel=panels.0 %}
-<section class="settings-card"><header class="settings-section-heading"><p class="settings-eyebrow">Profile</p><h2>Department details</h2><p>Update the introduction for the selected department.</p></header>
-<form method="post" action="{% url 'depthead:edit_college_description' %}" class="settings-form" data-managed-form data-department-editor="description">{% csrf_token %}
-<div class="form-group"><label for="details-department">Department</label><select id="details-department" name="department_id" required>{% for choice in panels %}<option value="{{ choice.unit.pk }}">{{ choice.unit.name }}</option>{% endfor %}</select><small class="form-hint" data-department-college>{{ panel.unit.college.name|default:'No college' }}</small></div>
-<div class="form-group"><label for="description-{{ panel.unit.pk }}">Description</label><textarea id="description-{{ panel.unit.pk }}" name="description" rows="5">{{ panel.unit.description }}</textarea></div>
+<section class="settings-card profile-settings-card"><header class="settings-section-heading"><div><p class="settings-eyebrow">Profile</p><h2>Department details</h2><p>Keep the public introduction for this department clear and up to date.</p></div></header>
+<form method="post" action="{% url 'depthead:edit_college_description' %}" class="settings-form" data-managed-form>{% csrf_token %}
+<div class="form-group"><label for="description-{{ panel.unit.pk }}">Description</label><textarea id="description-{{ panel.unit.pk }}" name="description" rows="5" placeholder="Describe this department, its focus, and the services it provides.">{{ panel.unit.description }}</textarea><small class="form-hint">This description is shown wherever department information appears.</small></div>
 <p data-form-error class="assignment-error" role="alert" hidden></p><div class="form-actions"><button type="submit" class="primary-button">Save Description</button></div></form></section>
-<section class="settings-card"><header class="settings-section-heading"><p class="settings-eyebrow">Consultations</p><h2>Booking availability</h2><p data-department-status>Currently {% if panel.closure_form.instance.is_closed %}closed{% else %}open{% endif %} for new bookings.</p></header>
-<form method="post" action="{% url 'depthead:college_settings' %}" class="settings-form" data-managed-form data-department-editor="availability">{% csrf_token %}
-<div class="form-group"><label for="availability-department">Department</label><select id="availability-department" name="department_id" required>{% for choice in panels %}<option value="{{ choice.unit.pk }}">{{ choice.unit.name }}</option>{% endfor %}</select></div>
-{% for field in panel.closure_form %}{% if field.name == 'is_closed' %}<div class="form-group form-group-toggle"><label for="{{ field.id_for_label }}">Close new bookings</label><p>Existing appointments remain.</p>{{ field }}</div>{% else %}<div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>{% endif %}{% endfor %}
+<section class="settings-card booking-settings-card"><header class="settings-section-heading"><div><p class="settings-eyebrow">Consultations</p><div class="settings-title-line"><h2>Booking availability</h2><span class="department-status-badge {% if panel.closure_form.instance.is_closed %}is-closed{% else %}is-open{% endif %}">{% if panel.closure_form.instance.is_closed %}Closed{% else %}Open{% endif %}</span></div><p data-department-status>Control whether this department accepts new consultation bookings.</p></div></header>
+<form method="post" action="{% url 'depthead:college_settings' %}" class="settings-form" data-managed-form>{% csrf_token %}
+<div class="form-group form-group-toggle"><label for="{{ panel.closure_form.is_closed.id_for_label }}">Close new bookings</label><p>Existing appointments remain.</p>{{ panel.closure_form.is_closed }}</div>
+<div class="form-group"><label for="{{ panel.closure_form.reason.id_for_label }}">{{ panel.closure_form.reason.label }}</label>{{ panel.closure_form.reason }}</div>
+<div class="closure-date-pair">
+<div class="form-group"><label for="{{ panel.closure_form.closure_start.id_for_label }}">Closure start</label>{{ panel.closure_form.closure_start }}</div>
+<div class="form-group"><label for="{{ panel.closure_form.closure_end.id_for_label }}">Closure end</label>{{ panel.closure_form.closure_end }}</div>
+</div>
 <p class="form-hint">Closing this department prevents new bookings with its faculty. Existing appointments remain.</p>
 <p data-form-error class="assignment-error" role="alert" hidden></p><div class="form-actions"><button type="submit" class="primary-button" data-confirm="Save booking availability for this department?">Save Booking Availability</button></div></form></section>
 {% endwith %}
 </div>
-<section class="settings-card department-announcements"><header class="settings-section-heading"><p class="settings-eyebrow">Updates</p><h2>Announcements</h2><p>Faculty and college students are limited to the selected department. Basic-education students receive announcements for their selected levels across this school.</p></header>
+<section class="settings-card department-announcements"><header class="settings-section-heading"><div><p class="settings-eyebrow">Communication</p><h2>Announcements</h2><p>Share focused updates with faculty and students connected to this department.</p></div></header>
 <form method="post" action="{% url 'depthead:create_announcement' %}" class="settings-form" data-managed-form>{% csrf_token %}
-<div class="form-group"><label for="announcement-department">Department</label><select id="announcement-department" name="department_id" required>{% for department in departments %}<option value="{{ department.pk }}">{{ department.name }}</option>{% endfor %}</select></div>
 {% for field in announcement_form %}{% if field.name == 'student_levels' %}<fieldset class="form-group education-targets"><legend>{{ field.label }}</legend>{{ field }}</fieldset>{% else %}<div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small class="form-hint">{{ field.help_text }}</small>{% endif %}</div>{% endif %}{% endfor %}
 <p data-form-error class="assignment-error" role="alert" hidden></p><div class="form-actions"><button type="submit" class="primary-button">Post Announcement</button></div></form>
-<h3 class="announcements-heading">Active announcements across your departments</h3><div class="announcements-list">{% for announcement in announcements %}<article class="announcement-item"><strong>{{ announcement.department.name }}</strong><p>{{ announcement.message }}</p><small>{{ announcement.get_audience_display }} ? Expires {{ announcement.expiry|date:'M d, Y' }}</small></article>{% empty %}<p class="empty-state">No active announcements.</p>{% endfor %}</div>
+<h3 class="announcements-heading">Active announcements</h3><div class="announcements-list">{% for announcement in announcements %}<article class="announcement-item"><strong>{{ announcement.department.name }}</strong><p>{{ announcement.message }}</p><small>{{ announcement.get_audience_display }} &middot; Expires {{ announcement.expiry|date:'M d, Y' }}</small></article>{% empty %}<p class="empty-state">No active announcements for this department.</p>{% endfor %}</div>
 </section>{% else %}<p class="empty-state">No active departments are assigned to you. Contact your School Admin.</p>{% endif %}</div></main></div>
 <div id="managementLoading" class="loading-overlay" role="status" aria-live="polite" aria-hidden="true"><div class="loading-spinner" aria-hidden="true"></div></div>
 <script src="{% static 'schooladmin/js/departmentManagement.js' %}?v=20261106-department-checkboxes"></script>
-{{ settings_data|json_script:'department-settings-data' }}
-<script src="{% static 'depthead/js/departmentSettings.js' %}?v=20261106-settings-selectors"></script>
 </body></html>

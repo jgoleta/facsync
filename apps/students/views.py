@@ -117,7 +117,12 @@ def _faculty_directory(closed_college_codes=None, student=None):
     }
     directory = []
     for faculty in StudentEligibility(student).faculty().select_related('user__department__college'):
-        refresh_faculty_status(faculty)
+        try:
+            refresh_faculty_status(faculty)
+        except FacultyProfile.DoesNotExist:
+            # The directory query runs before the per-profile locking query.
+            # A concurrently deleted account can disappear in between.
+            continue
         unit_code = str(faculty.college_id or '').strip().casefold()
         office = offices.get(unit_code)
         college = colleges.get(unit_code)

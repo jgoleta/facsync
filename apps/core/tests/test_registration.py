@@ -7,6 +7,7 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from apps.core.adapters import FacSyncSocialAdapter
+from apps.core.forms import FacultyProfileSetupForm, StudentProfileForm
 from apps.core.models import DeptHeadInvite, FacultyInvite, School, User
 
 
@@ -68,6 +69,29 @@ class RegistrationTests(TestCase):
         self.assertNotContains(response, 'value="elementary"')
         self.assertNotContains(response, 'value="jhs"')
 
+    def test_student_setup_requires_all_profile_fields(self):
+        operator = User.objects.create_user(username='required-student-operator', role='systemadmin')
+        school = School(code='REQUIRED_STUDENT', name='Required Student School', educational_levels=['shs'])
+        school.save(actor=operator)
+        student = User.objects.create_user(username='required-student', role='student', school=school)
+
+        form = StudentProfileForm(data={}, instance=student, school=school)
+
+        self.assertTrue(form.fields['student_id'].required)
+        self.assertTrue(form.fields['educational_level'].required)
+        self.assertTrue(form.fields['year_level'].required)
+        self.assertFalse(form.is_valid())
+        self.assertIn('student_id', form.errors)
+        self.assertIn('educational_level', form.errors)
+        self.assertIn('year_level', form.errors)
+
+    def test_faculty_setup_rejects_blank_and_whitespace_fields(self):
+        form = FacultyProfileSetupForm(data={'faculty_id': '   ', 'office_location': '   '})
+
+        self.assertFalse(form.is_valid())
+        self.assertIn('faculty_id', form.errors)
+        self.assertIn('office_location', form.errors)
+
     def test_completed_or_direct_student_profile_setup_is_blocked(self):
         operator = User.objects.create_user(username='profile-guard-operator', role='systemadmin')
         school = School(code='PROFILE_GUARD', name='Profile Guard School', educational_levels=['college'])
@@ -80,7 +104,7 @@ class RegistrationTests(TestCase):
 
         self.assertRedirects(response, reverse('students:profile'), fetch_redirect_response=False)
 
-    def test_uninvited_faculty_cannot_open_faculty_profile_setup(self):
+    def test_assigned_faculty_can_resume_profile_setup_without_session_flag(self):
         operator = User.objects.create_user(username='faculty-guard-operator', role='systemadmin')
         school = School(code='FACULTY_GUARD', name='Faculty Guard School', educational_levels=['college'])
         school.save(actor=operator)
@@ -89,7 +113,7 @@ class RegistrationTests(TestCase):
 
         response = self.client.get(reverse('core:faculty_profile_setup'))
 
-        self.assertRedirects(response, reverse('faculty:dashboard'), fetch_redirect_response=False)
+        self.assertEqual(response.status_code, 200)
 
     def test_student_adapter_registration_remains_active(self):
         request, sociallogin = self.make_login(role='student')

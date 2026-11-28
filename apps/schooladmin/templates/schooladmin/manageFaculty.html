@@ -119,8 +119,8 @@
         {% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p>
         <div class="modal-form-group"><label for="facultyInviteEmail">Google email</label><input id="facultyInviteEmail"
                 type="email" name="email" required></div>
-        <div class="modal-form-group"><label for="facultyInviteUnit">Department or office</label><select id="facultyInviteUnit" name="unit" required>{% for group,options in faculty_invite_form.fields.unit.choices %}{% if group %}<optgroup label="{{ group }}">{% for value,label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</optgroup>{% else %}<option value="">{{ options }}</option>{% endif %}{% endfor %}
-            </select></div>
+        <div class="modal-form-group"><label for="{{ faculty_invite_form.educational_level.id_for_label }}">Educational level or office</label>{{ faculty_invite_form.educational_level }}</div>
+        <div class="modal-form-group"><label for="{{ faculty_invite_form.unit.id_for_label }}">Department or office</label>{{ faculty_invite_form.unit }}</div>
         <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
                 class="btn-primary" type="submit">Save and Send Invite</button></div>
     </form>

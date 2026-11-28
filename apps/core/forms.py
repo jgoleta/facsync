@@ -8,8 +8,14 @@ from apps.core.models import CollegeAnnouncement
 from .school_forms import SchoolBoundModelForm, UnitStudentLevelsMixin
 
 class StudentProfileForm(SchoolBoundModelForm):
-    educational_level = forms.ChoiceField(choices=[], label='Educational level')
-    year_level = forms.ChoiceField(choices=[], label='Grade / year')
+    educational_level = forms.ChoiceField(
+        choices=[], label='Educational level', required=True,
+        error_messages={'required': 'Select your educational level.'},
+    )
+    year_level = forms.ChoiceField(
+        choices=[], label='Grade / year', required=True,
+        error_messages={'required': 'Select your grade / year.'},
+    )
     department = forms.ModelChoiceField(queryset=Department.objects.none(), required=False)
 
     class Meta:
@@ -53,16 +59,36 @@ class StudentProfileForm(SchoolBoundModelForm):
             self.instance.college = None
         return data
 
+    def clean_student_id(self):
+        value = self.cleaned_data['student_id'].strip()
+        if not value:
+            raise forms.ValidationError('Enter your Student ID.')
+        return value
+
 class FacultyProfileSetupForm(forms.Form):
-    faculty_id = forms.CharField(max_length=64, label="Faculty ID")
-    office_location = forms.CharField(max_length=128, label="Office / Room")
+    faculty_id = forms.CharField(
+        max_length=64, label="Faculty ID", required=True,
+        error_messages={'required': 'Enter your Faculty ID.'},
+    )
+    office_location = forms.CharField(
+        max_length=128, label="Office / Room", required=True,
+        error_messages={'required': 'Enter your office or room.'},
+    )
 
     def clean_faculty_id(self):
+        value = self.cleaned_data['faculty_id'].strip()
+        if not value:
+            raise forms.ValidationError('Enter your Faculty ID.')
         from apps.faculty.models import FacultyProfile
-        value = self.cleaned_data['faculty_id']
         # Profile IDs remain globally unique; reveal no owner or institution.
         if FacultyProfile._base_manager.filter(pk=value).exists():
             raise forms.ValidationError('This faculty identifier is unavailable.')
+        return value
+
+    def clean_office_location(self):
+        value = self.cleaned_data['office_location'].strip()
+        if not value:
+            raise forms.ValidationError('Enter your office or room.')
         return value
 
 class CollegeAnnouncementForm(SchoolBoundModelForm):
@@ -117,7 +143,7 @@ class CollegeAnnouncementForm(SchoolBoundModelForm):
 class CollegeForm(SchoolBoundModelForm):
     class Meta:
         model = College
-        fields = ['name', 'code', 'description']
+        fields = ['name', 'code']
 
     def clean_name(self):
         value = self.cleaned_data['name']
@@ -136,7 +162,7 @@ class CollegeDescriptionForm(SchoolBoundModelForm):
 class OfficeForm(UnitStudentLevelsMixin, SchoolBoundModelForm):
     class Meta:
         model = Office
-        fields = ['name', 'code', 'description', 'student_levels']
+        fields = ['name', 'code', 'student_levels']
 
     def clean_name(self):
         value = self.cleaned_data['name']

@@ -45,8 +45,39 @@ def head_scope(user):
     return DepartmentScope(user.school_id, tuple(d.pk for d in departments), tuple(d.name for d in departments))
 
 
-def managed_departments(user):
+def assigned_departments(user):
+    if user.title == 'dean':
+        return Department.objects.filter(
+            school_id=user.school_id,
+            is_active=True,
+            college__code__iexact=user.college,
+            college__is_active=True,
+        )
     return Department.objects.filter(school_id=user.school_id, is_active=True, heads=user)
+
+
+def managed_departments(user):
+    units = assigned_departments(user)
+    selected = getattr(user, '_department_view_id', None)
+    return units.filter(pk=selected) if selected else units
+
+
+def prepare_department_view(request):
+    user = request.user
+    if user.role != 'depthead' or user.title != 'dean':
+        return
+    choices = list(assigned_departments(user).select_related('college').order_by('name'))
+    request.department_view_choices = choices
+    key = f'department_view:{user.pk}'
+    selected = request.session.get(key)
+    valid_ids = {unit.pk for unit in choices}
+    if selected not in valid_ids:
+        request.session.pop(key, None)
+        selected = choices[0].pk if choices else None
+        if selected is not None:
+            request.session[key] = selected
+    request.department_view_id = selected
+    user._department_view_id = selected
 
 
 def member_scope(user):

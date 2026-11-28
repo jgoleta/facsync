@@ -186,7 +186,9 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                         sociallogin.user.college = first.college.code if first.college else ''
                         if invite.include_faculty_access:
                             faculty_home = next((d for d in head_departments if d.pk == invite.faculty_department_id), None)
-                            if (not invite.faculty_id or faculty_home is None
+                            if faculty_home is None and len(head_departments) == 1:
+                                faculty_home = head_departments[0]
+                            if (faculty_home is None
                                     or (faculty_home.college_id and not faculty_home.college.is_active)):
                                 messages.error(request, 'Your invitation needs a Faculty department review. Ask your School Admin to edit and resend it.')
                                 raise ImmediateHttpResponse(redirect('core:login'))
@@ -213,9 +215,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                     saved = super().save_user(request, sociallogin, form)
                     if head_departments is not None:
                         saved.managed_departments.set(head_departments)
-                    if isinstance(invite, OfficeAdminInvite) or (isinstance(invite, DeptHeadInvite) and invite.include_faculty_access):
-                        if not invite.faculty_id:
-                            self._deny_invite(request)
+                    if isinstance(invite, (OfficeAdminInvite, DeptHeadInvite)) and invite.include_faculty_access:
                         faculty_college = (
                             (faculty_home.college.code if faculty_home.college_id else '')
                             if isinstance(invite, DeptHeadInvite) else invite.office
@@ -229,11 +229,16 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                             saved.department = faculty_home
                             saved.college = faculty_college
                             saved.save(update_fields=['department', 'college'])
-                        FacultyProfile.objects.create(
-                            faculty_id=invite.faculty_id,
-                            user=saved,
-                            college_id=faculty_college,
-                        )
+                        if not FacultyProfile.objects.filter(user=saved).exists():
+                            saved.profile_completed = False
+                            saved.save(update_fields=['profile_completed'])
+                            request.session['faculty_profile_setup_allowed'] = True
+                    if isinstance(invite, OfficeAdminInvite) and not invite.include_faculty_access:
+                        # Explicitly opt out of the legacy Office Admin faculty fallback.
+                        UserRole.objects.update_or_create(user=saved, role='faculty',
+                            defaults={'is_active': False, 'assigned_by': invite.invited_by})
+                        saved.profile_completed = True
+                        saved.save(update_fields=['profile_completed'])
                     if isinstance(invite, SuperAdminInvite):
                         if saved.email.lower() != invite.email.lower():
                             self._deny_invite(request)

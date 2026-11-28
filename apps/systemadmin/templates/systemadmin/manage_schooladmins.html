@@ -48,18 +48,19 @@
                                     {% csrf_token %}<button class="btn-secondary system-danger-action" name="action"
                                         value="deactivate">Deactivate</button>
                                 </form>
-                                <form method="post" action="{% url 'systemadmin:superadmin_status' admin.pk %}"
-                                    data-system-action data-processing-label="Removing School Admin…"
-                                    data-confirm-title="Remove School Admin"
-                                    data-confirm="Remove {{ admin.email|default:admin.username }}? The account will be deactivated and retained for audit history. A replacement may be required before removing the last active School Admin.">
-                                    {% csrf_token %}<button class="btn-secondary system-danger-action" name="action"
-                                        value="remove">Remove</button>
-                                </form>{% else %}<form method="post"
+                                {% else %}<form method="post"
                                     action="{% url 'systemadmin:superadmin_status' admin.pk %}" data-system-action
                                     data-processing-label="Updating School Admin access…">
                                     {% csrf_token %}<button class="btn-secondary" name="action"
                                         value="reactivate">Reactivate</button>
-                                </form>{% endif %}{% endif %}
+                                </form>{% endif %}
+                                <form method="post" action="{% url 'systemadmin:superadmin_status' admin.pk %}"
+                                    data-system-action data-processing-label="Removing School Admin…"
+                                    data-confirm-title="Remove School Admin"
+                                    data-confirm="Permanently delete {{ admin.email|default:admin.username }}? This cannot be undone. Linked account records will also be removed. A replacement is required for the last active School Admin.">
+                                    {% csrf_token %}<button class="btn-secondary system-danger-action" name="action"
+                                        value="remove">Remove</button>
+                                </form>{% endif %}
                             </div>
                         </td>
                     </tr>{% endfor %}

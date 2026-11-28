@@ -190,7 +190,7 @@ def student_profile_setup(request):
 @role_required('faculty')
 def faculty_profile_setup(request):
     destination = 'depthead:admin_dashboard' if has_role(request.user, 'officeadmin') and not has_role(request.user, 'faculty') else 'faculty:dashboard'
-    if FacultyProfile.objects.filter(user=request.user).exists() or not request.session.get('faculty_profile_setup_allowed'):
+    if FacultyProfile.objects.filter(user=request.user).exists():
         return redirect(destination)
     if request.method == 'POST':
         form = FacultyProfileSetupForm(request.POST)

@@ -4,6 +4,7 @@ from . import views
 app_name = 'depthead'
 
 urlpatterns = [
+    path('department-view/', views.select_department_view, name='select_department_view'),
     path('api/shared-windows/', views.shared_windows_api, name='shared_windows_api'),
     path('api/hourly-availability/', views.hourly_availability, name='hourly_availability'),
     path('api/analytics-browser/', views.analytics_browser_api, name='analytics_browser_api'),

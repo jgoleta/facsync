@@ -5,6 +5,8 @@ import json
 import logging
 
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.template.loader import render_to_string
 from django.contrib.auth.decorators import login_required
 from apps.core.decorators import role_required
@@ -25,7 +27,7 @@ from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
 from django.core.exceptions import PermissionDenied, ValidationError
 from types import SimpleNamespace
-from .scope import DepartmentScope, managed_departments
+from .scope import DepartmentScope, assigned_departments, managed_departments
 from apps.core.models import Department
 from apps.schooladmin.assignment_services import lock_departments
 from django.db import transaction, IntegrityError
@@ -63,6 +65,31 @@ from .services.analytics_display import (
 from .services.analytics_browser import ANALYTICS_QUESTIONS, analytics_browser_answer
 
 logger = logging.getLogger(__name__)
+
+
+@login_required
+@role_required('depthead')
+@require_POST
+def select_department_view(request):
+    if request.user.title != 'dean':
+        raise PermissionDenied('Only College Heads can change the department view.')
+
+    key = f'department_view:{request.user.pk}'
+    selected = request.POST.get('department_id', '')
+    if selected.isdecimal():
+        department = get_object_or_404(assigned_departments(request.user), pk=selected)
+        request.session[key] = department.pk
+    else:
+        raise PermissionDenied('Choose a department within your college.')
+
+    target = request.POST.get('next', '')
+    if not url_has_allowed_host_and_scheme(
+        target,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        target = reverse('depthead:admin_dashboard')
+    return redirect(target)
 
 
 def _analytics_date_range(request, start, end, *, prefix=None):
@@ -139,18 +166,21 @@ def _department_settings(request):
         }
     return render(request, 'depthead/departmentSettings.html', {
         'panels': panels, 'departments': managed_departments(request.user), 'settings_data': settings_data,
-        'announcement_form': CollegeAnnouncementForm(target_levels=True),
+        'announcement_form': CollegeAnnouncementForm(),
         'announcements': CollegeAnnouncement.objects.filter(department__in=managed_departments(request.user), expiry__gt=timezone.now()).select_related('department'),
     })
 
 
 def _department_announcement(request):
     unit = _target_department(request)
-    form = CollegeAnnouncementForm(request.POST, target_levels=True)
-    if not form.is_valid():
-        return JsonResponse({'success': False, 'error': ' '.join(str(e) for errors in form.errors.values() for e in errors)}, status=400)
     with transaction.atomic():
-        lock_departments([unit], request.user.school)
+        unit = lock_departments([unit], request.user.school)[0]
+        data = request.POST.copy()
+        data.setlist('student_levels', [level for level in (unit.student_levels or [])
+            if level in request.user.school.educational_levels])
+        form = CollegeAnnouncementForm(data, target_levels=True)
+        if not form.is_valid():
+            return JsonResponse({'success': False, 'error': ' '.join(str(e) for errors in form.errors.values() for e in errors)}, status=400)
         announcement = form.save(commit=False)
         announcement.department = unit
         announcement.college = unit.college.code if unit.college else ''

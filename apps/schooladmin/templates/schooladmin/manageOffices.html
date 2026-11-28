@@ -6,8 +6,8 @@
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     <link rel="stylesheet" href="{% static 'css/admin_shared.css' %}">
     <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_main.css' %}?v=20261031-footer">
-    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261118-deactivate-remove-style">
-    <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}?v=20261113-student-levels">
+    <link rel="stylesheet" href="{% static 'schooladmin/css/schooladmin_management.css' %}?v=20261128-student-toast-colors">
+    <link rel="stylesheet" href="{% static 'schooladmin/css/departmentManagement.css' %}?v=20261128-student-toast-colors">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>FacSync | Manage Offices</title>
@@ -89,8 +89,6 @@
                 <div class="form-group modal-form-group"><label for="add-office-code">Office Code</label><input
                         type="text" id="add-office-code" name="code" required maxlength="20" placeholder="e.g. OSA">
                 </div>
-                <div class="form-group modal-form-group"><label for="add-office-description">Description
-                        (optional)</label><textarea id="add-office-description" name="description"></textarea></div>
                 {% include 'schooladmin/partials/student_levels.html' with field=office_form.student_levels %}
                 <div class="form-actions modal-actions"><button type="submit" class="btn-primary">Add Office</button>
                 </div>
