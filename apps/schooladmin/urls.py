@@ -47,6 +47,7 @@ urlpatterns = [
     path('invite-faculty/', views.invite_faculty_superadmin, name='invite_faculty_superadmin'),
     path('faculty/invites/<int:invite_id>/edit/', views.invite_faculty_superadmin, name='edit_faculty_invite'),
     path('faculty/<int:user_id>/remove/', views.remove_faculty_superadmin, name='remove_faculty_superadmin'),
+    path('faculty/<int:user_id>/faculty-access/', views.faculty_access_superadmin, name='faculty_access_superadmin'),
     path('faculty/<int:user_id>/delete/', views.delete_faculty_superadmin, name='delete_faculty_superadmin'),
     path('faculty/<int:user_id>/assignment/', department_views.assign_faculty, name='assign_faculty'),
     path('students/<int:user_id>/remove/', views.remove_student_superadmin, name='remove_student_superadmin'),
