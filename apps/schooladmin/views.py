@@ -14,14 +14,15 @@ from django.db.models.deletion import ProtectedError
 from apps.core.colleges import get_college_choices, get_unit_choices
 from apps.core.faculty import mark_inactive_faculty
 from .forms import DeptHeadInviteForm, FacultySuperInviteForm, OfficeAdminInviteForm, HeadAssignmentForm
-from .assignment_services import lock_departments
+from .assignment_services import add_head_access_to_faculty, lock_departments
 from .department_views import form_error
 from apps.core.models import User, UserRole, College, Department, DeptHeadInvite, Office, FacultyInvite, OfficeAdminInvite, OfficeClosure, CollegeAnnouncement, School
-from apps.core.role_access import role_filter, available_roles
+from apps.core.role_access import role_filter, available_roles, has_role
 from apps.core.forms import CollegeForm, OfficeForm
 from apps.core.education import LEVEL_CHOICES
 from apps.core.services import (
     send_depthead_invite_email,
+    send_head_role_added_email,
     send_depthead_deactivated_email,
     send_faculty_invite_email,
     send_faculty_removed_email,
@@ -90,20 +91,41 @@ def _send_saved_email(sender, *args):
 
 
 def _save_head_invitation(request):
+    existing_assignment = None
     try:
         with transaction.atomic():
             form = DeptHeadInviteForm(request.POST)
             if not form.is_valid():
                 return form_error(form)
             departments = lock_departments(form.cleaned_data['departments'], request.user.school)
-            saved = form.save(commit=False)
-            if not saved.pk:
-                saved.invited_by = request.user
-            saved.save()
-            saved.departments.set(departments)
+            existing = User.objects.filter(
+                email__iexact=form.cleaned_data['email'], school=request.user.school,
+            ).first()
+            if existing:
+                target, departments = add_head_access_to_faculty(
+                    request.user, existing.pk, departments, form.cleaned_data['title'],
+                )
+                existing_assignment = (target, departments, form.cleaned_data['title'])
+            else:
+                saved = form.save(commit=False)
+                if not saved.pk:
+                    saved.invited_by = request.user
+                saved.save()
+                saved.departments.set(departments)
     except (ValidationError, IntegrityError) as error:
         message = ' '.join(error.messages) if isinstance(error, ValidationError) else 'This invitation already exists. Refresh and try again.'
         return JsonResponse({'success': False, 'error': message}, status=400)
+    if existing_assignment:
+        target, departments, title = existing_assignment
+        labels = ', '.join(department.name for department in departments)
+        sent = _send_saved_email(send_head_role_added_email, target, labels, title)
+        return JsonResponse({
+            'success': True,
+            'existing_account': True,
+            'email_sent': sent,
+            'message': ('Head access added to the existing Faculty account.' if sent else
+                        'Head access added, but the email could not be sent.'),
+        })
     sent = _send_saved_email(send_depthead_invite_email, saved.email, ', '.join(d.name for d in departments),
         saved.title, saved.include_faculty_access, saved.faculty_department.name if saved.faculty_department_id else '')
     return JsonResponse({'success': True, 'email_sent': sent, 'message':
@@ -128,11 +150,16 @@ def edit_depthead(request, user_id):
         try:
             with transaction.atomic():
                 departments = lock_departments(form.cleaned_data['departments'], request.user.school)
-                depthead = get_object_or_404(User.objects.select_for_update(), pk=user_id, role='depthead')
+                depthead = get_object_or_404(
+                    User.objects.select_for_update().filter(role_filter('depthead')), pk=user_id,
+                )
                 depthead.title = form.cleaned_data['title']
                 first = departments[0]
-                depthead.college = first.college.code if first.college else ''
-                depthead.save(update_fields=['title', 'college'])
+                update_fields = ['title']
+                if not has_role(depthead, 'faculty'):
+                    depthead.college = first.college.code if first.college else ''
+                    update_fields.append('college')
+                depthead.save(update_fields=update_fields)
                 depthead.managed_departments.set(departments)
         except ValidationError as error:
             return JsonResponse({'success': False, 'error': ' '.join(error.messages)}, status=400)
@@ -195,8 +222,11 @@ def resend_head_invite(request, invite_id):
 @login_required
 @role_required('superadmin')
 def remove_depthead(request, user_id):
-    depthead = get_object_or_404(User, id=user_id, role='depthead')
+    depthead = get_object_or_404(User.objects.filter(role_filter('depthead')), id=user_id)
     if request.method == 'POST':
+        if has_role(depthead, 'faculty'):
+            return JsonResponse({'success': False, 'error':
+                'This is a dual-role account. Use Remove Head access to preserve the Faculty account.'}, status=409)
         response = access_response(depthead, reactivate=request.POST.get('action') == 'reactivate')
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return response
@@ -208,8 +238,18 @@ def remove_depthead(request, user_id):
 @login_required
 @role_required('superadmin')
 def delete_depthead(request, user_id):
-    depthead = get_object_or_404(User, id=user_id, role='depthead')
+    depthead = get_object_or_404(User.objects.filter(role_filter('depthead')), id=user_id)
     if request.method == 'POST':
+        if has_role(depthead, 'faculty'):
+            with transaction.atomic():
+                target = get_object_or_404(User.objects.select_for_update(), pk=depthead.pk)
+                target.managed_departments.clear()
+                target.role = 'faculty'
+                target.title = None
+                target.save(update_fields=['role', 'title'])
+                UserRole.objects.filter(user=target, role__in=['faculty', 'depthead']).delete()
+            return JsonResponse({'success': True, 'message':
+                'Head access removed. The Faculty account and its history were preserved.'})
         try:
             with transaction.atomic():
                 depthead.delete()
@@ -325,11 +365,14 @@ def manage_offices(request):
 @role_required('superadmin')
 def manage_admins(request):
     department_filter = _department_filter(request)
-    depthead_accounts = list(with_consultation_counts(User.objects.filter(role='depthead')).prefetch_related('managed_departments__college'))
+    depthead_accounts = list(with_consultation_counts(
+        User.objects.filter(role_filter('depthead')),
+    ).prefetch_related('managed_departments__college', 'role_assignments').distinct())
     for user in depthead_accounts:
         user.department_ids = ','.join(str(item.pk) for item in user.managed_departments.all())
         user.department_names = ', '.join(item.name for item in user.managed_departments.all())
         user.college_labels = ', '.join(sorted({item.college.name for item in user.managed_departments.all() if item.college}))
+        user.has_faculty_role = has_role(user, 'faculty')
     if department_filter:
         depthead_accounts = [user for user in depthead_accounts if department_filter in user.department_ids.split(',')]
     invites = list(DeptHeadInvite.objects.filter(used=False).prefetch_related('departments__college'))

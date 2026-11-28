@@ -64,7 +64,8 @@ def managed_departments(user):
 
 def prepare_department_view(request):
     user = request.user
-    if user.role != 'depthead' or user.title != 'dean':
+    from apps.core.role_access import has_role
+    if not has_role(user, 'depthead') or user.title != 'dean':
         return
     choices = list(assigned_departments(user).select_related('college').order_by('name'))
     request.department_view_choices = choices

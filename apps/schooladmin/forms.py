@@ -2,9 +2,10 @@ from django import forms
 from django.db.models import Q
 from apps.core.colleges import get_college_choices, get_unit_choices
 from apps.core.models import College, Department, DeptHeadInvite, FacultyInvite, Office, OfficeAdminInvite, User
-from apps.core.invitations import validate_invite_identity
+from apps.core.invitations import unique_registered_user, validate_invite_identity
 from apps.core.school_forms import SchoolBoundModelForm, UnitStudentLevelsMixin
 from apps.core.education import LEVEL_CHOICES
+from apps.core.role_access import has_role
 from apps.core.school_models import SchoolDomain, validate_school_domain
 
 
@@ -79,7 +80,7 @@ class DeptHeadInviteForm(SchoolBoundModelForm):
             self.add_error('departments', 'Choose departments that serve the selected educational level.')
         if departments:
             self.instance.college = departments[0].college.code if departments[0].college else ''
-        if data.get('include_faculty_access'):
+        if data.get('include_faculty_access') and not getattr(self, 'existing_faculty', None):
             home = data.get('faculty_department')
             if len(departments) == 1:
                 data['faculty_department'] = departments[0]
@@ -92,7 +93,12 @@ class DeptHeadInviteForm(SchoolBoundModelForm):
         return data
 
     def clean_email(self):
-        return validate_invite_identity(self.cleaned_data['email'].strip().lower(), instance=self.instance)
+        email = self.cleaned_data['email'].strip().lower()
+        existing = unique_registered_user(email)
+        if existing and existing.school_id == self.instance.school_id and has_role(existing, 'faculty'):
+            self.existing_faculty = existing
+            return email
+        return validate_invite_identity(email, instance=self.instance)
 
 class AcademicUnitFilterSelect(forms.Select):
     """Expose the academic level served by each assignment option to the UI."""

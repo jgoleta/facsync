@@ -3,7 +3,7 @@
 {% block body %}
 <p>Hello {{ name }},</p>
 <p>Your existing FacSync account now has <strong>Faculty</strong> access for <strong>{{ college }}</strong>.</p>
-<p>Sign in with your usual Google account. If your account has multiple roles, FacSync will ask which role you want to use.</p>
+<p>Sign in with your usual Google account and choose Faculty.{% if needs_setup %} FacSync will ask you to complete Faculty setup, including entering your Faculty ID.{% endif %}</p>
 {% endblock %}
 {% block button %}
 <tr>

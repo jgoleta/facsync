@@ -222,7 +222,7 @@ def send_faculty_invite_email(email, college):
     ))
 
 
-def send_faculty_role_added_email(user, college):
+def send_faculty_role_added_email(user, college, *, needs_setup=True):
     """Notify an existing account that Faculty access was added."""
     email = (user.email or '').strip()
     if not email:
@@ -231,11 +231,13 @@ def send_faculty_role_added_email(user, college):
     return bool(_send_html_email(
         'Faculty access added to your FacSync account',
         'faculty_role_added.html',
-        {'name': user.get_full_name() or user.username, 'college': college, 'login_url': login_url},
+        {'name': user.get_full_name() or user.username, 'college': college,
+         'login_url': login_url, 'needs_setup': needs_setup},
         [email],
         text_content=(f'Hi {user.get_full_name() or user.username},\n\n'
                       f'Faculty access has been added to your FacSync account for {college}. '
-                      f'Sign in to FacSync at {login_url} and choose Faculty when prompted.'),
+                      f'Sign in to FacSync at {login_url} and choose Faculty.'
+                      + (' Complete Faculty setup using your Faculty ID.' if needs_setup else '')),
     ))
 
 
@@ -277,6 +279,25 @@ def send_depthead_invite_email(email, college, title, include_faculty_access=Fal
         {'college': college, 'title_label': title_label, 'include_faculty_access': include_faculty_access,
          'faculty_department': faculty_department},
         [email],
+    ))
+
+
+def send_head_role_added_email(user, departments, title):
+    """Notify an existing Faculty account that Head access was added."""
+    email = (user.email or '').strip()
+    if not email:
+        return False
+    title_label = dict(User.TITLE_CHOICES).get(title, 'Department Head')
+    login_url = settings.SITE_URL.rstrip('/') + reverse('core:login')
+    return bool(_send_html_email(
+        f'{title_label} access added to your FacSync account',
+        'head_role_added.html',
+        {'name': user.get_full_name() or user.username, 'title_label': title_label,
+         'departments': departments, 'login_url': login_url},
+        [email],
+        text_content=(f'Hi {user.get_full_name() or user.username},\n\n'
+                      f'{title_label} access has been added to your existing FacSync account for {departments}. '
+                      f'Your Faculty profile and history are unchanged. Sign in at {login_url}.'),
     ))
 
 def send_office_admin_invite_email(email, office):
