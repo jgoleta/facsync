@@ -1,0 +1,14 @@
+{% extends "emails/base_email.html" %}
+{% block heading %}{{ title_label }} access added{% endblock %}
+{% block body %}
+<p>Hello {{ name }},</p>
+<p>Your existing FacSync account now has <strong>{{ title_label }}</strong> access for <strong>{{ departments }}</strong>.</p>
+<p>Your Faculty profile, Faculty ID, schedules, and consultation history are unchanged. Sign in with your usual Google account and choose the Head workspace.</p>
+{% endblock %}
+{% block button %}
+<tr>
+    <td align="center" style="padding:8px 40px 24px 40px;">
+        <a href="{{ login_url }}" style="display:inline-block; background:linear-gradient(45deg,#3b82f6,#0b74de); color:#ffffff; text-decoration:none; font-weight:600; padding:12px 28px; border-radius:999px;">Sign In to FacSync</a>
+    </td>
+</tr>
+{% endblock %}

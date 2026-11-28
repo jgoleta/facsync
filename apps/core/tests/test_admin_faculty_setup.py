@@ -6,7 +6,8 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from apps.core.adapters import FacSyncSocialAdapter
-from apps.core.models import Department, DeptHeadInvite, Office, OfficeAdminInvite, School, User
+from apps.core.models import Department, DeptHeadInvite, Office, OfficeAdminInvite, School, User, UserRole
+from apps.depthead.forms import FacultyInviteForm
 from apps.faculty.models import FacultyProfile
 from apps.schooladmin.forms import DeptHeadInviteForm, OfficeAdminInviteForm
 
@@ -44,6 +45,7 @@ class AdminFacultySetupTests(TestCase):
         head = DeptHeadInviteForm(data={'email':'head@example.com', 'educational_level':'college', 'title':'chairperson',
             'departments':[self.department.pk], 'include_faculty_access':'on'}, school=self.school)
         office = OfficeAdminInviteForm(data={'email':'office@example.com', 'office':'REG'}, school=self.school)
+        self.assertNotIn('faculty_id', FacultyInviteForm(school=self.school).fields)
         for form in (head, office):
             self.assertNotIn('faculty_id', form.fields)
             self.assertTrue(form.is_valid(), form.errors)
@@ -100,6 +102,93 @@ class AdminFacultySetupTests(TestCase):
         profile.refresh_from_db()
         self.assertEqual(profile.office_location, 'Room 1')
         self.assertEqual(FacultyProfile.objects.filter(user=user).count(), 1)
+
+    def test_existing_admin_enters_faculty_id_during_own_setup(self):
+        from apps.depthead.faculty_access import add_faculty_access
+
+        actor = User.objects.create_user(
+            username='office-head', role='officeadmin', school=self.school, college=self.office.code,
+        )
+        admin = User.objects.create_user(
+            username='admin-without-faculty', role='officeadmin', school=self.school, college=self.office.code,
+        )
+        UserRole.objects.create(user=admin, role='faculty', is_active=False, assigned_by=actor)
+
+        add_faculty_access(actor, admin.pk)
+
+        self.assertTrue(admin.role_assignments.get(role='faculty').is_active)
+        self.assertFalse(FacultyProfile.objects.filter(user=admin).exists())
+        self.client.force_login(admin)
+        self.assertRedirects(
+            self.client.get(reverse('faculty:dashboard')),
+            reverse('core:faculty_profile_setup'),
+            fetch_redirect_response=False,
+        )
+
+        response = self.client.post(reverse('core:faculty_profile_setup'), {
+            'faculty_id': 'SELF-ENTERED-ID',
+            'office_location': 'Registrar Office',
+        })
+
+        self.assertRedirects(response, reverse('faculty:dashboard'), fetch_redirect_response=False)
+        self.assertTrue(FacultyProfile.objects.filter(user=admin, faculty_id='SELF-ENTERED-ID').exists())
+
+    @patch('apps.depthead.views.send_faculty_role_added_email', return_value=True)
+    def test_department_head_can_add_existing_admin_without_faculty_id(self, send_email):
+        actor = User.objects.create_user(
+            username='department-head', role='depthead', title='chairperson',
+            school=self.school, college='',
+        )
+        self.department.heads.add(actor)
+        admin = User.objects.create_user(
+            username='existing-admin', email='existing-admin@example.com',
+            role='depthead', title='chairperson', school=self.school,
+            college='',
+        )
+        self.department.heads.add(admin)
+        self.client.force_login(actor)
+
+        response = self.client.post(
+            reverse('depthead:invite_faculty'),
+            {'email': admin.email, 'department': self.department.pk},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertTrue(response.json()['existing_account'])
+        self.assertTrue(admin.role_assignments.get(role='faculty').is_active)
+        self.assertFalse(FacultyProfile.objects.filter(user=admin).exists())
+        send_email.assert_called_once_with(admin, self.department.name, needs_setup=True)
+
+    @patch('apps.depthead.views.send_faculty_role_added_email', return_value=True)
+    def test_restoring_access_reuses_existing_faculty_profile(self, send_email):
+        actor = User.objects.create_user(
+            username='restoring-office-head', role='officeadmin',
+            school=self.school, college=self.office.code,
+        )
+        admin = User.objects.create_user(
+            username='admin-with-profile', email='profile-admin@example.com', role='officeadmin',
+            school=self.school, college=self.office.code,
+        )
+        UserRole.objects.create(user=admin, role='faculty', is_active=False, assigned_by=actor)
+        profile = FacultyProfile.objects.create(
+            user=admin, faculty_id='PRESERVED-ID', college_id=self.office.code,
+            office_location='Original office',
+        )
+
+        self.client.force_login(actor)
+        response = self.client.post(
+            reverse('depthead:invite_faculty'),
+            {'email': admin.email},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        self.assertNotIn('enter their Faculty ID', response.json()['message'])
+        self.assertTrue(admin.role_assignments.get(role='faculty').is_active)
+        self.assertEqual(FacultyProfile.objects.get(user=admin).pk, profile.pk)
+        self.assertEqual(FacultyProfile.objects.filter(user=admin).count(), 1)
+        send_email.assert_called_once_with(admin, self.office.name, needs_setup=False)
 
     def test_office_only_invite_has_admin_access_without_faculty_setup(self):
         form = OfficeAdminInviteForm(data={'email':'adminonly@example.com', 'office':'REG'}, school=self.school)

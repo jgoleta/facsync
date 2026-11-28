@@ -89,15 +89,15 @@
                             data-departments="{{ admin.department_ids }}"
                             data-history-count="{{ admin.consultation_count }}"
                             data-account-status="{{ admin.account_status }}">Edit</button>
-                        <form method="post" action="{% url 'superadmin:remove_depthead' admin.pk %}" data-managed-form>
+                        {% if not admin.has_faculty_role %}<form method="post" action="{% url 'superadmin:remove_depthead' admin.pk %}" data-managed-form>
                             {% csrf_token %}{% if admin.account_status == 'deactivated' or not admin.is_active %}<input type="hidden"
                                 name="action" value="reactivate"><button class="btn-reactivate" type="submit"
                                 data-confirm="Reactivate this account?">Reactivate</button>{% else %}<button
                                 class="btn-deactivate" type="submit"
-                                data-confirm="Deactivate this account? {{ admin.consultation_count }} consultation record(s) will be preserved. Login and booking access will be removed.">Deactivate</button>{% endif %}</form>
+                                data-confirm="Deactivate this account? {{ admin.consultation_count }} consultation record(s) will be preserved. Login and booking access will be removed.">Deactivate</button>{% endif %}</form>{% endif %}
                         <form method="post" action="{% url 'superadmin:delete_depthead' admin.pk %}" data-managed-form>
                             {% csrf_token %}<button class="danger" type="submit"
-                                data-confirm="Permanently remove this Department Head account? This cannot be undone.">Remove</button>
+                                data-confirm="{% if admin.has_faculty_role %}Remove Head access? The Faculty account, profile, and history will remain available.{% else %}Permanently remove this Department Head account? This cannot be undone.{% endif %}">{% if admin.has_faculty_role %}Remove Head access{% else %}Remove{% endif %}</button>
                         </form>
                     </td>
                 </tr>{% empty %}<tr>
@@ -162,7 +162,7 @@
         </div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button>
     </div>
     <form method="post" action="{% url 'superadmin:invite_depthead' %}"
-        data-create-url="{% url 'superadmin:invite_depthead' %}" data-managed-form class="modal-form">{% csrf_token %}<p
+        data-create-url="{% url 'superadmin:invite_depthead' %}" data-managed-form data-toast-errors="true" class="modal-form">{% csrf_token %}<p
             data-form-error class="assignment-error" role="alert" hidden></p>
         <div class="modal-form-group"><label for="headInviteEmail">Google email</label><input id="headInviteEmail"
                 name="email" type="email" required></div>
@@ -174,9 +174,9 @@
         <div class="modal-form-group" data-head-college-group hidden><label for="headInviteCollege">College</label><select id="headInviteCollege" name="assigned_college"><option value="">Choose a college</option>{% for college in head_colleges %}<option value="{{ college.pk }}">{{ college.name }}</option>{% endfor %}</select><small>All active departments in this college will be assigned automatically.</small></div>
         <label class="faculty-access-option" for="headIncludeFaculty">
             <input id="headIncludeFaculty" name="include_faculty_access" type="checkbox" aria-describedby="headFacultyAccessHint">
-            <span><strong>Also give Faculty access</strong><small id="headFacultyAccessHint">Leave unchecked for admin access only.</small></span>
+            <span><strong>Also give Faculty access</strong><small id="headFacultyAccessHint">Leave unchecked for admin access only or if the email has an existing Faculty account.</small></span>
         </label>
-        <p class="form-hint">When Faculty access is included, the recipient enters their Faculty ID and Office / Room during setup.</p>
+        <p class="form-hint">Existing Faculty accounts keep their Faculty profile automatically. For new accounts, the recipient enters their Faculty ID and Office / Room during setup when Faculty access is included.</p>
         <div id="headFacultyFields" hidden>
             <div class="modal-form-group"><label for="headFacultyDepartment">Faculty department</label><select id="headFacultyDepartment" name="faculty_department" disabled><option value="">Choose a Faculty department</option>{% for department in departments %}<option value="{{ department.pk }}">{{ department.name }}</option>{% endfor %}</select><small class="form-hint">Choose their Faculty home from the selected departments.</small></div>
         </div>

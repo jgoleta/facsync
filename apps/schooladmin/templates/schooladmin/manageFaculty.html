@@ -121,7 +121,7 @@
             <p>The faculty member signs in with their invited Google email.</p>
         </div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button>
     </div>
-    <form method="post" action="{% url 'superadmin:invite_faculty_superadmin' %}" data-create-url="{% url 'superadmin:invite_faculty_superadmin' %}" data-managed-form class="modal-form">
+    <form method="post" action="{% url 'superadmin:invite_faculty_superadmin' %}" data-create-url="{% url 'superadmin:invite_faculty_superadmin' %}" data-managed-form data-toast-errors="true" class="modal-form">
         {% csrf_token %}<p data-form-error class="assignment-error" role="alert" hidden></p>
         <div class="modal-form-group"><label for="facultyInviteEmail">Google email</label><input id="facultyInviteEmail"
                 type="email" name="email" required></div>

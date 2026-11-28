@@ -63,7 +63,6 @@ class SharedWindowForm(forms.Form):
 
 class FacultyInviteForm(SchoolBoundModelForm):
     department = forms.ModelChoiceField(queryset=Department.objects.none(), required=False)
-    faculty_id = forms.CharField(max_length=64, required=False, label='Faculty ID')
     class Meta:
         model = FacultyInvite
         fields = ['email', 'department']
@@ -79,24 +78,12 @@ class FacultyInviteForm(SchoolBoundModelForm):
             self.fields.pop('department')
 
     def clean_email(self):
-        from apps.core.invitations import validate_invite_identity
+        from apps.core.invitations import unique_registered_user, validate_invite_identity
         email = self.cleaned_data['email']
-        existing = User._base_manager.filter(email__iexact=email).first()
+        existing = unique_registered_user(email)
         if existing and self.user and existing.school_id == self.user.school_id:
             return email
         return validate_invite_identity(email, instance=self.instance)
-
-    def clean_faculty_id(self):
-        value = self.cleaned_data['faculty_id'].strip()
-        if value:
-            from apps.faculty.models import FacultyProfile
-            profiles = FacultyProfile._base_manager.filter(pk=value)
-            email = self.cleaned_data.get('email')
-            if email:
-                profiles = profiles.exclude(user__email__iexact=email, user__school_id=self.instance.school_id)
-            if profiles.exists():
-                raise forms.ValidationError('This faculty identifier is unavailable.')
-        return value
 
 class OfficeClosureForm(SchoolBoundModelForm):
     class Meta:

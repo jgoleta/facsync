@@ -8,7 +8,7 @@ from apps.faculty.models import FacultyProfile
 
 
 @transaction.atomic
-def add_faculty_access(actor, user_id, department=None, *, faculty_id=None):
+def add_faculty_access(actor, user_id, department=None):
     School.objects.select_for_update().get(pk=actor.school_id, is_active=True)
     if department is not None:
         from .scope import managed_departments
@@ -37,13 +37,6 @@ def add_faculty_access(actor, user_id, department=None, *, faculty_id=None):
     profile = FacultyProfile.objects.filter(user=target).first()
     if profile and (profile.college_id or '').casefold() != code.casefold():
         raise ValidationError('This account has a different Faculty profile assignment. Contact your School Admin; its existing profile and history must be preserved.')
-    faculty_id = (faculty_id or '').strip()
-    if profile and faculty_id and profile.pk != faculty_id:
-        raise ValidationError('This account already has a Faculty ID. Preserve its existing ID when restoring Faculty access.')
-    if profile is None and not faculty_id:
-        raise ValidationError('Enter the Faculty ID for this existing account.')
-    if faculty_id and FacultyProfile._base_manager.filter(pk=faculty_id).exclude(user_id=target.pk).exists():
-        raise ValidationError('This faculty identifier is unavailable.')
 
     role, created = UserRole.objects.get_or_create(user=target, role='faculty', defaults={'assigned_by': actor})
     if not created:
@@ -59,6 +52,4 @@ def add_faculty_access(actor, user_id, department=None, *, faculty_id=None):
         changed.append('college')
     if changed:
         target.save(update_fields=changed)
-    FacultyProfile.objects.get_or_create(user=target,
-        defaults={'faculty_id': faculty_id, 'college_id': code})
     return target, label

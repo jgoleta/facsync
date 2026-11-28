@@ -256,17 +256,21 @@ def invite_faculty(request):
                 from .faculty_access import add_faculty_access
                 try:
                     existing_user, label = add_faculty_access(request.user, existing_user.pk,
-                        form.cleaned_data.get('department'), faculty_id=form.cleaned_data.get('faculty_id'))
+                        form.cleaned_data.get('department'))
                 except ValidationError as error:
                     form.add_error(None, error)
                 except IntegrityError:
-                    form.add_error(None, 'The Faculty ID or account changed. Refresh and try again.')
+                    form.add_error(None, 'The account or assignment changed. Refresh and try again.')
             if not form.errors:
+                needs_setup = not FacultyProfile.objects.filter(user=existing_user).exists()
                 message = f"{existing_user.get_full_name() or existing_user.email} was added as Faculty."
+                if needs_setup:
+                    message += " They will enter their Faculty ID during Faculty setup."
                 try:
                     email_sent = send_faculty_role_added_email(
                         existing_user,
                         label,
+                        needs_setup=needs_setup,
                     )
                 except Exception:
                     logger.exception('Existing account Faculty access email failed.')

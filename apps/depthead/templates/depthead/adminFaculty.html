@@ -263,11 +263,6 @@
               required
             />
           </div>
-          <div class="modal-form-group">
-            <label for="{{ faculty_invite_form.faculty_id.id_for_label }}">Faculty ID (existing accounts)</label>
-            {{ faculty_invite_form.faculty_id }}
-            <small class="form-hint">For an existing account, enter an ID only if it does not already have a Faculty Profile. New accounts receive an invitation.</small>
-          </div>
           {% if faculty_invite_form.department %}<div class="modal-form-group"><label for="{{ faculty_invite_form.department.id_for_label }}">Department</label>{{ faculty_invite_form.department }}</div>{% endif %}
           <div class="modal-actions">
             <button type="submit" class="btn-primary">Add Faculty / Send Invite</button>
