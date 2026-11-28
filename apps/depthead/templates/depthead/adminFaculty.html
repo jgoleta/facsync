@@ -88,7 +88,7 @@
                 </td>
                 <td>{{ user.email }}</td>
                 <td>{{ user.faculty_profile.office_location|default:'—' }}</td>
-                <td><span class="status-tag {{ user.account_status }}">{{ user.get_account_status_display }}</span></td>
+                    <td>{% if user.has_other_active_role and not user.faculty_access_active %}<span class="status-tag deactivated">Faculty access deactivated</span>{% else %}<span class="status-tag {{ user.account_status }}">{{ user.get_account_status_display }}</span>{% endif %}</td>
                 <td class="actions">
                   <div class="actions-content">
                   {% if user.faculty_profile %}
@@ -126,6 +126,18 @@
                     Schedule Unavailable
                   </button>
                   {% endif %}
+                  {% if user.has_other_active_role %}
+                  <form method="post" class="crud-action-form remove-faculty-form"
+                    action="{% url 'depthead:faculty_access' user.id %}" style="display: inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="{% if user.faculty_access_active %}deactivate{% else %}reactivate{% endif %}">
+                    <button type="submit" class="danger remove-faculty-trigger"
+                      data-faculty-name="{{ user.get_full_name|default:user.username }}"
+                      data-access-action="{% if user.faculty_access_active %}deactivate-faculty{% else %}reactivate-faculty{% endif %}">
+                      {% if user.faculty_access_active %}Deactivate Faculty access{% else %}Reactivate Faculty access{% endif %}
+                    </button>
+                  </form>
+                  {% else %}
                   <form
                     method="post"
                     class="crud-action-form remove-faculty-form"
@@ -144,15 +156,6 @@
                       {% if user.account_status == 'deactivated' %}Reactivate{% else %}Deactivate{% endif %}
                     </button>
                   </form>
-                  {% available_user_roles user as faculty_roles %}
-                  {% if faculty_roles|length > 1 %}
-                  <form method="post" class="remove-faculty-role-form"
-                    action="{% url 'depthead:remove_faculty_role' user.id %}" style="display: inline">
-                    {% csrf_token %}
-                    <button type="submit" class="danger"
-                      data-faculty-name="{{ user.get_full_name|default:user.username }}">Remove Faculty role</button>
-                  </form>
-                  {% else %}
                   <form method="post" class="crud-action-form remove-faculty-form"
                     action="{% url 'depthead:delete_faculty' user.id %}" style="display: inline">
                     {% csrf_token %}
@@ -361,6 +364,6 @@
     </div>
 
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
-    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261122-faculty-action-url"></script>
+    <script src="{% static 'depthead/js/adminFaculty.js' %}?v=20261128-faculty-access-toggle"></script>
   </body>
 </html>

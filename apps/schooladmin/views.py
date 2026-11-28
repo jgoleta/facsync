@@ -89,12 +89,10 @@ def _send_saved_email(sender, *args):
         return False
 
 
-def _save_head_invitation(request, invite=None):
+def _save_head_invitation(request):
     try:
         with transaction.atomic():
-            if invite is not None:
-                invite = get_object_or_404(DeptHeadInvite.objects.select_for_update(), pk=invite.pk, used=False)
-            form = DeptHeadInviteForm(request.POST, instance=invite)
+            form = DeptHeadInviteForm(request.POST)
             if not form.is_valid():
                 return form_error(form)
             departments = lock_departments(form.cleaned_data['departments'], request.user.school)
@@ -144,11 +142,54 @@ def edit_depthead(request, user_id):
 
 @login_required
 @role_required('superadmin')
-def edit_head_invite(request, invite_id):
-    invite = get_object_or_404(DeptHeadInvite, pk=invite_id, used=False)
-    if request.method == 'POST':
-        return _save_head_invitation(request, invite)
-    return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+def remove_admin_invite(request, invite_type, invite_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Only POST requests are allowed.'}, status=405)
+    model = {'head': DeptHeadInvite, 'office': OfficeAdminInvite}.get(invite_type)
+    if model is None:
+        raise PermissionDenied('Unknown invitation type.')
+    with transaction.atomic():
+        invite = get_object_or_404(model.objects.select_for_update(), pk=invite_id, used=False)
+        invite.delete()
+    return JsonResponse({'success': True, 'message': 'Invitation removed.'})
+
+
+@login_required
+@role_required('superadmin')
+def resend_head_invite(request, invite_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Only POST requests are allowed.'}, status=405)
+    with transaction.atomic():
+        get_object_or_404(School.objects.select_for_update(), pk=request.user.school_id, is_active=True)
+        invite = get_object_or_404(DeptHeadInvite.objects.select_for_update(), pk=invite_id, used=False)
+        departments = list(invite.departments.select_related('college'))
+        faculty_department = invite.faculty_department
+        invalid = (
+            not departments
+            or any(not unit.is_active or (unit.college_id and not unit.college.is_active) for unit in departments)
+            or (invite.include_faculty_access and (
+                faculty_department is None or not faculty_department.is_active
+            ))
+            or User._base_manager.filter(email__iexact=invite.email).exists()
+        )
+        if invalid:
+            return JsonResponse({
+                'success': False,
+                'error': 'This invitation is no longer available. Refresh the account list.',
+            }, status=400)
+    sent = _send_saved_email(
+        send_depthead_invite_email,
+        invite.email,
+        ', '.join(unit.name for unit in departments),
+        invite.title,
+        invite.include_faculty_access,
+        faculty_department.name if faculty_department else '',
+    )
+    return _office_invite_result(
+        request,
+        'Invitation emailed.' if sent else 'Invitation remains saved, but the email could not be sent.',
+        sent,
+    )
 
 
 @login_required
