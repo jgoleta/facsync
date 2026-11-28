@@ -21,20 +21,18 @@
             <thead>
                 <tr>
                     <th>Email</th>
-                    <th>Department / Office</th>{% if request.user.school.offers_college %}<th>College label</th>{% endif %}<th>Status</th><th>Test requests</th><th>Actions</th>
+                    <th>Department / Office</th>{% if request.user.school.offers_college %}<th>College label</th>{% endif %}<th>Status</th><th>Actions</th>
                 </tr>
             </thead>
             <tbody>{% for invite in faculty_invites %}<tr>
                     <td>{{ invite.email }}</td>
                     <td>{{ invite.unit_label }}</td>{% if request.user.school.offers_college %}<td>{{ invite.department.college.name|default:'No college' }}</td>{% endif %}<td><span
                             class="assignment-pill">Invited</span></td>
-                    <td>{% if invite.prepare_test_requests %}Four requests after profile setup{% else %}Off{% endif %}</td>
                     <td><button type="button" class="btn-secondary" data-open-modal="facultyInviteModal"
                         data-edit-url="{% url 'superadmin:edit_faculty_invite' invite.pk %}"
-                        data-email="{{ invite.email }}" data-unit="{{ invite.unit_value }}"
-                        data-prepare-test-requests="{{ invite.prepare_test_requests|yesno:'true,false' }}">Edit Invitation</button></td>
+                        data-email="{{ invite.email }}" data-unit="{{ invite.unit_value }}">Edit Invitation</button></td>
                 </tr>{% empty %}<tr>
-                    <td colspan="{% if request.user.school.offers_college %}6{% else %}5{% endif %}"
+                    <td colspan="{% if request.user.school.offers_college %}5{% else %}4{% endif %}"
                         class="empty-state">No pending faculty invitations.</td>
                 </tr>{% endfor %}</tbody>
         </table>
@@ -65,8 +63,7 @@
                     <th>Faculty ID</th>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Department / Office</th>{% if request.user.school.offers_college %}<th>College label</th>{% endif %}<th>Status</th>
-                    <th>Test requests</th><th>Actions</th>
+                    <th>Department / Office</th>{% if request.user.school.offers_college %}<th>College label</th>{% endif %}<th>Status</th><th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -79,11 +76,6 @@
                     user.college_label|default:'No college' }}</td>{% endif %}<td>{{
                         user.faculty_profile.office_location|default:'—' }}</td>
                     {% endcomment %}<td><span class="assignment-pill">{{ user.get_account_status_display }}</span></td>
-                    <td>{% if user.faculty_test_setup %}
-                        <span>{{ user.faculty_test_setup.get_status_display }}</span>
-                        {% if user.faculty_test_setup.last_error %}<small>{{ user.faculty_test_setup.last_error }}</small>{% endif %}
-                        {% if user.faculty_test_setup.status == 'blocked' %}<form method="post" action="{% url 'superadmin:retry_faculty_test_requests' user.pk %}" data-managed-form>{% csrf_token %}<button type="submit" class="btn-secondary">Retry test requests</button></form>{% endif %}
-                        {% else %}Off{% endif %}</td>
                     <td class="actions">
                         <form method="post" action="{% url 'superadmin:remove_faculty_superadmin' user.pk %}"
                             data-managed-form>{% csrf_token %}{% if user.account_status == "deactivated" or not user.is_active %}<input
@@ -99,7 +91,7 @@
                     </td>
                 </tr>
                 {% empty %}<tr>
-                    <td colspan="{% if request.user.school.offers_college %}8{% else %}7{% endif %}"
+                    <td colspan="{% if request.user.school.offers_college %}7{% else %}6{% endif %}"
                         class="empty-state">No registered faculty accounts yet.</td>
                 </tr>{% endfor %}</tbody>
         </table>
@@ -129,10 +121,6 @@
                 type="email" name="email" required></div>
         <div class="modal-form-group"><label for="facultyInviteUnit">Department or office</label><select id="facultyInviteUnit" name="unit" required>{% for group,options in faculty_invite_form.fields.unit.choices %}{% if group %}<optgroup label="{{ group }}">{% for value,label in options %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</optgroup>{% else %}<option value="">{{ options }}</option>{% endif %}{% endfor %}
             </select></div>
-        <label class="faculty-access-option" for="facultyPrepareTestRequests">
-            <input id="facultyPrepareTestRequests" type="checkbox" name="prepare_test_requests" aria-describedby="facultyTestRequestsHint">
-            <span><strong>Prepare four consultation requests for testing</strong><small id="facultyTestRequestsHint">After profile setup: approve, decline, approve then cancel, and approve then complete. All are Face-to-Face, with no request-creation emails. Test records appear in histories and analytics.</small></span>
-        </label>
         <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
                 class="btn-primary" type="submit">Save and Send Invite</button></div>
     </form>
@@ -153,4 +141,3 @@
     </form>
 </dialog>
 {% endblock %}
-{% block extra_scripts %}<script src="{% static 'schooladmin/js/facultyTestInvites.js' %}?v=20261125-test-invitations"></script>{% endblock %}

@@ -36,7 +36,7 @@ VIEW_FEATURES = {
     **dict.fromkeys(['manage_offices', 'create_office', 'delete_office', 'office_status', 'edit_office_levels'], 'offices'),
     **dict.fromkeys(['manage_admins', 'invite_depthead', 'edit_depthead', 'edit_head_invite', 'remove_depthead',
         'delete_depthead', 'remove_office_admin', 'delete_office_admin', 'invite_office_admin', 'resend_office_admin_invite'], 'admins'),
-    **dict.fromkeys(['manage_faculty', 'invite_faculty_superadmin', 'retry_faculty_test_requests', 'assign_faculty', 'remove_faculty_superadmin', 'delete_faculty_superadmin'], 'faculty'),
+    **dict.fromkeys(['manage_faculty', 'invite_faculty_superadmin', 'assign_faculty', 'remove_faculty_superadmin', 'delete_faculty_superadmin'], 'faculty'),
     **dict.fromkeys(['manage_students', 'remove_student_superadmin'], 'students'),
     'school_settings': 'settings',
 }
