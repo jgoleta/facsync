@@ -34,24 +34,19 @@
             <tbody>
                 {% for invite in admin_invites %}{% if invite.invite_type == 'head' %}<tr>
                     <td>{{ invite.email }}</td>
-                    <td>{{ invite.department_names|default:'Not assigned' }}{% if invite.include_faculty_access %}<br><small>Faculty: {{ invite.faculty_department.name|default:'Department needs review — edit this invitation' }}</small>{% else %}<br><small>Admin access only</small>{% endif %}</td>
+                    <td>{{ invite.department_names|default:'Not assigned' }}{% if invite.include_faculty_access %}<br><small>Faculty: {{ invite.faculty_department.name|default:'Department needs review' }}</small>{% else %}<br><small>Admin access only</small>{% endif %}</td>
                     <td>{{ invite.get_title_display }}</td>
                     <td><span class="assignment-pill">Invited</span></td>
-                    <td><button class="btn-secondary" type="button" data-open-modal="headInviteModal"
-                            data-edit-url="{% url 'superadmin:edit_head_invite' invite.pk %}"
-                            data-email="{{ invite.email }}" data-title="{{ invite.title }}"
-                            data-include-faculty-access="{{ invite.include_faculty_access|yesno:'true,false' }}"
-                            data-faculty-department="{{ invite.faculty_department_id|default:'' }}"
-                            data-departments="{{ invite.department_ids }}">Edit and email</button></td>
+                    <td class="actions"><form method="post" action="{% url 'superadmin:resend_head_invite' invite.pk %}" data-managed-form>{% csrf_token %}<button class="btn-secondary" type="submit">Resend</button></form><form method="post" action="{% url 'superadmin:remove_admin_invite' 'head' invite.pk %}" data-managed-form>{% csrf_token %}<button class="btn-deactivate" type="submit" data-confirm="Remove this pending invitation? The recipient will no longer be able to use it.">Remove invitation</button></form></td>
                 </tr>{% else %}<tr>
                     <td>{{ invite.email }}</td>
                     <td>{{ invite.office }}</td>
                     <td>-</td>
                     <td><span class="assignment-pill">Invited</span></td>
-                    <td>
-                        <form method="post" action="{% url 'superadmin:resend_office_admin_invite' invite.pk %}"
-                            data-managed-form>{% csrf_token %}<button type="submit"
-                                class="btn-secondary">Resend</button></form>
+                    <td class="actions">
+                        <form method="post" action="{% url 'superadmin:resend_office_admin_invite' invite.pk %}" data-managed-form>{% csrf_token %}<button type="submit" class="btn-secondary">Resend</button></form><form method="post" action="{% url 'superadmin:remove_admin_invite' 'office' invite.pk %}"
+                            data-managed-form>{% csrf_token %}<button type="submit" class="btn-deactivate"
+                                data-confirm="Remove this pending invitation? The recipient will no longer be able to use it.">Remove invitation</button></form>
                     </td>
                 </tr>{% endif %}{% empty %}<tr>
                     <td colspan="5" class="empty-state">No pending admin invitations.</td>

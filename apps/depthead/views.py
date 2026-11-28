@@ -31,6 +31,7 @@ from .scope import DepartmentScope, assigned_departments, managed_departments
 from apps.core.models import Department
 from apps.schooladmin.assignment_services import lock_departments
 from django.db import transaction, IntegrityError
+from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
@@ -334,6 +335,50 @@ def remove_faculty(request, user_id):
 @login_required
 @role_required('depthead')
 @require_POST
+def faculty_access(request, user_id):
+    action = request.POST.get('action')
+    if action not in {'deactivate', 'reactivate'}:
+        return JsonResponse({'success': False, 'error': 'Choose a valid Faculty access action.'}, status=400)
+    with transaction.atomic():
+        School.objects.select_for_update().get(pk=request.user.school_id)
+        explicit_faculty_users = UserRole.objects.filter(role='faculty').values('user_id')
+        target = get_object_or_404(
+            User.objects.select_for_update().filter(
+                Q(role='faculty') | Q(pk__in=explicit_faculty_users),
+                pk=user_id,
+                **_user_scope(request),
+            )
+        )
+        if not any(role != 'faculty' for role, _ in available_roles(target)):
+            return JsonResponse({'success': False, 'error':
+                'Faculty-only accounts must use account Deactivate instead.'}, status=409)
+        if action == 'reactivate':
+            if target.department_id and (not target.department.is_active or (
+                    target.department.college_id and not target.department.college.is_active)):
+                return JsonResponse({'success': False, 'error':
+                    'Reactivate the assigned department and college before restoring Faculty access.'}, status=409)
+            if not target.department_id and not Office.objects.filter(
+                    code__iexact=target.college or '', is_active=True).exists():
+                return JsonResponse({'success': False, 'error':
+                    'Reactivate the assigned office before restoring Faculty access.'}, status=409)
+        assignment, _ = UserRole.objects.get_or_create(
+            user=target,
+            role='faculty',
+            defaults={'is_active': action == 'reactivate', 'assigned_by': request.user},
+        )
+        enabled = action == 'reactivate'
+        if assignment.is_active != enabled:
+            assignment.is_active = enabled
+            assignment.assigned_by = request.user
+            assignment.save(update_fields=['is_active', 'assigned_by'])
+    label = target.get_full_name() or target.username
+    return JsonResponse({'success': True, 'message':
+        f'{label} Faculty access {"reactivated" if enabled else "deactivated"}. Admin login access is unchanged.'})
+
+
+@login_required
+@role_required('depthead')
+@require_POST
 def delete_faculty(request, user_id):
     try:
         with transaction.atomic():
@@ -349,27 +394,6 @@ def delete_faculty(request, user_id):
         return JsonResponse({'success': False, 'error':
             'This faculty account has consultation history or protected linked records and cannot be removed. Deactivate the account instead.'}, status=409)
     return JsonResponse({'success': True, 'message': 'Faculty account permanently removed.'})
-
-
-@login_required
-@role_required('depthead')
-@require_POST
-def remove_faculty_role(request, user_id):
-    """Withdraw Faculty access while preserving the account and its history."""
-    with transaction.atomic():
-        School.objects.select_for_update().get(pk=request.user.school_id)
-        target = get_object_or_404(User.objects.select_for_update().filter(role_filter('faculty')),
-            pk=user_id, **_user_scope(request))
-        if not any(role != 'faculty' for role, _ in available_roles(target)):
-            return JsonResponse({'success': False, 'error':
-                'This account has no other enabled role. Use Deactivate to preserve history or Remove for an eligible permanent deletion.'}, status=409)
-        assignment, created = UserRole.objects.get_or_create(user=target, role='faculty',
-            defaults={'is_active': False, 'assigned_by': request.user})
-        if not created:
-            assignment.is_active = False
-            assignment.save(update_fields=['is_active'])
-    return JsonResponse({'success': True, 'message':
-        'Faculty access removed. Other roles, the Faculty profile, and consultation history are preserved.'})
 
 
 @login_required
@@ -435,10 +459,17 @@ def ai_insights_api(request):
 def admin_faculty(request):
     managed_units = managed_departments(request.user) if has_role(request.user, 'depthead') else []
     college = managed_units[0] if managed_units else _managed_unit(request.managed_scope)
+    explicit_faculty_users = UserRole.objects.filter(role='faculty').values('user_id')
     faculty_users = list(with_consultation_counts(User.objects.filter(
-        role_filter('faculty'),
+        role_filter('faculty') | Q(pk__in=explicit_faculty_users),
         **_user_scope(request),
-    )).select_related('faculty_profile').order_by('first_name', 'last_name', 'username'))
+    )).select_related('faculty_profile').prefetch_related('role_assignments').distinct().order_by(
+        'first_name', 'last_name', 'username'))
+
+    for user in faculty_users:
+        assignments = {assignment.role: assignment.is_active for assignment in user.role_assignments.all()}
+        user.faculty_access_active = assignments.get('faculty', user.role == 'faculty')
+        user.has_other_active_role = any(role != 'faculty' for role, _ in available_roles(user))
 
     mark_inactive_faculty(faculty_users)
 
