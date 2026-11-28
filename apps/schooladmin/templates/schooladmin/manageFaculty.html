@@ -75,8 +75,13 @@
                     <td>{{ user.unit_label }}</td>{% if request.user.school.offers_college %}<td>{{ user.college_label|default:'No college' }}</td>{% endif %}{% comment %}
                     user.college_label|default:'No college' }}</td>{% endif %}<td>{{
                         user.faculty_profile.office_location|default:'—' }}</td>
-                    {% endcomment %}<td><span class="assignment-pill">{{ user.get_account_status_display }}</span></td>
+                    {% endcomment %}<td>{% if user.has_other_active_role and not user.faculty_access_active %}<span class="assignment-pill">Faculty access deactivated</span>{% else %}<span class="assignment-pill">{{ user.get_account_status_display }}</span>{% endif %}</td>
                     <td class="actions">
+                        {% if user.has_other_active_role %}
+                        <form method="post" action="{% url 'superadmin:faculty_access_superadmin' user.pk %}"
+                            data-managed-form>{% csrf_token %}<input type="hidden" name="action" value="{% if user.faculty_access_active %}deactivate{% else %}reactivate{% endif %}"><button type="submit" class="{% if user.faculty_access_active %}btn-deactivate{% else %}btn-reactivate{% endif %}"
+                                data-confirm="{% if user.faculty_access_active %}Deactivate Faculty access for this dual-role account? Admin login will remain active and Faculty history will be preserved.{% else %}Reactivate Faculty access for this account?{% endif %}">{% if user.faculty_access_active %}Deactivate Faculty access{% else %}Reactivate Faculty access{% endif %}</button></form>
+                        {% else %}
                         <form method="post" action="{% url 'superadmin:remove_faculty_superadmin' user.pk %}"
                             data-managed-form>{% csrf_token %}{% if user.account_status == "deactivated" or not user.is_active %}<input
                                 type="hidden" name="action" value="reactivate"><button type="submit"
@@ -88,6 +93,7 @@
                             data-managed-form data-toast-danger="true">{% csrf_token %}<button type="submit" class="danger"
                                 data-confirm="Permanently remove this faculty account? This cannot be undone.">Remove</button>
                         </form>
+                        {% endif %}
                     </td>
                 </tr>
                 {% empty %}<tr>

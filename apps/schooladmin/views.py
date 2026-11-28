@@ -9,15 +9,15 @@ import logging
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import F
+from django.db.models import F, Q
 from django.db.models.deletion import ProtectedError
 from apps.core.colleges import get_college_choices, get_unit_choices
 from apps.core.faculty import mark_inactive_faculty
 from .forms import DeptHeadInviteForm, FacultySuperInviteForm, OfficeAdminInviteForm, HeadAssignmentForm
 from .assignment_services import lock_departments
 from .department_views import form_error
-from apps.core.models import User, College, Department, DeptHeadInvite, Office, FacultyInvite, OfficeAdminInvite, OfficeClosure, CollegeAnnouncement, School
-from apps.core.role_access import role_filter
+from apps.core.models import User, UserRole, College, Department, DeptHeadInvite, Office, FacultyInvite, OfficeAdminInvite, OfficeClosure, CollegeAnnouncement, School
+from apps.core.role_access import role_filter, available_roles
 from apps.core.forms import CollegeForm, OfficeForm
 from apps.core.education import LEVEL_CHOICES
 from apps.core.services import (
@@ -366,14 +366,19 @@ def manage_admins(request):
 @login_required
 @role_required('superadmin')
 def manage_faculty(request):
+    explicit_faculty_users = UserRole.objects.filter(role='faculty').values('user_id')
     faculty_users = list(with_consultation_counts(User.objects.filter(
-        role_filter('faculty'),
-    )).select_related('faculty_profile', 'department__college').order_by(
+        role_filter('faculty') | Q(pk__in=explicit_faculty_users),
+    )).select_related('faculty_profile', 'department__college').prefetch_related(
+        'role_assignments').distinct().order_by(
         'college', 'first_name', 'last_name', 'username'
     ))
     mark_inactive_faculty(faculty_users)
     offices = {office.code.casefold(): office for office in Office.objects.all()}
     for user in faculty_users:
+        assignments = {assignment.role: assignment.is_active for assignment in user.role_assignments.all()}
+        user.faculty_access_active = assignments.get('faculty', user.role == 'faculty')
+        user.has_other_active_role = any(role != 'faculty' for role, _ in available_roles(user))
         office = offices.get(str(user.college or '').casefold()) if not user.department_id else None
         user.unit_value = f'department:{user.department_id}' if user.department_id else f'office:{office.pk}' if office else ''
         user.unit_label = user.department.name if user.department_id else office.name if office else 'Not assigned'
@@ -721,8 +726,49 @@ def invite_faculty_superadmin(request, invite_id=None):
 def remove_faculty_superadmin(request, user_id):
     faculty_user = get_object_or_404(User.objects.filter(role_filter('faculty')), id=user_id)
     if request.method == 'POST':
+        if any(role != 'faculty' for role, _ in available_roles(faculty_user)):
+            return JsonResponse({'success': False, 'error':
+                'Use Deactivate Faculty access for dual-role accounts. Admin login must remain active.'}, status=409)
         return access_response(faculty_user, reactivate=request.POST.get('action') == 'reactivate')
     return JsonResponse({'success': False, 'error': 'Invalid request method.'}, status=405)
+
+
+@login_required
+@role_required('superadmin')
+def faculty_access_superadmin(request, user_id):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Only POST requests are allowed.'}, status=405)
+    action = request.POST.get('action')
+    if action not in {'deactivate', 'reactivate'}:
+        return JsonResponse({'success': False, 'error': 'Choose a valid Faculty access action.'}, status=400)
+    with transaction.atomic():
+        School.objects.select_for_update().get(pk=request.user.school_id)
+        explicit_faculty_users = UserRole.objects.filter(role='faculty').values('user_id')
+        target = get_object_or_404(User.objects.select_for_update().filter(
+            Q(role='faculty') | Q(pk__in=explicit_faculty_users), pk=user_id))
+        if not any(role != 'faculty' for role, _ in available_roles(target)):
+            return JsonResponse({'success': False, 'error':
+                'Faculty-only accounts must use account Deactivate instead.'}, status=409)
+        if action == 'reactivate':
+            if target.department_id and (not target.department.is_active or (
+                    target.department.college_id and not target.department.college.is_active)):
+                return JsonResponse({'success': False, 'error':
+                    'Reactivate the assigned department and college before restoring Faculty access.'}, status=409)
+            if not target.department_id and not Office.objects.filter(
+                    code__iexact=target.college or '', is_active=True).exists():
+                return JsonResponse({'success': False, 'error':
+                    'Reactivate the assigned office before restoring Faculty access.'}, status=409)
+        assignment, _ = UserRole.objects.get_or_create(user=target, role='faculty', defaults={
+            'is_active': action == 'reactivate', 'assigned_by': request.user,
+        })
+        enabled = action == 'reactivate'
+        if assignment.is_active != enabled:
+            assignment.is_active = enabled
+            assignment.assigned_by = request.user
+            assignment.save(update_fields=['is_active', 'assigned_by'])
+    label = target.get_full_name() or target.username
+    return JsonResponse({'success': True, 'message':
+        f'{label} Faculty access {"reactivated" if enabled else "deactivated"}. Admin login access is unchanged.'})
 
 
 @login_required
@@ -730,6 +776,9 @@ def remove_faculty_superadmin(request, user_id):
 def delete_faculty_superadmin(request, user_id):
     faculty_user = get_object_or_404(User.objects.filter(role_filter('faculty')), id=user_id)
     if request.method == 'POST':
+        if any(role != 'faculty' for role, _ in available_roles(faculty_user)):
+            return JsonResponse({'success': False, 'error':
+                'Dual-role accounts can only be removed from Manage Admins.'}, status=409)
         try:
             with transaction.atomic():
                 faculty_user.delete()
