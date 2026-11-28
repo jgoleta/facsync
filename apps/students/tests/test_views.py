@@ -124,7 +124,7 @@ class StudentScheduleTests(TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertEqual(ConsultationRequest.objects.get().student_message, note)
 
-    def test_consultation_booking_rejects_a_101_character_message(self):
+    def test_consultation_booking_accepts_a_101_character_message(self):
         self.client.force_login(self.student)
         response = self.client.post(
             reverse('students:api_consultation_requests'),
@@ -138,9 +138,8 @@ class StudentScheduleTests(TestCase):
             content_type='application/json',
         )
 
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()['error'], 'Note must be 100 characters or fewer.')
-        self.assertFalse(ConsultationRequest.objects.exists())
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(ConsultationRequest.objects.get().student_message, 'x' * 101)
 
     def test_whitespace_only_consultation_message_is_saved_as_empty(self):
         self.client.force_login(self.student)

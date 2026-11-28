@@ -10,6 +10,7 @@ from django.conf import settings
 from django.utils import timezone
 from unittest.mock import patch
 
+from apps.core.models import School
 from ..models import ConsultationRequest, FacultyProfile, GoogleCalendarConnection, WalkInQueue
 from ..models import ScheduleEvent
 from ..services.google_calendar import google_event_payload, refresh_faculty_status, sync_google_calendar
@@ -73,7 +74,7 @@ class FacultyViewTests(TestCase):
         consultation.refresh_from_db()
         self.assertEqual(consultation.faculty_note, note)
 
-    def test_faculty_consultation_note_rejects_101_characters(self):
+    def test_faculty_consultation_note_accepts_101_characters(self):
         consultation = self._make_consultation_note_fixture('101')
 
         response = self.client.post(
@@ -82,10 +83,10 @@ class FacultyViewTests(TestCase):
             content_type='application/json',
         )
 
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()['error'], 'Note must be 100 characters or fewer.')
+        self.assertEqual(response.status_code, 200)
         consultation.refresh_from_db()
-        self.assertEqual(consultation.status, 'pending')
+        self.assertEqual(consultation.status, 'approved')
+        self.assertEqual(consultation.faculty_note, 'x' * 101)
 
     def test_whitespace_only_faculty_note_is_saved_as_empty(self):
         consultation = self._make_consultation_note_fixture('whitespace')
@@ -226,6 +227,52 @@ class FacultyViewTests(TestCase):
         response = self.client.get(reverse('faculty:dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'faculty/dashboardFaculty.html')
+
+    def test_dashboard_excludes_completed_consultations_from_today_count(self):
+        operator = get_user_model().objects.create_user(
+            username='today-count-operator',
+            role='systemadmin',
+        )
+        school = School(code='TODAY_COUNT', name='Today Count School')
+        school.save(actor=operator)
+        faculty_user = get_user_model().objects.create_user(
+            username='faculty-today-count',
+            password='test-password',
+            role='faculty',
+            school=school,
+        )
+        student = get_user_model().objects.create_user(
+            username='student-today-count',
+            password='test-password',
+            role='student',
+            school=school,
+        )
+        faculty = FacultyProfile.objects.create(
+            faculty_id='faculty-today-count',
+            user=faculty_user,
+            college_id='CCS',
+        )
+        today = timezone.localdate()
+        ConsultationRequest.objects.create(
+            request_id='today-count-approved',
+            user=student,
+            faculty=faculty,
+            date=today,
+            status='approved',
+        )
+        ConsultationRequest.objects.create(
+            request_id='today-count-completed',
+            user=student,
+            faculty=faculty,
+            date=today,
+            status='completed',
+        )
+        self.client.force_login(faculty_user)
+
+        response = self.client.get(reverse('faculty:dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['consultations_today_count'], 1)
 
     def test_status_update_persists_status_note_and_history(self):
         user = get_user_model().objects.create_user(

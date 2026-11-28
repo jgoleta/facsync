@@ -1,6 +1,9 @@
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+import logging
+import uuid
+
+from django.db import IntegrityError, transaction
 from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.cache import never_cache
@@ -15,6 +18,7 @@ from .school_onboarding_progress import onboarding_progress
 from apps.systemadmin.onboarding_services import link_digest, valid_link, submit_verification
 
 LINK_SESSION_KEY = 'school_access_link_id'
+logger = logging.getLogger(__name__)
 
 
 def current_access(request, purpose=None):
@@ -34,6 +38,13 @@ def render_access(request, **context):
 @never_cache
 @require_http_methods(['GET', 'POST'])
 def school_inquiry(request):
+    if request.method == 'GET' and request.GET.get('received') == '1':
+        reference = request.session.get('school_inquiry_receipt')
+        if reference:
+            return render_access(request, title='Submission received', completed=True,
+                submission_reference=reference, progress_stage='inquiry',
+                description='If eligible, your inquiry will be reviewed. An existing open inquiry remains in review. '
+                'Email updates may be delayed. Keep this submission reference for any follow-up with FacSync.')
     form = SchoolInquiryForm(request.POST if request.method == 'POST' else None)
     if request.method == 'POST' and form.is_valid():
         # Public forms do not disclose whether an email already has an inquiry.
@@ -42,22 +53,38 @@ def school_inquiry(request):
         attempts = cache.get(key, 0)
         if attempts >= 5:
             form.add_error(None, 'Too many submissions. Please try again in an hour.')
+            response = render_access(request, title='Request School Access', form=form, progress_stage='inquiry_form')
+            response.status_code = 429
+            response['Retry-After'] = '3600'
+            return response
         else:
             cache.set(key, attempts + 1, 3600)
+            reference = str(uuid.uuid4())
+            item = None
             try:
                 if not SchoolInquiry.objects.filter(email__iexact=email).exclude(stage__in=['approved', 'rejected']).exists():
                     from datetime import timedelta
                     if SchoolInquiry.objects.filter(email__iexact=email, created_at__gte=timezone.now()-timedelta(hours=1)).count() < 3:
-                        item = SchoolInquiry.objects.create(**{k: form.cleaned_data[k] for k in
-                            ('representative_name', 'email', 'position', 'school_name')})
-                        SchoolInquiryEvent.objects.create(inquiry=item, action='inquiry_submitted')
-                        from .services import send_school_inquiry_receipt, send_school_inquiry_notification
-                        deliver_request_email(send_school_inquiry_receipt, item)
-                        deliver_request_email(send_school_inquiry_notification, item)
+                        with transaction.atomic():
+                            item = SchoolInquiry.objects.create(**{k: form.cleaned_data[k] for k in
+                                ('representative_name', 'email', 'position', 'school_name')})
+                            SchoolInquiryEvent.objects.create(inquiry=item, action='inquiry_submitted',
+                                private_notes=f'Submission reference: {reference}')
             except IntegrityError:
-                pass
-            return render_access(request, title='Inquiry received', completed=True, progress_stage='inquiry',
-                description='Your inquiry has been received. If an inquiry already exists, it remains in review. Check your email for the next steps.')
+                item = None
+                if not SchoolInquiry.objects.filter(email__iexact=email).exclude(stage__in=['approved', 'rejected']).exists():
+                    raise
+            if item:
+                from .services import send_school_inquiry_receipt, send_school_inquiry_notification
+                for kind, sender in [('receipt', send_school_inquiry_receipt), ('notification', send_school_inquiry_notification)]:
+                    accepted = deliver_request_email(sender, item)
+                    SchoolInquiryEvent.objects.create(inquiry=item,
+                        action=f'{kind}_email_accepted' if accepted else f'{kind}_email_failed',
+                        private_notes=f'Submission reference: {reference}')
+            logger.info('school_inquiry_submission reference=%s inquiry=%s', reference, item.pk if item else 'existing_or_limited')
+            request.session['school_inquiry_receipt'] = reference
+            from django.urls import reverse
+            return redirect(reverse('core:school_inquiry') + '?received=1')
     return render_access(request, title='Request School Access', form=form, progress_stage='inquiry_form',
         description='Tell us who you represent. A Super Admin will review your inquiry before inviting you to complete private verification.')
 

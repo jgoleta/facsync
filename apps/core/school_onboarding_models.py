@@ -62,7 +62,11 @@ class SchoolInquiryEvent(models.Model):
 
     @property
     def action_label(self):
-        return {'inquiry_submitted': 'Inquiry submitted', 'send_verification': 'Verification form invited',
+        return {'receipt_email_failed': 'Inquiry receipt email failed — retry needed',
+            'notification_email_failed': 'Reviewer notification email failed — retry needed',
+            'receipt_email_accepted': 'Inquiry receipt email accepted by provider',
+            'notification_email_accepted': 'Reviewer notification email accepted by provider',
+            'inquiry_submitted': 'Inquiry submitted', 'send_verification': 'Verification form invited',
             'request_changes': 'Verification corrections requested', 'send_registration': 'Registration invited',
             'verification_submitted': 'Verification submitted', 'registration_submitted': 'Registration submitted',
             'reject': 'Inquiry rejected', 'final_approve': 'School approved', 'final_reject': 'Registration rejected',

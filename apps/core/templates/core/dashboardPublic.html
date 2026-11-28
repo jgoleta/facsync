@@ -4,9 +4,9 @@
 
 <head>
     <link rel="stylesheet" href="{% static 'css/base.css' %}?v=20261015-brand-logo">
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FacSync | Public Dashboard</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FacSync | Dashboard Mockup</title>
     <link rel="stylesheet" href="{% static 'core/css/dashboardPublic.css' %}?v=20260819-status-colors">
     <link rel="stylesheet" href="{% static 'students/css/dashboardStudent.css' %}?v=20260903-status-labels">
 </head>
@@ -14,97 +14,114 @@
 <body class="student-dashboard public-dashboard">
     <div class="page-shell">
         <header class="topbar">
-            <a href="{% if request.user.is_authenticated %}{% url 'core:post_login_redirect' %}{% else %}{% url 'core:landing' %}{% endif %}" class="brand">
-                <span class="brand-mark brand-mark-image"><img src="https://i.imgur.com/MFtx6rV.png" alt="" onload="this.classList.add('is-loaded')" onerror="this.remove()"><span class="brand-mark-placeholder" aria-hidden="true">F</span></span>
-                <span>FacSync</span>
-            </a>
-            <nav class="nav-links">
-                <a href="{% if request.user.is_authenticated %}{% url 'core:post_login_redirect' %}{% else %}{% url 'core:landing' %}{% endif %}" class="nav-btn">Home</a>
-                <a href="{% url 'core:login' %}" class="nav-btn">Login</a>
-            </nav>
+            <a href="{% url 'core:landing' %}" class="brand"><span class="brand-mark brand-mark-image"><img
+                        src="https://i.imgur.com/MFtx6rV.png" alt="" onload="this.classList.add('is-loaded')"
+                        onerror="this.remove()"><span class="brand-mark-placeholder"
+                        aria-hidden="true">F</span></span><span>FacSync</span></a>
+            <nav class="nav-links"><a href="{% url 'core:landing' %}" class="nav-btn">Home</a><a
+                    href="{% url 'core:login' %}" class="nav-btn">Login</a></nav>
         </header>
-
         <main class="container dashboard-container">
             <section class="dashboard-hero">
                 <div class="hero-copy">
-                    <p class="eyebrow">Public Dashboard</p>
-                    <p>Check live faculty availability and find the right college for your next visit.</p>
+                    <p class="eyebrow">Product mockup</p>
+                    <h1>Faculty availability dashboard</h1>
+                    <p>Preview how students can find faculty availability, filter by college, and plan their next visit.
+                    </p>
                 </div>
             </section>
-
+            <div class="college-status-banner open" role="status"><strong>Design preview: </strong><span>This page uses
+                    sample data and is not connected to live faculty availability.</span></div>
             <section class="availability-panel" aria-labelledby="availability-title">
                 <header class="toolbar">
                     <div class="section-heading">
-                        <h1 id="availability-title">Faculty availability</h1>
-                        <p>Use the filters to find a faculty member by college or name.</p>
+                        <h2 id="availability-title">Faculty availability</h2>
+                        <p>Use the filters to explore the proposed experience.</p>
                     </div>
-
-                    <div class="controls" aria-label="Filter faculty">
-                    <label class="control">
-                        <span class="control-label">College</span>
-                        <select id="collegeFilter">
-                            <option value="all">All Colleges</option>
-                            {% for code, label in college_choices %}
-                            <option value="{{ label }}">{{ label }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-
-                    <label class="control toggle">
-                        <input type="checkbox" id="availableToggle" />
-                        <span class="toggle-track" aria-hidden="true"><span></span></span>
-                        <span>Available now</span>
-                    </label>
-
-                    <label class="control search">
-                        <span class="control-label">Search</span>
-                        <input id="searchInput" type="search" placeholder="Search faculty by name" />
-                    </label>
-                    </div>
+                    <div class="controls" aria-label="Filter faculty"><label class="control"><span
+                                class="control-label">College</span><select id="collegeFilter">
+                                <option value="all">All Colleges</option>{% for code, label in college_choices %}<option
+                                    value="{{ label }}">{{ label }}</option>{% endfor %}
+                            </select></label><label class="control toggle"><input type="checkbox"
+                                id="availableToggle"><span class="toggle-track"
+                                aria-hidden="true"><span></span></span><span>Available now</span></label><label
+                            class="control search"><span class="control-label">Search</span><input id="searchInput"
+                                type="search" placeholder="Search faculty by name"></label></div>
                 </header>
-
-            <div id="closureBanner" class="closure-banner{% if not closures %} hidden{% endif %}">
-                {% for c in closures %}
-                <p>
-                    <strong>{{ c.college_name }} is currently closed.</strong>
-                    {% if c.reason %}{{ c.reason }}{% endif %}
-                    {% if c.closure_start %}({{ c.closure_start }}{% if c.closure_end %} – {{ c.closure_end }}{% endif %}){% endif %}
-                </p>
-                {% endfor %}
-            </div>
-
-            <section id="facultyGrid" class="grid" aria-live="polite" aria-label="Faculty availability cards">
-                {% for card in faculty_cards %}
-                <article class="card{% if card.is_college_closed %} card-closed{% endif %}" data-id="{{ card.id }}"
-                    data-college="{{ card.college_name }}" data-status="{{ card.data_status }}"
-                    data-lastupdated="{{ card.last_updated_iso }}">
-                    <div class="card-left">
-                        <span class="avatar fs-avatar" aria-hidden="true">
-                        <svg class="fs-avatar-fallback" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="12" cy="8" r="3.2" fill="#e6eefc" />
-                            <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#e6eefc" />
-                        </svg>
-                        {% if card.photo_url %}<img src="{{ card.photo_url }}" alt="" loading="lazy" referrerpolicy="no-referrer" data-avatar-image>{% endif %}
-                        </span>
-                    </div>
-                    <div class="card-body">
-                        <div class="card-title">{{ card.name }}</div>
-                        <div class="card-sub">{{ card.college_name }}</div>
-                        <div class="status-row"><span class="status-badge {{ card.status_class }}" aria-hidden="true"></span>
-                            <span class="status-label">{{ card.status_label }}</span>
-                            <div class="status-note">{{ card.status_note }}</div>
+                <section id="facultyGrid" class="grid" aria-live="polite"
+                    aria-label="Sample faculty availability cards">
+                    <article class="card" data-id="mock-1" data-college="College of Computer Studies"
+                        data-status="available" data-lastupdated="2026-11-28T09:30:00">
+                        <div class="card-left"><span class="avatar fs-avatar" aria-hidden="true"><svg
+                                    class="fs-avatar-fallback" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="8" r="3.2" fill="#e6eefc" />
+                                    <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#e6eefc" />
+                                </svg></span></div>
+                        <div class="card-body">
+                            <div class="card-title">Dr. Maria Santos</div>
+                            <div class="card-sub">College of Computer Studies</div>
+                            <div class="status-row"><span class="status-badge status-available"
+                                    aria-hidden="true"></span><span class="status-label">Available</span>
+                                <div class="status-note">In the office and open for consultations</div>
+                            </div>
+                            <div class="meta">Last updated: Nov 28, 2026 · 9:30 AM</div>
                         </div>
-                        <div class="meta">Last updated: {{ card.last_updated_display }}</div>
-                    </div>
-                </article>
-                {% empty %}
-                <p class="empty-state">No faculty available to display right now.</p>
-                {% endfor %}
-            </section>
+                    </article>
+                    <article class="card" data-id="mock-2" data-college="College of Education" data-status="busy"
+                        data-lastupdated="2026-11-28T09:18:00">
+                        <div class="card-left"><span class="avatar fs-avatar" aria-hidden="true"><svg
+                                    class="fs-avatar-fallback" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="8" r="3.2" fill="#e6eefc" />
+                                    <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#e6eefc" />
+                                </svg></span></div>
+                        <div class="card-body">
+                            <div class="card-title">Prof. James Reyes</div>
+                            <div class="card-sub">College of Education</div>
+                            <div class="status-row"><span class="status-badge status-busy"
+                                    aria-hidden="true"></span><span class="status-label">Busy</span>
+                                <div class="status-note">Currently in a class</div>
+                            </div>
+                            <div class="meta">Last updated: Nov 28, 2026 · 9:18 AM</div>
+                        </div>
+                    </article>
+                    <article class="card" data-id="mock-3" data-college="College of Business and Accountancy"
+                        data-status="virtual" data-lastupdated="2026-11-28T08:55:00">
+                        <div class="card-left"><span class="avatar fs-avatar" aria-hidden="true"><svg
+                                    class="fs-avatar-fallback" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="8" r="3.2" fill="#e6eefc" />
+                                    <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#e6eefc" />
+                                </svg></span></div>
+                        <div class="card-body">
+                            <div class="card-title">Atty. Nina Cruz</div>
+                            <div class="card-sub">College of Business and Accountancy</div>
+                            <div class="status-row"><span class="status-badge status-virtual"
+                                    aria-hidden="true"></span><span class="status-label">Virtual Only</span>
+                                <div class="status-note">Available through online consultation</div>
+                            </div>
+                            <div class="meta">Last updated: Nov 28, 2026 · 8:55 AM</div>
+                        </div>
+                    </article>
+                    <article class="card" data-id="mock-4" data-college="College of Arts and Sciences"
+                        data-status="on-leave" data-lastupdated="2026-11-27T16:40:00">
+                        <div class="card-left"><span class="avatar fs-avatar" aria-hidden="true"><svg
+                                    class="fs-avatar-fallback" viewBox="0 0 24 24">
+                                    <circle cx="12" cy="8" r="3.2" fill="#e6eefc" />
+                                    <path d="M4 20c0-3.3 4-5 8-5s8 1.7 8 5v1H4v-1z" fill="#e6eefc" />
+                                </svg></span></div>
+                        <div class="card-body">
+                            <div class="card-title">Dr. Paolo Dela Cruz</div>
+                            <div class="card-sub">College of Arts and Sciences</div>
+                            <div class="status-row"><span class="status-badge status-on-leave"
+                                    aria-hidden="true"></span><span class="status-label">On Leave</span>
+                                <div class="status-note">Expected back next week</div>
+                            </div>
+                            <div class="meta">Last updated: Nov 27, 2026 · 4:40 PM</div>
+                        </div>
+                    </article>
+                </section>
             </section>
         </main>
     </div>
-    
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
     <script src="{% static 'students/js/dashboardStudent.js' %}?v=20261002-avatars"></script>
 </body>

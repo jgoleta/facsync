@@ -59,6 +59,7 @@ Settings{% endblock %} {% block content %}
       class="settings-form education-settings-form"
       action="{% url 'superadmin:school_settings' %}"
       data-managed-form
+      data-toast-errors="true"
     >
       {% csrf_token %}
       <fieldset>

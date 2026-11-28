@@ -626,7 +626,10 @@ def dashboard(request):
     consultation_counts = faculty_consultations.aggregate(
         pending=Count('request_id', filter=Q(status='pending')),
         approved=Count('request_id', filter=Q(status__in=['approved', 'cancellation_requested'])),
-        today=Count('request_id', filter=Q(date=today) & ~Q(status__in=['declined', 'cancelled'])),
+        today=Count(
+            'request_id',
+            filter=Q(date=today) & ~Q(status__in=['declined', 'cancelled', 'completed']),
+        ),
     )
     current_status = faculty_profile.current_status if faculty_profile else 'not_set'
     status_css_class = {
