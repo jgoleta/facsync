@@ -61,6 +61,7 @@
                     <table class="faculty-accounts-table">
                         <thead>
                             <tr>
+                                <th>Student ID</th>
                                 <th>Name</th>
                                 <th>Email</th>
                                 <th>Level / Grade or Year</th>
@@ -72,6 +73,7 @@
                         <tbody>
                             {% for s in student_accounts %}
                             <tr>
+                                <td>{{ s.student_id|default:'—' }}</td>
                                 <td>{{ s.get_full_name|default:s.username }}</td>
                                 <td>{{ s.email }}</td>
                                 <td>{{ s.get_educational_level_display }} · {{ s.get_year_level_display }}</td>
@@ -94,7 +96,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="{% if request.user.school.offers_college %}7{% else %}6{% endif %}"
+                                <td colspan="{% if request.user.school.offers_college %}8{% else %}7{% endif %}"
                                     class="empty-state">No student accounts yet.</td>
                             </tr>
                             {% endfor %}

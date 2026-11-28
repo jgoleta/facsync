@@ -907,7 +907,10 @@ def sync_google_calendar(user):
 def refresh_faculty_status(faculty, google_events=None, *, immediate_email=False):
     """Serialize transitions across page requests and scheduled checks."""
     with transaction.atomic():
-        locked = FacultyProfile.objects.select_for_update().get(pk=faculty.pk)
+        # School scoping adds a join through the related user. Lock only the
+        # profile row; locking the joined core_user row can deadlock with
+        # requests that acquire the user lock before the faculty profile lock.
+        locked = FacultyProfile.objects.select_for_update(of=('self',)).get(pk=faculty.pk)
         result = _refresh_faculty_status_locked(locked, google_events, immediate_email=immediate_email)
         for field in ('current_status', 'status_updated_at', 'manual_status',
                       'manual_status_override', 'manual_status_expires_at', 'status_note'):

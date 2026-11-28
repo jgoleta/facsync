@@ -1,5 +1,6 @@
 from allauth.core.exceptions import ImmediateHttpResponse
 from allauth.socialaccount.models import SocialAccount, SocialLogin
+from django.conf import settings
 from django.contrib.messages import get_messages
 from django.contrib.messages.storage.fallback import FallbackStorage
 from django.test import RequestFactory, TestCase
@@ -52,14 +53,43 @@ class RegistrationTests(TestCase):
         school.save(actor=operator)
         student = User.objects.create_user(username='level-test-student', role='student', school=school)
         self.client.force_login(student)
+        session = self.client.session
+        session['student_profile_setup_allowed'] = True
+        session.save()
+        self.client.cookies[settings.SESSION_COOKIE_NAME] = session.session_key
+        self.assertFalse(student.profile_completed)
+        self.assertTrue(self.client.session.get('student_profile_setup_allowed'))
 
         response = self.client.get(reverse('core:student_profile_setup'))
 
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 200, getattr(response, 'url', ''))
         self.assertContains(response, 'value="shs"')
         self.assertContains(response, 'value="college"')
         self.assertNotContains(response, 'value="elementary"')
         self.assertNotContains(response, 'value="jhs"')
+
+    def test_completed_or_direct_student_profile_setup_is_blocked(self):
+        operator = User.objects.create_user(username='profile-guard-operator', role='systemadmin')
+        school = School(code='PROFILE_GUARD', name='Profile Guard School', educational_levels=['college'])
+        school.save(actor=operator)
+        student = User.objects.create_user(username='profile-guard-student', role='student', school=school,
+                                           profile_completed=True)
+        self.client.force_login(student)
+
+        response = self.client.get(reverse('core:student_profile_setup'))
+
+        self.assertRedirects(response, reverse('students:profile'), fetch_redirect_response=False)
+
+    def test_uninvited_faculty_cannot_open_faculty_profile_setup(self):
+        operator = User.objects.create_user(username='faculty-guard-operator', role='systemadmin')
+        school = School(code='FACULTY_GUARD', name='Faculty Guard School', educational_levels=['college'])
+        school.save(actor=operator)
+        faculty = User.objects.create_user(username='uninvited-faculty', role='faculty', school=school)
+        self.client.force_login(faculty)
+
+        response = self.client.get(reverse('core:faculty_profile_setup'))
+
+        self.assertRedirects(response, reverse('faculty:dashboard'), fetch_redirect_response=False)
 
     def test_student_adapter_registration_remains_active(self):
         request, sociallogin = self.make_login(role='student')

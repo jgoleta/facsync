@@ -9,6 +9,7 @@ import logging
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
+from django.db.models import F
 from django.db.models.deletion import ProtectedError
 from apps.core.colleges import get_college_choices, get_unit_choices
 from apps.core.faculty import mark_inactive_faculty
@@ -372,20 +373,45 @@ def manage_faculty(request):
 @login_required
 @role_required('superadmin')
 def manage_students(request):
+    from apps.core.education import LEVEL_CHOICES, YEAR_CHOICES
     student_accounts = with_consultation_counts(User.objects.filter(role='student')).select_related('department__college').order_by('first_name', 'last_name', 'pk')
-    department_filter = _department_filter(request, allow_unassigned=True)
     college_filter = _choice_filter(request, 'college', College.objects.all()) if request.user.school.offers_college else ''
+    offered_levels = request.user.school.educational_levels or []
+    student_level_filter = request.GET.get('student_level', '') if request.GET.get('student_level') in offered_levels else ''
+    allowed_years = dict(YEAR_CHOICES.get(student_level_filter, []))
+    student_year_filter = request.GET.get('student_year', '') if request.GET.get('student_year') in allowed_years else ''
+    student_id_order = request.GET.get('student_id_order', '') if request.GET.get('student_id_order') in ('asc', 'desc') else ''
+    departments = Department.objects.select_related('college').order_by('name')
+    if student_level_filter:
+        eligible_department_ids = [department.pk for department in departments
+                                   if student_level_filter in (department.student_levels or [])]
+        departments = departments.filter(pk__in=eligible_department_ids)
+    department_filter = _choice_filter(request, 'department', departments)
+    if request.GET.get('department') == 'unassigned':
+        department_filter = 'unassigned'
     if department_filter == 'unassigned':
         student_accounts = student_accounts.filter(department__isnull=True)
     elif department_filter:
         student_accounts = student_accounts.filter(department_id=department_filter)
     if college_filter:
         student_accounts = student_accounts.filter(department__college_id=college_filter)
+    if student_level_filter:
+        student_accounts = student_accounts.filter(educational_level=student_level_filter)
+    if student_year_filter:
+        student_accounts = student_accounts.filter(year_level=student_year_filter)
+    if student_id_order == 'asc':
+        student_accounts = student_accounts.order_by(F('student_id').asc(nulls_last=True), 'pk')
+    elif student_id_order == 'desc':
+        student_accounts = student_accounts.order_by(F('student_id').desc(nulls_last=True), 'pk')
     student_count = student_accounts.count()
     return render(request, 'schooladmin/manageStudents.html', {
-        'departments': Department.objects.order_by('name'), 'department_filter': department_filter,
+        'departments': departments, 'department_filter': department_filter,
         'college_filter': college_filter, 'colleges': College.objects.order_by('name'),
-        'filter_query': _filter_query(request, ['department', 'college']),
+        'filter_query': _filter_query(request, ['department', 'college', 'student_level', 'student_year', 'student_id_order']),
+        'student_filter_levels': [(key, label) for key, label in LEVEL_CHOICES if key in offered_levels],
+        'student_level_filter': student_level_filter, 'student_year_filter': student_year_filter,
+        'student_id_order': student_id_order,
+        'student_year_choices': {key: YEAR_CHOICES[key] for key, _ in LEVEL_CHOICES if key in offered_levels},
         'student_count': student_count,
         'student_accounts': Paginator(student_accounts, 12).get_page(request.GET.get('students_page'))
     })

@@ -116,7 +116,7 @@
         headers:{'X-CSRFToken':data.get('csrfmiddlewaretoken'), 'X-Requested-With':'XMLHttpRequest'}, body:data });
       const result = await response.json().catch(() => ({}));
       if (!response.ok || !result.success) throw new Error(result.error || 'Unable to save. Your session may have expired; sign in again if needed.');
-      succeeded = true; toast(result.message || 'Changes saved.', result.email_sent === false);
+      succeeded = true; toast(result.message || 'Changes saved.', result.email_sent === false || form.dataset.toastDanger === 'true');
       if (result.email_sent === false) {
         try { sessionStorage.setItem('managementDeliveryWarning', result.message); } catch (_) { /* Keep the visible toast. */ }
       }

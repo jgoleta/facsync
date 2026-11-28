@@ -95,6 +95,7 @@ def notifications_api(request):
 
 def register_student(request):
     request.session.pop('school_request_intent', None)
+    request.session.pop('student_profile_setup_allowed', None)
     request.session['registration_role'] = 'student'
     return redirect('google_login')
 
@@ -159,6 +160,8 @@ def switch_role(request):
 @login_required
 @role_required('student')
 def student_profile_setup(request):
+    if request.user.profile_completed or not request.session.get('student_profile_setup_allowed'):
+        return redirect('students:profile')
     from .models import School
     school = School.objects.get(pk=request.user.school_id)
     if request.method == 'POST':
@@ -171,6 +174,7 @@ def student_profile_setup(request):
                 user = form.save(commit=False)
                 user.profile_completed = True
                 user.save()
+                request.session.pop('student_profile_setup_allowed', None)
                 return redirect('students:home')
     else:
         form = StudentProfileForm(instance=request.user, school=school)
@@ -186,7 +190,7 @@ def student_profile_setup(request):
 @role_required('faculty')
 def faculty_profile_setup(request):
     destination = 'depthead:admin_dashboard' if has_role(request.user, 'officeadmin') and not has_role(request.user, 'faculty') else 'faculty:dashboard'
-    if FacultyProfile.objects.filter(user=request.user).exists():
+    if FacultyProfile.objects.filter(user=request.user).exists() or not request.session.get('faculty_profile_setup_allowed'):
         return redirect(destination)
     if request.method == 'POST':
         form = FacultyProfileSetupForm(request.POST)
@@ -203,6 +207,7 @@ def faculty_profile_setup(request):
                         )
                     user.profile_completed = True
                     user.save(update_fields=['profile_completed'])
+                request.session.pop('faculty_profile_setup_allowed', None)
                 return redirect(destination)
             except IntegrityError:
                 # A different account may have claimed this identifier after

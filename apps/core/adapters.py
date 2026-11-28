@@ -115,6 +115,7 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                 # or the school/role chosen by the server.
                 if saved.email.lower() != email or saved.school_id != school.pk or saved.role != 'student':
                     reject_registration(request, 'Your registration details changed. Please start registration again.')
+                request.session['student_profile_setup_allowed'] = True
                 return saved
 
     def save_user(self, request, sociallogin, form=None):
@@ -241,6 +242,8 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
                         type(invite)._base_manager.filter(pk=invite.pk).update(used=True)
                     else:
                         invite.delete()
+                    if isinstance(invite, FacultyInvite):
+                        request.session['faculty_profile_setup_allowed'] = True
                     return saved
             return super().save_user(request, sociallogin, form)
 
@@ -386,3 +389,5 @@ class FacSyncSocialAdapter(DefaultSocialAccountAdapter):
 
         if 'registration_role' in request.session:
             del request.session['registration_role']
+        if sociallogin.user.role == 'student':
+            request.session['student_profile_setup_allowed'] = True

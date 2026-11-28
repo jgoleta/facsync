@@ -21,7 +21,7 @@
         </header>
         <main class="profile-shell">
             <header class="profile-header">
-                <div><span class="eyebrow">Student portal</span><h1>Profile</h1><p>Keep your student details up to date.</p></div>
+                <div><span class="eyebrow">Student portal</span><h1>Profile</h1><p>View your student details.</p></div>
                 <span class="account-badge">Student account</span>
             </header>
             <div class="profile-grid">
@@ -43,7 +43,6 @@
                     {% if request.user.department.college_id %}<div class="info-group"><label>College</label><p>{{ request.user.department.college.name }}</p></div>{% endif %}
                     {% endif %}
                 </div>
-                <a href="{% url 'core:student_profile_setup' %}" class="profile-link"><span>Update student details</span><span aria-hidden="true">&rarr;</span></a>
             </section>
             <aside class="side-column">
                 <section class="profile-card quick-links-card" aria-labelledby="student-tools-title">

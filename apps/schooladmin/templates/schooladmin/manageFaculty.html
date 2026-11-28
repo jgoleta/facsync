@@ -85,7 +85,7 @@
                                 type="submit" class="btn-deactivate"
                                 data-confirm="Deactivate this faculty account? {{ user.consultation_count }} consultation record(s) will be preserved. Login and new booking access will be removed. Pending and approved appointments will keep their current status.">Deactivate</button>{% endif %}</form>
                         <form method="post" action="{% url 'superadmin:delete_faculty_superadmin' user.pk %}"
-                            data-managed-form>{% csrf_token %}<button type="submit" class="danger"
+                            data-managed-form data-toast-danger="true">{% csrf_token %}<button type="submit" class="danger"
                                 data-confirm="Permanently remove this faculty account? This cannot be undone.">Remove</button>
                         </form>
                     </td>
