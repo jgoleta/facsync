@@ -50,6 +50,13 @@
 {% include 'schooladmin/partials/directory_filters.html' with student_filters=True %}
 
             <div class="management-table-wrapper">
+                <div class="management-table-header">
+                    <h2>Student Accounts</h2>
+                    <div class="student-count-indicator" aria-label="Number of Registered Students: {{ student_count }}">
+                        <span>Number of Registered Students</span>
+                        <strong>{{ student_count }}</strong>
+                    </div>
+                </div>
                 <div class="table-scroll" role="region" aria-label="Student accounts" tabindex="0">
                     <table class="faculty-accounts-table">
                         <thead>

@@ -320,16 +320,12 @@ class PhotoDisplayTests(TestCase):
         self.profile = FacultyProfile.objects.create(user=self.faculty, faculty_id='picture-faculty', college_id='CCS')
         self.student = User.objects.create_user(username='picture-student', role='student', college='CCS', google_photo_url=GOOGLE + '-student')
 
-    def test_faculty_cards_and_directory_use_all_three_fallback_states(self):
+    def test_faculty_directory_uses_all_three_fallback_states(self):
         head = User.objects.create_user(username='picture-head', role='depthead', college='CCS')
         for uploaded, google, expected in [(UPLOAD, GOOGLE, UPLOAD), ('', GOOGLE, GOOGLE), ('', '', '')]:
             with self.subTest(expected=expected):
                 self.faculty.uploaded_photo_url, self.faculty.google_photo_url = uploaded, google
                 self.faculty.save()
-                response = self.client.get(reverse('core:dashboard_public'))
-                self.assertEqual(response.context['faculty_cards'][0]['photo_url'], expected)
-                if expected:
-                    self.assertContains(response, f'src="{expected}"')
                 self.client.force_login(self.student)
                 with patch('apps.students.views.refresh_faculty_status'):
                     response = self.client.get(reverse('students:api_faculty_statuses'))

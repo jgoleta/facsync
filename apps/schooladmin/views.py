@@ -255,9 +255,12 @@ def manage_colleges(request):
     from .forms import DepartmentForm
     departments = Department.objects.select_related('college').annotate(
         member_count=Count('members', distinct=True), head_count=Count('head_assignments', distinct=True)).order_by('name', 'pk')
+    college_count = colleges.count()
+    department_count = departments.count()
     colleges_page = Paginator(colleges, 8).get_page(request.GET.get('colleges_page'))
     departments_page = Paginator(departments, 8).get_page(request.GET.get('departments_page'))
     return render(request, 'schooladmin/manageAcademicUnits.html', {
+        'college_count': college_count, 'department_count': department_count,
         'colleges': colleges_page,
         'departments': departments_page,
         'department_form': DepartmentForm(),
@@ -271,6 +274,7 @@ def manage_offices(request):
         office.head_users = User.objects.filter(role='officeadmin', college__iexact=office.code)
     from .forms import OfficeStudentLevelsForm
     return render(request, 'schooladmin/manageOffices.html', {'offices': offices,
+        'office_count': offices.count(),
         'office_form': OfficeForm(auto_id='createOffice_%s'),
         'office_levels_form': OfficeStudentLevelsForm(auto_id='editOffice_%s')})
 
@@ -297,8 +301,11 @@ def manage_admins(request):
     for invite in office_invites:
         invite.invite_type = 'office'
     admin_invites = sorted(invites + office_invites, key=lambda invite: (invite.email or '').casefold())
+    depthead_count = len(depthead_accounts)
+    office_admin_count = len(office_admin_accounts)
     return render(request, 'schooladmin/manageAdmins.html', {
         'department_filter': department_filter,
+        'depthead_count': depthead_count, 'office_admin_count': office_admin_count,
         'filter_query': _filter_query(request, ['department']),
         'depthead_accounts': Paginator(depthead_accounts, 8).get_page(request.GET.get('depthead_page')),
         'admin_invites': Paginator(admin_invites, 8).get_page(request.GET.get('admin_invites_page')),
@@ -336,6 +343,7 @@ def manage_faculty(request):
         faculty_users = [user for user in faculty_users if user.college_filter == college_filter]
     if office_filter:
         faculty_users = [user for user in faculty_users if user.unit_value == 'office:' + office_filter]
+    faculty_count = len(faculty_users)
     invites = list(FacultyInvite.objects.filter(used=False).select_related('department__college'))
     for invite in invites:
         office = offices.get(str(invite.college or '').casefold())
@@ -353,6 +361,7 @@ def manage_faculty(request):
         'department_filter': department_filter, 'college_filter': college_filter, 'office_filter': office_filter,
         'departments': Department.objects.order_by('name'), 'offices': Office.objects.order_by('name'),
         'filter_query': _filter_query(request, ['department', 'college', 'office']),
+        'faculty_count': faculty_count,
         'active_faculty': Paginator(faculty_users, 12).get_page(request.GET.get('faculty_page')),
         'college_choices': get_unit_choices(),
         'faculty_invite_form': FacultySuperInviteForm(),
@@ -372,10 +381,12 @@ def manage_students(request):
         student_accounts = student_accounts.filter(department_id=department_filter)
     if college_filter:
         student_accounts = student_accounts.filter(department__college_id=college_filter)
+    student_count = student_accounts.count()
     return render(request, 'schooladmin/manageStudents.html', {
         'departments': Department.objects.order_by('name'), 'department_filter': department_filter,
         'college_filter': college_filter, 'colleges': College.objects.order_by('name'),
         'filter_query': _filter_query(request, ['department', 'college']),
+        'student_count': student_count,
         'student_accounts': Paginator(student_accounts, 12).get_page(request.GET.get('students_page'))
     })
 

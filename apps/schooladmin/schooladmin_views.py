@@ -57,6 +57,7 @@ def manage_superadmins(request):
     accounts = list(User.objects.filter(role='superadmin', school=request.user.school).order_by('first_name', 'email', 'pk'))
     invites = SuperAdminInvite.objects.filter(school=request.user.school, used=False).select_related('invited_by')
     return render(request, 'schooladmin/manageSchoolAdmins.html', {
+        'superadmin_count': len(accounts),
         'superadmin_accounts': Paginator(accounts, 8).get_page(request.GET.get('accounts_page')),
         'superadmin_invites': Paginator(invites, 8).get_page(request.GET.get('invitations_page')),
         'invite_form': SchoolSuperAdminInviteForm(auto_id='invite_%s'),

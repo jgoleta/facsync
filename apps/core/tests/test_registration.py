@@ -6,7 +6,7 @@ from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from apps.core.adapters import FacSyncSocialAdapter
-from apps.core.models import DeptHeadInvite, FacultyInvite, User
+from apps.core.models import DeptHeadInvite, FacultyInvite, School, User
 
 
 class RegistrationTests(TestCase):
@@ -45,6 +45,21 @@ class RegistrationTests(TestCase):
         response = self.client.get(reverse('core:register_student'))
         self.assertRedirects(response, reverse('google_login'), fetch_redirect_response=False)
         self.assertEqual(self.client.session['registration_role'], 'student')
+
+    def test_student_profile_setup_shows_only_levels_offered_by_school(self):
+        operator = User.objects.create_user(username='level-test-operator', role='systemadmin')
+        school = School(code='LEVEL_TEST', name='Level Test School', educational_levels=['shs', 'college'])
+        school.save(actor=operator)
+        student = User.objects.create_user(username='level-test-student', role='student', school=school)
+        self.client.force_login(student)
+
+        response = self.client.get(reverse('core:student_profile_setup'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="shs"')
+        self.assertContains(response, 'value="college"')
+        self.assertNotContains(response, 'value="elementary"')
+        self.assertNotContains(response, 'value="jhs"')
 
     def test_student_adapter_registration_remains_active(self):
         request, sociallogin = self.make_login(role='student')
