@@ -5,18 +5,6 @@ from apps.core.colleges import get_college_label
 from apps.core.school_scope import SchoolScopedModel
 
 
-class FacultyTestSetup(SchoolScopedModel):
-    """One explicitly requested test batch per account, retained after invitation consumption."""
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
-        related_name='faculty_test_setup')
-    status = models.CharField(max_length=12, default='pending',
-        choices=[('pending', 'Awaiting profile setup'), ('ready', 'Four requests prepared'),
-                 ('blocked', 'Needs attention')])
-    last_error = models.CharField(max_length=240, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    prepared_at = models.DateTimeField(null=True, blank=True)
-
-
 class FacultyProfile(SchoolScopedModel):
     STATUS_CHOICES = [
         ('not_set', 'Not Set'),

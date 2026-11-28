@@ -83,7 +83,7 @@ class FacultySuperInviteForm(SchoolBoundModelForm):
 
     class Meta:
         model = FacultyInvite
-        fields = ['email', 'prepare_test_requests']
+        fields = ['email']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

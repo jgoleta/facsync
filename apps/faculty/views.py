@@ -610,8 +610,6 @@ def _schedule_csv_row(event):
 @never_cache
 def dashboard(request):
     """Render the faculty dashboard with the current status presentation."""
-    from .services.invitation_test_setup import prepare_invitation_test_requests
-    prepare_invitation_test_requests(request.user)
     faculty_profile = FacultyProfile.objects.filter(user=request.user).first()
     if faculty_profile:
         refresh_faculty_status(faculty_profile)

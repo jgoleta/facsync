@@ -323,7 +323,7 @@ def manage_admins(request):
 def manage_faculty(request):
     faculty_users = list(with_consultation_counts(User.objects.filter(
         role_filter('faculty'),
-    )).select_related('faculty_profile', 'faculty_test_setup', 'department__college').order_by(
+    )).select_related('faculty_profile', 'department__college').order_by(
         'college', 'first_name', 'last_name', 'username'
     ))
     mark_inactive_faculty(faculty_users)
@@ -644,21 +644,6 @@ def invite_faculty_superadmin(request, invite_id=None):
                 for error in error_list:
                     messages.error(request, error)
     return redirect('superadmin:manage_faculty')
-
-
-@login_required
-@role_required('superadmin')
-def retry_faculty_test_requests(request, user_id):
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'error': 'Use POST to retry preparation.'}, status=405)
-    from apps.faculty.models import FacultyTestSetup
-    from apps.faculty.services.invitation_test_setup import prepare_invitation_test_requests
-    setup = get_object_or_404(FacultyTestSetup.objects.select_related('user'), user_id=user_id)
-    prepare_invitation_test_requests(setup.user, retry=True)
-    setup.refresh_from_db()
-    ready = setup.status == 'ready'
-    return JsonResponse({'success': ready, 'message': 'Four test requests are ready.' if ready else '',
-        'error': setup.last_error or 'The faculty member must finish profile setup first.'}, status=200 if ready else 400)
 
 
 @login_required
