@@ -58,15 +58,18 @@
     form.reset(); dialog.dataset.dirty = 'false'; form.dataset.historyCount = button.dataset.historyCount || '0'; form.dataset.initialStatus = button.dataset.accountStatus || '';
     const error = form.querySelector('[data-form-error]'); if (error) error.hidden = true;
     form.setAttribute('action', button.dataset.editUrl || form.dataset.createUrl || form.getAttribute('action'));
-    for (const field of ['name','code','college','description','email','title','account_status','unit']) {
+    for (const field of ['name','code','college','description','email','title','account_status','unit','department']) {
       const input = form.elements.namedItem(field);
-      if (input && button.dataset[field === 'account_status' ? 'accountStatus' : field] !== undefined)
-        input.value = button.dataset[field === 'account_status' ? 'accountStatus' : field];
+      const dataKey = field === 'account_status' ? 'accountStatus' : field;
+      if (input && button.dataset[dataKey] !== undefined) input.value = button.dataset[dataKey];
       if (field === 'code' && input) input.disabled = !!button.dataset.editUrl;
     }
     const selected = new Set((button.dataset.departments || '').split(','));
     const select = form.querySelector('select[name=departments]');
-    if (select) [...select.options].forEach(option => option.selected = selected.has(option.value));
+    if (select) {
+      if (select.hasAttribute('data-educational-department')) select.multiple = true;
+      [...select.options].forEach(option => option.selected = selected.has(option.value));
+    }
     form.querySelectorAll('input[type=checkbox][name=departments]').forEach(box => box.checked = selected.has(box.value));
     if (button.dataset.permissions !== undefined) {
       const permissions = new Set(button.dataset.permissions.split(','));
@@ -74,6 +77,8 @@
     }
     if (button.dataset.studentLevels !== undefined) {
       const levels = new Set(button.dataset.studentLevels.split(','));
+      const levelSelect = form.querySelector('select[name=student_levels]');
+      if (levelSelect) levelSelect.value = [...levels][0] || '';
       form.querySelectorAll('input[type=checkbox][name=student_levels]').forEach(box => box.checked = levels.has(box.value));
     }
     form.dispatchEvent(new CustomEvent('management:open', { detail: { trigger: button } }));
@@ -142,4 +147,115 @@
     const empty = document.querySelector('[data-faculty-empty]');
     if (empty) empty.hidden = rows.some(row => !row.hidden);
   }));
+
+  const inviteOptions = new WeakMap();
+  function filterFacultyInviteUnits(form, selectedValue) {
+    const level = form?.elements.namedItem('educational_level');
+    const unit = form?.elements.namedItem('unit');
+    if (!level || !unit) return;
+    const previous = selectedValue ?? unit.value;
+    const matching = inviteOptions.get(form).filter(option =>
+      level.value && (option.dataset.educationalLevels || '').split(',').includes(level.value));
+    unit.replaceChildren(new Option(matching.length ? 'Select a department or office' :
+      (level.value ? 'No matching departments or offices' : 'Select an educational level or office first'), ''),
+      ...matching.map(option => option.cloneNode(true)));
+    unit.value = matching.some(option => option.value === previous) ? previous : '';
+  }
+
+  document.querySelectorAll('#facultyInviteModal form').forEach(form => {
+    const level = form.elements.namedItem('educational_level');
+    const unit = form.elements.namedItem('unit');
+    inviteOptions.set(form, [...unit.options].filter(option => option.value).map(option => option.cloneNode(true)));
+    level?.addEventListener('change', () => filterFacultyInviteUnits(form));
+    form.addEventListener('management:open', event => {
+      const selectedValue = event.detail.trigger.dataset.unit || '';
+      const selected = inviteOptions.get(form).find(option => option.value === selectedValue);
+      const availableLevels = selected?.dataset.educationalLevels?.split(',') || [];
+      const allowed = [...level.options].find(option => option.value && availableLevels.includes(option.value));
+      if (allowed) {
+        level.value = allowed.value;
+      } else if (!level.value) {
+        const firstLevel = [...level.options].find(option => option.value && option.value !== 'office');
+        if (firstLevel) level.value = firstLevel.value;
+      }
+      filterFacultyInviteUnits(form, selectedValue);
+    });
+    filterFacultyInviteUnits(form);
+  });
+
+  document.querySelectorAll('[data-educational-level-filter]').forEach(level => {
+    const form = level.closest('form');
+    const department = form?.elements.namedItem('departments');
+    const title = form?.elements.namedItem('title');
+    if (!department) return;
+    const options = [...department.options].map(option => option.cloneNode(true));
+    const group = department.closest('.modal-form-group');
+    const college = form.elements.namedItem('assigned_college');
+    const collegeGroup = form.querySelector('[data-head-college-group]');
+    function filterDepartments(preferredLevel) {
+      const selected = preferredLevel || level.value;
+      if (title) {
+        const collegeHead = [...title.options].find(option => option.value === 'dean');
+        if (collegeHead) {
+          collegeHead.hidden = selected !== 'college';
+          collegeHead.style.display = collegeHead.hidden ? 'none' : '';
+          if (collegeHead.hidden && title.value === 'dean') title.value = 'chairperson';
+        }
+      }
+      const selectedDepartments = new Set([...department.selectedOptions].map(option => option.value));
+      const matching = options.filter(option => option.value && (title?.value === 'dean' || (option.dataset.educationalLevels || '').split(',').includes(selected)));
+      const multiple = title?.value === 'dean';
+      department.multiple = multiple;
+      department.required = !multiple;
+      department.replaceChildren(new Option('Choose a department', ''), ...matching.map(option => option.cloneNode(true)));
+      [...department.options].forEach(option => option.selected = selectedDepartments.has(option.value));
+      if (!multiple && selectedDepartments.size !== 1) department.value = '';
+      group.hidden = multiple;
+      group.style.display = multiple ? 'none' : '';
+      collegeGroup.hidden = !multiple;
+      college.disabled = !multiple;
+      college.required = multiple;
+      if (multiple) {
+        [...department.options].forEach(option => {
+          option.selected = !!college.value && option.dataset.college === college.value;
+        });
+      }
+    }
+    college.addEventListener('change', () => filterDepartments());
+    level.addEventListener('change', () => filterDepartments());
+    title?.addEventListener('change', () => filterDepartments());
+    form.addEventListener('management:open', event => {
+      const ids = new Set((event.detail.trigger.dataset.departments || '').split(','));
+      department.multiple = true;
+      department.replaceChildren(...options.map(option => option.cloneNode(true)));
+      [...department.options].forEach(option => option.selected = ids.has(option.value));
+      const selected = department.options[department.selectedIndex];
+      const collegeIds = new Set([...department.selectedOptions].map(option => option.dataset.college).filter(Boolean));
+      college.value = collegeIds.size === 1 ? [...collegeIds][0] : '';
+      const served = selected?.dataset.educationalLevels?.split(',') || [];
+      const available = [...level.options].map(option => option.value).filter(Boolean);
+      level.value = served.find(item => available.includes(item)) || level.value || available[0] || '';
+      if (title?.value === 'dean') level.value = 'college';
+      filterDepartments();
+    });
+    filterDepartments();
+  });
+
+  document.querySelectorAll('#departmentModal form').forEach(form => {
+    const level = form.elements.namedItem('student_levels');
+    const college = form.elements.namedItem('college');
+    if (!level || !college) return;
+    const group = college.closest('.modal-form-group');
+    function syncCollege() {
+      const available = level.value === 'college';
+      group.hidden = !available;
+      group.style.display = available ? '' : 'none';
+      college.disabled = !available;
+      college.hidden = !available;
+      if (!available) college.value = '';
+    }
+    level.addEventListener('change', syncCollege);
+    form.addEventListener('management:open', syncCollege);
+    syncCollege();
+  });
 })();

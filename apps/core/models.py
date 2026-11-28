@@ -209,6 +209,7 @@ class DeptHeadInvite(SchoolScopedModel):
         return f"College Head invite for {self.email} ({self.college})"
 
 class OfficeAdminInvite(SchoolScopedModel):
+    include_faculty_access = models.BooleanField(default=False)
     school = models.ForeignKey(School, on_delete=models.PROTECT, null=True, blank=True, related_name='office_admin_invites')
     email = models.EmailField(unique=True)
     office = models.CharField(max_length=100)

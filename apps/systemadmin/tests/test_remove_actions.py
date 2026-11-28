@@ -19,17 +19,23 @@ class SystemRemoveActionTests(TestCase):
         self.assertFalse(self.school.is_active)
         self.assertTrue(School.objects.filter(pk=self.school.pk).exists())
 
-    def test_remove_school_admin_deactivates_and_retains_account(self):
+    def test_remove_school_admin_permanently_deletes_account(self):
         target = User.objects.create_user(username='admin-to-remove', role='superadmin', school=self.school)
         User.objects.create_user(username='replacement-admin', role='superadmin', school=self.school)
 
         response = self.client.post(reverse('systemadmin:superadmin_status', args=[target.pk]), {'action': 'remove'})
 
         self.assertRedirects(response, reverse('systemadmin:manage_schooladmins'))
-        target.refresh_from_db()
-        self.assertFalse(target.is_active)
-        self.assertEqual(target.account_status, 'deactivated')
-        self.assertTrue(User.objects.filter(pk=target.pk).exists())
+        self.assertFalse(User.objects.filter(pk=target.pk).exists())
+
+    def test_remove_inactive_school_admin_without_replacement(self):
+        target = User.objects.create_user(username='inactive-admin', role='superadmin', school=self.school,
+            is_active=False, account_status='deactivated')
+        page = self.client.get(reverse('systemadmin:manage_schooladmins'))
+        self.assertContains(page, 'value="remove"')
+        response = self.client.post(reverse('systemadmin:superadmin_status', args=[target.pk]), {'action': 'remove'})
+        self.assertRedirects(response, reverse('systemadmin:manage_schooladmins'))
+        self.assertFalse(User.objects.filter(pk=target.pk).exists())
 
     def test_remove_last_school_admin_is_rejected(self):
         target = User.objects.create_user(username='only-admin', role='superadmin', school=self.school)

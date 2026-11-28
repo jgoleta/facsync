@@ -17,6 +17,11 @@ def role_required(role):
             else:
                 scope = require_school(user.school)
             with school_scope(scope):
+                if role == 'faculty' and view_func.__name__ != 'faculty_profile_setup':
+                    from apps.faculty.models import FacultyProfile
+                    if not FacultyProfile.objects.filter(user=user).exists():
+                        from django.shortcuts import redirect
+                        return redirect('core:faculty_profile_setup')
                 if role == 'superadmin':
                     from .school_admin_access import has_school_admin_permission, VIEW_FEATURES
                     feature = VIEW_FEATURES.get(view_func.__name__, 'school_admins')
@@ -26,7 +31,8 @@ def role_required(role):
                     if not allowed:
                         raise PermissionDenied('Your School Admin account does not have access to this feature.')
                 if role == 'depthead':
-                    from apps.depthead.scope import head_scope
+                    from apps.depthead.scope import head_scope, prepare_department_view
+                    prepare_department_view(request)
                     request.managed_scope = head_scope(user)
                 return view_func(request, *args, **kwargs)
         return wrapper

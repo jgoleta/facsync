@@ -24,7 +24,6 @@
         <table>
             <thead>
                 <tr>
-                    <th>Type</th>
                     <th>Email</th>
                     <th>Department / Office</th>
                     <th>Title</th>
@@ -34,7 +33,6 @@
             </thead>
             <tbody>
                 {% for invite in admin_invites %}{% if invite.invite_type == 'head' %}<tr>
-                    <td>Head</td>
                     <td>{{ invite.email }}</td>
                     <td>{{ invite.department_names|default:'Not assigned' }}{% if invite.include_faculty_access %}<br><small>Faculty: {{ invite.faculty_department.name|default:'Department needs review — edit this invitation' }}</small>{% else %}<br><small>Admin access only</small>{% endif %}</td>
                     <td>{{ invite.get_title_display }}</td>
@@ -43,10 +41,9 @@
                             data-edit-url="{% url 'superadmin:edit_head_invite' invite.pk %}"
                             data-email="{{ invite.email }}" data-title="{{ invite.title }}"
                             data-include-faculty-access="{{ invite.include_faculty_access|yesno:'true,false' }}"
-                            data-faculty-id="{{ invite.faculty_id }}" data-faculty-department="{{ invite.faculty_department_id|default:'' }}"
+                            data-faculty-department="{{ invite.faculty_department_id|default:'' }}"
                             data-departments="{{ invite.department_ids }}">Edit and email</button></td>
                 </tr>{% else %}<tr>
-                    <td>Office Admin</td>
                     <td>{{ invite.email }}</td>
                     <td>{{ invite.office }}</td>
                     <td>-</td>
@@ -57,7 +54,7 @@
                                 class="btn-secondary">Resend</button></form>
                     </td>
                 </tr>{% endif %}{% empty %}<tr>
-                    <td colspan="6" class="empty-state">No pending admin invitations.</td>
+                    <td colspan="5" class="empty-state">No pending admin invitations.</td>
                 </tr>{% endfor %}
             </tbody>
         </table>
@@ -80,7 +77,7 @@
                 <tr>
                     <th>Name</th>
                     <th>Email</th>
-                    <th>Assigned departments</th>{% if request.user.school.offers_college %}<th>College labels</th>{% endif %}<th>Title</th>
+                    <th>Department</th>{% if request.user.school.offers_college %}<th>College label</th>{% endif %}<th>Title</th>
                     <th>Status</th>
                     <th>Actions</th>
                 </tr>
@@ -174,18 +171,19 @@
             data-form-error class="assignment-error" role="alert" hidden></p>
         <div class="modal-form-group"><label for="headInviteEmail">Google email</label><input id="headInviteEmail"
                 name="email" type="email" required></div>
+        <div class="modal-form-group"><label for="headInviteEducationalLevel">Educational level</label><select id="headInviteEducationalLevel" name="educational_level" data-educational-level-filter required><option value="">Select an educational level</option>{% for value,label in education_level_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
         <div class="modal-form-group"><label for="headInviteTitle">Title</label><select id="headInviteTitle"
                 name="title" required>{% for value,label in title_choices %}<option value="{{ value }}">{{ label }}
                 </option>{% endfor %}</select></div>
-        {% include 'schooladmin/partials/department_checkboxes.html' with checkbox_prefix='headInviteDepartment' %}
+        <div class="modal-form-group"><label for="headInviteDepartment">Department</label><select id="headInviteDepartment" name="departments" data-educational-department multiple required>{% for department in departments %}<option value="{{ department.pk }}" data-college="{{ department.college_id|default:'' }}" data-educational-levels="{{ department.student_levels|join:',' }}">{{ department.name }}</option>{% endfor %}</select></div>
+        <div class="modal-form-group" data-head-college-group hidden><label for="headInviteCollege">College</label><select id="headInviteCollege" name="assigned_college"><option value="">Choose a college</option>{% for college in head_colleges %}<option value="{{ college.pk }}">{{ college.name }}</option>{% endfor %}</select><small>All active departments in this college will be assigned automatically.</small></div>
         <label class="faculty-access-option" for="headIncludeFaculty">
             <input id="headIncludeFaculty" name="include_faculty_access" type="checkbox" aria-describedby="headFacultyAccessHint">
             <span><strong>Also give Faculty access</strong><small id="headFacultyAccessHint">Leave unchecked for admin access only.</small></span>
         </label>
+        <p class="form-hint">When Faculty access is included, the recipient enters their Faculty ID and Office / Room during setup.</p>
         <div id="headFacultyFields" hidden>
-            <div class="modal-form-group"><label for="headInviteFacultyId">Faculty ID</label><input id="headInviteFacultyId" name="faculty_id" type="text" maxlength="64" disabled><small class="form-hint">Enter a unique Faculty ID manually.</small></div>
-            <div class="modal-form-group"><label for="headFacultyDepartment">Faculty department</label><select id="headFacultyDepartment" name="faculty_department" disabled><option value="">Choose a Faculty department</option>{% for department in departments %}<option value="{{ department.pk }}" data-college="{{ department.college.name|default:'No College' }}">{{ department.name }}</option>{% endfor %}</select><small class="form-hint">Choose their Faculty home from the departments selected above.</small></div>
-            <p class="form-hint">Faculty college: <strong id="headFacultyCollege">Select a department</strong></p>
+            <div class="modal-form-group"><label for="headFacultyDepartment">Faculty department</label><select id="headFacultyDepartment" name="faculty_department" disabled><option value="">Choose a Faculty department</option>{% for department in departments %}<option value="{{ department.pk }}">{{ department.name }}</option>{% endfor %}</select><small class="form-hint">Choose their Faculty home from the selected departments.</small></div>
         </div>
         <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
                 class="btn-primary" type="submit">Save and Send Invite</button></div>
@@ -195,14 +193,16 @@
     <div class="modal-header">
         <div>
             <h2>Edit Head Assignments</h2>
-            <p>Select at least one department. Titles do not add departments automatically.</p>
+        <p>Department Heads manage one department. College Heads may manage multiple departments.</p>
         </div><button type="button" class="modal-close" data-close-modal aria-label="Close">×</button>
     </div>
     <form method="post" data-managed-form class="modal-form">{% csrf_token %}<p data-form-error class="assignment-error"
             role="alert" hidden></p>
+        <div class="modal-form-group"><label for="headEditEducationalLevel">Educational level</label><select id="headEditEducationalLevel" name="educational_level" data-educational-level-filter required><option value="">Select an educational level</option>{% for value,label in education_level_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
         <div class="modal-form-group"><label for="headEditTitle">Title</label><select id="headEditTitle" name="title"
                 required>{% for value,label in title_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
-        {% include 'schooladmin/partials/department_checkboxes.html' with checkbox_prefix='headEditDepartment' %}
+        <div class="modal-form-group"><label for="headEditDepartment">Department</label><select id="headEditDepartment" name="departments" data-educational-department multiple required>{% for department in departments %}<option value="{{ department.pk }}" data-college="{{ department.college_id|default:'' }}" data-educational-levels="{{ department.student_levels|join:',' }}">{{ department.name }}</option>{% endfor %}</select></div>
+        <div class="modal-form-group" data-head-college-group hidden><label for="headEditCollege">College</label><select id="headEditCollege" name="assigned_college"><option value="">Choose a college</option>{% for college in head_colleges %}<option value="{{ college.pk }}">{{ college.name }}</option>{% endfor %}</select><small>All active departments in this college will be assigned automatically.</small></div>
         <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
                 class="btn-primary" type="submit">Save Assignments</button></div>
     </form>
@@ -218,10 +218,14 @@
         <div class="modal-form-group"><label for="officeAdminOffice">Office</label><select id="officeAdminOffice"
                 name="office" required>{% for value,label in office_admin_form.office.field.choices %}<option
                     value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
-        <div class="modal-form-group"><label for="officeAdminFacultyId">Faculty ID</label><input id="officeAdminFacultyId" name="faculty_id" type="text" maxlength="64" required><small class="form-hint">This admin will also receive Faculty access.</small></div>
+        <label class="faculty-access-option" for="{{ office_admin_form.include_faculty_access.id_for_label }}">
+            {{ office_admin_form.include_faculty_access }}
+            <span><strong>Also give Faculty access</strong><small>Leave unchecked for admin access only.</small></span>
+        </label>
+        <p class="form-hint">When Faculty access is included, the recipient enters their Faculty ID and Office / Room during setup.</p>
         <div class="modal-actions"><button class="btn-secondary" type="button" data-close-modal>Cancel</button><button
                 class="btn-primary" type="submit">Send Invite</button></div>
     </form>
 </dialog>
 {% endblock %}
-{% block extra_scripts %}<script src="{% static 'schooladmin/js/headFacultyAccess.js' %}?v=20261124-head-faculty-assignment"></script>{% endblock %}
+{% block extra_scripts %}<script src="{% static 'schooladmin/js/headFacultyAccess.js' %}?v=20261128-admin-form-fix"></script>{% endblock %}

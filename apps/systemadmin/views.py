@@ -241,6 +241,10 @@ def superadmin_status(request, user_id):
                 require_replacement_superadmin(user)
             elif not school.is_active:
                 raise ValidationError('Reactivate the school before reactivating this account.')
+            if action == 'remove':
+                user.delete()
+                messages.success(request, 'School Admin account permanently deleted.')
+                return redirect('systemadmin:manage_schooladmins')
             was_active = user.is_active and user.account_status == 'active'
             user.account_status = 'active' if action == 'reactivate' else 'deactivated'
             user.is_active = action == 'reactivate'
@@ -251,8 +255,6 @@ def superadmin_status(request, user_id):
             notify_deactivation = was_active and action in {'deactivate', 'remove'}
             if user.is_active:
                 messages.success(request, 'School Admin reactivated.')
-            elif action == 'remove':
-                messages.success(request, 'School Admin removed. The account was deactivated and retained for audit history.')
             else:
                 messages.success(request, 'School Admin deactivated.')
     if notify_deactivation:

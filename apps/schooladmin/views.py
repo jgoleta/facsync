@@ -19,6 +19,7 @@ from .department_views import form_error
 from apps.core.models import User, College, Department, DeptHeadInvite, Office, FacultyInvite, OfficeAdminInvite, OfficeClosure, CollegeAnnouncement, School
 from apps.core.role_access import role_filter
 from apps.core.forms import CollegeForm, OfficeForm
+from apps.core.education import LEVEL_CHOICES
 from apps.core.services import (
     send_depthead_invite_email,
     send_depthead_deactivated_email,
@@ -314,8 +315,10 @@ def manage_admins(request):
         'office_admin_accounts': Paginator(office_admin_accounts, 8).get_page(request.GET.get('office_admin_page')),
         'college_choices': get_college_choices(),
         'dept_head_form': DeptHeadInviteForm(),
+        'head_colleges': College.objects.filter(is_active=True),
         'role_choices': [choice for choice in User.ROLE_CHOICES if choice[0] in {'student', 'faculty', 'depthead'}],
         'title_choices': User.TITLE_CHOICES,
+        'education_level_choices': [choice for choice in LEVEL_CHOICES if choice[0] in request.user.school.educational_levels],
         'office_admin_form': OfficeAdminInviteForm(),
     })
 

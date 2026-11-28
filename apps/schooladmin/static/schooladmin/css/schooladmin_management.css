@@ -423,15 +423,18 @@ table td:first-child { color: var(--text-primary); font-weight: 750; }
   z-index: 100;
   max-width: 360px;
   transform: translateY(12px);
-  border-radius: 10px;
-  padding: 13px 16px;
-  background: #166534;
-  color: #fff;
+  border-radius: 8px;
+  padding: 14px 20px;
+  background: var(--success);
+  color: var(--text-light);
   opacity: 0;
-  transition: 0.2s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  font-weight: 600;
+  pointer-events: none;
 }
 
-.faculty-toast.error { background: #b91c1c; }
+.faculty-toast.error { background: var(--danger); }
 .faculty-toast.show { transform: translateY(0); opacity: 1; }
 
 @media (max-width: 760px) {
