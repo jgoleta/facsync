@@ -45,7 +45,7 @@ function renderFacultyCard(item) {
         </div>
         <span class="status-badge">${escapeHtml(item.status_label)}</span>
       </div>
-      <button type="button" class="view-schedule-btn" data-faculty-id="${escapeHtml(item.id)}">View Schedule</button>
+      <button type="button" class="view-schedule-btn" data-faculty-id="${escapeHtml(item.id)}" data-faculty-name="${escapeHtml(item.name)}">View Schedule</button>
       <div class="faculty-card-footer">
         <span class="status-line"><i></i>Currently ${escapeHtml((item.status_label || "").toLowerCase())}</span>
         <span class="updated-time">${timeAgo(item.updated_at_iso)}</span>
@@ -77,29 +77,42 @@ function renderScheduleEvents(events) {
   `).join("");
 }
 
-async function openFacultySchedule(facultyId) {
+let scheduleRequestController = null;
+let scheduleRequestSequence = 0;
+
+async function openFacultySchedule(facultyId, facultyName) {
   const grid = document.getElementById("monitoringGrid");
   const modal = document.getElementById("facultyScheduleModal");
   const body = document.getElementById("facultyScheduleModalBody");
   const title = document.getElementById("facultyScheduleModalTitle");
   const month = document.getElementById("facultyScheduleModalMonth");
   if (!grid || !modal || !body) return;
+  const sequence = ++scheduleRequestSequence;
+  scheduleRequestController?.abort();
+  scheduleRequestController = new AbortController();
   const url = grid.dataset.scheduleUrlTemplate.replace("__faculty__", encodeURIComponent(facultyId));
+  title.textContent = facultyName || "Faculty Schedule";
+  month.textContent = "";
   modal.classList.remove("hidden");
   body.innerHTML = '<p class="empty-state">Loading schedule...</p>';
   try {
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(url, { cache: "no-store", signal: scheduleRequestController.signal });
     const data = await response.json();
+    if (sequence !== scheduleRequestSequence) return;
     if (!response.ok) throw new Error(data.error || "Unable to load schedule.");
     title.textContent = data.faculty_name || "Faculty Schedule";
     month.textContent = data.month_label || "Current month";
     body.innerHTML = renderScheduleEvents(data.events || []);
   } catch (error) {
+    if (error.name === "AbortError" || sequence !== scheduleRequestSequence) return;
     body.innerHTML = `<p class="empty-state">${escapeHtml(error.message)}</p>`;
   }
 }
 
 function closeFacultySchedule() {
+  scheduleRequestSequence += 1;
+  scheduleRequestController?.abort();
+  scheduleRequestController = null;
   document.getElementById("facultyScheduleModal")?.classList.add("hidden");
 }
 
@@ -136,7 +149,8 @@ window.setInterval(refreshFacultyMonitoring, 10000);
 
 document.addEventListener("click", (event) => {
   if (event.target.closest(".view-schedule-btn")) {
-    openFacultySchedule(event.target.closest(".view-schedule-btn").dataset.facultyId);
+    const button = event.target.closest(".view-schedule-btn");
+    openFacultySchedule(button.dataset.facultyId, button.dataset.facultyName);
   } else if (event.target.id === "closeFacultyScheduleModal" || event.target.id === "facultyScheduleModal") {
     closeFacultySchedule();
   }

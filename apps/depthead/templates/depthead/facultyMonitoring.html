@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FacSync | Faculty Monitoring</title>
     <link rel="stylesheet" href="{% static 'depthead/css/admin_main.css' %}?v=20261128-department-view">
-    <link rel="stylesheet" href="{% static 'depthead/css/admin_monitoring.css' %}?v=20260930-status-colors">
+    <link rel="stylesheet" href="{% static 'depthead/css/admin_monitoring.css' %}?v=20261128-card-alignment">
     {% include 'components/_admin_navigation_loading.html' %}
 </head>
 
@@ -65,7 +65,7 @@
                         </div>
                         <span class="status-badge">{{ item.status_label }}</span>
                     </div>
-                    <button type="button" class="view-schedule-btn" data-faculty-id="{{ item.faculty_id }}">View Schedule</button>
+                    <button type="button" class="view-schedule-btn" data-faculty-id="{{ item.faculty_id }}" data-faculty-name="{{ item.name }}">View Schedule</button>
                     <div class="faculty-card-footer">
                         <span class="status-line"><i></i>Currently {{ item.status_label|lower }}</span>
                         <span class="updated-time">{% if item.updated_at %}{{ item.updated_at|timesince }} ago{% else %}No update yet{% endif %}</span>
@@ -93,6 +93,6 @@
         </div>
     </div>
     <script src="{% static 'js/avatars.js' %}?v=20261002"></script>
-      <script src="{% static 'depthead/js/facultyMonitoring.js' %}?v=20261031-faculty-calendar-modal"></script>
+      <script src="{% static 'depthead/js/facultyMonitoring.js' %}?v=20261128-schedule-modal-state"></script>
 </body>
 </html>

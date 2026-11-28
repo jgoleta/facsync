@@ -91,3 +91,10 @@ class ManageFacultyActionsTests(TestCase):
 
         retired = self.client.post(f'/depthead/adminFaculty/{self.multi_role.pk}/remove-role/')
         self.assertEqual(retired.status_code, 404)
+
+    def test_monitoring_schedule_buttons_include_current_faculty_name(self):
+        response = self.client.get(reverse('depthead:faculty_monitoring'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-faculty-name="faculty-only-account"')
+        self.assertContains(response, 'data-faculty-name="admin-faculty-account"')

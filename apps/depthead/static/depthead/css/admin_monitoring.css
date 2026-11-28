@@ -111,6 +111,8 @@
 
 .faculty-card {
   position: relative;
+  display: flex;
+  flex-direction: column;
   min-height: 116px;
   overflow: hidden;
   padding: 22px 20px 17px 70px;
@@ -123,6 +125,7 @@
 
 .view-schedule-btn {
   display: inline-flex;
+  align-self: flex-start;
   margin-bottom: 14px;
   padding: 8px 12px;
   border: 1px solid #c8d8ee;
@@ -205,6 +208,7 @@
 
 .faculty-card .card-header {
   display: flex;
+  flex: 1 1 auto;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
